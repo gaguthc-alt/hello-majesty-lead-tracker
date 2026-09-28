@@ -46,23 +46,48 @@ async function loadLeads(){
 async function render(){
  const s=await sb.rpc('dashboard_stats');if(s.error){alert(s.error.message);return}
  const v=s.data||{};
- $('stats').innerHTML='<b style="grid-column:1/-1">PROSES</b>'+[['Total',v.total||0],['Available',v.available||0],['CS Lock',v.cs_lock||0],['Menunggu Sales',v.qualified||0],['Handle',v.handle||0],['Closing',v.closing||0],['Potensial',v.potensial||0],['Gagal',v.gagal||0]].map(x=>'<div class="stat"><div class="small">'+x[0]+'</div><div class="num">'+x[1]+'</div></div>').join('');
- $('leads').innerHTML=leads.map(card).join('')||'<p class="small">Tidak ada detail lead yang menjadi tanggung jawab Anda.</p>';
+ const stat=(label,val,click)=>'<div class="stat" '+(click?'style="cursor:pointer" onclick="'+click+'"':'')+'><div class="small">'+label+'</div><div class="num">'+(val||0)+'</div>'+(click?'<div class="small">Tap untuk lihat detail</div>':'')+'</div>';
+ $('stats').innerHTML='<b style="grid-column:1/-1">PROSES</b>'+[
+  ['Total',v.total],
+  ['Available',v.available],
+  ['CS Lock',v.cs_lock],
+  ['Menunggu Sales',v.qualified],
+  ['Handle',v.handle]
+ ].map(x=>stat(x[0],x[1])).join('')+
+ '<b style="grid-column:1/-1;margin-top:8px">HASIL — klik angka untuk lihat histori</b>'+
+ [
+  ['Closing',v.closing,"showHistory('CLOSING')"],
+  ['Potensial',v.potensial,"showHistory('POTENSIAL')"],
+  ['Gagal',v.gagal,"showHistory('GAGAL')"]
+ ].map(x=>stat(x[0],x[1],x[2])).join('');
+ const active=leads.filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead));
+ $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p>';
 }
 function card(l){
- const mg=profile?.is_management,available=!mg&&l.status_lead==='AVAILABLE',canClaimCS=available&&profile?.role==='CS',q=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK';
+ const mg=profile?.is_management;
+ const available=l.status_lead==='AVAILABLE';
+ const canClaimCS=available&&!mg;
+ const q=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK';
  const sh=!mg&&l.cs_claimed_by===profile?.name&&!l.sales_claimed_by&&l.qualification_result==='QUALIFIED';
  const sr=!mg&&l.sales_claimed_by===profile?.name&&l.status_lead==='HANDLE';
- const cp=!mg&&l.cs_claimed_by===profile?.name&&l.qualification_result==='POTENSIAL';
  const own=mg||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
- return '<div class="lead"><h3>'+esc(l.customer)+' <span class="badge">'+esc(l.status_lead)+'</span></h3><div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+'</div><div class="small">CS: '+esc(l.cs_claimed_by||'-')+' • Sales: '+esc(l.sales_claimed_by||'-')+'</div>'+
- (l.qualification_result==='GAGAL'?'<div style="margin-top:8px;padding:10px;background:#fef2f2;border-radius:8px"><b>🔴 Keterangan Gagal:</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+
+ const qualified=l.status_lead==='QUALIFIED';
+ const limited=(l.status_lead==='CS LOCK'&&!q&&!mg)||(l.status_lead==='HANDLE'&&!own&&!mg);
+ return '<div class="lead"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(l.status_lead)+'</span></h3>'+
+ '<div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+'</div>'+
+ '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+' • Sales: '+esc(l.sales_claimed_by||'-')+'</div>'+
+ (limited?'<p class="small">Lead sedang ditangani oleh owner lain. Detail tidak tersedia.</p>':
+ '<div style="margin-top:8px">'+
+ '<div><b>Kebutuhan:</b> '+esc(l.need||'-')+'</div>'+
+ '<div><b>Budget:</b> '+esc(l.budget||'-')+' • <b>Timeline:</b> '+esc(l.timeline||'-')+'</div>'+
+ (qualified?'<div><b>Status:</b> Siap di-claim Sales.</div>':'')+
+ (q?'<div class="small" style="margin-top:6px">Anda adalah CS Owner. Silakan tentukan hasil qualification.</div>':'')+
+ '</div>')+
  '<div class="row">'+
  (canClaimCS?'<button class="success" onclick="claimCS(\''+esc(l.lead_id)+'\')">Claim CS</button>':'')+
  (q?'<button class="success" onclick="qualify(\''+esc(l.lead_id)+'\')">✓ Qualification</button>':'')+
  (sh?'<button class="success" onclick="share(\''+esc(l.lead_id)+'\')">📢 Share ke Group WA</button>':'')+
  (sr?'<button class="success" onclick="salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button>':'')+
- (cp?'<button class="secondary" onclick="qualify(\''+esc(l.lead_id)+'\')">↻ Follow-up</button>':'')+
  (own?'<button class="secondary" onclick="editLead(\''+esc(l.lead_id)+'\')">Buka / Update</button>':'')+
  (mg?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button><button class="danger" onclick="deleteLead(\''+esc(l.lead_id)+'\')">🗑 Delete</button>':'')+
  '</div></div>';
@@ -102,12 +127,14 @@ async function claimFromLink(id){
  history.replaceState({},'',location.pathname);closeModal();await loadLeads();editLead(id);
 }
 function salesResult(id){
- $('mt').textContent='Hasil Sales';$('mb').innerHTML='<label>Hasil</label><select id="sr"><option>CLOSING</option><option>POTENSIAL</option><option>GAGAL</option></select><div id="sdb" class="hidden"><label>Follow-up</label><input id="sd" type="date"></div><button id="saveSBtn" class="success">Simpan</button>';
- $('sr').onchange=()=>$('sdb').classList.toggle('hidden',$('sr').value!=='POTENSIAL');$('saveSBtn').onclick=()=>saveS(id);$('modal').classList.remove('hidden');
+ $('mt').textContent='Hasil Sales';$('mb').innerHTML='<label>Hasil</label><select id="sr"><option value="CLOSING">CLOSING</option><option value="POTENSIAL">POTENSIAL</option><option value="GAGAL">GAGAL</option></select><div id="sdb" class="hidden"><label>Follow-up</label><input id="sd" type="date"></div><div id="sob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="sreason" placeholder="Contoh: budget tidak cocok, customer memilih produk lain..."></textarea></div><button id="saveSBtn" class="success">Simpan</button>';
+ $('sr').onchange=()=>{$('sdb').classList.toggle('hidden',$('sr').value!=='POTENSIAL');$('sob').classList.toggle('hidden',$('sr').value!=='GAGAL')};$('saveSBtn').onclick=()=>saveS(id);$('modal').classList.remove('hidden');
 }
 async function saveS(id){
  if($('sr').value==='POTENSIAL'&&!$('sd').value)return alert('Tanggal follow-up wajib.');
- const x=await sb.rpc('set_sales_result',{p_lead_id:id,p_result:$('sr').value,p_follow_up_date:$('sd').value||null});if(x.error)return alert(x.error.message);closeModal();await loadLeads();
+ if($('sr').value==='GAGAL'&&!$('sreason').value.trim())return alert('Keterangan kenapa gagal wajib diisi.');
+ const x=await sb.rpc('set_sales_result',{p_lead_id:id,p_result:$('sr').value,p_follow_up_date:$('sd').value||null,p_reason:$('sreason')?.value.trim()||null});
+ if(x.error)return alert(x.error.message);closeModal();await loadLeads();
 }
 function addLead(){
  $('mt').textContent='＋ WA MASUK';$('mb').innerHTML='<label>Customer</label><input id="fc"><label>WhatsApp</label><input id="fw"><label>Produk</label><input id="fp"><label>Kebutuhan</label><textarea id="fn"></textarea><label>Budget</label><input id="fb"><label>Timeline</label><input id="ft"><label>Preference</label><textarea id="fpr"></textarea><button id="saveLeadBtn" class="success">Simpan Lead</button>';
@@ -138,6 +165,28 @@ function deleteLead(id){
 async function confirmDelete(id){
  if($('dc').value.trim()!=='YA, HAPUS PERMANEN')return alert('Konfirmasi tidak sesuai.');
  const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:$('dc').value.trim()});if(x.error)return alert(x.error.message);closeModal();await loadLeads();
+}
+function showHistory(type){
+ const items=leads.filter(l=>{
+   if(type==='CLOSING')return l.sales_result==='CLOSING';
+   if(type==='POTENSIAL')return l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
+   if(type==='GAGAL')return l.qualification_result==='GAGAL'||l.sales_result==='GAGAL';
+   return false;
+ });
+ $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>Histori '+type+'</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Detail histori hanya berasal dari lead yang menjadi tanggung jawab Anda. Management dapat melihat seluruh histori.</p></div>'+
+ (items.map(historyCard).join('')||'<p class="small">Belum ada histori '+type+' yang dapat ditampilkan.</p>');
+}
+function historyCard(l){
+ const isPotential=l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
+ const isCS=profile?.name===l.cs_claimed_by;
+ const isSales=profile?.name===l.sales_claimed_by;
+ const owner=isCS||isSales||profile?.is_management;
+ const action=isPotential&&!profile?.is_management?(isSales?'<button class="secondary" onclick="salesResult(\''+esc(l.lead_id)+'\')">↻ Kelola Follow-up</button>':isCS?'<button class="secondary" onclick="qualify(\''+esc(l.lead_id)+'\')">↻ Kelola Follow-up</button>':''): '';
+ return '<div class="lead"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(l.sales_result||l.qualification_result||l.hasil||'HISTORI')+'</span></h3><div class="small">'+esc(l.lead_id)+' • '+esc(l.outlet)+'</div><div class="small">CS: '+esc(l.cs_claimed_by||'-')+' • Sales: '+esc(l.sales_claimed_by||'-')+'</div><div style="margin-top:8px"><b>Produk:</b> '+esc(l.product||'-')+'<br><b>Kebutuhan:</b> '+esc(l.need||'-')+'<br><b>Budget:</b> '+esc(l.budget||'-')+'</div>'+
+ (l.qualification_result==='GAGAL'||l.sales_result==='GAGAL'?'<div style="margin-top:8px;padding:10px;background:#fef2f2;border-radius:8px"><b>Keterangan Gagal:</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+
+ (l.sales_follow_up_date?'<div class="small" style="margin-top:6px">Sales follow-up: '+esc(l.sales_follow_up_date)+'</div>':'')+
+ (l.cs_follow_up_date?'<div class="small" style="margin-top:6px">CS follow-up: '+esc(l.cs_follow_up_date)+'</div>':'')+
+ '<div class="row" style="margin-top:8px">'+(owner&&profile?.is_management?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button>':'')+action+'</div></div>';
 }
 function closeModal(){$('modal').classList.add('hidden')}
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});

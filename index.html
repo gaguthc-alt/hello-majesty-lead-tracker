@@ -50,7 +50,7 @@ async function render(){
  $('leads').innerHTML=leads.map(card).join('')||'<p class="small">Tidak ada detail lead yang menjadi tanggung jawab Anda.</p>';
 }
 function card(l){
- const mg=profile?.is_management,available=!mg&&l.status_lead==='AVAILABLE',q=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK';
+ const mg=profile?.is_management,available=!mg&&l.status_lead==='AVAILABLE',canClaimCS=available&&profile?.role==='CS',q=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK';
  const sh=!mg&&l.cs_claimed_by===profile?.name&&!l.sales_claimed_by&&l.qualification_result==='QUALIFIED';
  const sr=!mg&&l.sales_claimed_by===profile?.name&&l.status_lead==='HANDLE';
  const cp=!mg&&l.cs_claimed_by===profile?.name&&l.qualification_result==='POTENSIAL';
@@ -58,7 +58,7 @@ function card(l){
  return '<div class="lead"><h3>'+esc(l.customer)+' <span class="badge">'+esc(l.status_lead)+'</span></h3><div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+'</div><div class="small">CS: '+esc(l.cs_claimed_by||'-')+' • Sales: '+esc(l.sales_claimed_by||'-')+'</div>'+
  (l.qualification_result==='GAGAL'?'<div style="margin-top:8px;padding:10px;background:#fef2f2;border-radius:8px"><b>🔴 Keterangan Gagal:</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+
  '<div class="row">'+
- (available?'<button class="success" onclick="claimCS(\''+esc(l.lead_id)+'\')">Claim CS</button>':'')+
+ (canClaimCS?'<button class="success" onclick="claimCS(\''+esc(l.lead_id)+'\')">Claim CS</button>':'')+
  (q?'<button class="success" onclick="qualify(\''+esc(l.lead_id)+'\')">✓ Qualification</button>':'')+
  (sh?'<button class="success" onclick="share(\''+esc(l.lead_id)+'\')">📢 Share ke Group WA</button>':'')+
  (sr?'<button class="success" onclick="salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button>':'')+

@@ -191,4 +191,4 @@ function historyCard(l){
 function closeModal(){$('modal').classList.add('hidden')}
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 $('refreshBtn').addEventListener('click',refreshLeads);
-(async()=>{try{await ensureSupabase();sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')location.reload()});const x=await sb.auth.getSession();if(x.data.session)await start(x.data.session.user)}catch(ex){$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.'}})();</script></body></html>
+(async()=>{try{await ensureSupabase();sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')location.reload()});const x=await sb.auth.getSession();if(x.data.session)await start(x.data.session.user)}catch(ex){$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.'}})();</script><script src="performance.js"></script></body></html>

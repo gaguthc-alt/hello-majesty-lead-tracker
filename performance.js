@@ -127,23 +127,68 @@ async function perfBuild(mode){
  lines.push('Built on Trust.');
  return lines.join('\n');
 }
+async function perfManagement(mode){
+ const p=perfPeriod(mode), pad=n=>String(n).padStart(2,'0'), fmt=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+ const x=await sb.rpc('management_performance_report',{p_start:fmt(p.start),p_end:fmt(p.end),p_employee:null});
+ if(x.error)throw x.error;
+ const perf=x.data||[];
+ const tp=await sb.from('team_profiles').select('name,outlet,active,is_management').eq('active',true).eq('is_management',false).order('name');
+ if(tp.error)throw tp.error;
+ const profiles=tp.data||[];
+ const pm=await sb.from('team_permissions').select('name,outlet,can_cs,can_sales,can_facilitator,can_content_creator,can_hunter,active').eq('active',true);
+ if(pm.error)throw pm.error;
+ const perms=pm.data||[];
+ const rolesFor=(p)=>{const a=perms.filter(q=>q.name===p.name&&q.outlet===p.outlet);const r=[];if(a.some(q=>q.can_content_creator))r.push('Content Creator');if(a.some(q=>q.can_facilitator))r.push('Fasilitator');if(a.some(q=>q.can_cs))r.push('CS');if(a.some(q=>q.can_sales))r.push('Sales');if(a.some(q=>q.can_hunter))r.push('Hunter');return r.length?r:[p.role||'Staff']};
+ const contentMonth=p.start.getFullYear()+'-'+String(p.start.getMonth()+1).padStart(2,'0')+'-01';
+ const cp=await sb.from('content_posts').select('content_creator,outlet,views,comments,dms').eq('active',true).eq('month_start',contentMonth);
+ if(cp.error)throw cp.error;
+ const contentMap={};
+ for(const r of (cp.data||[])){const k=r.outlet+'|'+r.content_creator;(contentMap[k]??={content_count:0,views:0,comments:0,dms:0});contentMap[k].content_count++;contentMap[k].views+=Number(r.views||0);contentMap[k].comments+=Number(r.comments||0);contentMap[k].dms+=Number(r.dms||0)}
+ const target=await perfGetTarget();
+ const outletMap=Object.fromEntries((target.outlets||[]).map(o=>[o.outlet,o]));
+ const byName=Object.fromEntries(perf.map(r=>[r.employee_name,r]));
+ return profiles.map(pr=>{
+   const roles=rolesFor(pr), r=byName[pr.name]||{}, cm=contentMap[pr.outlet+'|'+pr.name]||{};
+   const o=outletMap[pr.outlet]||{}, facilitator=target.role_contribution?.facilitator||{};
+   return {name:pr.name,outlet:pr.outlet,roles,cs:r,sales:r,content:cm,facilitator,hunter:target.own_contribution?.hunter||0,target:o};
+ });
+}
+function perfManagementCard(row,mode){
+ const r=row.cs||{}, roles=row.roles||[];
+ let h='<div class="lead"><div class="row" style="justify-content:space-between;align-items:center"><div><b>'+esc(row.name)+'</b><div class="small">'+esc(row.outlet||'-')+'</div></div><span class="badge">'+esc(roles.join(' • '))+'</span></div>';
+ for(const role of roles){
+   if(role==='Content Creator') h+='<div style="margin-top:10px"><b>🎬 Content Creator</b><div class="small">Content '+perfFmt(row.content.content_count)+' • Views '+perfFmt(row.content.views)+' • Comments '+perfFmt(row.content.comments)+' • DM '+perfFmt(row.content.dms)+'</div></div>';
+   if(role==='CS') h+='<div style="margin-top:10px"><b>💬 CS</b><div class="small">Claim '+perfFmt(r.cs_claim)+' • Qualified '+perfFmt(r.cs_qualified)+' • Potensial '+perfFmt(r.cs_potensial)+' • Gagal '+perfFmt(r.cs_gagal)+' • Rate '+perfFmt(r.cs_qualification_rate)+'%</div></div>';
+   if(role==='Sales') h+='<div style="margin-top:10px"><b>🏆 Sales</b><div class="small">Claim '+perfFmt(r.sales_claim)+' • Closing '+perfFmt(r.sales_closing)+' • Potensial '+perfFmt(r.sales_potensial)+' • Gagal '+perfFmt(r.sales_gagal)+' • Rate '+perfFmt(r.sales_closing_rate)+'%</div></div>';
+   if(role==='Fasilitator') h+='<div style="margin-top:10px"><b>🧭 Fasilitator</b><div class="small">WA Tim '+perfFmt(row.facilitator.wa)+' / '+perfFmt(row.target.wa_target)+' • Qualified '+perfFmt(row.facilitator.qualified)+' / '+perfFmt(row.target.qualified_target)+' • Closing '+perfFmt(row.facilitator.closing)+' / '+perfFmt(row.target.closing_target)+'</div></div>';
+   if(role==='Hunter') h+='<div style="margin-top:10px"><b>🏹 Hunter</b><div class="small">Unit Hunter SOLD '+perfFmt(row.hunter)+'</div></div>';
+ }
+ return h+'</div>';
+}
 window.openPerformance=async function(){
  const mg=!!profile?.is_management;
  let box=document.getElementById('performance');
  if(!box){box=document.createElement('div');box.id='performance';box.className='box';document.getElementById('dashboard').prepend(box)}
  box.classList.remove('hidden');
- box.innerHTML='<h3>'+ (mg?'📊 Laporan Management':'📊 Performa Saya')+'</h3>'+
-   (mg?'<div class="small" style="margin-bottom:10px">Management dapat melihat laporan performa tim. Untuk tim, gunakan Performa Saya.</div>':'<div class="small" style="margin-bottom:10px">Pilih periode lalu kirim laporan sesuai peran akun secara otomatis.</div>')+
+ box.innerHTML='<h3>'+ (mg?'📊 Laporan Performa Tim':'📊 Performa Saya')+'</h3>'+
+   (mg?'<div class="small" style="margin-bottom:10px">Performance seluruh karyawan • data langsung dari sistem.</div>':'<div class="small" style="margin-bottom:10px">Pilih periode lalu kirim laporan sesuai peran akun secara otomatis.</div>')+
    '<div class="row"><button class="secondary" id="perfToday">📅 Hari Ini</button><button class="secondary" id="perfMonth">📊 Bulan Ini</button></div>'+
    '<div id="perfBody" style="margin-top:10px"></div>';
- if(mg){
-   box.querySelector('#perfBody').innerHTML='<p class="small">Pilih anggota tim melalui menu Laporan Management yang sudah tersedia di bawah.</p>';
-   return;
- }
+ if(mg){box.querySelector('#perfToday').onclick=()=>perfShowManagement('today');box.querySelector('#perfMonth').onclick=()=>perfShowManagement('month');await perfShowManagement('today');return}
  box.querySelector('#perfToday').onclick=()=>perfShow('today');
  box.querySelector('#perfMonth').onclick=()=>perfShow('month');
  await perfShow('today');
 };
+async function perfShowManagement(mode){
+ const body=document.getElementById('perfBody');if(!body)return;
+ body.innerHTML='<p class="small">Memuat performance seluruh karyawan...</p>';
+ try{
+   const rows=await perfManagement(mode);
+   const counts={};rows.forEach(r=>r.roles.forEach(role=>counts[role]=(counts[role]||0)+1));
+   const summary=Object.entries(counts).map(([k,v])=>'<div class="stat"><div class="small">'+esc(k)+'</div><div class="num">'+v+'</div></div>').join('');
+   body.innerHTML='<div class="stats">'+summary+'</div>'+rows.map(r=>perfManagementCard(r,mode)).join('')+(rows.length?'':'<p class="small">Belum ada data karyawan aktif.</p>');
+ }catch(e){body.innerHTML='<p class="small">Laporan error: '+esc(e?.message||e)+'</p>'}
+}
 async function perfShow(mode){
  const body=document.getElementById('perfBody'); if(!body)return;
  body.innerHTML='<p class="small">Menyusun laporan...</p>';

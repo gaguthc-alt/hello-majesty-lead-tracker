@@ -7,7 +7,7 @@ function renderCommissionActions(){
 }
 
 async function openTeamCommission(){
- const x=await sb.rpc('hunter_commission_report');
+ const x=await sb.from('hunter_commission_report').select('*').order('total_commission',{ascending:false});
  if(x.error)return alert('Komisi Tim error: '+x.error.message);
  const rows=x.data||[];
  $('mt').textContent='📊 Komisi Tim';

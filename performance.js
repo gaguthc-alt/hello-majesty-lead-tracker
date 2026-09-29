@@ -43,6 +43,17 @@ async function perfGetTodayContent(){
  if(x.error)throw x.error; const a=x.data||[];
  return {content_count:a.length,views:a.reduce((s,r)=>s+Number(r.views||0),0),comments:a.reduce((s,r)=>s+Number(r.comments||0),0),dms:a.reduce((s,r)=>s+Number(r.dms||0),0)};
 }
+async function perfGetTodayTeam(){
+ const p=perfPeriod('today'), start=p.start.toISOString(), end=new Date(p.end.getTime()+86400000).toISOString(), outlet=profile?.outlet;
+ const [l,q,s,h]=await Promise.all([
+  sb.from('leads').select('lead_id').eq('outlet',outlet).gte('created_at',start).lt('created_at',end),
+  sb.from('lead_events').select('id').eq('outlet',outlet).eq('event_type','CS_QUALIFIED').gte('event_at',start).lt('event_at',end),
+  sb.from('sales_transactions').select('id').eq('outlet',outlet).gte('sold_at',start).lt('sold_at',end),
+  sb.from('sales_transactions').select('id').eq('outlet',outlet).eq('hunter_user_id',profile?.user_id).gte('sold_at',start).lt('sold_at',end)
+ ]);
+ for(const x of [l,q,s,h])if(x.error)throw x.error;
+ return {wa:l.data?.length||0,qualified:q.data?.length||0,closing:s.data?.length||0,hunter:h.data?.length||0};
+}
 async function perfGetTarget(){
  const x=await sb.rpc('dashboard_target_summary');
  if(x.error)throw x.error;

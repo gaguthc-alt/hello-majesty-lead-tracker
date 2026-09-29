@@ -41,6 +41,26 @@ function renderInventoryBody(){
  '<div style="margin-top:10px">'+(rows.map(stockCard).join('')||'<p class="small">Belum ada stock.</p>')+'</div>';
  if($('stockStatus'))$('stockStatus').value=st;
 }
+function productShareText(s){
+ return '📱 '+[s.product,s.variant,s.color].filter(Boolean).join(' • ')+'\\n'+
+ 'Grade: '+(s.grade||'-')+'\\nKondisi: '+(s.condition||'-')+'\\n'+
+ (s.battery_health!=null?'Battery Health: '+s.battery_health+'%\\n':'')+
+ 'Kelengkapan: '+(s.completeness||'-')+'\\nMinus: '+(s.minus||'Tidak ada info')+
+ '\\nHarga: Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'\\nStatus: READY\\n\\nHello Majesty';
+}
+function shareProduct(s){
+ const text=productShareText(s);
+ if(navigator.share){navigator.share({text}).catch(()=>{})}
+ else {navigator.clipboard?.writeText(text);alert('Info produk sudah disalin. Silakan paste ke WhatsApp customer.');}
+}
+function openProductDetail(id){
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ $('mt').textContent='📱 Detail Produk';
+ $('mb').innerHTML='<div class="box"><h2 style="margin:0">'+esc([s.product,s.variant,s.color].filter(Boolean).join(' • '))+'</h2><div class="small">'+invCategory(s.category)+' • '+esc(s.status)+'</div></div>'+
+ '<div class="lead"><b>Grade:</b> '+esc(s.grade||'-')+'<br><b>Kondisi:</b> '+esc(s.condition||'-')+'<br><b>Battery Health:</b> '+(s.battery_health!=null?s.battery_health+'%':'-')+'<br><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'<br><b>Minus:</b> '+esc(s.minus||'-')+'<br><b>Harga:</b> Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'<br><b>IMEI:</b> '+esc(s.imei_1||'-')+'</div>'+
+ '<div class="row"><button class="success" onclick="shareProduct(inventoryStock.find(x=>x.id===\''+id+'\'))">📤 Kirim Info Customer</button>'+(profile?.role==='SALES'&&s.status==='READY'?'<button class="success" onclick="closeModal();openSellStock(\''+id+'\')">💰 Closing</button>':'')+'</div>';
+ $('modal').classList.remove('hidden');
+}
 function invCategory(c){return ({IPHONE_NEW:'iPhone New',IPHONE_SECOND:'iPhone Second',ANDROID_NEW:'Android New',ANDROID_SECOND:'Android Second'})[c]||c}
 function stockCard(s){
  const management=!!profile?.is_management,ready=s.status==='READY', sales=profile?.role==='SALES';
@@ -50,7 +70,7 @@ function stockCard(s){
  '<div style="margin-top:8px"><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'<br><b>Minus:</b> '+esc(s.minus||'-')+'<br><b>Harga:</b> Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</div>'+
  '<div class="small" style="margin-top:6px">Sumber: '+(s.source_type==='HUNTER'?'🏹 Hunter — '+esc(s.hunter_name||'-'):'🏢 Management')+(s.status==='SOLD'?' • Terjual '+new Date(s.sold_at).toLocaleDateString('id-ID'):'')+'</div>'+
  (management?'<div class="small" style="margin-top:6px">Modal: Rp'+Number(s.cost||0).toLocaleString('id-ID')+' • Harga jual: Rp'+Number(s.sold_price||0).toLocaleString('id-ID')+'</div>':'')+
- '<div class="row" style="margin-top:8px">'+(ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+(management?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+'</div></div>';
+ '<div class="row" style="margin-top:8px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button>'+(ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+(management?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+'</div></div>';
 }
 function openProductMaster(){
  $('mt').textContent='⚙️ Master Produk';$('mb').innerHTML='<button class="success" onclick="openAddProduct()">＋ Tambah Produk</button><div style="margin-top:10px">'+inventoryProducts.map(p=>'<div class="lead"><b>'+esc(p.product)+'</b><div class="small">'+invCategory(p.category)+' • '+esc(p.variant||'-')+' • '+esc(p.color||'-')+'</div></div>').join('')+'</div>';$('modal').classList.remove('hidden');

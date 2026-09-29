@@ -38,7 +38,7 @@ async function changePassword(){
  $('passwordBox').classList.add('hidden');$('dashboard').classList.remove('hidden');await loadLeads();openUrl();
 }
 async function logout(){await sb.auth.signOut();location.reload()}
-async function refreshLeads(){await loadLeads()}
+async function refreshLeads(){await loadLeads();if(window.renderInventory)await renderInventory()}
 async function loadLeads(){
  const x=await sb.from('leads').select('*').order('created_at',{ascending:false});
  if(x.error){alert(x.error.message);return}leads=x.data||[];await render();
@@ -63,6 +63,7 @@ async function render(){
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  const active=leads.filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead));
  $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p>';
+ if(window.renderInventory) await renderInventory();
 }
 async function renderTargetBoard(){
  const x=await sb.rpc('dashboard_target_summary');

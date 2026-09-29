@@ -206,13 +206,13 @@ async function getFacilitatorReport(period){
  if(x.error)throw x.error;
  return x.data||{};
 }
-function salesReportText(d,label){
+function salesReportText(d,label,target){
  const rows=d.sales_rows||[];
  let t='📊 *LAPORAN PENJUALAN '+label+'*\\n';
  t+='🏪 *Outlet:* '+(d.outlet||'-')+'\\n';
  t+='📅 *Periode:* '+label+'\\n';
  t+='━━━━━━━━━━━━━━━━━━\\n';
- t+='🛒 *TOTAL CLOSING:* '+Number(d.sales_count||0)+' unit\\n';
+ t+='🛒 *TOTAL CLOSING:* '+Number(d.sales_count||0)+' / '+Number(target||0)+' unit\\n';
  t+='💰 *TOTAL PENJUALAN:* '+rupiahReport(d.sales_value)+'\\n';
  t+='━━━━━━━━━━━━━━━━━━\\n\\n';
  if(rows.length){
@@ -241,8 +241,20 @@ function stockReportText(d){
  return t;
 }
 async function shareFacilitatorReport(period,withStock){
- try{const d=await getFacilitatorReport(period);let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI');if(withStock){const s=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(s)}waShare(text);}
- catch(e){alert('Laporan error: '+(e?.message||e));}
+ try{
+   const d=await getFacilitatorReport(period);
+   let target=0;
+   if(period==='MONTH'){
+     const tx=await sb.rpc('dashboard_target_summary');
+     if(!tx.error){
+       const outlet=(tx.data?.outlets||[]).find(o=>o.outlet===d.outlet);
+       target=Number(outlet?.closing_target||0);
+     }
+   }
+   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target);
+   if(withStock){const s=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(s)}
+   waShare(text);
+ }catch(e){alert('Laporan error: '+(e?.message||e));}
 }
 async function shareFacilitatorStock(){
  try{const d=await getFacilitatorReport('TODAY');waShare(stockReportText(d));}

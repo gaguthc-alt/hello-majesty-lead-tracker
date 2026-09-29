@@ -1,4 +1,42 @@
-<!doctype html><!-- HM_FORCE_DEPLOY_20260929_0328 --><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Lead Tracker</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>body{font-family:Arial;margin:0;background:#f5f6f8;color:#17202a}header{background:#111827;color:#fff;padding:16px}main{max-width:1100px;margin:auto;padding:14px}.box,.lead,.stat{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px;margin:10px 0}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.num{font-size:25px;font-weight:700}.small{font-size:12px;color:#667085}.row{display:flex;gap:8px;flex-wrap:wrap}button,input,select,textarea{font:inherit;padding:10px;border-radius:8px;border:1px solid #d0d5dd;box-sizing:border-box}input,select,textarea{width:100%}button{background:#111827;color:#fff;border:0}.success{background:#15803d}.secondary{background:#e5e7eb;color:#111}.danger{background:#b91c1c}.hidden{display:none}.badge{display:inline-block;padding:4px 8px;border-radius:20px;background:#eef2ff;font-size:11px}.modal{position:fixed;inset:0;background:#0008;padding:14px;overflow:auto}.modal>.box{max-width:650px;margin:5vh auto}label{font-size:12px;font-weight:700;display:block;margin:8px 0 4px}</style></head><body><header><b>HELLO MAJESTY — Lead Tracker</b><div id="identity" class="small"></div></header><main><section id="login" class="box" style="max-width:430px;margin:8vh auto"><h2>Login</h2><label>Email</label><input id="email" type="email"><label>Password</label><input id="password" type="password"><button style="width:100%;margin-top:12px" onclick="doLogin()">LOGIN</button><p id="loginErr"></p></section><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="dashboard" class="hidden"><div class="box"><div class="row"><button id="refreshBtn" type="button" onclick="refreshLeads(this)">↻ Refresh</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><button class="success" onclick="addLead()">＋ WA MASUK</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="stats" class="stats"></div><div class="box"><h3>Lead Tracker</h3><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" onclick="closeModal()">Tutup</button></div><div id="mb"></div></div></div><script>
+<!doctype html><!-- HM_FORCE_DEPLOY_20260929_0328 --><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Lead Tracker</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+async function openCommission(){
+  const monthStart=new Date().toISOString().slice(0,7)+'-01';
+  const r=await sb.rpc('my_commission_summary',{p_month_start:monthStart});
+  if(r.error)return alert('Komisi error: '+r.error.message);
+  const d=r.data||{}, t=d.targets||{}, tm=d.team||{};
+  const rp=v=>'Rp'+Number(v||0).toLocaleString('id-ID');
+  const pct=(a,b)=>Number(b)>0?((Number(a||0)/Number(b))*100).toFixed(1)+'%':'0%';
+  const roleFormula={
+    'Content Creator':'WA saya ÷ Target WA × Closing Tim ÷ Target Closing × 10% Laba',
+    'CS':'Handover saya ÷ Target Handover × Closing Tim ÷ Target Closing × 10% Laba',
+    'Sales':'10% × (Laba Closing saya − Komisi Hunter)',
+    'Hunter':'10% × Laba unit yang saya-hunt dan SOLD',
+    'Fasilitator':'WA Tim ÷ Target WA × Handover Tim ÷ Target Handover × Closing Tim ÷ Target Closing × 10% Laba'
+  };
+  $('mt').textContent='💰 Komisi Saya';
+  $('mb').innerHTML=
+    '<div class="box"><h3 style="margin-top:0">Periode '+new Date(d.month_start||monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</h3>'+
+    '<div class="small">'+esc(d.name||'')+' • '+esc(d.outlet||'')+'</div>'+
+    '<div class="stats" style="margin-top:10px">'+
+      invStat('WA Tim',tm.wa)+' '+invStat('Handover Tim',tm.handover)+' '+invStat('Closing Tim',tm.closing)+
+    '</div>'+
+    '<div class="small" style="margin-top:8px">Laba Penjualan Tim: <b>'+rp(tm.profit)+'</b></div></div>'+
+    '<div class="box"><h3>Rincian Komisi per Peran</h3>'+
+    (d.roles||[]).map(x=>{
+      const detail=x.role==='Content Creator'?(x.actual+' / '+t.wa+' WA • '+pct(tm.closing,t.closing)+' closing tim'):
+        x.role==='CS'?(x.actual+' / '+t.handover+' handover • '+pct(tm.closing,t.closing)+' closing tim'):
+        x.role==='Sales'?(rp(x.actual)+' laba closing • komisi Hunter dipotong dari laba') :
+        x.role==='Hunter'?'Profit unit Hunter yang SOLD':
+        'WA '+tm.wa+'/'+t.wa+' • Handover '+tm.handover+'/'+t.handover+' • Closing '+tm.closing+'/'+t.closing;
+      return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.role)+'</b><b>'+rp(x.commission)+'</b></div>'+
+        '<div class="small" style="margin-top:5px">'+esc(detail)+'</div>'+
+        '<div class="small" style="margin-top:5px">Rumus: '+esc(roleFormula[x.role]||'-')+'</div></div>';
+    }).join('')+
+    '</div>'+
+    '<div class="box" style="text-align:center"><div class="small">TOTAL KOMISI SAYA</div><div style="font-size:30px;font-weight:700;margin-top:5px">'+rp(d.total_commission)+'</div></div>';
+  $('modal').classList.remove('hidden');
+}
+</script><style>body{font-family:Arial;margin:0;background:#f5f6f8;color:#17202a}header{background:#111827;color:#fff;padding:16px}main{max-width:1100px;margin:auto;padding:14px}.box,.lead,.stat{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px;margin:10px 0}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.num{font-size:25px;font-weight:700}.small{font-size:12px;color:#667085}.row{display:flex;gap:8px;flex-wrap:wrap}button,input,select,textarea{font:inherit;padding:10px;border-radius:8px;border:1px solid #d0d5dd;box-sizing:border-box}input,select,textarea{width:100%}button{background:#111827;color:#fff;border:0}.success{background:#15803d}.secondary{background:#e5e7eb;color:#111}.danger{background:#b91c1c}.hidden{display:none}.badge{display:inline-block;padding:4px 8px;border-radius:20px;background:#eef2ff;font-size:11px}.modal{position:fixed;inset:0;background:#0008;padding:14px;overflow:auto}.modal>.box{max-width:650px;margin:5vh auto}label{font-size:12px;font-weight:700;display:block;margin:8px 0 4px}</style></head><body><header><b>HELLO MAJESTY — Lead Tracker</b><div id="identity" class="small"></div></header><main><section id="login" class="box" style="max-width:430px;margin:8vh auto"><h2>Login</h2><label>Email</label><input id="email" type="email"><label>Password</label><input id="password" type="password"><button style="width:100%;margin-top:12px" onclick="doLogin()">LOGIN</button><p id="loginErr"></p></section><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="dashboard" class="hidden"><div class="box"><div class="row"><button id="refreshBtn" type="button" onclick="refreshLeads(this)">↻ Refresh</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><button id="commissionBtn" class="secondary" onclick="openCommission()">💰 Komisi Saya</button><button class="success" onclick="addLead()">＋ WA MASUK</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="stats" class="stats"></div><div class="box"><h3>Lead Tracker</h3><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" onclick="closeModal()">Tutup</button></div><div id="mb"></div></div></div><script>
 const KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW',SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
 let sb=null,profile=null,leads=[];
 const $=id=>document.getElementById(id);

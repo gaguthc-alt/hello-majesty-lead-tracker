@@ -23,7 +23,7 @@ async function renderInventory(){
   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Database produk untuk CS/Sales + kontrol inventory Management</div></div><div class="row"><button class="secondary" onclick="renderInventory()">↻ Refresh</button>'+(canManage?'<button class="secondary" onclick="openProductMaster()">⚙️ Master Produk</button>':'')+'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button></div></div>'+
   '<div class="stats" style="margin-top:10px">'+
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('🟡 Reserved',reserved)+invStat('🔧 Service',service)+invStat('📦 Total',inventoryStock.length)+'</div>'+
-  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" onclick="inventoryView=\'stock\';renderInventory()">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" onclick="inventoryView=\'products\';renderInventory()">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button><button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button></div>'+
+  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" onclick="inventoryView=\'stock\';renderInventory()">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" onclick="inventoryView=\'products\';renderInventory()">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button><button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button><button class="secondary" onclick="openHunterCommission()">💸 Komisi</button></div>'+
   '<div id="inventoryBody" style="margin-top:10px"></div>';
   const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');if(!dash.contains(host))dash.insertBefore(host,stats);
   renderInventoryBody();
@@ -33,6 +33,14 @@ async function loadHunterDashboard(){
  if(r.error) throw r.error; hunterDashboard=r.data||[];
 }
 function fmtRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}
+async function openHunterCommission(){
+ const r=await sb.from('hunter_commission_report').select('*').order('unpaid_commission',{ascending:false});
+ if(r.error)return alert(r.error.message);
+ $('mt').textContent='💸 Komisi Hunter';
+ $('mb').innerHTML='<div class="small" style="margin-bottom:10px">Komisi 10% dari profit unit Hunter yang SOLD. Pembayaran hanya dapat diubah oleh Management.</div>'+
+ (r.data||[]).map(h=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>🏹 '+esc(h.hunter_name)+'</b><span class="badge">'+h.sold_units+' SOLD</span></div><div style="margin-top:7px">💰 Total: <b>'+fmtRp(h.total_commission)+'</b></div><div>🟡 Belum dibayar: <b>'+fmtRp(h.unpaid_commission)+'</b></div><div>🟢 Sudah dibayar: <b>'+fmtRp(h.paid_commission)+'</b></div></div>').join('')||'<p class="small">Belum ada komisi Hunter.</p>';
+ $('modal').classList.remove('hidden');
+}
 async function openHunterDashboard(){
  try{await loadHunterDashboard();}catch(e){alert(e.message||e);return}
  $('mt').textContent='🏹 Dashboard Hunter';

@@ -29,6 +29,7 @@ async function renderInventory(){
   host.onclick=(e)=>{const tab=e.target.closest('[data-inventory-view]');if(tab){e.preventDefault();setInventoryView(tab.dataset.inventoryView)}};
   renderInventoryBody();
 }
+async function refreshInventory(btn){if(btn?.disabled)return;try{if(btn){btn.disabled=true;btn.textContent='⏳ Loading...';}await renderInventory();}catch(e){console.error(e);alert('Refresh Product & Stock error: '+(e?.message||e));}finally{if(btn){btn.disabled=false;btn.textContent='↻ Refresh';}}}
 async function loadHunterDashboard(){
  const r=await sb.from('hunter_dashboard').select('*').order('total_commission',{ascending:false});
  if(r.error) throw r.error; hunterDashboard=r.data||[];

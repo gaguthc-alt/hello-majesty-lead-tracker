@@ -138,7 +138,7 @@ async function refreshLeads(btn){
 }
 async function render(){
  renderCommissionActions();
- renderManagementStockSummary().catch(e=>console.error('[HM] Management stock summary error',e));
+ 
  renderTargetBoard().catch(e=>console.error('[HM] Target board error',e));
  if(window.renderInventory) renderInventory().catch(e=>console.error('[HM] Inventory render error',e));
  const s=await sb.rpc('dashboard_stats');if(s.error){console.error('[HM] dashboard_stats error',s.error);return}

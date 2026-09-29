@@ -35,7 +35,7 @@ function renderInventoryBody(){
    '<div style="margin-top:10px">'+inventoryProducts.filter(p=>(!$('invCat')?.value||p.category===$('invCat').value)&&(!$('invSearch')?.value||[p.product,p.variant,p.color].join(' ').toLowerCase().includes($('invSearch').value.toLowerCase()))).map(p=>'<div class="lead"><b>'+esc(p.product)+'</b><div class="small">'+invCategory(p.category)+' • '+esc(p.variant||'-')+' • '+esc(p.color||'-')+'</div></div>').join('')+'</div>';
    return;
  }
- const q=($('stockSearch')?.value||'').toLowerCase(), st=$('stockStatus')?.value||'';
+ const q=($('stockSearch')?.value||'').toLowerCase(), st=$('stockStatus')?.value||'READY';
  const rows=inventoryStock.filter(s=>(!st||s.status===st)&&(!q||[s.product,s.variant,s.color,s.imei_1,s.imei_2,s.grade,s.condition,s.hunter_name].join(' ').toLowerCase().includes(q)));
  body.innerHTML='<div class="row"><input id="stockSearch" placeholder="Cari produk, IMEI, grade, warna, hunter..." value="'+esc(q)+'" oninput="renderInventoryBody()"><select id="stockStatus" onchange="renderInventoryBody()"><option value="">Semua Status</option><option>READY</option><option>RESERVED</option><option>SOLD</option><option>SERVICE</option><option>RETURN</option></select></div>'+
  '<div style="margin-top:10px">'+(rows.map(stockCard).join('')||'<p class="small">Belum ada stock.</p>')+'</div>';

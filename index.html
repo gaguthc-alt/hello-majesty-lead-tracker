@@ -78,6 +78,7 @@ async function start(u){
   if(x.error)throw new Error('Profile belum terdaftar: '+x.error.message);
   profile=x.data;
   $('identity').textContent=profile.name+' • '+(profile.is_management?'Management':profile.outlet);
+  renderCommissionActions();
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}
   $('dashboard').classList.remove('hidden');
   try{await loadLeads();openUrl();}
@@ -120,7 +121,7 @@ async function refreshLeads(btn){
 }
 async function render(){
  renderCommissionActions();
- await renderTargetBoard();
+ renderTargetBoard().catch(e=>console.error('[HM] Target board error',e));
  const s=await sb.rpc('dashboard_stats');if(s.error){alert(s.error.message);return}
  const v=s.data||{};
  const stat=(label,val,click)=>'<div class="stat" '+(click?'style="cursor:pointer" onclick="'+click+'"':'')+'><div class="small">'+label+'</div><div class="num">'+(val||0)+'</div>'+(click?'<div class="small">Tap untuk lihat detail</div>':'')+'</div>';

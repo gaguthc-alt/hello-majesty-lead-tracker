@@ -260,9 +260,23 @@ async function showMyContentDetail(){
 async function showContentManagementDetail(){
  const posts=await loadContentPosts(), month=contentMonthStart(), groups={};
  posts.filter(p=>p.month_start===month).forEach(p=>{const k=p.outlet+' • '+p.content_creator;(groups[k]??=[]).push(p)});
+ const locks=await sb.from('content_monthly_locks').select('outlet').eq('month_start',month);
+ const locked=new Set((locks.data||[]).map(x=>x.outlet));
+ const outlets=[...new Set(posts.filter(p=>p.month_start===month).map(p=>p.outlet))];
  $('mt').textContent='🎬 Content Performance — '+month.slice(0,7);
- $('mb').innerHTML=Object.entries(groups).sort().map(([k,arr])=>'<div class="box"><h3>'+esc(k)+'</h3><div class="small">🎬 '+arr.length+' • 👁️ '+Number(arr.reduce((a,p)=>a+p.views,0)).toLocaleString('id-ID')+' • 💬 '+Number(arr.reduce((a,p)=>a+p.comments,0)).toLocaleString('id-ID')+' • 📩 '+Number(arr.reduce((a,p)=>a+p.dms,0)).toLocaleString('id-ID')+'</div><button class="secondary" onclick="showContentListFor(\''+encodeURIComponent(k)+'\')">Lihat Content →</button></div>').join('')||'<p class="small">Belum ada content bulan ini.</p>';
+ $('mb').innerHTML=outlets.sort().map(outlet=>{
+   const people=Object.entries(groups).filter(([k])=>k.startsWith(outlet+' • '));
+   const total=posts.filter(p=>p.month_start===month&&p.outlet===outlet);
+   return '<div class="box"><h3>'+esc(outlet)+' '+(locked.has(outlet)?'🔒':'')+'</h3><div class="small">🎬 '+total.length+' • 👁️ '+Number(total.reduce((a,p)=>a+p.views,0)).toLocaleString('id-ID')+' • 💬 '+Number(total.reduce((a,p)=>a+p.comments,0)).toLocaleString('id-ID')+' • 📩 '+Number(total.reduce((a,p)=>a+p.dms,0)).toLocaleString('id-ID')+'</div><div style="margin-top:8px">'+people.map(([k,arr])=>'<div class="row" style="justify-content:space-between;margin:6px 0"><span>'+esc(k.replace(outlet+' • ',''))+' — '+arr.length+' content / '+Number(arr.reduce((a,p)=>a+p.views,0)).toLocaleString('id-ID')+' views</span><button class="secondary" onclick="showContentListFor(\''+encodeURIComponent(k)+'\')">Detail</button></div>').join('')+'</div>'+(!locked.has(outlet)?'<button class="danger" style="margin-top:10px" onclick="lockContentMonth(\''+encodeURIComponent(outlet)+'\')">🔒 Kunci Laporan Bulan Ini</button>':'<div class="small" style="margin-top:10px">Laporan bulan ini sudah dibekukan.</div>')+'</div>';
+ }).join('')||'<p class="small">Belum ada content bulan ini.</p>';
  $('modal').classList.remove('hidden');
+}
+async function lockContentMonth(encodedOutlet){
+ const outlet=decodeURIComponent(encodedOutlet);
+ if(!confirm('Kunci laporan content '+outlet+' untuk bulan ini? Setelah dikunci, angka laporan tidak berubah.'))return;
+ const x=await sb.rpc('content_lock_month',{p_month_start:contentMonthStart(),p_outlet:outlet});
+ if(x.error)return alert(x.error.message);
+ await renderContentPerformance(); showContentManagementDetail();
 }
 async function showContentListFor(encoded){
  const key=decodeURIComponent(encoded), posts=await loadContentPosts(), month=contentMonthStart(), mine=posts.filter(p=>(p.outlet+' • '+p.content_creator)===key&&p.month_start===month);

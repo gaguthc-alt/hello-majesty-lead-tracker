@@ -158,11 +158,22 @@ async function perfManagement(mode){
  const outletMap=Object.fromEntries((target.outlets||[]).map(o=>[o.outlet,o]));
  const byName=Object.fromEntries(perf.map(r=>[r.employee_name,r]));
  const teamMetrics={};
- for(const pr of profiles){ if(!teamMetrics[pr.outlet])teamMetrics[pr.outlet]=await perfGetTeamMetrics(mode,pr.outlet); }
+ for(const pr of profiles){
+   if(!teamMetrics[pr.outlet])teamMetrics[pr.outlet]=await perfGetTeamMetrics(mode,pr.outlet);
+ }
+ const claimRows=await sb.from('leads').select('cs_claimed_by,outlet').gte('claimed_at',p.start.toISOString()).lt('claimed_at',new Date(p.end.getTime()+86400000).toISOString()).not('cs_claimed_by','is',null);
+ if(claimRows.error)throw claimRows.error;
+ const claimMap={};
+ for(const row of (claimRows.data||[])){
+   const k=row.outlet+'|'+row.cs_claimed_by;
+   claimMap[k]=(claimMap[k]||0)+1;
+ }
  return profiles.map(pr=>{
    const roles=rolesFor(pr), r=byName[pr.name]||{}, cm=contentMap[pr.outlet+'|'+pr.name]||{};
    const o=outletMap[pr.outlet]||{}, facilitator=teamMetrics[pr.outlet]||{};
-   return {name:pr.name,outlet:pr.outlet,roles,cs:r,sales:r,content:cm,facilitator,hunter:hunterMap[pr.user_id]||0,target:o};
+   const teamClaim=claimMap[pr.outlet+'|'+pr.name]||0;
+   const cs={...r,cs_claim:teamClaim,cs_qualification_rate:teamClaim>0?Math.round((Number(r.cs_qualified||0)/teamClaim)*1000)/10:0};
+   return {name:pr.name,outlet:pr.outlet,roles,cs,sales:r,content:cm,facilitator,hunter:hunterMap[pr.user_id]||0,target:o};
  });
 }
 function perfManagementCard(row,mode){

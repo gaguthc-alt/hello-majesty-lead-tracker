@@ -141,17 +141,32 @@ async function render(){
  
  renderTargetBoard().catch(e=>console.error('[HM] Target board error',e));
  if(window.renderInventory) renderInventory().catch(e=>console.error('[HM] Inventory render error',e));
- const s=await sb.rpc('dashboard_stats');if(s.error){console.error('[HM] dashboard_stats error',s.error);return}
- const v=s.data||{};
+ const todayStart=new Date();todayStart.setHours(0,0,0,0);
+ const tomorrow=new Date(todayStart);tomorrow.setDate(tomorrow.getDate()+1);
+ const todayLeads=leads.filter(l=>{const d=new Date(l.created_at);return d>=todayStart&&d<tomorrow});
+ const v={
+  total:todayLeads.length,
+  available:todayLeads.filter(l=>l.status_lead==='AVAILABLE').length,
+  cs_lock:todayLeads.filter(l=>l.status_lead==='CS LOCK').length,
+  qualified:todayLeads.filter(l=>l.status_lead==='QUALIFIED').length,
+  handle:todayLeads.filter(l=>l.status_lead==='HANDLE').length,
+  selesai:todayLeads.filter(l=>l.status_lead==='HASIL').length,
+  closing:todayLeads.filter(l=>l.sales_result==='CLOSING').length,
+  potensial:todayLeads.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length,
+  gagal:todayLeads.filter(l=>l.status_lead==='HASIL'&&(l.qualification_result==='GAGAL'||l.sales_result==='GAGAL'||l.hasil==='GAGAL'||l.hasil==='LOST')).length
+ };
  const stat=(label,val,click)=>'<div class="stat" '+(click?'style="cursor:pointer" onclick="'+click+'"':'')+'><div class="small">'+label+'</div><div class="num">'+(val||0)+'</div>'+(click?'<div class="small">Tap untuk lihat detail</div>':'')+'</div>';
- $('stats').innerHTML='<b style="grid-column:1/-1">PROSES</b>'+[
-  ['Total',v.total],
+ $('stats').innerHTML='<b style="grid-column:1/-1">📥 LEAD MASUK HARI INI</b>'+
+ stat('Total Lead',v.total)+
+ '<b style="grid-column:1/-1;margin-top:8px">🔄 STATUS SAAT INI</b>'+
+ [
   ['Available',v.available],
   ['CS Lock',v.cs_lock],
   ['Menunggu Sales',v.qualified],
-  ['Handle',v.handle]
+  ['Handle',v.handle],
+  ['Selesai',v.selesai]
  ].map(x=>stat(x[0],x[1])).join('')+
- '<b style="grid-column:1/-1;margin-top:8px">HASIL — klik angka untuk lihat histori</b>'+
+ '<b style="grid-column:1/-1;margin-top:8px">🎯 HASIL DARI LEAD HARI INI</b>'+
  [
   ['Closing',v.closing,"showHistory('CLOSING')"],
   ['Potensial',v.potensial,"showHistory('POTENSIAL')"],

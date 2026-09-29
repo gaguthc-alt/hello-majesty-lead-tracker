@@ -208,13 +208,28 @@ async function getFacilitatorReport(period){
 }
 function salesReportText(d,label){
  const rows=d.sales_rows||[];
- let t='📊 LAPORAN PENJUALAN '+label+'\\n';
- t+='Hello Majesty — '+(d.outlet||'-')+'\\n\\n';
- t+='🛒 Closing: '+Number(d.sales_count||0)+' unit\\n';
- t+='💰 Total Penjualan: '+rupiahReport(d.sales_value)+'\\n\\n';
- if(rows.length){t+='DETAIL:';
-  rows.forEach((r,i)=>{t+='\\n'+(i+1)+'. '+[r.product,r.variant,r.color].filter(Boolean).join(' ')+' — '+rupiahReport(r.sale_price)+' — '+(r.customer_name||'Customer');});
- } else t+='Belum ada penjualan pada periode ini.';
+ let t='📊 *LAPORAN PENJUALAN '+label+'*\\n';
+ t+='🏪 *Outlet:* '+(d.outlet||'-')+'\\n';
+ t+='📅 *Periode:* '+label+'\\n';
+ t+='━━━━━━━━━━━━━━━━━━\\n';
+ t+='🛒 *TOTAL CLOSING:* '+Number(d.sales_count||0)+' unit\\n';
+ t+='💰 *TOTAL PENJUALAN:* '+rupiahReport(d.sales_value)+'\\n';
+ t+='━━━━━━━━━━━━━━━━━━\\n\\n';
+ if(rows.length){
+   t+='📦 *DETAIL PRODUK TERJUAL*\\n\\n';
+   rows.forEach((r,i)=>{
+     const product=[r.product,r.variant,r.color].filter(Boolean).join(' ');
+     t+='*'+(i+1)+'. '+product+'*\\n';
+     t+='   💵 Harga: '+rupiahReport(r.sale_price)+'\\n';
+     t+='   👤 Customer: '+(r.customer_name||'Customer')+'\\n';
+     t+='\\n';
+   });
+   t+='━━━━━━━━━━━━━━━━━━\\n';
+   t+='📌 *'+rows.length+' transaksi tercatat*';
+ } else {
+   t+='📦 *DETAIL PRODUK TERJUAL*\\n';
+   t+='Belum ada transaksi penjualan pada periode ini.';
+ }
  return t;
 }
 function stockReportText(d){

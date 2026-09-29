@@ -79,9 +79,14 @@ async function start(u){
   profile=x.data;
   $('identity').textContent=profile.name+' • '+(profile.is_management?'Management':profile.outlet);
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}
-  $('dashboard').classList.remove('hidden');await loadLeads();openUrl();
+  $('dashboard').classList.remove('hidden');
+  try{await loadLeads();openUrl();}
+  catch(ex){
+   console.error('[HM] Dashboard load error',ex);
+   $('loginErr').textContent='Login berhasil, tetapi dashboard gagal dimuat: '+(ex?.message||ex);
+  }
  }catch(ex){
-  await sb.auth.signOut().catch(()=>{});
+  console.error('[HM] Start error',ex);
   $('login').classList.remove('hidden');$('app').classList.add('hidden');$('loginErr').textContent=ex?.message||'Gagal membuka dashboard.';
  }
 }

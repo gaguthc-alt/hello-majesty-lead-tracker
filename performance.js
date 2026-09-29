@@ -26,13 +26,30 @@ async function perfGetContent(mode){
  if(x.error)throw x.error;
  return x.data||{};
 }
+async function perfGetTodaySales(){
+ const p=perfPeriod('today'), start=p.start.toISOString(), end=new Date(p.end.getTime()+86400000).toISOString();
+ const name=profile?.name, outlet=profile?.outlet;
+ const [ev,st]=await Promise.all([
+   sb.from('lead_events').select('event_type').eq('employee_name',name).gte('event_at',start).lt('event_at',end),
+   sb.from('sales_transactions').select('id').eq('sales_user_id',profile?.user_id).gte('sold_at',start).lt('sold_at',end)
+ ]);
+ if(ev.error)throw ev.error; if(st.error)throw st.error;
+ const a=ev.data||[], count=t=>a.filter(x=>x.event_type===t).length;
+ return {cs_claim:count('CS_CLAIM'),cs_qualified:count('CS_QUALIFIED'),cs_potensial:count('CS_POTENSIAL'),cs_gagal:count('CS_GAGAL'),cs_qualification_rate:count('CS_CLAIM')?Math.round(count('CS_QUALIFIED')/count('CS_CLAIM')*1000)/10:0,sales_claim:count('SALES_CLAIM'),sales_closing:st.data?.length||0,sales_potensial:count('SALES_POTENSIAL'),sales_gagal:count('SALES_GAGAL')};
+}
+async function perfGetTodayContent(){
+ const p=perfPeriod('today'), start=p.start.toISOString(), end=new Date(p.end.getTime()+86400000).toISOString();
+ const x=await sb.from('content_posts').select('views,comments,dms').eq('active',true).eq('outlet',profile?.outlet).eq('content_creator',profile?.name).gte('posted_at',start).lt('posted_at',end);
+ if(x.error)throw x.error; const a=x.data||[];
+ return {content_count:a.length,views:a.reduce((s,r)=>s+Number(r.views||0),0),comments:a.reduce((s,r)=>s+Number(r.comments||0),0),dms:a.reduce((s,r)=>s+Number(r.dms||0),0)};
+}
 async function perfGetTarget(){
  const x=await sb.rpc('dashboard_target_summary');
  if(x.error)throw x.error;
  return x.data||{};
 }
 async function perfBuild(mode){
- const p=perfPeriod(mode), roles=perfRoles(), sales=await perfGetSales(mode), target=await perfGetTarget();
+ const p=perfPeriod(mode), target=await perfGetTarget(); const roles=profile?.is_management?['Management']:(target.roles?.length?target.roles:perfRoles()); const sales=mode==='today'?await perfGetTodaySales():await perfGetSales(mode);
  const lines=[];
  lines.push('📊 *PERFORMANCE '+p.label+'*');
  lines.push('🏪 *Outlet:* '+(profile?.outlet||'Management'));
@@ -43,7 +60,7 @@ async function perfBuild(mode){
  for(const role of roles){
    if(role==='Management') continue;
    if(role==='Content Creator'){
-     const c=await perfGetContent(mode), o=c.own||{};
+     const c=mode==='today'?{own:await perfGetTodayContent()}:await perfGetContent(mode), o=c.own||{};
      lines.push('🎬 *CONTENT CREATOR*');
      lines.push('• Content: '+perfFmt(o.content_count));
      lines.push('• Views: '+perfFmt(o.views));

@@ -33,12 +33,21 @@ async function loadHunterDashboard(){
  if(r.error) throw r.error; hunterDashboard=r.data||[];
 }
 function fmtRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}
-async function openHunterCommission(){
- const r=await sb.from('hunter_commission_report').select('*').order('unpaid_commission',{ascending:false});
+async function markHunterCommissionPaid(id){
+ if(!profile?.is_management)return alert('Akses Management diperlukan.');
+ const note=prompt('Catatan pembayaran (opsional):')||null;
+ const r=await sb.from('sales_transactions').update({hunter_commission_paid_at:new Date().toISOString(),hunter_commission_paid_by:profile.user_id,hunter_commission_payment_note:note}).eq('id',id).is('hunter_commission_paid_at',null);
  if(r.error)return alert(r.error.message);
+ openHunterCommission();
+}
+async function openHunterCommission(){
+ const r=await sb.from('sales_transactions').select('id,sold_at,hunter_user_id,hunter_commission,hunter_commission_paid_at,hunter_commission_payment_note,customer_name').not('hunter_user_id','is',null).order('sold_at',{ascending:false});
+ if(r.error)return alert(r.error.message);
+ const teams=await sb.from('team_directory').select('user_id,name'); const names=Object.fromEntries((teams.data||[]).map(x=>[x.user_id,x.name]));
+ const rows=r.data||[];
  $('mt').textContent='💸 Komisi Hunter';
  $('mb').innerHTML='<div class="small" style="margin-bottom:10px">Komisi 10% dari profit unit Hunter yang SOLD. Pembayaran hanya dapat diubah oleh Management.</div>'+
- (r.data||[]).map(h=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>🏹 '+esc(h.hunter_name)+'</b><span class="badge">'+h.sold_units+' SOLD</span></div><div style="margin-top:7px">💰 Total: <b>'+fmtRp(h.total_commission)+'</b></div><div>🟡 Belum dibayar: <b>'+fmtRp(h.unpaid_commission)+'</b></div><div>🟢 Sudah dibayar: <b>'+fmtRp(h.paid_commission)+'</b></div></div>').join('')||'<p class="small">Belum ada komisi Hunter.</p>';
+ rows.map(x=>'<div class="lead"><b>🏹 '+esc(names[x.hunter_user_id]||'Unknown')+'</b><div>'+new Date(x.sold_at).toLocaleDateString('id-ID')+' • Komisi <b>'+fmtRp(x.hunter_commission)+'</b></div><div class="small">'+(x.hunter_commission_paid_at?'🟢 Dibayar '+new Date(x.hunter_commission_paid_at).toLocaleDateString('id-ID'):'🟡 Belum dibayar')+'</div>'+((profile?.is_management&&!x.hunter_commission_paid_at)?'<button class="success" style="margin-top:6px" onclick="markHunterCommissionPaid(\''+x.id+'\')">✓ Tandai Sudah Dibayar</button>':'')+'</div>').join('')||'<p class="small">Belum ada transaksi komisi Hunter.</p>';
  $('modal').classList.remove('hidden');
 }
 async function openHunterDashboard(){

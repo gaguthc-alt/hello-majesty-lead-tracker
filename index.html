@@ -339,7 +339,7 @@ async function saveS(id){
 }
 async function addLead(){
  const cc=await sb.from('team_permissions').select('name').eq('outlet',profile?.outlet).eq('active',true).eq('can_content_creator',true).order('name');
- const opts=(cc.data||[]).map(x=>'<option>'+esc(x.name)+'</option>').join('');
+ const ccList=cc.data||[]; const opts=ccList.map((x,i)=>'<option value="'+esc(x.name)+'"'+(ccList.length===1?' selected':'')+'>'+esc(x.name)+'</option>').join('');
  $('mt').textContent='＋ WA MASUK';$('mb').innerHTML='<label>Customer</label><input id="fc"><label>WhatsApp</label><input id="fw"><label>Content Creator</label><select id="fcc"><option value="">— Pilih / tidak diketahui —</option>'+opts+'</select><label>Produk</label><input id="fp"><label>Kebutuhan</label><textarea id="fn"></textarea><label>Budget</label><input id="fb"><label>Timeline</label><input id="ft"><label>Preference</label><textarea id="fpr"></textarea><button id="saveLeadBtn" class="success">Simpan Lead</button>';
  $('saveLeadBtn').onclick=saveLead;$('modal').classList.remove('hidden');
 }

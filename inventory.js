@@ -32,7 +32,6 @@ async function renderInventory(){
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('🟡 Reserved',reserved)+invStat('🔧 Service',service)+invStat('📦 Total',inventoryStock.length)+'</div>'+
   '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" id="invProductsTab" type="button" data-inventory-view="products">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button>'+'<button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button><button class="secondary" onclick="openHunterCommission()">💸 Komisi</button></div>'+
   '<div id="inventoryViewDebug" class="small" style="margin-top:8px;font-weight:700"></div><div id="inventoryBody" style="margin-top:10px"></div>';
-  const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');if(!dash.contains(host))dash.insertBefore(host,stats);
   host.onclick=(e)=>{const tab=e.target.closest('[data-inventory-view]');if(tab){e.preventDefault();setInventoryView(tab.dataset.inventoryView)}};
   renderInventoryBody();
 }

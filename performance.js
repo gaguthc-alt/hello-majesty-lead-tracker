@@ -24,19 +24,4 @@ const oldChange=window.changePassword;window.changePassword=async function(){con
 setTimeout(inject,1500);
 })();
 
-// Load Inventory module and add its dashboard entry without changing the legacy shell.
-(function(){
-  if(window.__hmInventoryLoader)return;
-  window.__hmInventoryLoader=true;
-  const s=document.createElement('script');
-  s.src='inventory.js';
-  s.onload=function(){
-    const bar=document.querySelector('#dashboard .box .row');
-    if(bar && !document.getElementById('inventoryBtn')){
-      const b=document.createElement('button');
-      b.id='inventoryBtn'; b.className='secondary'; b.textContent='📦 Product & Stock';
-      b.onclick=()=>renderInventory(); bar.insertBefore(b,bar.querySelector('.success'));
-    }
-  };
-  document.head.appendChild(s);
-})();
+// Inventory is loaded by index.html. No duplicate top Product & Stock button.

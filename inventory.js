@@ -122,6 +122,13 @@ async function saveEditStock(id){
  const x=await sb.from('stock_units').update({grade:$('esgrade').value||null,condition:$('escondition').value.trim()||null,battery_health:$('esbh').value?Number($('esbh').value):null,completeness:$('escomplete').value.trim()||null,minus:$('esminus').value.trim()||null,asking_price:Number($('esprice').value||0),updated_at:new Date().toISOString()}).eq('id',id);
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
+async function openStockHistory(id){
+ const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});
+ if(x.error)return alert(x.error.message);
+ $('mt').textContent='🧾 Histori Stock';
+ $('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';
+ $('modal').classList.remove('hidden');
+}
 async function openSalesReport(){
  const x=await sb.from('sales_transactions').select('*').order('sold_at',{ascending:false});if(x.error)return alert(x.error.message);
  const rows=x.data||[];const total=rows.reduce((a,r)=>a+Number(r.sale_price-r.discount),0),profit=rows.reduce((a,r)=>a+Number(r.gross_profit),0),comm=rows.reduce((a,r)=>a+Number(r.hunter_commission),0);

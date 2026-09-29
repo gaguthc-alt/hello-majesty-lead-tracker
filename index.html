@@ -147,7 +147,8 @@ async function render(){
  const v={
   total:todayLeads.length,
   available:todayLeads.filter(l=>l.status_lead==='AVAILABLE').length,
-  cs_lock:todayLeads.filter(l=>l.status_lead==='CS LOCK').length,
+  cs_lock:todayLeads.filter(l=>l.status_lead==='CS LOCK'&&!l.qualification_result).length,
+  potential_followup:todayLeads.filter(l=>l.qualification_result==='POTENSIAL').length,
   qualified:todayLeads.filter(l=>l.status_lead==='QUALIFIED').length,
   handle:todayLeads.filter(l=>l.status_lead==='HANDLE').length,
   selesai:todayLeads.filter(l=>l.status_lead==='HASIL').length,
@@ -161,7 +162,8 @@ async function render(){
  '<b style="grid-column:1/-1;margin-top:8px">🔄 STATUS SAAT INI</b>'+
  [
   ['Available',v.available],
-  ['CS Lock',v.cs_lock],
+  ['CS Lock — Belum Ada Hasil',v.cs_lock],
+  ['Potensial — Follow-up',v.potential_followup],
   ['Menunggu Sales',v.qualified],
   ['Handle',v.handle],
   ['Selesai',v.selesai]
@@ -283,13 +285,14 @@ function card(l){
  const mg=profile?.is_management;
  const available=l.status_lead==='AVAILABLE';
  const canClaimCS=available&&!mg;
- const q=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK';
+ const q=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK'&&!l.qualification_result;
  const sh=!mg&&l.cs_claimed_by===profile?.name&&!l.sales_claimed_by&&l.qualification_result==='QUALIFIED';
  const sr=!mg&&l.sales_claimed_by===profile?.name&&l.status_lead==='HANDLE';
  const own=mg||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
  const qualified=l.status_lead==='QUALIFIED';
  const limited=(l.status_lead==='CS LOCK'&&!q&&!mg)||(l.status_lead==='HANDLE'&&!own&&!mg);
- return '<div class="lead"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(l.status_lead)+'</span></h3>'+
+ const displayStatus=l.qualification_result==='POTENSIAL'?'POTENSIAL • FOLLOW-UP':l.qualification_result==='GAGAL'?'HASIL • GAGAL':l.status_lead==='QUALIFIED'?'QUALIFIED':l.status_lead;
+ return '<div class="lead"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(displayStatus)+'</span></h3>'+
  '<div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+(l.content_creator?' • Content: '+esc(l.content_creator):'')+'</div>'+
  '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+' • Sales: '+esc(l.sales_claimed_by||'-')+'</div>'+
  (limited?'<p class="small">Lead sedang ditangani oleh owner lain. Detail tidak tersedia.</p>':

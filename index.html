@@ -114,6 +114,7 @@ async function refreshLeads(btn){
  }
 }
 async function render(){
+ renderCommissionActions();
  await renderTargetBoard();
  const s=await sb.rpc('dashboard_stats');if(s.error){alert(s.error.message);return}
  const v=s.data||{};

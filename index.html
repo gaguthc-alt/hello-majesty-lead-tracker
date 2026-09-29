@@ -387,7 +387,7 @@ async function canContentCreator(){if(profile?.is_management)return true;const x
 async function loadContentPosts(){const x=await sb.from('content_posts').select('*').eq('active',true).order('posted_at',{ascending:false});if(x.error)throw x.error;return x.data||[]}
 let contentSelectedMonth=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';})();
 function contentMonthStart(){return contentSelectedMonth}
-function contentMonthOptions(){let a=[],d=new Date();d.setDate(1);for(let i=0;i<12;i++){const y=d.getFullYear(),m=d.getMonth()-i;const dt=new Date(y,m,1);const v=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-01';a.push('<option value="'+v+'" '+(v===contentSelectedMonth?'selected':'')+'>'+v.slice(0,7)+'</option>')}return a.join('')}
+function contentMonthOptions(){let a=[],d=new Date();d.setDate(1);for(let i=0;i<3;i++){const y=d.getFullYear(),m=d.getMonth()-i;const dt=new Date(y,m,1);const v=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-01';a.push('<option value="'+v+'" '+(v===contentSelectedMonth?'selected':'')+'>'+v.slice(0,7)+'</option>')}return a.join('')}
 async function addContentPost(){
  const cc=profile?.is_management?await sb.from('team_profiles').select('name').eq('outlet',profile?.outlet||'').eq('active',true).order('name'):await sb.from('team_permissions').select('name').eq('outlet',profile.outlet).eq('active',true).eq('can_content_creator',true).order('name');
  const names=(cc.data||[]).map(x=>'<option>'+esc(x.name)+'</option>').join('');

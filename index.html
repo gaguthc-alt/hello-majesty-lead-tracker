@@ -152,7 +152,7 @@ async function renderTargetBoard(){
  const bar=(label,a,t,icon)=>'<div class="stat"><div class="small">'+icon+' '+label+'</div><div class="num">'+a+' / '+t+'</div><div class="small">'+pct(a,t)+'%</div></div>';
  const outletCards=outlets.map(o=>'<div class="box"><h3>🎯 TARGET '+esc(o.outlet)+'</h3><div class="stats">'+bar('WA',o.wa_actual,o.wa_target,'📲')+bar('Qualified',o.qualified_actual,o.qualified_target,'🔍')+bar('Closing',o.closing_actual,o.closing_target,'🏆')+'</div><div style="margin-top:10px;font-weight:700">🎁 Bonus: '+esc(o.bonus_label)+' Rp'+Number(o.bonus_amount||0).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:6px">Sisa: WA '+Math.max(0,o.wa_target-o.wa_actual)+' • Qualified '+Math.max(0,o.qualified_target-o.qualified_actual)+' • Closing '+Math.max(0,o.closing_target-o.closing_actual)+'</div></div>').join('');
  const roleText=roles.length?roles.map(r=>'• '+esc(r)).join('<br>'):'• Belum ada peran operasional';
- const manageBtn=d.management?'<button class="secondary" onclick="openTargetSettings()">⚙️ Atur Target Outlet</button>':'';
+ const manageBtn=d.management?'<button class="secondary" onclick="openTargetSettings()">⚙️ Atur Target Outlet</button>':''; const facilitatorBtn=(!d.management&&(roles||[]).includes('Fasilitator'))?'<button class="success" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button>':'';
  const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':('<div class="box"><h3>👤 PERAN SAYA</h3><div>'+roleText+'</div><div class="small" style="margin-top:8px">Target WA adalah target bersama outlet, bukan target pribadi Content Creator.</div><h3 style="margin-bottom:8px">🔥 KONTRIBUSI SAYA BULAN INI</h3><div class="row">'+((roles||[]).includes('CS')?bar('Qualified',own.qualified||0,(outlets[0]?.qualified_target||0),'🔍'):'')+((roles||[]).includes('SALES')?bar('Closing',own.closing||0,(outlets[0]?.closing_target||0),'🏆'):'')+'</div></div>');
  const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';box.innerHTML='<div class="box"><h2>🎯 TARGET TIM BULAN INI</h2><div class="small">450 WA → 150 QUALIFIED → 30 CLOSING</div></div>'+ownBox+outletCards;
 
@@ -173,6 +173,52 @@ async function saveTarget(outlet){
  window.saveTarget=saveTarget;
  const dash=document.getElementById('dashboard');const stats=document.getElementById('stats');if(!dash.contains(box))dash.insertBefore(box,stats);
 }
+
+async function openFacilitatorReports(){
+ $('mt').textContent='📲 Laporan Fasilitator';
+ $('mb').innerHTML='<div class="small" style="margin-bottom:12px">Pilih laporan untuk outlet Fasilitator. Laporan dibagikan langsung ke WhatsApp sebagai teks.</div><div class="row"><button class="success" onclick="shareFacilitatorReport(\'TODAY\',false)">📅 Penjualan Hari Ini</button><button class="success" onclick="shareFacilitatorReport(\'MONTH\',false)">📊 Penjualan Bulan Ini</button></div><div class="row" style="margin-top:8px"><button class="secondary" onclick="shareFacilitatorStock()">📦 Stock READY</button><button class="secondary" onclick="shareFacilitatorReport(\'TODAY\',true)">📋 Hari Ini + Stock READY</button></div><div class="small" style="margin-top:12px">Data otomatis mengikuti outlet Fasilitator yang sedang login.</div>';
+ $('modal').classList.remove('hidden');
+}
+function waShare(text){
+ const url='https://wa.me/?text='+encodeURIComponent(text);
+ window.open(url,'_blank');
+}
+function rupiahReport(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}
+async function getFacilitatorReport(period){
+ const x=await sb.rpc('facilitator_report',{p_period:period});
+ if(x.error)throw x.error;
+ return x.data||{};
+}
+function salesReportText(d,label){
+ const rows=d.sales_rows||[];
+ let t='📊 LAPORAN PENJUALAN '+label+'\\n';
+ t+='Hello Majesty — '+(d.outlet||'-')+'\\n\\n';
+ t+='🛒 Closing: '+Number(d.sales_count||0)+' unit\\n';
+ t+='💰 Total Penjualan: '+rupiahReport(d.sales_value)+'\\n\\n';
+ if(rows.length){t+='DETAIL:';
+  rows.forEach((r,i)=>{t+='\\n'+(i+1)+'. '+[r.product,r.variant,r.color].filter(Boolean).join(' ')+' — '+rupiahReport(r.sale_price)+' — '+(r.customer_name||'Customer');});
+ } else t+='Belum ada penjualan pada periode ini.';
+ return t;
+}
+function stockReportText(d){
+ const rows=d.ready_stock||[];
+ let t='📦 LAPORAN STOCK READY\\nHello Majesty — '+(d.outlet||'-')+'\\n\\n';
+ t+='🟢 Total READY: '+Number(d.ready_count||0)+' unit\\n\\n';
+ rows.forEach((r,i)=>{t+=(i+1)+'. '+[r.product,r.variant,r.color].filter(Boolean).join(' ')+' | '+(r.grade?'Grade '+r.grade+' | ':'')+'Harga '+rupiahReport(r.asking_price)+' | '+(r.source_type||'MANAGEMENT')+'\\n';});
+ if(!rows.length)t+='Belum ada stock READY.';
+ return t;
+}
+async function shareFacilitatorReport(period,withStock){
+ try{const d=await getFacilitatorReport(period);let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI');if(withStock){const s=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(s)}waShare(text);}
+ catch(e){alert('Laporan error: '+(e?.message||e));}
+}
+async function shareFacilitatorStock(){
+ try{const d=await getFacilitatorReport('TODAY');waShare(stockReportText(d));}
+ catch(e){alert('Laporan stock error: '+(e?.message||e));}
+}
+window.openFacilitatorReports=openFacilitatorReports;
+window.shareFacilitatorReport=shareFacilitatorReport;
+window.shareFacilitatorStock=shareFacilitatorStock;
 
 function card(l){
  const mg=profile?.is_management;

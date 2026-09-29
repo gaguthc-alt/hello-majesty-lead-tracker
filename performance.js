@@ -29,13 +29,14 @@ async function perfGetContent(mode){
 async function perfGetTodaySales(){
  const p=perfPeriod('today'), start=p.start.toISOString(), end=new Date(p.end.getTime()+86400000).toISOString();
  const name=profile?.name, outlet=profile?.outlet;
- const [ev,st]=await Promise.all([
+ const [ev,cl,st]=await Promise.all([
    sb.from('lead_events').select('event_type').eq('employee_name',name).gte('event_at',start).lt('event_at',end),
+   sb.from('leads').select('lead_id').eq('cs_claimed_by',name).gte('claimed_at',start).lt('claimed_at',end),
    sb.from('sales_transactions').select('id').eq('sales_user_id',profile?.user_id).gte('sold_at',start).lt('sold_at',end)
  ]);
- if(ev.error)throw ev.error; if(st.error)throw st.error;
+ if(ev.error)throw ev.error; if(cl.error)throw cl.error; if(st.error)throw st.error;
  const a=ev.data||[], count=t=>a.filter(x=>x.event_type===t).length;
- return {cs_claim:count('CS_CLAIM'),cs_qualified:count('CS_QUALIFIED'),cs_potensial:count('CS_POTENSIAL'),cs_gagal:count('CS_GAGAL'),cs_qualification_rate:count('CS_CLAIM')?Math.round(count('CS_QUALIFIED')/count('CS_CLAIM')*1000)/10:0,sales_claim:count('SALES_CLAIM'),sales_closing:st.data?.length||0,sales_potensial:count('SALES_POTENSIAL'),sales_gagal:count('SALES_GAGAL')};
+ return {cs_claim:cl.data?.length||0,cs_qualified:count('CS_QUALIFIED'),cs_potensial:count('CS_POTENSIAL'),cs_gagal:count('CS_GAGAL'),cs_qualification_rate:count('CS_CLAIM')?Math.round(count('CS_QUALIFIED')/count('CS_CLAIM')*1000)/10:0,sales_claim:count('SALES_CLAIM'),sales_closing:st.data?.length||0,sales_potensial:count('SALES_POTENSIAL'),sales_gagal:count('SALES_GAGAL')};
 }
 async function perfGetTodayContent(){
  const p=perfPeriod('today'), start=p.start.toISOString(), end=new Date(p.end.getTime()+86400000).toISOString();

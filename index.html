@@ -38,7 +38,7 @@ async function changePassword(){
  $('passwordBox').classList.add('hidden');$('dashboard').classList.remove('hidden');await loadLeads();openUrl();
 }
 async function logout(){await sb.auth.signOut();location.reload()}
-async function refreshLeads(){await loadLeads();if(window.renderInventory)await renderInventory()}
+async function refreshLeads(){try{console.log('[HM] Refresh clicked');await loadLeads();if(window.renderInventory)await renderInventory();else alert('Inventory module belum termuat.');}catch(e){console.error('[HM] Refresh error',e);alert('Refresh error: '+(e?.message||e))}}
 async function loadLeads(){
  const x=await sb.from('leads').select('*').order('created_at',{ascending:false});
  if(x.error){alert(x.error.message);return}leads=x.data||[];await render();

@@ -44,6 +44,7 @@ async function loadLeads(){
  if(x.error){alert(x.error.message);return}leads=x.data||[];await render();
 }
 async function render(){
+ await renderTargetBoard();
  const s=await sb.rpc('dashboard_stats');if(s.error){alert(s.error.message);return}
  const v=s.data||{};
  const stat=(label,val,click)=>'<div class="stat" '+(click?'style="cursor:pointer" onclick="'+click+'"':'')+'><div class="small">'+label+'</div><div class="num">'+(val||0)+'</div>'+(click?'<div class="small">Tap untuk lihat detail</div>':'')+'</div>';
@@ -63,6 +64,20 @@ async function render(){
  const active=leads.filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead));
  $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p>';
 }
+async function renderTargetBoard(){
+ const x=await sb.rpc('dashboard_target_summary');
+ if(x.error)return;
+ const d=x.data||{}, outlets=d.outlets||[], roles=(d.management?['Management']:(d.roles||[]));
+ const own=d.own_contribution||{};
+ const pct=(a,t)=>t>0?Math.min(100,Math.round((a/t)*100)):0;
+ const bar=(label,a,t,icon)=>'<div class="stat"><div class="small">'+icon+' '+label+'</div><div class="num">'+a+' / '+t+'</div><div class="small">'+pct(a,t)+'%</div></div>';
+ const outletCards=outlets.map(o=>'<div class="box"><h3>🎯 TARGET '+esc(o.outlet)+'</h3><div class="stats">'+bar('WA',o.wa_actual,o.wa_target,'📲')+bar('Qualified',o.qualified_actual,o.qualified_target,'🔍')+bar('Closing',o.closing_actual,o.closing_target,'🏆')+'</div><div style="margin-top:10px;font-weight:700">🎁 Bonus: '+esc(o.bonus_label)+' Rp'+Number(o.bonus_amount||0).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:6px">Sisa: WA '+Math.max(0,o.wa_target-o.wa_actual)+' • Qualified '+Math.max(0,o.qualified_target-o.qualified_actual)+' • Closing '+Math.max(0,o.closing_target-o.closing_actual)+'</div></div>').join('');
+ const roleText=roles.length?roles.map(r=>'• '+esc(r)).join('<br>'):'• Belum ada peran operasional';
+ const ownBox=d.management?'':('<div class="box"><h3>👤 PERAN SAYA</h3><div>'+roleText+'</div><h3 style="margin-bottom:8px">🔥 KONTRIBUSI SAYA BULAN INI</h3><div class="row">'+bar('WA',own.wa||0,(outlets[0]?.wa_target||0),'📲')+bar('Qualified',own.qualified||0,(outlets[0]?.qualified_target||0),'🔍')+bar('Closing',own.closing||0,(outlets[0]?.closing_target||0),'🏆')+'</div></div>');
+ const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';box.innerHTML='<div class="box"><h2>🎯 TARGET TIM BULAN INI</h2><div class="small">450 WA → 150 QUALIFIED → 30 CLOSING</div></div>'+ownBox+outletCards;
+ const dash=document.getElementById('dashboard');const stats=document.getElementById('stats');if(!dash.contains(box))dash.insertBefore(box,stats);
+}
+
 function card(l){
  const mg=profile?.is_management;
  const available=l.status_lead==='AVAILABLE';
@@ -74,7 +89,7 @@ function card(l){
  const qualified=l.status_lead==='QUALIFIED';
  const limited=(l.status_lead==='CS LOCK'&&!q&&!mg)||(l.status_lead==='HANDLE'&&!own&&!mg);
  return '<div class="lead"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(l.status_lead)+'</span></h3>'+
- '<div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+'</div>'+
+ '<div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+(l.content_creator?' • Content: '+esc(l.content_creator):'')+'</div>'+
  '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+' • Sales: '+esc(l.sales_claimed_by||'-')+'</div>'+
  (limited?'<p class="small">Lead sedang ditangani oleh owner lain. Detail tidak tersedia.</p>':
  '<div style="margin-top:8px">'+
@@ -136,12 +151,14 @@ async function saveS(id){
  const x=await sb.rpc('set_sales_result',{p_lead_id:id,p_result:$('sr').value,p_follow_up_date:$('sd').value||null,p_reason:$('sreason')?.value.trim()||null});
  if(x.error)return alert(x.error.message);closeModal();await loadLeads();
 }
-function addLead(){
- $('mt').textContent='＋ WA MASUK';$('mb').innerHTML='<label>Customer</label><input id="fc"><label>WhatsApp</label><input id="fw"><label>Produk</label><input id="fp"><label>Kebutuhan</label><textarea id="fn"></textarea><label>Budget</label><input id="fb"><label>Timeline</label><input id="ft"><label>Preference</label><textarea id="fpr"></textarea><button id="saveLeadBtn" class="success">Simpan Lead</button>';
+async function addLead(){
+ const cc=await sb.from('team_permissions').select('name').eq('outlet',profile?.outlet).eq('active',true).eq('can_content_creator',true).order('name');
+ const opts=(cc.data||[]).map(x=>'<option>'+esc(x.name)+'</option>').join('');
+ $('mt').textContent='＋ WA MASUK';$('mb').innerHTML='<label>Customer</label><input id="fc"><label>WhatsApp</label><input id="fw"><label>Content Creator</label><select id="fcc"><option value="">— Pilih / tidak diketahui —</option>'+opts+'</select><label>Produk</label><input id="fp"><label>Kebutuhan</label><textarea id="fn"></textarea><label>Budget</label><input id="fb"><label>Timeline</label><input id="ft"><label>Preference</label><textarea id="fpr"></textarea><button id="saveLeadBtn" class="success">Simpan Lead</button>';
  $('saveLeadBtn').onclick=saveLead;$('modal').classList.remove('hidden');
 }
 async function saveLead(){
- const x=await sb.rpc('create_lead',{p_customer:$('fc').value,p_whatsapp:$('fw').value,p_product:$('fp').value,p_need:$('fn').value,p_budget:$('fb').value,p_timeline:$('ft').value,p_preference:$('fpr').value});
+ const x=await sb.rpc('create_lead',{p_customer:$('fc').value,p_whatsapp:$('fw').value,p_product:$('fp').value,p_need:$('fn').value,p_budget:$('fb').value,p_timeline:$('ft').value,p_preference:$('fpr').value,p_content_creator:$('fcc')?.value||null});
  if(x.error)return alert(x.error.message);closeModal();await loadLeads();
 }
 function editLead(id){

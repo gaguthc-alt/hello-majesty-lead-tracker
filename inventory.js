@@ -12,9 +12,15 @@ async function loadInventoryData(){
 }
 
 async function renderInventory(){
-  try{await loadInventoryData();}catch(e){alert(e.message||e);return}
   const host=document.getElementById('inventoryPanel')||document.createElement('div');
   host.id='inventoryPanel';host.className='box';
+  const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');
+  if(dash&&!dash.contains(host))dash.insertBefore(host,stats||null);
+  try{await loadInventoryData();}catch(e){
+    console.error('[HM] Inventory load error',e);
+    host.innerHTML='<h2 style="margin:0">📦 PRODUCT & STOCK</h2><p class="small" style="margin-top:10px">Product & Stock gagal memuat data.</p><div class="box"><b>Error:</b> '+esc(e?.message||e)+'</div><button class="secondary" onclick="refreshInventory(this)">↻ Coba Lagi</button>';
+    return;
+  }
   const ready=inventoryStock.filter(x=>x.status==='READY').length;
   const sold=inventoryStock.filter(x=>x.status==='SOLD').length;
   const reserved=inventoryStock.filter(x=>x.status==='RESERVED').length;
@@ -23,7 +29,7 @@ async function renderInventory(){
   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Database produk untuk CS/Sales + kontrol inventory Management</div></div><div class="row"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button>'+(canManage?'<button class="secondary" onclick="openProductMaster()">⚙️ Master Produk</button>':'')+'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button></div></div>'+
   '<div class="stats" style="margin-top:10px">'+
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('🟡 Reserved',reserved)+invStat('🔧 Service',service)+invStat('📦 Total',inventoryStock.length)+'</div>'+
-  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" id="invProductsTab" type="button" data-inventory-view="products">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button>+(profile?.role==='SALES'?'<button class="success" onclick="openWalkInClosing()">🚶 Walk-In</button>':'')<button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button><button class="secondary" onclick="openHunterCommission()">💸 Komisi</button></div>'+
+  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" id="invProductsTab" type="button" data-inventory-view="products">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button>'+(profile?.role==='SALES'?'<button class="success" onclick="openWalkInClosing()">🚶 Walk-In</button>':'')+'<button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button><button class="secondary" onclick="openHunterCommission()">💸 Komisi</button></div>'+
   '<div id="inventoryViewDebug" class="small" style="margin-top:8px;font-weight:700"></div><div id="inventoryBody" style="margin-top:10px"></div>';
   const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');if(!dash.contains(host))dash.insertBefore(host,stats);
   host.onclick=(e)=>{const tab=e.target.closest('[data-inventory-view]');if(tab){e.preventDefault();setInventoryView(tab.dataset.inventoryView)}};

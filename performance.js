@@ -43,8 +43,8 @@ async function perfGetTodayContent(){
  if(x.error)throw x.error; const a=x.data||[];
  return {content_count:a.length,views:a.reduce((s,r)=>s+Number(r.views||0),0),comments:a.reduce((s,r)=>s+Number(r.comments||0),0),dms:a.reduce((s,r)=>s+Number(r.dms||0),0)};
 }
-async function perfGetTodayTeam(){
- const p=perfPeriod('today'), start=p.start.toISOString(), end=new Date(p.end.getTime()+86400000).toISOString(), outlet=profile?.outlet;
+async function perfGetTeamMetrics(mode,outlet){
+ const p=perfPeriod(mode), start=p.start.toISOString(), end=new Date(p.end.getTime()+86400000).toISOString();
  const [l,q,s,h]=await Promise.all([
   sb.from('leads').select('lead_id').eq('outlet',outlet).gte('created_at',start).lt('created_at',end),
   sb.from('lead_events').select('id').eq('outlet',outlet).eq('event_type','CS_QUALIFIED').gte('event_at',start).lt('event_at',end),
@@ -74,6 +74,9 @@ async function perfBuild(mode){
      const c=mode==='today'?{own:await perfGetTodayContent()}:await perfGetContent(mode), o=c.own||{};
      lines.push('🎬 *CONTENT CREATOR*');
      lines.push('• Content: '+perfFmt(o.content_count));
+     const waContent=mode==='today'?await sb.from('leads').select('lead_id').eq('outlet',profile?.outlet).eq('content_creator',profile?.name).gte('created_at',perfPeriod('today').start.toISOString()).lt('created_at',new Date(perfPeriod('today').end.getTime()+86400000).toISOString()):await sb.from('leads').select('lead_id').eq('outlet',profile?.outlet).eq('content_creator',profile?.name).gte('created_at',perfPeriod('month').start.toISOString()).lt('created_at',new Date(perfPeriod('month').end.getTime()+86400000).toISOString());
+     if(waContent.error)throw waContent.error;
+     lines.push('• WA Dihasilkan: '+perfFmt(waContent.data?.length||0));
      lines.push('• Views: '+perfFmt(o.views));
      lines.push('• Comments: '+perfFmt(o.comments));
      lines.push('• DM: '+perfFmt(o.dms));
@@ -98,7 +101,7 @@ async function perfBuild(mode){
      lines.push('');
    }
    if(role==='Fasilitator'){
-     const rc=target.role_contribution?.facilitator||{}, o=(target.outlets||[]).find(x=>x.outlet===profile?.outlet)||{};
+     const rc=mode==='today'?await perfGetTeamMetrics('today',profile?.outlet):(target.role_contribution?.facilitator||{}), o=(target.outlets||[]).find(x=>x.outlet===profile?.outlet)||{};
      lines.push('🧭 *FASILITATOR PERFORMANCE*');
      lines.push('• WA Tim: '+perfFmt(rc.wa)+' / '+perfFmt(o.wa_target));
      lines.push('• Qualified Tim: '+perfFmt(rc.qualified)+' / '+perfFmt(o.qualified_target));
@@ -106,7 +109,7 @@ async function perfBuild(mode){
      lines.push('');
    }
    if(role==='Hunter'){
-     const own=target.own_contribution||{};
+     const own=mode==='today'?await perfGetTeamMetrics('today',profile?.outlet):target.own_contribution||{};
      lines.push('🏹 *HUNTER PERFORMANCE*');
      lines.push('• Unit Hunter SOLD: '+perfFmt(own.hunter));
      lines.push('');
@@ -132,7 +135,7 @@ async function perfManagement(mode){
  const x=await sb.rpc('management_performance_report',{p_start:fmt(p.start),p_end:fmt(p.end),p_employee:null});
  if(x.error)throw x.error;
  const perf=x.data||[];
- const tp=await sb.from('team_profiles').select('name,outlet,active,is_management').eq('active',true).eq('is_management',false).order('name');
+ const tp=await sb.from('team_profiles').select('user_id,name,outlet,active,is_management').eq('active',true).eq('is_management',false).order('name');
  if(tp.error)throw tp.error;
  const profiles=tp.data||[];
  const pm=await sb.from('team_permissions').select('name,outlet,can_cs,can_sales,can_facilitator,can_content_creator,can_hunter,active').eq('active',true);
@@ -143,21 +146,26 @@ async function perfManagement(mode){
  const cp=await sb.from('content_posts').select('content_creator,outlet,views,comments,dms').eq('active',true).eq('month_start',contentMonth);
  if(cp.error)throw cp.error;
  const contentMap={};
- for(const r of (cp.data||[])){const k=r.outlet+'|'+r.content_creator;(contentMap[k]??={content_count:0,views:0,comments:0,dms:0});contentMap[k].content_count++;contentMap[k].views+=Number(r.views||0);contentMap[k].comments+=Number(r.comments||0);contentMap[k].dms+=Number(r.dms||0)}
+ for(const r of (cp.data||[])){const k=r.outlet+'|'+r.content_creator;(contentMap[k]??={content_count:0,views:0,comments:0,dms:0,wa_generated:0});contentMap[k].content_count++;contentMap[k].views+=Number(r.views||0);contentMap[k].comments+=Number(r.comments||0);contentMap[k].dms+=Number(r.dms||0)}
  const target=await perfGetTarget();
+ const hunterRows=await sb.from('sales_transactions').select('hunter_user_id').not('hunter_user_id','is',null).gte('sold_at',p.start.toISOString()).lt('sold_at',new Date(p.end.getTime()+86400000).toISOString());
+ if(hunterRows.error)throw hunterRows.error;
+ const hunterMap={};for(const h of (hunterRows.data||[]))hunterMap[h.hunter_user_id]=(hunterMap[h.hunter_user_id]||0)+1;
  const outletMap=Object.fromEntries((target.outlets||[]).map(o=>[o.outlet,o]));
  const byName=Object.fromEntries(perf.map(r=>[r.employee_name,r]));
+ const teamMetrics={};
+ for(const pr of profiles){ if(!teamMetrics[pr.outlet])teamMetrics[pr.outlet]=await perfGetTeamMetrics(mode,pr.outlet); }
  return profiles.map(pr=>{
    const roles=rolesFor(pr), r=byName[pr.name]||{}, cm=contentMap[pr.outlet+'|'+pr.name]||{};
-   const o=outletMap[pr.outlet]||{}, facilitator=target.role_contribution?.facilitator||{};
-   return {name:pr.name,outlet:pr.outlet,roles,cs:r,sales:r,content:cm,facilitator,hunter:target.own_contribution?.hunter||0,target:o};
+   const o=outletMap[pr.outlet]||{}, facilitator=teamMetrics[pr.outlet]||{};
+   return {name:pr.name,outlet:pr.outlet,roles,cs:r,sales:r,content:cm,facilitator,hunter:hunterMap[pr.user_id]||0,target:o};
  });
 }
 function perfManagementCard(row,mode){
  const r=row.cs||{}, roles=row.roles||[];
  let h='<div class="lead"><div class="row" style="justify-content:space-between;align-items:center"><div><b>'+esc(row.name)+'</b><div class="small">'+esc(row.outlet||'-')+'</div></div><span class="badge">'+esc(roles.join(' • '))+'</span></div>';
  for(const role of roles){
-   if(role==='Content Creator') h+='<div style="margin-top:10px"><b>🎬 Content Creator</b><div class="small">Content '+perfFmt(row.content.content_count)+' • Views '+perfFmt(row.content.views)+' • Comments '+perfFmt(row.content.comments)+' • DM '+perfFmt(row.content.dms)+'</div></div>';
+   if(role==='Content Creator') h+='<div style="margin-top:10px"><b>🎬 Content Creator</b><div class="small">Content '+perfFmt(row.content.content_count)+' • WA Dihasilkan '+perfFmt(row.content.wa_generated||0)+' • Views '+perfFmt(row.content.views)+' • Comments '+perfFmt(row.content.comments)+' • DM '+perfFmt(row.content.dms)+'</div></div>';
    if(role==='CS') h+='<div style="margin-top:10px"><b>💬 CS</b><div class="small">Claim '+perfFmt(r.cs_claim)+' • Qualified '+perfFmt(r.cs_qualified)+' • Potensial '+perfFmt(r.cs_potensial)+' • Gagal '+perfFmt(r.cs_gagal)+' • Rate '+perfFmt(r.cs_qualification_rate)+'%</div></div>';
    if(role==='Sales') h+='<div style="margin-top:10px"><b>🏆 Sales</b><div class="small">Claim '+perfFmt(r.sales_claim)+' • Closing '+perfFmt(r.sales_closing)+' • Potensial '+perfFmt(r.sales_potensial)+' • Gagal '+perfFmt(r.sales_gagal)+' • Rate '+perfFmt(r.sales_closing_rate)+'%</div></div>';
    if(role==='Fasilitator') h+='<div style="margin-top:10px"><b>🧭 Fasilitator</b><div class="small">WA Tim '+perfFmt(row.facilitator.wa)+' / '+perfFmt(row.target.wa_target)+' • Qualified '+perfFmt(row.facilitator.qualified)+' / '+perfFmt(row.target.qualified_target)+' • Closing '+perfFmt(row.facilitator.closing)+' / '+perfFmt(row.target.closing_target)+'</div></div>';

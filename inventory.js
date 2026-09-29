@@ -147,16 +147,16 @@ async function saveStock(){
 }
 async function openSellStock(id){
  const s=inventoryStock.find(x=>x.id===id);if(!s)return;
- $('mt').textContent='💰 Closing — '+s.product;$('mb').innerHTML='<div class="box"><b>'+esc(s.product)+' '+esc(s.variant||'')+'</b><div class="small">IMEI '+esc(s.imei_1||'-')+' • '+(s.grade?'Grade '+s.grade+' • ':'')+(s.battery_health!=null?'BH '+s.battery_health+'%':'')+'</div></div><label>Harga Jual</label><input id="salePrice" type="number" value="'+Number(s.asking_price||0)+'"><label>Diskon</label><input id="saleDiscount" type="number" value="0"><label>Nama Customer (opsional)</label><input id="saleCustomer"><label>WhatsApp Customer (opsional)</label><input id="salePhone"><label>Catatan</label><textarea id="saleNotes"></textarea><button class="success" onclick="saveSale(\''+id+'\')">✓ Closing & Kurangi Stock</button>';$('modal').classList.remove('hidden');
+ $('mt').textContent='💰 Closing — '+s.product;$('mb').innerHTML='<div class="box"><b>'+esc(s.product)+' '+esc(s.variant||'')+'</b><div class="small">IMEI '+esc(s.imei_1||'-')+' • '+(s.grade?'Grade '+s.grade+' • ':'')+(s.battery_health!=null?'BH '+s.battery_health+'%':'')+'</div></div><label>Sumber Customer</label><select id="saleSource"><option value="DIGITAL">📱 DIGITAL — dari funnel</option><option value="WALK-IN">🚶 WALK-IN — datang langsung</option></select><label>Harga Jual</label><input id="salePrice" type="number" value="'+Number(s.asking_price||0)+'"><label>Diskon</label><input id="saleDiscount" type="number" value="0"><label>Nama Customer (opsional)</label><input id="saleCustomer"><label>WhatsApp Customer (opsional)</label><input id="salePhone"><label>Catatan</label><textarea id="saleNotes"></textarea><button class="success" onclick="saveSale(\''+id+'\')">✓ Closing & Kurangi Stock</button>';$('modal').classList.remove('hidden');
 }
 async function saveSale(id){
- const s=inventoryStock.find(x=>x.id===id),price=Number($('salePrice').value||0),discount=Number($('saleDiscount').value||0);
+ const s=inventoryStock.find(x=>x.id===id),price=Number($('salePrice').value||0),discount=Number($('saleDiscount').value||0),customerSource=$('saleSource')?.value||'DIGITAL';
  if(!s||price<=0)return alert('Harga jual wajib diisi.');
  const gross=Math.max(price-discount-Number(s.cost||0),0),commission=s.source_type==='HUNTER'?gross*.10:0;
  const stock=await sb.from('stock_units').update({status:'SOLD',sold_at:new Date().toISOString(),sold_price:price,sold_by_user_id:profile.user_id,updated_at:new Date().toISOString()}).eq('id',id).eq('status','READY').select('id');
  if(stock.error)return alert(stock.error.message);
  if(!stock.data?.length)return alert('Unit sudah berubah status. Refresh stock lalu coba lagi.');
- const tx=await sb.from('sales_transactions').insert({stock_unit_id:id,outlet:profile.outlet,sales_user_id:profile.user_id,sale_price:price,discount,cost:Number(s.cost||0),hunter_user_id:s.source_type==='HUNTER'?s.hunter_user_id:null,customer_name:$('saleCustomer').value.trim()||null,customer_phone:$('salePhone').value.trim()||null,notes:$('saleNotes').value.trim()||null});
+ const tx=await sb.from('sales_transactions').insert({stock_unit_id:id,outlet:profile.outlet,sales_user_id:profile.user_id,sale_price:price,discount,cost:Number(s.cost||0),hunter_user_id:s.source_type==='HUNTER'?s.hunter_user_id:null,customer_name:$('saleCustomer').value.trim()||null,customer_phone:$('salePhone').value.trim()||null,customer_source:customerSource,notes:$('saleNotes').value.trim()||null});
  if(tx.error){
    await sb.from('stock_units').update({status:'READY',sold_at:null,sold_price:null,sold_by_user_id:null}).eq('id',id);
    return alert(tx.error.message);

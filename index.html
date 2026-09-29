@@ -73,8 +73,22 @@ async function renderTargetBoard(){
  const bar=(label,a,t,icon)=>'<div class="stat"><div class="small">'+icon+' '+label+'</div><div class="num">'+a+' / '+t+'</div><div class="small">'+pct(a,t)+'%</div></div>';
  const outletCards=outlets.map(o=>'<div class="box"><h3>🎯 TARGET '+esc(o.outlet)+'</h3><div class="stats">'+bar('WA',o.wa_actual,o.wa_target,'📲')+bar('Qualified',o.qualified_actual,o.qualified_target,'🔍')+bar('Closing',o.closing_actual,o.closing_target,'🏆')+'</div><div style="margin-top:10px;font-weight:700">🎁 Bonus: '+esc(o.bonus_label)+' Rp'+Number(o.bonus_amount||0).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:6px">Sisa: WA '+Math.max(0,o.wa_target-o.wa_actual)+' • Qualified '+Math.max(0,o.qualified_target-o.qualified_actual)+' • Closing '+Math.max(0,o.closing_target-o.closing_actual)+'</div></div>').join('');
  const roleText=roles.length?roles.map(r=>'• '+esc(r)).join('<br>'):'• Belum ada peran operasional';
- const ownBox=d.management?'':('<div class="box"><h3>👤 PERAN SAYA</h3><div>'+roleText+'</div><h3 style="margin-bottom:8px">🔥 KONTRIBUSI SAYA BULAN INI</h3><div class="row">'+bar('WA',own.wa||0,(outlets[0]?.wa_target||0),'📲')+bar('Qualified',own.qualified||0,(outlets[0]?.qualified_target||0),'🔍')+bar('Closing',own.closing||0,(outlets[0]?.closing_target||0),'🏆')+'</div></div>');
+ const manageBtn=d.management?'<button class="secondary" onclick="openTargetSettings()">⚙️ Atur Target Outlet</button>':'';
+ const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':('<div class="box"><h3>👤 PERAN SAYA</h3><div>'+roleText+'</div><h3 style="margin-bottom:8px">🔥 KONTRIBUSI SAYA BULAN INI</h3><div class="row">'+bar('WA',own.wa||0,(outlets[0]?.wa_target||0),'📲')+bar('Qualified',own.qualified||0,(outlets[0]?.qualified_target||0),'🔍')+bar('Closing',own.closing||0,(outlets[0]?.closing_target||0),'🏆')+'</div></div>');
  const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';box.innerHTML='<div class="box"><h2>🎯 TARGET TIM BULAN INI</h2><div class="small">450 WA → 150 QUALIFIED → 30 CLOSING</div></div>'+ownBox+outletCards;
+
+async function openTargetSettings(){
+ const x=await sb.rpc('dashboard_target_summary');if(x.error)return alert(x.error.message);
+ const outlets=x.data?.outlets||[];
+ $('mt').textContent='⚙️ Target Outlet Bulanan';
+ $('mb').innerHTML=outlets.map(o=>'<div class="box"><h3>'+esc(o.outlet)+'</h3><label>WA Target</label><input id="twa_'+esc(o.outlet)+'" type="number" value="'+o.wa_target+'"><label>Qualified Target</label><input id="tq_'+esc(o.outlet)+'" type="number" value="'+o.qualified_target+'"><label>Closing Target</label><input id="tc_'+esc(o.outlet)+'" type="number" value="'+o.closing_target+'"><label>Bonus</label><input id="tb_'+esc(o.outlet)+'" value="'+esc(o.bonus_label)+'"><label>Nominal Bonus</label><input id="ta_'+esc(o.outlet)+'" type="number" value="'+o.bonus_amount+'"><button class="success" onclick="saveTarget(\''+esc(o.outlet)+'\')">Simpan '+esc(o.outlet)+'</button></div>').join('');
+ $('modal').classList.remove('hidden');
+}
+async function saveTarget(outlet){
+ const clean=s=>String(s).replace(/[^0-9]/g,'');
+ const x=await sb.rpc('set_outlet_monthly_target',{p_month_start:new Date().toISOString().slice(0,10),p_outlet:outlet,p_wa_target:Number($('twa_'+outlet).value),p_qualified_target:Number($('tq_'+outlet).value),p_closing_target:Number($('tc_'+outlet).value),p_bonus_label:$('tb_'+outlet).value,p_bonus_amount:Number(clean($('ta_'+outlet).value))});
+ if(x.error)return alert(x.error.message);closeModal();await loadLeads();
+}
  const dash=document.getElementById('dashboard');const stats=document.getElementById('stats');if(!dash.contains(box))dash.insertBefore(box,stats);
 }
 

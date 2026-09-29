@@ -1,5 +1,6 @@
 /* Hello Majesty Inventory & Hunter */
 let inventoryProducts=[], inventoryStock=[], inventoryView='stock';
+let hunterDashboard=[];
 
 async function loadInventoryData(){
   const [p,s]=await Promise.all([
@@ -22,10 +23,24 @@ async function renderInventory(){
   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Database produk untuk CS/Sales + kontrol inventory Management</div></div><div class="row"><button class="secondary" onclick="renderInventory()">↻ Refresh</button>'+(canManage?'<button class="secondary" onclick="openProductMaster()">⚙️ Master Produk</button>':'')+'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button></div></div>'+
   '<div class="stats" style="margin-top:10px">'+
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('🟡 Reserved',reserved)+invStat('🔧 Service',service)+invStat('📦 Total',inventoryStock.length)+'</div>'+
-  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" onclick="inventoryView=\'stock\';renderInventory()">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" onclick="inventoryView=\'products\';renderInventory()">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button></div>'+
+  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" onclick="inventoryView=\'stock\';renderInventory()">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" onclick="inventoryView=\'products\';renderInventory()">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button><button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button></div>'+
   '<div id="inventoryBody" style="margin-top:10px"></div>';
   const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');if(!dash.contains(host))dash.insertBefore(host,stats);
   renderInventoryBody();
+}
+async function loadHunterDashboard(){
+ const r=await sb.from('hunter_dashboard').select('*').order('total_commission',{ascending:false});
+ if(r.error) throw r.error; hunterDashboard=r.data||[];
+}
+function fmtRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}
+async function openHunterDashboard(){
+ try{await loadHunterDashboard();}catch(e){alert(e.message||e);return}
+ $('mt').textContent='🏹 Dashboard Hunter';
+ $('mb').innerHTML='<div class="small" style="margin-bottom:10px">Komisi = 10% dari profit unit Hunter yang sudah SOLD.</div>'+
+ hunterDashboard.map(h=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>🏹 '+esc(h.hunter_name)+'</b><span class="badge">'+h.sold_units+' SOLD</span></div>'+
+ '<div style="margin-top:8px">📦 Total unit: <b>'+h.total_units+'</b> • 🟢 Ready: <b>'+h.ready_units+'</b> • 🔴 Sold: <b>'+h.sold_units+'</b></div>'+
+ '<div style="margin-top:5px">💰 Profit: <b>'+fmtRp(h.total_profit)+'</b> • 🎯 Komisi: <b>'+fmtRp(h.total_commission)+'</b></div></div>').join('')||'<p class="small">Belum ada stock Hunter.</p>';
+ $('modal').classList.remove('hidden');
 }
 function invStat(label,val){return '<div class="stat"><div class="small">'+label+'</div><div class="num">'+Number(val||0).toLocaleString('id-ID')+'</div></div>'}
 function renderInventoryBody(){

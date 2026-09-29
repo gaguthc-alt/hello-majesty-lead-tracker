@@ -62,7 +62,7 @@ async function render(){
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  const active=leads.filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead));
  $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p>';
- if(window.renderInventory) await renderInventory();
+ if(window.renderInventory) renderInventory().catch(e=>console.error('[HM] Inventory render error',e));
 }
 async function renderTargetBoard(){
  const x=await sb.rpc('dashboard_target_summary');
@@ -290,4 +290,4 @@ function contentDetailCard(p){
 const oldRender=window.render;
 window.render=async function(){const r=await oldRender();await renderContentPerformance();return r};
 
-</script><script src="performance.js"></script><script src="inventory.js?v=440fad7"></script><script src="inventory.js?v=20260929"></script></body></html>
+</script><script src="performance.js"></script><script src="inventory.js?v=20260929"></script></body></html>

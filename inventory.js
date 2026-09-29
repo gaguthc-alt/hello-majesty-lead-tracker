@@ -4,7 +4,7 @@ let inventoryProducts=[], inventoryStock=[], inventoryView='stock';
 async function loadInventoryData(){
   const [p,s]=await Promise.all([
     sb.from('product_master').select('*').eq('active',true).order('category').order('product'),
-    sb.from('stock_catalog').select('*').order('status').order('received_at',{ascending:false})
+    sb.from(profile?.is_management?'stock_management':'stock_catalog').select('*').order('status').order('received_at',{ascending:false})
   ]);
   if(p.error) throw p.error; if(s.error) throw s.error;
   inventoryProducts=p.data||[]; inventoryStock=s.data||[];
@@ -84,7 +84,7 @@ async function saveSale(id){
  const s=inventoryStock.find(x=>x.id===id),price=Number($('salePrice').value||0),discount=Number($('saleDiscount').value||0);
  if(!s||price<=0)return alert('Harga jual wajib diisi.');
  const gross=Math.max(price-discount-Number(s.cost||0),0),commission=s.source_type==='HUNTER'?gross*.10:0;
- const stock=await sb.from('stock_units').update({status:'SOLD',sold_at:new Date().toISOString(),sold_price:price,sold_by_user_id:profile.user_id,updated_at:new Date().toISOString()}).eq('id',id).eq('status','READY');
+ const stock=await sb.from('stock_units').update({status:'SOLD',sold_at:new Date().toISOString(),sold_price:price,sold_by_user_id:profile.user_id,updated_at:new Date().toISOString()}).eq('id',id).eq('status','READY').select('id');
  if(stock.error)return alert(stock.error.message);
  if(!stock.data?.length)return alert('Unit sudah berubah status. Refresh stock lalu coba lagi.');
  const tx=await sb.from('sales_transactions').insert({stock_unit_id:id,outlet:profile.outlet,sales_user_id:profile.user_id,sale_price:price,discount,cost:Number(s.cost||0),hunter_user_id:s.source_type==='HUNTER'?s.hunter_user_id:null,customer_name:$('saleCustomer').value.trim()||null,customer_phone:$('salePhone').value.trim()||null,notes:$('saleNotes').value.trim()||null});

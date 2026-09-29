@@ -23,7 +23,7 @@ async function renderInventory(){
   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Database produk untuk CS/Sales + kontrol inventory Management</div></div><div class="row"><button class="secondary" onclick="renderInventory()">↻ Refresh</button>'+(canManage?'<button class="secondary" onclick="openProductMaster()">⚙️ Master Produk</button>':'')+'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button></div></div>'+
   '<div class="stats" style="margin-top:10px">'+
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('🟡 Reserved',reserved)+invStat('🔧 Service',service)+invStat('📦 Total',inventoryStock.length)+'</div>'+
-  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" onclick="inventoryView=\'stock\';renderInventory()">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" onclick="inventoryView=\'products\';renderInventory()">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button><button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button><button class="secondary" onclick="openHunterCommission()">💸 Komisi</button></div>'+
+  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" onclick="setInventoryView(\'stock\')">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" onclick="setInventoryView(\'products\')">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button><button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button><button class="secondary" onclick="openHunterCommission()">💸 Komisi</button></div>'+
   '<div id="inventoryBody" style="margin-top:10px"></div>';
   const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');if(!dash.contains(host))dash.insertBefore(host,stats);
   renderInventoryBody();
@@ -60,6 +60,19 @@ async function openHunterDashboard(){
  $('modal').classList.remove('hidden');
 }
 function invStat(label,val){return '<div class="stat"><div class="small">'+label+'</div><div class="num">'+Number(val||0).toLocaleString('id-ID')+'</div></div>'}
+function setInventoryView(view){
+  inventoryView=view;
+  renderInventoryBody();
+  const panel=document.getElementById('inventoryPanel');
+  if(panel){
+    const buttons=panel.querySelectorAll('.row button');
+    buttons.forEach(b=>{
+      if(b.textContent.trim()==='Stock' || b.textContent.trim()==='Produk'){
+        b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view);
+      }
+    });
+  }
+}
 function renderInventoryBody(){
  const body=document.getElementById('inventoryBody');if(!body)return;
  if(inventoryView==='products'){

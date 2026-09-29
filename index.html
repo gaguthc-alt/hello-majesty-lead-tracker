@@ -142,6 +142,9 @@ async function saveTarget(outlet){
  const x=await sb.rpc('set_outlet_monthly_target',{p_month_start:new Date().toISOString().slice(0,10),p_outlet:outlet,p_wa_target:Number($('twa_'+outlet).value),p_qualified_target:Number($('tq_'+outlet).value),p_closing_target:Number($('tc_'+outlet).value),p_bonus_label:$('tb_'+outlet).value,p_bonus_amount:Number(clean($('ta_'+outlet).value))});
  if(x.error)return alert(x.error.message);closeModal();await loadLeads();
 }
+ // Expose modal actions globally for inline onclick handlers.
+ window.openTargetSettings=openTargetSettings;
+ window.saveTarget=saveTarget;
  const dash=document.getElementById('dashboard');const stats=document.getElementById('stats');if(!dash.contains(box))dash.insertBefore(box,stats);
 }
 

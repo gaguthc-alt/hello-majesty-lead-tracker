@@ -1,4 +1,4 @@
-/* HM_WALKIN_FIX_20260929_4 */
+/* HM_INVENTORY_STABLE_20260929_5 */
 /* Hello Majesty Inventory & Hunter */
 let inventoryProducts=[], inventoryStock=[], inventoryView='stock';
 let hunterDashboard=[];
@@ -30,7 +30,7 @@ async function renderInventory(){
   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Database produk untuk CS/Sales + kontrol inventory Management</div></div><div class="row"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button>'+(canManage?'<button class="secondary" onclick="openProductMaster()">⚙️ Master Produk</button>':'')+'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button></div></div>'+
   '<div class="stats" style="margin-top:10px">'+
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('🟡 Reserved',reserved)+invStat('🔧 Service',service)+invStat('📦 Total',inventoryStock.length)+'</div>'+
-  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" id="invProductsTab" type="button" data-inventory-view="products">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button>'+(profile?.role==='SALES'?'<button class="success" onclick="openWalkInClosing()">🚶 Walk-In</button>':'')+'<button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button><button class="secondary" onclick="openHunterCommission()">💸 Komisi</button></div>'+
+  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" id="invProductsTab" type="button" data-inventory-view="products">Produk</button><button class="secondary" onclick="openSalesReport()">Penjualan</button>'+'<button class="secondary" onclick="openHunterDashboard()">🏹 Hunter</button><button class="secondary" onclick="openHunterCommission()">💸 Komisi</button></div>'+
   '<div id="inventoryViewDebug" class="small" style="margin-top:8px;font-weight:700"></div><div id="inventoryBody" style="margin-top:10px"></div>';
   const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');if(!dash.contains(host))dash.insertBefore(host,stats);
   host.onclick=(e)=>{const tab=e.target.closest('[data-inventory-view]');if(tab){e.preventDefault();setInventoryView(tab.dataset.inventoryView)}};
@@ -153,42 +153,6 @@ async function saveStock(){
  const x=await sb.from('stock_units').insert(data);if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
 
-function openWalkInClosing(){
- const rows=inventoryStock.filter(s=>s.status==='READY');
- if(!rows.length)return alert('Belum ada stock READY untuk transaksi Walk-In.');
- $('mt').textContent='🚶 Walk-In / Direct Closing';
- $('mb').innerHTML='<div class="small" style="margin-bottom:10px">Customer datang langsung. Tidak perlu membuat Lead atau melewati funnel.</div><label>Stock / Produk</label><select id="wiStock">'+rows.map(s=>'<option value="'+s.id+'">'+esc(s.product+(s.variant?' '+s.variant:'')+(s.color?' • '+s.color:'')+' • IMEI '+(s.imei_1||'-')+' • Rp'+Number(s.asking_price||0).toLocaleString('id-ID'))+'</option>').join('')+'</select><label>Harga Jual</label><input id="wiPrice" type="number" value="'+Number(rows[0].asking_price||0)+'"><label>Diskon</label><input id="wiDiscount" type="number" value="0"><label>Nama Customer (opsional)</label><input id="wiCustomer"><label>WhatsApp Customer (opsional)</label><input id="wiPhone"><label>Catatan</label><textarea id="wiNotes"></textarea><button class="success" onclick="saveWalkInClosing()">✓ Closing Walk-In</button>';
- $('wiStock').onchange=()=>{const s=inventoryStock.find(x=>x.id===$('wiStock').value);if(s)$('wiPrice').value=Number(s.asking_price||0)};
- $('modal').classList.remove('hidden');
-}
-async function saveWalkInClosing(){
- const id=$('wiStock').value,s=inventoryStock.find(x=>x.id===id),price=Number($('wiPrice').value||0),discount=Number($('wiDiscount').value||0);
- if(!s||price<=0)return alert('Stock dan harga jual wajib diisi.');
- const stock=await sb.from('stock_units').update({status:'SOLD',sold_at:new Date().toISOString(),sold_price:price,sold_by_user_id:profile.user_id,updated_at:new Date().toISOString()}).eq('id',id).eq('status','READY').select('id');
- if(stock.error)return alert(stock.error.message);if(!stock.data?.length)return alert('Unit sudah berubah status. Refresh stock lalu coba lagi.');
- const tx=await sb.from('sales_transactions').insert({stock_unit_id:id,outlet:profile.outlet,sales_user_id:profile.user_id,sale_price:price,discount,cost:Number(s.cost||0),hunter_user_id:s.source_type==='HUNTER'?s.hunter_user_id:null,customer_name:$('wiCustomer').value.trim()||null,customer_phone:$('wiPhone').value.trim()||null,customer_source:'WALK-IN',notes:$('wiNotes').value.trim()||null});
- if(tx.error){await sb.from('stock_units').update({status:'READY',sold_at:null,sold_price:null,sold_by_user_id:null}).eq('id',id);return alert(tx.error.message)}
- closeModal();await renderInventory();alert('Walk-In Closing berhasil.');
-}
-
-async function openSellStock(id){
- const s=inventoryStock.find(x=>x.id===id);if(!s)return;
- $('mt').textContent='💰 Closing — '+s.product;$('mb').innerHTML='<div class="box"><b>'+esc(s.product)+' '+esc(s.variant||'')+'</b><div class="small">IMEI '+esc(s.imei_1||'-')+' • '+(s.grade?'Grade '+s.grade+' • ':'')+(s.battery_health!=null?'BH '+s.battery_health+'%':'')+'</div></div><label>Sumber Customer</label><select id="saleSource"><option value="DIGITAL">📱 DIGITAL — dari funnel</option><option value="WALK-IN">🚶 WALK-IN — datang langsung</option></select><label>Harga Jual</label><input id="salePrice" type="number" value="'+Number(s.asking_price||0)+'"><label>Diskon</label><input id="saleDiscount" type="number" value="0"><label>Nama Customer (opsional)</label><input id="saleCustomer"><label>WhatsApp Customer (opsional)</label><input id="salePhone"><label>Catatan</label><textarea id="saleNotes"></textarea><button class="success" onclick="saveSale(\''+id+'\')">✓ Closing & Kurangi Stock</button>';$('modal').classList.remove('hidden');
-}
-async function saveSale(id){
- const s=inventoryStock.find(x=>x.id===id),price=Number($('salePrice').value||0),discount=Number($('saleDiscount').value||0),customerSource=$('saleSource')?.value||'DIGITAL';
- if(!s||price<=0)return alert('Harga jual wajib diisi.');
- const gross=Math.max(price-discount-Number(s.cost||0),0),commission=s.source_type==='HUNTER'?gross*.10:0;
- const stock=await sb.from('stock_units').update({status:'SOLD',sold_at:new Date().toISOString(),sold_price:price,sold_by_user_id:profile.user_id,updated_at:new Date().toISOString()}).eq('id',id).eq('status','READY').select('id');
- if(stock.error)return alert(stock.error.message);
- if(!stock.data?.length)return alert('Unit sudah berubah status. Refresh stock lalu coba lagi.');
- const tx=await sb.from('sales_transactions').insert({stock_unit_id:id,outlet:profile.outlet,sales_user_id:profile.user_id,sale_price:price,discount,cost:Number(s.cost||0),hunter_user_id:s.source_type==='HUNTER'?s.hunter_user_id:null,customer_name:$('saleCustomer').value.trim()||null,customer_phone:$('salePhone').value.trim()||null,customer_source:customerSource,notes:$('saleNotes').value.trim()||null});
- if(tx.error){
-   await sb.from('stock_units').update({status:'READY',sold_at:null,sold_price:null,sold_by_user_id:null}).eq('id',id);
-   return alert(tx.error.message);
- }
- closeModal();await renderInventory();alert('Closing berhasil.\nLaba kotor: Rp'+gross.toLocaleString('id-ID')+'\nKomisi Hunter: Rp'+commission.toLocaleString('id-ID'));
-}
 async function openEditStock(id){
  const s=inventoryStock.find(x=>x.id===id);if(!s)return;
  $('mt').textContent='Edit Stock';$('mb').innerHTML='<div class="small">'+esc(s.product)+' • IMEI '+esc(s.imei_1||'-')+'</div><label>Grade</label><select id="esgrade"><option value="">—</option><option '+(s.grade==='A'?'selected':'')+'>A</option><option '+(s.grade==='B'?'selected':'')+'>B</option><option '+(s.grade==='C'?'selected':'')+'>C</option></select><label>Kondisi</label><input id="escondition" value="'+esc(s.condition||'')+'"><label>Battery Health</label><input id="esbh" type="number" value="'+(s.battery_health??'')+'"><label>Kelengkapan</label><input id="escomplete" value="'+esc(s.completeness||'')+'"><label>Minus</label><textarea id="esminus">'+esc(s.minus||'')+'</textarea><label>Harga Jual</label><input id="esprice" type="number" value="'+Number(s.asking_price||0)+'"><button class="success" onclick="saveEditStock(\''+id+'\')">Simpan</button>';$('modal').classList.remove('hidden');

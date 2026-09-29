@@ -222,4 +222,55 @@ function historyCard(l){
 function closeModal(){$('modal').classList.add('hidden')}
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 $('refreshBtn').addEventListener('click',refreshLeads);
-(async()=>{try{await ensureSupabase();sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')location.reload()});const x=await sb.auth.getSession();if(x.data.session)await start(x.data.session.user)}catch(ex){$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.'}})();</script><script src="performance.js"></script></body></html>
+(async()=>{try{await ensureSupabase();sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')location.reload()});const x=await sb.auth.getSession();if(x.data.session)await start(x.data.session.user)}catch(ex){$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.'}})();
+async function renderContentPerformance(){
+ const host=document.getElementById('contentPerformance')||document.createElement('div');
+ host.id='contentPerformance'; host.className='box';
+ const x=await sb.rpc('content_dashboard_summary');
+ if(x.error){host.innerHTML='<h3>🎬 Content Performance</h3><p class="small">'+esc(x.error.message)+'</p>';return}
+ const d=x.data||{}, fmt=n=>Number(n||0).toLocaleString('id-ID');
+ if(d.management){
+   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">Bulan berjalan • target utama tetap WA outlet</div></div><button class="secondary" onclick="showContentManagementDetail()">Lihat Detail →</button></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.content_count||0),0))+'</div></div><div class="stat"><div class="small">👁️ Views</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.views||0),0))+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.comments||0),0))+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.dms||0),0))+'</div></div></div>';
+ }else{
+   const t=d.team||{},o=d.own||{};
+   const can=await canContentCreator();
+   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">'+esc(d.outlet||'')+' • '+(d.locked?'🔒 Laporan terkunci':'Live bulan berjalan')+'</div></div><div class="row">'+(can?'<button class="success" onclick="addContentPost()">＋ Tambah Content</button>':'')+'<button class="secondary" onclick="showMyContentDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten Outlet</div><div class="num">'+fmt(t.content_count)+'</div></div><div class="stat"><div class="small">👁️ Views Outlet</div><div class="num">'+fmt(t.views)+'</div></div><div class="stat"><div class="small">💬 Comments Outlet</div><div class="num">'+fmt(t.comments)+'</div></div><div class="stat"><div class="small">📩 DM Outlet</div><div class="num">'+fmt(t.dms)+'</div></div></div><div class="box" style="margin-bottom:0"><b>Kontribusi Saya</b><div class="small">🎬 '+fmt(o.content_count)+' konten • 👁️ '+fmt(o.views)+' views • 💬 '+fmt(o.comments)+' comments • 📩 '+fmt(o.dms)+' DM</div></div>';
+ }
+ const dash=document.getElementById('dashboard'); const stats=document.getElementById('stats'); if(!dash.contains(host))dash.insertBefore(host,stats);
+}
+async function canContentCreator(){if(profile?.is_management)return true;const x=await sb.from('team_permissions').select('can_content_creator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();return !!x.data?.can_content_creator}
+async function loadContentPosts(){const x=await sb.from('content_posts').select('*').eq('active',true).order('posted_at',{ascending:false});if(x.error)throw x.error;return x.data||[]}
+function contentMonthStart(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1).toISOString().slice(0,10)}
+async function addContentPost(){
+ const cc=profile?.is_management?await sb.from('team_profiles').select('name').eq('outlet',profile?.outlet||'').eq('active',true).order('name'):await sb.from('team_permissions').select('name').eq('outlet',profile.outlet).eq('active',true).eq('can_content_creator',true).order('name');
+ const names=(cc.data||[]).map(x=>'<option>'+esc(x.name)+'</option>').join('');
+ $('mt').textContent='🎬 Tambah Content';$('mb').innerHTML='<label>Content Creator</label><select id="cpcreator">'+names+'</select><label>Platform</label><select id="cpplatform"><option>TIKTOK</option><option>INSTAGRAM</option><option>FACEBOOK</option><option>YOUTUBE</option></select><label>Link Content</label><input id="cpurl" placeholder="https://vt.tiktok.com/..."><label>Judul / Deskripsi</label><input id="cptitle"><label>Tanggal Upload</label><input id="cpposted" type="datetime-local" value="'+new Date().toISOString().slice(0,16)+'"><div class="row"><div style="flex:1"><label>Views</label><input id="cpviews" type="number" value="0"></div><div style="flex:1"><label>Comments</label><input id="cpcomments" type="number" value="0"></div></div><div class="row"><div style="flex:1"><label>DM</label><input id="cpdms" type="number" value="0"></div><div style="flex:1"><label>Likes</label><input id="cplikes" type="number" value="0"></div></div><label>Shares</label><input id="cpshares" type="number" value="0"><button class="success" onclick="saveContentPost()">Simpan Content</button>';
+ $('modal').classList.remove('hidden');
+}
+async function saveContentPost(){
+ const url=$('cpurl').value.trim();if(!url)return alert('Link content wajib diisi.');
+ const creator=$('cpcreator').value;
+ const x=await sb.from('content_posts').insert({outlet:profile.outlet,content_creator:creator,platform:$('cpplatform').value,post_url:url,title:$('cptitle').value.trim()||null,posted_at:new Date($('cpposted').value).toISOString(),views:Number($('cpviews').value||0),comments:Number($('cpcomments').value||0),dms:Number($('cpdms').value||0),likes:Number($('cplikes').value||0),shares:Number($('cpshares').value||0)});
+ if(x.error)return alert(x.error.message);closeModal();await renderContentPerformance();
+}
+async function showMyContentDetail(){
+ const posts=await loadContentPosts(), month=contentMonthStart(), mine=posts.filter(p=>p.outlet===profile.outlet&&p.month_start===month&&p.content_creator===profile.name);
+ $('mt').textContent='🎬 Content Saya — '+month.slice(0,7);$('mb').innerHTML=(mine.map(contentDetailCard).join('')||'<p class="small">Belum ada content bulan ini.</p>')+'<button class="secondary" onclick="closeModal()">Tutup</button>'; $('modal').classList.remove('hidden');
+}
+async function showContentManagementDetail(){
+ const posts=await loadContentPosts(), month=contentMonthStart(), groups={};
+ posts.filter(p=>p.month_start===month).forEach(p=>{const k=p.outlet+' • '+p.content_creator;(groups[k]??=[]).push(p)});
+ $('mt').textContent='🎬 Content Performance — '+month.slice(0,7);
+ $('mb').innerHTML=Object.entries(groups).sort().map(([k,arr])=>'<div class="box"><h3>'+esc(k)+'</h3><div class="small">🎬 '+arr.length+' • 👁️ '+Number(arr.reduce((a,p)=>a+p.views,0)).toLocaleString('id-ID')+' • 💬 '+Number(arr.reduce((a,p)=>a+p.comments,0)).toLocaleString('id-ID')+' • 📩 '+Number(arr.reduce((a,p)=>a+p.dms,0)).toLocaleString('id-ID')+'</div><button class="secondary" onclick="showContentListFor(\''+encodeURIComponent(k)+'\')">Lihat Content →</button></div>').join('')||'<p class="small">Belum ada content bulan ini.</p>';
+ $('modal').classList.remove('hidden');
+}
+async function showContentListFor(encoded){
+ const key=decodeURIComponent(encoded), posts=await loadContentPosts(), month=contentMonthStart(), mine=posts.filter(p=>(p.outlet+' • '+p.content_creator)===key&&p.month_start===month);
+ $('mt').textContent='🎬 '+key;$('mb').innerHTML=(mine.map(contentDetailCard).join('')||'<p class="small">Belum ada content.</p>')+'<button class="secondary" onclick="showContentManagementDetail()">← Kembali</button>'; 
+}
+function contentDetailCard(p){
+ return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(p.title||'Content '+p.content_id.slice(0,8))+'</b><span class="badge">'+esc(p.platform)+'</span></div><div class="small">'+new Date(p.posted_at).toLocaleString('id-ID')+'</div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">👁️ Views</div><div class="num">'+Number(p.views||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+Number(p.comments||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+Number(p.dms||0).toLocaleString('id-ID')+'</div></div></div><a href="'+esc(p.post_url)+'" target="_blank">🔗 Buka Content</a></div>';
+}
+const oldRender=window.render;
+window.render=async function(){const r=await oldRender();await renderContentPerformance();return r};
+\n</script><script src="performance.js"></script></body></html>

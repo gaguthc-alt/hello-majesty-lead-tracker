@@ -163,7 +163,7 @@ async function render(){
 async function renderTargetBoard(){
  const x=await sb.rpc('dashboard_target_summary');
  if(x.error)return;
- const d=x.data||{}, outlets=d.outlets||[], roles=(d.management?['Management']:(d.roles||[]));
+ const d=x.data||{}, outlets=d.outlets||[], roles=(d.management?['Management']:(d.roles||[])); window.hmRoles=roles;
  const own=d.own_contribution||{};
  const pct=(a,t)=>t>0?Math.min(100,Math.round((a/t)*100)):0;
  const bar=(label,a,t,icon)=>'<div class="stat"><div class="small">'+icon+' '+label+'</div><div class="num">'+a+' / '+t+'</div><div class="small">'+pct(a,t)+'%</div></div>';

@@ -154,6 +154,7 @@ async function openReceiveStock(){
  '<label>IMEI 1</label><input id="stimei1"><label>IMEI 2 (opsional)</label><input id="stimei2"><label>Kondisi</label><input id="stcondition" placeholder="Contoh: 95% / Mulus"><label>Battery Health</label><input id="stbh" type="number" min="0" max="100" placeholder="89"><label>Kelengkapan</label><input id="stcomplete" placeholder="Unit + Box + Cable"><label>Minus</label><textarea id="stminus"></textarea>'+
  '</div>'+
  '<div id="iphoneNewFields" class="hidden"><label>IMEI 1</label><input id="stimei1new"><label>IMEI 2 / EID (opsional)</label><input id="stimei2new"><label>Harga Beli</label><input id="stcostnew" type="number"><label>Harga Jual</label><input id="stpricenew" type="number"><label>Supplier / Dealer (opsional)</label><input id="stsupplier" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="stnotesnew"></textarea></div>'+
+ '<div id="iphoneSecondFields" class="hidden"><label>IMEI 1</label><input id="stimei1second"><label>IMEI 2 / EID (opsional)</label><input id="stimei2second"><label>Battery Health</label><input id="stbhsecond" type="number" min="0" max="100" placeholder="89"><label>Kondisi</label><input id="stconditionsecond" placeholder="Contoh: Mulus / 95%"><label>Kelengkapan</label><input id="stcompletesecond" placeholder="Unit + Box + Cable"><label>Minus (opsional)</label><textarea id="stminusseconde"></textarea><label>Harga Beli</label><input id="stcostsecond" type="number"><label>Harga Jual</label><input id="stpricesec" type="number"><label>Supplier / Dealer (opsional)</label><input id="stsuppliersecond" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="stnotessecond"></textarea></div>'+
  '<div id="standardPriceFields"><label>Harga Modal</label><input id="stcost" type="number"><label>Harga Jual</label><input id="stprice" type="number"><label>Referensi Barang Masuk</label><input id="stref" placeholder="Invoice / nota / kode hunter"><label>Catatan</label><textarea id="stnotes"></textarea></div>'+
  '<button class="success" onclick="saveStock()">Simpan Stock Ready</button>';
  if(isIphoneNew)toggleReceiveFields();
@@ -163,8 +164,8 @@ async function openReceiveStock(){
 function toggleReceiveFields(){
  const p=inventoryProducts.find(x=>x.id===$('stprod')?.value), isNew=p?.category==='IPHONE_NEW';
  $('standardReceiveFields')?.classList.toggle('hidden',isNew);
- $('standardPriceFields')?.classList.toggle('hidden',isNew);
- $('iphoneNewFields')?.classList.toggle('hidden',!isNew);
+ $('standardPriceFields')?.classList.toggle('hidden',isNew||isSecond);
+ $('iphoneNewFields')?.classList.toggle('hidden',!isNew); $('iphoneSecondFields')?.classList.toggle('hidden',!isSecond);
  const source=$('stsource');
  if(source)source.onchange=()=>{$('hunterBox')?.classList.toggle('hidden',source.value!=='HUNTER')};
 }

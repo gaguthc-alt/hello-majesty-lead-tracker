@@ -291,7 +291,7 @@ function stockReportText(d){
    const color=cleanText(r.color);
    const name=[product,variant,color].filter(Boolean).join(' — ');
    const bh=r.category==='IPHONE_SECOND'&&r.battery_health!==null&&r.battery_health!==undefined&&r.battery_health!==''?' — BH'+String(r.battery_health).replace('%',''):'';
-   return String(no++).padStart(2,'0')+'. '+name+bh+'\n   '+rupiahReport(r.asking_price)+'\n';
+   return String(no++).padStart(2,'0')+'. '+name+bh+'\n     '+rupiahReport(r.asking_price)+'\n';
  };
  groups.forEach(([cat,title])=>{
    const items=rows.filter(r=>r.category===cat).sort(alpha);

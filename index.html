@@ -152,7 +152,7 @@ async function render(){
   potential_followup:todayLeads.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length,
   qualified:todayLeads.filter(l=>l.status_lead==='QUALIFIED').length,
   handle:todayLeads.filter(l=>l.status_lead==='HANDLE').length,
-  selesai:todayLeads.filter(l=>l.status_lead==='HASIL').length,
+  selesai:todayLeads.filter(l=>l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL').length,
   closing:todayLeads.filter(l=>l.sales_result==='CLOSING').length,
   potensial:todayLeads.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length,
   gagal:todayLeads.filter(l=>l.status_lead==='HASIL'&&(l.qualification_result==='GAGAL'||l.sales_result==='GAGAL'||l.hasil==='GAGAL'||l.hasil==='LOST')).length
@@ -417,7 +417,7 @@ async function confirmDelete(id){
 }
 function showCurrentStatus(type){
  const items=leads.filter(l=>{
-  if(type==='HASIL')return l.status_lead==='HASIL';
+  if(type==='HASIL')return l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL';
   if(type==='POTENSIAL')return l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
   return l.status_lead===type;
  });

@@ -447,7 +447,7 @@ function followupItems(mode){
  const iso=localDateISO();
  return leads.filter(viewerLead).filter(l=>{
   const potential=l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
-  const date=String(l.sales_follow_up_date||l.cs_follow_up_date||'').slice(0,10);
+  const date=String(l.sales_claimed_by?l.sales_follow_up_date:l.cs_follow_up_date||'').slice(0,10);
   if(!potential||!date)return false;
   if(mode==='TODAY')return date===iso;
   if(mode==='OVERDUE')return date<iso;

@@ -160,7 +160,7 @@ async function render(){
  };
  const stat=(label,val,click)=>'<div class="stat" '+(click?'style="cursor:pointer" onclick="'+click+'"':'')+'><div class="small">'+label+'</div><div class="num">'+(val||0)+'</div>'+(click?'<div class="small">Tap untuk lihat detail</div>':'')+'</div>';
  $('stats').innerHTML='<b style="grid-column:1/-1">📥 LEAD MASUK HARI INI</b>'+
- stat('Total Lead',v.total)+
+ stat('Total Lead',v.total,"showTodayLeads()")+
  '<b style="grid-column:1/-1;margin-top:8px">🔄 STATUS SAAT INI</b>'+
  [
   ['Available',v.available,"showCurrentStatus('AVAILABLE')"],
@@ -414,7 +414,14 @@ function deleteLead(id){
 }
 async function confirmDelete(id){
  if($('dc').value.trim()!=='YA, HAPUS PERMANEN')return alert('Konfirmasi tidak sesuai.');
- const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:$('dc').value.trim()});if(x.error)return alert(x.error.message);closeModal();await loadLeads();
+ const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:$('dc').value.trim()});if(x.error)return alert(x.error.message);closeModal();aw
+function showTodayLeads(){
+ const todayStart=new Date();todayStart.setHours(0,0,0,0);
+ const tomorrow=new Date(todayStart);tomorrow.setDate(tomorrow.getDate()+1);
+ const items=leads.filter(viewerLead).filter(l=>{const d=new Date(l.created_at);return d>=todayStart&&d<tomorrow});
+ $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>📥 Lead Masuk Hari Ini</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Detail seluruh lead hari ini yang sesuai tanggung jawab Anda.</p></div>'+(items.map(historyCard).join('')||'<p class="small">Belum ada lead masuk hari ini.</p>');
+}
+ait loadLeads();
 }
 function showCurrentStatus(type){
  const items=leads.filter(viewerLead).filter(l=>{

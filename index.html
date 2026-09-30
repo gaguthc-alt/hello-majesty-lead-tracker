@@ -465,6 +465,8 @@ function showCurrentStatus(type){
   if(type==='ALL')return true;
   if(type==='HASIL')return l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL';
   if(type==='POTENSIAL')return l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
+  if(type==='QUALIFIED')return l.status_lead==='QUALIFIED'&&!l.sales_claimed_by;
+  if(type==='HANDLE')return l.sales_claimed_by&&!((l.sales_result==='CLOSING'||l.sales_result==='GAGAL')||(l.qualification_result==='GAGAL'||l.qualification_result==='CLOSING')||(l.hasil==='GAGAL'||l.hasil==='LOST'||l.hasil==='CLOSING'));
   return l.status_lead===type;
  });
  $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>Status '+type+'</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Lead yang tampil berdasarkan status saat ini.</p></div>'+

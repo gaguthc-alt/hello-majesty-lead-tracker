@@ -176,7 +176,7 @@ async function render(){
   ['Gagal',v.gagal,"showHistory('GAGAL')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  const active=leads.filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL');
- $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p><button class="secondary" onclick="showCurrentStatus('HASIL')">📋 Lihat Lead Selesai</button>';
+ $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p><button class="secondary" onclick="showCurrentStatus(&quot;HASIL&quot;)">📋 Lihat Lead Selesai</button>';
 }
 async function renderTargetBoard(){
  const x=await sb.rpc('dashboard_target_summary');

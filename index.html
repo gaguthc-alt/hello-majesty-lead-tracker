@@ -317,7 +317,7 @@ async function shareFacilitatorReport(period,withStock){
      }
    }
    let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target);
-   if(withStock){const s=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(s)}
+   if(withStock){const s=await getFacilitatorReport(period);text+='\n\n'+stockReportText(s)}
    waShare(text);
  }catch(e){alert('Laporan error: '+(e?.message||e));}
 }

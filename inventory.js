@@ -98,7 +98,7 @@ async function compressStockPhoto(file){
  canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
  return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Gagal kompres foto.')),'image/webp',quality));
 }
-async async function uploadStockPhoto(stockId,slot,file){
+async function uploadStockPhoto(stockId,slot,file){
  if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
  try{
   const blob=await compressStockPhoto(file);if(blob.size>1048576)throw new Error('Foto masih lebih dari 1 MB setelah kompresi.');
@@ -110,7 +110,7 @@ async async function uploadStockPhoto(stockId,slot,file){
   await renderInventory();openProductDetail(stockId);
  }catch(e){alert('Foto '+slot+' gagal diupload: '+(e?.message||e))}
 }
-async async function deleteStockPhoto(stockId,slot){
+async function deleteStockPhoto(stockId,slot){
  if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
  if(!confirm('Hapus Foto '+slot+' dari unit ini?'))return;
  const path=`${stockId}/foto-${slot}.webp`;const rm=await sb.storage.from('stock-photos').remove([path]);if(rm.error)return alert(rm.error.message);

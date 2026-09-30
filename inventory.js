@@ -1,4 +1,4 @@
-/* HM_INVENTORY_STABLE_20260930_ANDROID_NEW_1 */
+/* HM_INVENTORY_STABLE_20260930_ANDROID_SECOND_3 */
 /* Hello Majesty Inventory & Hunter */
 let inventoryProducts=[], inventoryStock=[], inventoryView='stock';
 let hunterDashboard=[];
@@ -67,21 +67,22 @@ async function openReceiveStock(){
  '<div id="iphoneNewFields" class="hidden"><label>IMEI 1</label><input id="stimei1new"><label>IMEI 2 / EID (opsional)</label><input id="stimei2new"><label>Harga Beli</label><input id="stcostnew" type="number"><label>Harga Jual</label><input id="stpricenew" type="number"><label>Supplier / Dealer (opsional)</label><input id="stsupplier" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="stnotesnew"></textarea></div>'+
  '<div id="iphoneSecondFields" class="hidden"><label>IMEI 1</label><input id="stimei1second"><label>IMEI 2 / EID (opsional)</label><input id="stimei2second"><label>Battery Health</label><input id="stbhsecond" type="number" min="0" max="100" placeholder="89"><label>Kondisi</label><input id="stconditionsecond" placeholder="Contoh: Mulus / 95%"><label>Kelengkapan</label><input id="stcompletesecond" placeholder="Unit + Box + Cable"><label>Minus (opsional)</label><textarea id="stminusseconde"></textarea><label>Harga Beli</label><input id="stcostsecond" type="number"><label>Harga Jual</label><input id="stpricesec" type="number"><label>Supplier / Dealer (opsional)</label><input id="stsuppliersecond" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="stnotessecond"></textarea></div>'+
  '<div id="androidNewFields" class="hidden"><label>Warna</label><input id="standroidcolor" placeholder="Contoh: Violet"><label>IMEI 1</label><input id="standroidimei1"><label>IMEI 2 (opsional)</label><input id="standroidimei2"><label>Harga Beli</label><input id="standroidcost" type="number"><label>Harga Jual</label><input id="standroidprice" type="number"><label>Supplier / Dealer (opsional)</label><input id="standroidsupplier" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="standroidnotes"></textarea></div>'+
- '<div id="standardPriceFields"><label>Harga Modal</label><input id="stcost" type="number"><label>Harga Jual</label><input id="stprice" type="number"><label>Referensi Barang Masuk</label><input id="stref" placeholder="Invoice / nota / kode hunter"><label>Catatan</label><textarea id="stnotes"></textarea></div><button class="success" onclick="saveStock()">Simpan Stock Ready</button>';
+ '<div id="androidSecondFields" class="hidden"><label>Warna</label><input id="standroidsecondcolor" placeholder="Contoh: Black"><label>IMEI 1</label><input id="standroidsecondimei1"><label>IMEI 2 (opsional)</label><input id="standroidsecondimei2"><label>Kondisi</label><input id="standroidsecondcondition" placeholder="Contoh: Mulus / 90%"><label>Kelengkapan</label><input id="standroidsecondcomplete" placeholder="Unit + Box + Cable"><label>Minus (opsional)</label><textarea id="standroidsecondminus"></textarea><label>Harga Beli</label><input id="standroidsecondcost" type="number"><label>Harga Jual</label><input id="standroidsecondprice" type="number"><label>Supplier / Dealer (opsional)</label><input id="standroidsecondsupplier" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="standroidsecondnotes"></textarea></div><div id="standardPriceFields"><label>Harga Modal</label><input id="stcost" type="number"><label>Harga Jual</label><input id="stprice" type="number"><label>Referensi Barang Masuk</label><input id="stref" placeholder="Invoice / nota / kode hunter"><label>Catatan</label><textarea id="stnotes"></textarea></div><button class="success" onclick="saveStock()">Simpan Stock Ready</button>';
  toggleReceiveFields();
  $('modal').classList.remove('hidden');
 }
 function toggleReceiveFields(){
- const p=inventoryProducts.find(x=>x.id===$('stprod')?.value),isNew=p?.category==='IPHONE_NEW',isSecond=p?.category==='IPHONE_SECOND',isAndroidNew=p?.category==='ANDROID_NEW';
- $('standardReceiveFields')?.classList.toggle('hidden',isNew||isSecond||isAndroidNew);
- $('standardPriceFields')?.classList.toggle('hidden',isNew||isSecond||isAndroidNew);
+ const p=inventoryProducts.find(x=>x.id===$('stprod')?.value),isNew=p?.category==='IPHONE_NEW',isSecond=p?.category==='IPHONE_SECOND',isAndroidNew=p?.category==='ANDROID_NEW',isAndroidSecond=p?.category==='ANDROID_SECOND';
+ $('standardReceiveFields')?.classList.toggle('hidden',isNew||isSecond||isAndroidNew||isAndroidSecond);
+ $('standardPriceFields')?.classList.toggle('hidden',isNew||isSecond||isAndroidNew||isAndroidSecond);
  $('iphoneNewFields')?.classList.toggle('hidden',!isNew);
  $('iphoneSecondFields')?.classList.toggle('hidden',!isSecond);
  $('androidNewFields')?.classList.toggle('hidden',!isAndroidNew);
+ $('androidSecondFields')?.classList.toggle('hidden',!isAndroidSecond);
  const source=$('stsource');if(source)source.onchange=()=>{$('hunterBox')?.classList.toggle('hidden',source.value!=='HUNTER')};
 }
 async function saveStock(){
- const selectedProduct=inventoryProducts.find(p=>p.id===$('stprod')?.value),isIphoneNew=selectedProduct?.category==='IPHONE_NEW',isIphoneSecond=selectedProduct?.category==='IPHONE_SECOND',isAndroidNew=selectedProduct?.category==='ANDROID_NEW';
+ const selectedProduct=inventoryProducts.find(p=>p.id===$('stprod')?.value),isIphoneNew=selectedProduct?.category==='IPHONE_NEW',isIphoneSecond=selectedProduct?.category==='IPHONE_SECOND',isAndroidNew=selectedProduct?.category==='ANDROID_NEW',isAndroidSecond=selectedProduct?.category==='ANDROID_SECOND';
  let data;
  if(isIphoneNew){
   const imei1=$('stimei1new').value.trim(),cost=$('stcostnew').value,price=$('stpricenew').value;
@@ -91,6 +92,10 @@ async function saveStock(){
   const imei1=$('stimei1second').value.trim(),bh=$('stbhsecond').value,condition=$('stconditionsecond').value.trim(),complete=$('stcompletesecond').value.trim(),cost=$('stcostsecond').value,price=$('stpricesec').value;
   if(!imei1||bh===''||!condition||!complete||cost===''||price==='')return alert('Untuk iPhone Second, IMEI 1, Battery Health, Kondisi, Kelengkapan, Harga Beli dan Harga Jual wajib diisi.');
   data={product_id:$('stprod').value,imei_1:imei1,imei_2:$('stimei2second').value.trim()||null,grade:selectedProduct?.grade||'-',condition,battery_health:Number(bh),completeness:complete,minus:$('stminusseconde').value.trim()||null,source_type:'MANAGEMENT',hunter_user_id:null,cost:Number(cost),asking_price:Number(price),supplier:$('stsuppliersecond').value.trim()||null,notes:$('stnotessecond').value.trim()||null,receipt_ref:null,received_source_note:'Management',outlet:profile?.outlet||null};
+ }else if(isAndroidSecond){
+  const color=$('standroidsecondcolor').value.trim(),imei1=$('standroidsecondimei1').value.trim(),condition=$('standroidsecondcondition').value.trim(),complete=$('standroidsecondcomplete').value.trim(),cost=$('standroidsecondcost').value,price=$('standroidsecondprice').value;
+  if(!color||!imei1||!condition||!complete||cost===''||price==='')return alert('Untuk Android Second, Warna, IMEI 1, Kondisi, Kelengkapan, Harga Beli dan Harga Jual wajib diisi.');
+  data={product_id:$('stprod').value,color,imei_1:imei1,imei_2:$('standroidsecondimei2').value.trim()||null,grade:null,condition,battery_health:null,completeness:complete,minus:$('standroidsecondminus').value.trim()||null,source_type:'MANAGEMENT',hunter_user_id:null,cost:Number(cost),asking_price:Number(price),supplier:$('standroidsecondsupplier').value.trim()||null,notes:$('standroidsecondnotes').value.trim()||null,receipt_ref:null,received_source_note:'Management',outlet:profile?.outlet||null};
  }else if(isAndroidNew){
   const color=$('standroidcolor').value.trim(),imei1=$('standroidimei1').value.trim(),cost=$('standroidcost').value,price=$('standroidprice').value;
   if(!color||!imei1||cost===''||price==='')return alert('Untuk Android New, Warna, IMEI 1, Harga Beli dan Harga Jual wajib diisi.');

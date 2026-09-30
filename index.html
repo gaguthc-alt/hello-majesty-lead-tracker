@@ -264,9 +264,9 @@ function salesReportText(d,label,target){
 }
 function stockReportText(d){
  const rows=d.ready_stock||[];
- let t='📦 *LAPORAN STOCK READY*\\n';
- t+='*Hello Majesty — '+(d.outlet||'-')+'*\\n\\n';
- t+='🟢 *Total READY: '+Number(d.ready_count||0)+' Unit*\\n\\n';
+ let t='📦 *LAPORAN STOCK READY*\n';
+ t+='*Hello Majesty — '+(d.outlet||'-')+'*\n\n';
+ t+='🟢 *Total READY: '+Number(d.ready_count||0)+' Unit*\n\n';
  let no=1;
  const groups=[
   ['IPHONE_NEW','*🍎 iPhone New*'],
@@ -274,26 +274,35 @@ function stockReportText(d){
   ['ANDROID_NEW','*🤖 Android New*'],
   ['ANDROID_SECOND','*🤖 Android Second*']
  ];
- const cleanText=v=>String(v||'').replace(/\\s*GB\\b/ig,'').trim();
- const cleanProduct=v=>String(v||'-').replace(/^IPhone\\b/,'iPhone').replace(/\\s+Gold$/i,'').replace(/\\s+Dessert Titanium$/i,'').trim();
+ const cleanText=v=>String(v||'').replace(/\s*GB\b/ig,'').trim();
+ const cleanProduct=v=>String(v||'-').replace(/^IPhone\b/i,'iPhone').replace(/\s+Gold$/i,'').replace(/\s+Dessert Titanium$/i,'').trim();
+ const alpha=(a,b)=>{
+   const ka=cleanProduct(a.product).toLowerCase();
+   const kb=cleanProduct(b.product).toLowerCase();
+   const p=ka.localeCompare(kb,'id',{sensitivity:'base',numeric:true});
+   if(p)return p;
+   const v=cleanText(a.variant).toLowerCase().localeCompare(cleanText(b.variant).toLowerCase(),'id',{sensitivity:'base',numeric:true});
+   if(v)return v;
+   return cleanText(a.color).localeCompare(cleanText(b.color),'id',{sensitivity:'base',numeric:true});
+ };
  const stockLine=r=>{
    const product=cleanProduct(r.product);
    const variant=cleanText(r.variant);
    const color=cleanText(r.color);
    const name=[product,variant,color].filter(Boolean).join(' — ');
    const bh=r.category==='IPHONE_SECOND'&&r.battery_health!==null&&r.battery_health!==undefined&&r.battery_health!==''?' — BH'+String(r.battery_health).replace('%',''):'';
-   return String(no++).padStart(2,'0')+'. '+name+bh+' — '+rupiahReport(r.asking_price)+'\\n';
+   return String(no++).padStart(2,'0')+'. '+name+bh+'\n   '+rupiahReport(r.asking_price)+'\n';
  };
  groups.forEach(([cat,title])=>{
-   const items=rows.filter(r=>r.category===cat);
+   const items=rows.filter(r=>r.category===cat).sort(alpha);
    if(items.length){
-     t+=title+'\\n';
+     t+=title+'\n';
      items.forEach(r=>{t+=stockLine(r);});
-     t+='\\n';
+     t+='\n';
    }
  });
- if(!rows.length)t+='Belum ada stock READY.\\n';
- t+='*— HELLO MAJESTY*\\n_Built on Trust._';
+ if(!rows.length)t+='Belum ada stock READY.\n';
+ t+='*— HELLO MAJESTY*\n_Built on Trust._';
  return t;
 }
 async function shareFacilitatorReport(period,withStock){

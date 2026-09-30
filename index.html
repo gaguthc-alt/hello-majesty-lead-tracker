@@ -344,7 +344,7 @@ function salesClaimMessage(l){
  return '🔒 *LEAD CLAIMED — FOLLOW UP*\\n\\nLead ID: '+l.lead_id+'\\n👤 PIC Sales: '+(profile?.name||'-')+'\\n🕐 Claim: '+tm+'\\n\\nLead sedang ditangani oleh '+(profile?.name||'-')+' untuk proses konsultasi & follow up.\\n\\nMohon tim tidak melakukan follow up lead yang sama tanpa koordinasi dengan PIC.\\n\\n— HELLO MAJESTY\\nBuilt on Trust.';
 }
 function shareSalesClaim(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesClaimMessage(l));}
-async function handoverSales(id){ const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'}); if(x.error)return alert(x.error.message); const claimed=leads.find(x=>x.lead_id===id); await loadLeads(); const fresh=leads.find(x=>x.lead_id===id)||claimed; if(fresh)shareSalesClaim(fresh); openUrl(); }
+async function handoverSales(id){ const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'}); if(x.error)return alert(x.error.message); await loadLeads(); openUrl(); }
 function share(id){
  const l=leads.find(x=>x.lead_id===id),link=location.origin+location.pathname+'?claim='+encodeURIComponent(id);
  const msg='🚨 LEAD QUALIFIED — SIAP DI-CLAIM SALES\n\nLead ID: '+l.lead_id+'\nKebutuhan: '+(l.need||'-')+'\nProduk: '+(l.product||'-')+'\nBudget: '+(l.budget||'-')+'\nTimeline: '+(l.timeline||'-')+'\nOutlet: '+(l.outlet||'-')+'\nCS: '+(l.cs_claimed_by||'-')+'\n\n📌 Buka link untuk melihat detail dan CLAIM:\n'+link+'\n\n— HELLO MAJESTY\nBuilt on Trust.';
@@ -361,11 +361,20 @@ function salesResult(id){
  $('mt').textContent='Hasil Sales';$('mb').innerHTML='<label>Hasil</label><select id="sr"><option value="CLOSING">CLOSING</option><option value="POTENSIAL">POTENSIAL</option><option value="GAGAL">GAGAL</option></select><div id="sdb" class="hidden"><label>Follow-up</label><input id="sd" type="date"></div><div id="sob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="sreason" placeholder="Contoh: budget tidak cocok, customer memilih produk lain..."></textarea></div><button id="saveSBtn" class="success">Simpan</button>';
  $('sr').onchange=()=>{$('sdb').classList.toggle('hidden',$('sr').value!=='POTENSIAL');$('sob').classList.toggle('hidden',$('sr').value!=='GAGAL')};$('saveSBtn').onclick=()=>saveS(id);$('modal').classList.remove('hidden');
 }
+function salesResultMessage(l){
+ const result=l.sales_result||'-', label=result==='CLOSING'?'🏆 CLOSING':result==='POTENSIAL'?'🔄 POTENSIAL':'❌ GAGAL';
+ let msg='📢 *UPDATE HASIL SALES*\\n\\nLead ID: '+l.lead_id+'\\n👤 PIC Sales: '+(l.sales_claimed_by||profile?.name||'-')+'\\n📌 Hasil: '+label+'\\n📱 Produk: '+(l.product||'-')+'\\n';
+ if(result==='POTENSIAL')msg+='📅 Follow-up: '+(l.sales_follow_up_date||'-')+'\\n';
+ if(result==='GAGAL')msg+='📝 Alasan: '+(l.objection||'-')+'\\n';
+ msg+='\\n— HELLO MAJESTY\\nBuilt on Trust.'; return msg;
+}
+function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
 async function saveS(id){
  if($('sr').value==='POTENSIAL'&&!$('sd').value)return alert('Tanggal follow-up wajib.');
  if($('sr').value==='GAGAL'&&!$('sreason').value.trim())return alert('Keterangan kenapa gagal wajib diisi.');
- const x=await sb.rpc('set_sales_result',{p_lead_id:id,p_result:$('sr').value,p_follow_up_date:$('sd').value||null,p_reason:$('sreason')?.value.trim()||null});
- if(x.error)return alert(x.error.message);closeModal();await loadLeads();
+ const result=$('sr').value;
+ const x=await sb.rpc('set_sales_result',{p_lead_id:id,p_result:result,p_follow_up_date:$('sd').value||null,p_reason:$('sreason')?.value.trim()||null});
+ if(x.error)return alert(x.error.message);closeModal();await loadLeads();showHistory(result);
 }
 async function addLead(){
  const cc=await sb.from('team_permissions').select('name').eq('outlet',profile?.outlet).eq('active',true).eq('can_content_creator',true).order('name');
@@ -419,7 +428,7 @@ function historyCard(l){
  (l.qualification_result==='GAGAL'||l.sales_result==='GAGAL'?'<div style="margin-top:8px;padding:10px;background:#fef2f2;border-radius:8px"><b>Keterangan Gagal:</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+
  (l.sales_follow_up_date?'<div class="small" style="margin-top:6px">Sales follow-up: '+esc(l.sales_follow_up_date)+'</div>':'')+
  (l.cs_follow_up_date?'<div class="small" style="margin-top:6px">CS follow-up: '+esc(l.cs_follow_up_date)+'</div>':'')+
- '<div class="row" style="margin-top:8px">'+(owner&&profile?.is_management?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button>':'')+action+'</div></div>';
+ '<div class="row" style="margin-top:8px">'+(owner&&profile?.is_management?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button>':'')+(isSales&&!profile?.is_management?'<button class="secondary" onclick="shareSalesResult(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+action+'</div></div>';
 }
 function closeModal(){$('modal').classList.add('hidden')}
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});

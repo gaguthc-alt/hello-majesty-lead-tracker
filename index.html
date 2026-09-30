@@ -438,6 +438,7 @@ function showTodayActivity(type){
 }
 function showCurrentStatus(type){
  const items=leads.filter(viewerLead).filter(l=>{
+  if(type==='ALL')return true;
   if(type==='HASIL')return l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL';
   if(type==='POTENSIAL')return l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
   return l.status_lead===type;

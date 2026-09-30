@@ -14,9 +14,12 @@ function maskImei(v){
 
 
 async function loadInventoryData(){
+  const stockView=profile?.is_management?'stock_management':'stock_catalog';
+  let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
+  if(!profile?.is_management && profile?.outlet) stockQuery=stockQuery.eq('outlet',profile.outlet);
   const [p,s]=await Promise.all([
     sb.from('product_master').select('*').eq('active',true).order('category').order('product'),
-    sb.from(profile?.is_management?'stock_management':'stock_catalog').select('*').order('status').order('received_at',{ascending:false})
+    stockQuery
   ]);
   if(p.error) throw p.error; if(s.error) throw s.error;
   inventoryProducts=p.data||[]; inventoryStock=s.data||[];

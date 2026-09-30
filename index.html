@@ -362,11 +362,17 @@ function salesResult(id){
  $('sr').onchange=()=>{$('sdb').classList.toggle('hidden',$('sr').value!=='POTENSIAL');$('sob').classList.toggle('hidden',$('sr').value!=='GAGAL')};$('saveSBtn').onclick=()=>saveS(id);$('modal').classList.remove('hidden');
 }
 function salesResultMessage(l){
- const result=l.sales_result||'-', label=result==='CLOSING'?'🏆 CLOSING':result==='POTENSIAL'?'🔄 POTENSIAL':'❌ GAGAL';
- let msg='📢 *UPDATE HASIL SALES*\\n\\nLead ID: '+l.lead_id+'\\n👤 PIC Sales: '+(l.sales_claimed_by||profile?.name||'-')+'\\n📌 Hasil: '+label+'\\n📱 Produk: '+(l.product||'-')+'\\n';
- if(result==='POTENSIAL')msg+='📅 Follow-up: '+(l.sales_follow_up_date||'-')+'\\n';
- if(result==='GAGAL')msg+='📝 Alasan: '+(l.objection||'-')+'\\n';
- msg+='\\n— HELLO MAJESTY\\nBuilt on Trust.'; return msg;
+ const result=l.sales_result||'-';
+ const pic=l.sales_claimed_by||profile?.name||'-';
+ const product=l.product||'-';
+ if(result==='CLOSING'){
+  return '🏆 *UPDATE HASIL SALES*\\n\\nLead ID: '+l.lead_id+'\\n👤 PIC Sales: '+pic+'\\n\\n📌 *Hasil: CLOSING*\\n📱 Produk: '+product+'\\n\\nLead berhasil closing dan ditangani oleh '+pic+'.\\n\\n— HELLO MAJESTY\\nBuilt on Trust.';
+ }
+ if(result==='POTENSIAL'){
+  const follow=l.sales_follow_up_date?new Date(l.sales_follow_up_date+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'-';
+  return '📢 *UPDATE HASIL SALES*\\n\\nLead ID: '+l.lead_id+'\\n👤 PIC Sales: '+pic+'\\n\\n📌 *Hasil: POTENSIAL*\\n📱 Produk: '+product+'\\n📅 Follow-up: '+follow+'\\n\\nLead masih dalam proses follow-up oleh '+pic+'.\\nMohon koordinasi dengan PIC untuk lead ini dan tidak melakukan follow-up tanpa koordinasi.\\n\\n— HELLO MAJESTY\\nBuilt on Trust.';
+ }
+ return '❌ *UPDATE HASIL SALES*\\n\\nLead ID: '+l.lead_id+'\\n👤 PIC Sales: '+pic+'\\n\\n📌 *Hasil: GAGAL*\\n📱 Produk: '+product+'\\n📝 Alasan: '+(l.objection||'-')+'\\n\\nLead dinyatakan gagal setelah proses konsultasi dan follow-up oleh '+pic+'.\\n\\n— HELLO MAJESTY\\nBuilt on Trust.';
 }
 function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
 async function saveS(id){

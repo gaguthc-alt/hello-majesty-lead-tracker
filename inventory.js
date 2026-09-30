@@ -1,7 +1,7 @@
 /* HM_INVENTORY_STABLE_20260930_ANDROID_SECOND_3 */
 /* Hello Majesty Inventory & Hunter */
 let inventoryProducts=[], inventoryStock=[], inventoryView='stock';
-let hunterDashboard=[]; let inventoryCanFacilitator=false;
+let hunterDashboard=[]; let inventoryCanFacilitator=false; let inventoryCanContentCreator=false;
 function canViewFullImei(){
  return !!profile?.is_management || inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR' || (Array.isArray(window.hmRoles) && window.hmRoles.some(r=>String(r).toUpperCase()==='FASILITATOR'));
 }
@@ -15,11 +15,13 @@ function maskImei(v){
 
 async function loadInventoryData(){
   inventoryCanFacilitator=false;
+  inventoryCanContentCreator=!!profile?.is_management;
   if(!profile?.is_management){
     const perm=await sb.rpc('has_facilitator_inventory_access');
     if(!perm.error) inventoryCanFacilitator=!!perm.data;
   }
-  window.hmCanFacilitator=inventoryCanFacilitator;
+  if(!profile?.is_management){const cc=await sb.from('team_permissions').select('can_content_creator').eq('name',profile?.name).eq('outlet',profile?.outlet).eq('active',true).maybeSingle();if(!cc.error)inventoryCanContentCreator=!!cc.data?.can_content_creator;}
+  window.hmCanFacilitator=inventoryCanFacilitator; window.hmCanContentCreator=inventoryCanContentCreator;
   const stockView=profile?.is_management?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
   if(!profile?.is_management && profile?.outlet) stockQuery=stockQuery.eq('outlet',profile.outlet);
@@ -126,7 +128,7 @@ function openProductDetail(id){const s=inventoryStock.find(x=>x.id===id);if(!s)r
 function invCategory(c){return ({IPHONE_NEW:'iPhone New',IPHONE_SECOND:'iPhone Second',ANDROID_NEW:'Android New',ANDROID_SECOND:'Android Second',STOCK_NEW_PUSAT:'Stock New Pusat',STOCK_SECOND_PUSAT:'Stock Second Pusat'})[c]||c}
 function masterProductLabel(p){const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();return [product,variant,p.color,suffix].filter(Boolean).join(' — ')}
 function stockCard(s){
- const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,canViewCost=management||facilitator,ready=s.status==='READY',sales=profile?.role==='SALES',c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
+ const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator,canViewCost=management||facilitator,ready=s.status==='READY',sales=profile?.role==='SALES',c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
  const rawTitle=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';
  const cleanProduct=rawTitle.replace(/\s+(NEW|SECOND)$/i,'').trim();
  const title=[cleanProduct,s.variant,s.color,suffix].filter(Boolean).join(' — ');
@@ -153,7 +155,7 @@ function stockCard(s){
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button>'+
    (ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+
-   (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||profile?.role==='CONTENT_CREATOR'?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Foto</button>':'')+
+   (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
 }
 function openProductMaster(){
@@ -255,7 +257,7 @@ async function saveStock(){
  }
  const x=await sb.from('stock_units').insert(data);if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
-async function openEditStockPhotos(id){if(!(profile?.is_management||profile?.role==='CONTENT_CREATOR'))return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres ke WebP • target &lt; 1 MB/foto.</div>';$('modal').classList.remove('hidden')}
+async function openEditStockPhotos(id){if(!(profile?.is_management||inventoryCanContentCreator))return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres ke WebP • target &lt; 1 MB/foto.</div>';$('modal').classList.remove('hidden')}
 function openEditStock(id){if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;const c=s.category;let f=`<div class="small">${esc(s.product)} • IMEI 1: ${esc(s.imei_1||'-')}</div>`;if(c==='IPHONE_SECOND')f+=`<label>Grade</label><select id="esgrade"><option value="-">-</option><option ${s.grade==='A'?'selected':''}>A</option><option ${s.grade==='B'?'selected':''}>B</option><option ${s.grade==='C'?'selected':''}>C</option></select><label>Kondisi</label><input id="escondition" value="${esc(s.condition||'')}"><label>Battery Health</label><input id="esbh" type="number" min="0" max="100" value="${s.battery_health??''}"><label>Kelengkapan</label><input id="escomplete" value="${esc(s.completeness||'')}"><label>Minus</label><textarea id="esminus">${esc(s.minus||'')}</textarea>`;else if(c==='ANDROID_SECOND')f+=`<label>Warna</label><input id="escolor" value="${esc(s.color||'')}"><label>Kondisi</label><input id="escondition" value="${esc(s.condition||'')}"><label>Kelengkapan</label><input id="escomplete" value="${esc(s.completeness||'')}"><label>Minus</label><textarea id="esminus">${esc(s.minus||'')}</textarea>`;else if(c==='ANDROID_NEW')f+=`<label>Warna</label><input id="escolor" value="${esc(s.color||'')}">`;f+=`<label>Harga Jual</label><input id="esprice" type="number" value="${Number(s.asking_price||0)}">${stockPhotoGallery(s,true)}<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres ke WebP • target &lt; 1 MB/foto.</div><button class="success" onclick="saveEditStock('${id}')">Simpan</button>`;$('mt').textContent='Edit Stock';$('mb').innerHTML=f;$('modal').classList.remove('hidden')}
 async function saveEditStock(id){if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;const c=s.category,data={asking_price:Number($('esprice').value||0),updated_at:new Date().toISOString()};if(c==='IPHONE_SECOND'){data.grade=$('esgrade').value||'-';data.condition=$('escondition').value.trim()||null;data.battery_health=$('esbh').value!==''?Number($('esbh').value):null;data.completeness=$('escomplete').value.trim()||null;data.minus=$('esminus').value.trim()||null}else if(c==='ANDROID_SECOND'){data.color=$('escolor').value.trim()||null;data.condition=$('escondition').value.trim()||null;data.completeness=$('escomplete').value.trim()||null;data.minus=$('esminus').value.trim()||null}else if(c==='ANDROID_NEW'){data.color=$('escolor').value.trim()||null}const x=await sb.from('stock_units').update(data).eq('id',id);if(x.error)return alert(x.error.message);closeModal();await renderInventory()}
 async function openStockHistory(id){const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});if(x.error)return alert(x.error.message);$('mt').textContent='🧾 Histori Stock';$('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';$('modal').classList.remove('hidden')}

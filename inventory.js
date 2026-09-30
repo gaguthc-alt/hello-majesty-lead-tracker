@@ -15,9 +15,9 @@ function maskImei(v){
 
 async function loadInventoryData(){
   inventoryCanFacilitator=false;
-  if(profile?.user_id && !profile?.is_management){
-    const perm=await sb.from('team_permissions').select('can_facilitator,active').eq('name',profile.name).eq('outlet',profile.outlet).maybeSingle();
-    inventoryCanFacilitator=!!(perm.data?.active&&perm.data?.can_facilitator);
+  if(!profile?.is_management){
+    const perm=await sb.rpc('has_facilitator_inventory_access');
+    if(!perm.error) inventoryCanFacilitator=!!perm.data;
   }
   window.hmCanFacilitator=inventoryCanFacilitator;
   const stockView=profile?.is_management?'stock_management':'stock_catalog';

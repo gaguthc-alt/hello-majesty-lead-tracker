@@ -74,7 +74,35 @@ function shareProduct(s){const text=productShareText(s);if(navigator.share){navi
 function openProductDetail(id){const s=inventoryStock.find(x=>x.id===id);if(!s)return;const c=s.category;let d='';if(c==='IPHONE_SECOND')d='<b>Grade:</b> '+esc(s.grade||'-')+'<br><b>Kondisi:</b> '+esc(s.condition||'-')+'<br><b>Battery Health:</b> '+(s.battery_health!=null?s.battery_health+'%':'-')+'<br><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'<br><b>Minus:</b> '+esc(s.minus||'-')+'<br>';else if(c==='ANDROID_SECOND')d='<b>Warna:</b> '+esc(s.color||'-')+'<br><b>Kondisi:</b> '+esc(s.condition||'-')+'<br><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'<br><b>Minus:</b> '+esc(s.minus||'-')+'<br>';else if(c==='ANDROID_NEW')d='<b>Warna:</b> '+esc(s.color||'-')+'<br>';d+='<b>IMEI 1:</b> '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+'<br><b>Harga Jual:</b> Rp'+Number(s.asking_price||0).toLocaleString('id-ID');const html=`<div class="box"><h2 style="margin:0">${esc((()=>{let raw=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(raw)?.[1]?.toUpperCase()||'';raw=raw.replace(/\s+(NEW|SECOND)$/i,'').trim();return [raw,s.variant,s.color,suffix].filter(Boolean).join(' — ')})())}</h2><div class="small">${invCategory(s.category)} • ${esc(s.status)}</div></div><div class="lead">${d}</div><div class="row"><button class="success" onclick="shareProduct(inventoryStock.find(x=>x.id===\'${id}\'))">📤 Kirim Info Customer</button>${profile?.role==='SALES'&&s.status==='READY'?'<button class="success" onclick="closeModal();openSellStock(\''+id+'\')">💰 Closing</button>':''}</div>`;$('mt').textContent='📱 Detail Produk';$('mb').innerHTML=html;$('modal').classList.remove('hidden')}
 function invCategory(c){return ({IPHONE_NEW:'iPhone New',IPHONE_SECOND:'iPhone Second',ANDROID_NEW:'Android New',ANDROID_SECOND:'Android Second',STOCK_NEW_PUSAT:'Stock New Pusat',STOCK_SECOND_PUSAT:'Stock Second Pusat'})[c]||c}
 function masterProductLabel(p){const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();return [product,variant,p.color,suffix].filter(Boolean).join(' — ')}
-function stockCard(s){const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,canViewCost=management||facilitator,ready=s.status==='READY',sales=profile?.role==='SALES',c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';const rawTitle=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';const cleanProduct=rawTitle.replace(/\s+(NEW|SECOND)$/i,'').trim();const title=[cleanProduct,s.variant,s.color,suffix].filter(Boolean).join(' — ');let meta=invCategory(c);if(c==='IPHONE_SECOND'&&s.grade)meta+=' • Grade '+esc(s.grade);if(isSecond&&s.condition)meta+=' • '+esc(s.condition);if(c==='IPHONE_SECOND'&&s.battery_health!=null)meta+=' • BH '+s.battery_health+'%';meta+=' • IMEI 1 '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1));let body='<b>Harga Jual:</b> Rp'+Number(s.asking_price||0).toLocaleString('id-ID');if(isSecond)body='<b>Kelengkapan:</b> '+esc(s.completeness||'-')+'<br><b>Minus:</b> '+esc(s.minus||'-')+'<br>'+body;return '<div class="lead" style="padding:14px;margin-bottom:10px"><div class="row" style="justify-content:space-between;align-items:flex-start"><b style="font-size:18px">'+esc(title)+'</b><span class="badge">'+esc(s.status||'-')+'</span></div><div class="small" style="margin-top:8px">📍 Outlet: <b>'+esc(s.outlet||'-')+'</b>'+(s.status==='SOLD'?' • Terjual '+new Date(s.sold_at).toLocaleDateString('id-ID'):'')+'</div><div class="small" style="margin-top:6px">'+meta+'</div>'+(canViewCost?'<div class="small" style="margin-top:6px"><b>Harga Beli:</b> Rp'+Number(s.cost||0).toLocaleString('id-ID')+'</div>':'')+'<div style="margin-top:8px">'+body+'</div><div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button>'+(ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+(management?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+'</div></div>'}
+function stockCard(s){
+ const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,canViewCost=management||facilitator,ready=s.status==='READY',sales=profile?.role==='SALES',c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
+ const rawTitle=String(s.product||'').trim(),suffix=/(?:\\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';
+ const cleanProduct=rawTitle.replace(/\\s+(NEW|SECOND)$/i,'').trim();
+ const title=[cleanProduct,s.variant,s.color,suffix].filter(Boolean).join(' — ');
+ let meta=[];
+ if(c==='IPHONE_SECOND'&&s.grade)meta.push('<b>Grade '+esc(s.grade)+'</b>');
+ if(isSecond&&s.condition)meta.push(esc(s.condition));
+ if(c==='IPHONE_SECOND'&&s.battery_health!=null)meta.push('BH '+s.battery_health+'%');
+ const imei=canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1);
+ let details='';
+ if(isSecond){
+   details='<div style="margin-top:8px;font-size:13px;line-height:1.55">'+
+     '<div><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'</div>'+
+     '<div><b>Minus:</b> '+esc(s.minus||'-')+'</div>'+
+   '</div>';
+ }
+ const salePrice='<div style="margin-top:9px"><div style="font-size:12px;font-weight:600;color:#667085">Harga Jual</div><div style="font-size:21px;line-height:1.2;font-weight:800">Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</div></div>';
+ const cost=canViewCost?'<div class="small" style="margin-top:6px"><b>Harga Beli:</b> Rp'+Number(s.cost||0).toLocaleString('id-ID')+'</div>':'';
+ return '<div class="lead" style="padding:14px;margin-bottom:10px">'+
+   '<div class="row" style="justify-content:space-between;align-items:flex-start"><b style="font-size:18px;line-height:1.3">'+esc(title)+'</b><span class="badge">'+esc(s.status||'-')+'</span></div>'+
+   '<div class="small" style="margin-top:8px">📍 Outlet: <b>'+esc(s.outlet||'-')+'</b>'+(s.status==='SOLD'?' • Terjual '+new Date(s.sold_at).toLocaleDateString('id-ID'):'')+'</div>'+
+   '<div class="small" style="margin-top:6px;line-height:1.45">'+meta.join(' • ')+' • IMEI 1 '+esc(imei)+'</div>'+
+   cost+details+salePrice+
+   '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\\''+s.id+'\\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\\''+s.id+'\\')">🧾 Histori</button>'+
+   (ready&&sales?'<button class="success" onclick="openSellStock(\\''+s.id+'\\')">💰 Jual / Closing</button>':'')+
+   (management?'<button class="secondary" onclick="openEditStock(\\''+s.id+'\\')">Edit</button>':'')+
+   '</div></div>';
+}
 function openProductMaster(){
  const canOpen=!!profile?.is_management || inventoryCanFacilitator;
  if(!canOpen)return;

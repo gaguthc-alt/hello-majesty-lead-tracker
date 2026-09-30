@@ -213,6 +213,12 @@ async function openFacilitatorReports(){
  $('mb').innerHTML='<div class="small" style="margin-bottom:12px">Pilih laporan untuk outlet Fasilitator. Laporan dibagikan langsung ke WhatsApp sebagai teks.</div><div class="row"><button class="success" onclick="shareFacilitatorReport(\'TODAY\',false)">📅 Penjualan Hari Ini</button><button class="success" onclick="shareFacilitatorReport(\'MONTH\',false)">📊 Penjualan Bulan Ini</button></div><div class="row" style="margin-top:8px"><button class="secondary" onclick="shareFacilitatorStock()">📦 Stock READY</button></div><div class="small" style="margin-top:12px">Data otomatis mengikuti outlet Fasilitator yang sedang login.</div>';
  $('modal').classList.remove('hidden');
 }
+function waNumber(v){
+ const d=String(v||'').replace(/\D/g,'');
+ if(d.startsWith('0')) return '62'+d.slice(1);
+ if(d.startsWith('62')) return d;
+ return d;
+}
 function waShare(text){
  const url='https://wa.me/?text='+encodeURIComponent(text);
  window.open(url,'_blank');
@@ -370,7 +376,7 @@ function editLead(id){
  const l=leads.find(x=>x.lead_id===id);if(!l)return;
  const wa=profile?.is_management||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
  $('mt').textContent='Lead '+l.lead_id;
- $('mb').innerHTML='<div class="small">'+esc(l.customer)+' • '+(wa?'<a href="https://wa.me/'+String(l.whatsapp||'').replace(/\D/g,'')+'" target="_blank">📱 '+esc(l.whatsapp)+'</a>':'WhatsApp tersembunyi sampai menjadi tanggung jawab Anda.')+'</div>'+
+ $('mb').innerHTML='<div class="small">'+esc(l.customer)+' • '+(wa?'<a href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank">📱 '+esc(l.whatsapp)+'</a>':'WhatsApp tersembunyi sampai menjadi tanggung jawab Anda.')+'</div>'+
  (l.qualification_result==='GAGAL'?'<div style="margin:10px 0;padding:10px;background:#fef2f2;border-radius:8px"><b>Keterangan Gagal</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+
  '<label>Produk</label><input id="ep" value="'+esc(l.product)+'"><label>Kebutuhan</label><textarea id="en">'+esc(l.need)+'</textarea><label>Budget</label><input id="eb" value="'+esc(l.budget)+'"><label>Preference</label><textarea id="epr">'+esc(l.preference)+'</textarea><label>Catatan</label><textarea id="ec">'+esc(l.catatan)+'</textarea><button id="updateBtn" class="success">Simpan Update</button>';
  $('updateBtn').onclick=()=>updateLead(id);$('modal').classList.remove('hidden');

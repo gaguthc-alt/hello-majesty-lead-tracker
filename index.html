@@ -137,9 +137,9 @@ async function refreshLeads(btn){
   if(btn){btn.disabled=false;btn.textContent='↻ Refresh';}
  }
 }
+function viewerLead(l){if(profile?.is_management)return true;if(l.outlet!==profile?.outlet)return false;if(l.sales_claimed_by)return l.sales_claimed_by===profile?.name;if(l.cs_claimed_by)return l.cs_claimed_by===profile?.name;return true}
 async function render(){
  renderCommissionActions();
-function viewerLead(l){if(profile?.is_management)return true;if(l.outlet!==profile?.outlet)return false;if(l.sales_claimed_by)return l.sales_claimed_by===profile?.name;if(l.cs_claimed_by)return l.cs_claimed_by===profile?.name;return true}
  
  renderTargetBoard().catch(e=>console.error('[HM] Target board error',e));
 

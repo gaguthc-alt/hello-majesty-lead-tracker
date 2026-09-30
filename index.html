@@ -423,6 +423,7 @@ function showTodayLeads(){
 }
 ait loadLeads();
 }
+function showTodayLeads(){const todayStart=new Date();todayStart.setHours(0,0,0,0);const tomorrow=new Date(todayStart);tomorrow.setDate(tomorrow.getDate()+1);const items=leads.filter(viewerLead).filter(l=>{const d=new Date(l.created_at);return d>=todayStart&&d<tomorrow});$('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>📥 Lead Masuk Hari Ini</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Detail seluruh lead hari ini yang sesuai tanggung jawab Anda.</p></div>'+(items.map(historyCard).join('')||'<p class="small">Belum ada lead masuk hari ini.</p>');}
 function showCurrentStatus(type){
  const items=leads.filter(viewerLead).filter(l=>{
   if(type==='HASIL')return l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL';

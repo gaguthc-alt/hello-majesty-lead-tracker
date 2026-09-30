@@ -45,7 +45,7 @@ async function renderInventory(){
   const sold=inventoryStock.filter(x=>x.status==='SOLD').length;
   const reserved=inventoryStock.filter(x=>x.status==='RESERVED').length;
   const service=inventoryStock.filter(x=>x.status==='SERVICE').length;
-  const canManage=!!profile?.is_management || inventoryCanFacilitator;
+  const canManage=!!profile?.is_management || inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR' || (Array.isArray(window.hmRoles) && window.hmRoles.some(r=>String(r).toUpperCase()==='FASILITATOR'));
   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Database produk untuk CS/Sales + kontrol inventory Management</div></div><div class="row"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button>'+(canManage?'<button class="secondary" onclick="openProductMaster()">⚙️ Master Produk</button>':'')+'<button class="success" onclick="openReceiveStock()">＋ BARANG MASUK</button></div></div>'+
   '<div class="stats" style="margin-top:10px">'+
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('🟡 Reserved',reserved)+invStat('🔧 Service',service)+invStat('📦 Total',inventoryStock.length)+'</div>'+

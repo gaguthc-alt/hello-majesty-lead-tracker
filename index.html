@@ -119,7 +119,8 @@ async function changePassword(){
 function toggleStockPanel(){const panel=$('inventoryPanel'),btn=$('stockToggleBtn');if(!panel)return;const open=!panel.classList.contains('hidden');if(open){panel.classList.add('hidden');if(btn)btn.textContent='📦 Buka Stock';return}panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Stock';if(window.renderInventory)renderInventory().catch(e=>console.error('[HM] Inventory render error',e))}
 async function logout(){await sb.auth.signOut();location.reload()}
 async function loadLeads(){
- const x=await sb.from('leads').select('*').order('created_at',{ascending:false});
+ await sb.rpc('archive_completed_leads');
+ const x=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false});
  if(x.error){alert(x.error.message);return}leads=x.data||[];await render();
 }
 async function refreshLeads(btn){
@@ -602,4 +603,4 @@ function contentDetailCard(p){
 const oldRender=window.render;
 window.render=async function(){const r=await oldRender();await renderContentPerformance();return r};
 
-</script><script src="performance.js"></script><script src="inventory.js?v=20261001-8"></script></body></html>
+</script><script src="performance.js"></script><script src="inventory.js?v=20261001-9"></script></body></html>

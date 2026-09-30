@@ -31,8 +31,9 @@ async function loadInventoryData(){
   inventoryProducts=p.data||[]; inventoryStock=s.data||[];
 }
 
-async function renderInventory(){host.innerHTML='<div class="small">⏳ Memuat Product & Stock...</div>';
+async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');
+  host.innerHTML='<div class="small">⏳ Memuat Product & Stock...</div>';
   host.id='inventoryPanel';host.className='box';
   const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');
   if(dash&&!dash.contains(host))dash.insertBefore(host,stats||null);

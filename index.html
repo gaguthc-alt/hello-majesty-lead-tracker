@@ -269,10 +269,10 @@ function stockReportText(d){
  t+='🟢 *Total READY: '+Number(d.ready_count||0)+' Unit*\\n\\n';
  let no=1;
  const groups=[
-  ['IPHONE_NEW','*🍎 IPHONE NEW*'],
-  ['IPHONE_SECOND','*🍎 IPHONE SECOND*'],
-  ['ANDROID_NEW','*🤖 ANDROID NEW*'],
-  ['ANDROID_SECOND','*🤖 ANDROID SECOND*']
+  ['IPHONE_NEW','*🍎 iPhone New*'],
+  ['IPHONE_SECOND','*🍎 iPhone Second*'],
+  ['ANDROID_NEW','*🤖 Android New*'],
+  ['ANDROID_SECOND','*🤖 Android Second*']
  ];
  const stockLine=r=>{
    const name=[r.product,String(r.variant||'').replace(/\\s*GB\\b/ig,'').trim(),r.color].filter(Boolean).join(' — ');

@@ -179,8 +179,7 @@ async function render(){
   ['Closing',v.closing,"showTodayActivity('CLOSING')"],
   ['Gagal',v.gagal,"showTodayActivity('GAGAL')"],
   ['🔔 Follow-up Hari Ini',followupItems('TODAY').length,"showFollowupToday('TODAY')"],
-  ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"],
-  ['📋 Semua Follow-up',followupItems('ALL').length,"showFollowupToday('ALL')"]
+  ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  const active=leads.filter(viewerLead).filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL');
  $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p><button class="secondary" onclick="showCurrentStatus(&quot;HASIL&quot;)">📋 Lihat Lead Selesai</button>';

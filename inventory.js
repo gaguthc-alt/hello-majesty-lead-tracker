@@ -20,7 +20,7 @@ async function loadInventoryData(){
     if(!perm.error) inventoryCanFacilitator=!!perm.data;
   }
   window.hmCanFacilitator=inventoryCanFacilitator;
-  const stockView=profile?.is_management?'stock_management':'stock_catalog';
+  const stockView=profile?.is_management?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
   if(!profile?.is_management && profile?.outlet) stockQuery=stockQuery.eq('outlet',profile.outlet);
   const [p,s]=await Promise.all([

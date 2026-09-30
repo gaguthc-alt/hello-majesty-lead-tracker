@@ -290,8 +290,8 @@ function stockReportText(d){
    const variant=cleanText(r.variant);
    const color=cleanText(r.color);
    const name=[product,variant,color].filter(Boolean).join(' — ');
-   const bh=r.category==='IPHONE_SECOND'&&r.battery_health!==null&&r.battery_health!==undefined&&r.battery_health!==''?'\\n   BH: '+String(r.battery_health).replace('%','')+'%':'';
-   return String(no++).padStart(2,'0')+'. '+name+'\\n   IMEI 1: '+maskImei(r.imei_1||'')+bh+'\\n   Harga Jual: '+rupiahReport(r.asking_price)+'\\n';
+   const bh=r.category==='IPHONE_SECOND'&&r.battery_health!==null&&r.battery_health!==undefined&&r.battery_health!==''?'\n   BH: '+String(r.battery_health).replace('%','')+'%':'';
+   return String(no++).padStart(2,'0')+'. '+name+'\n   IMEI 1: '+maskImei(r.imei_1||'')+bh+'\n   Harga Jual: '+rupiahReport(r.asking_price)+'\n';
  };
  groups.forEach(([cat,title])=>{
    const items=rows.filter(r=>r.category===cat).sort(alpha);

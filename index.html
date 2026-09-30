@@ -178,9 +178,9 @@ async function render(){
   ['Qualified',v.qualified_today,"showTodayActivity('QUALIFIED')"],
   ['Closing',v.closing,"showTodayActivity('CLOSING')"],
   ['Gagal',v.gagal,"showTodayActivity('GAGAL')"],
-  ['🔔 Follow-up Hari Ini',allLeads.filter(l=>(l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL')&&((l.sales_claimed_by&&l.sales_claimed_by===profile?.name)||(l.sales_claimed_by?false:l.cs_claimed_by===profile?.name)||profile?.is_management)&&((l.sales_follow_up_date||l.cs_follow_up_date)===new Date().toISOString().slice(0,10))).length,"showFollowupToday('TODAY')"],
-  ['🔴 Follow-up Terlambat',allLeads.filter(l=>(l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL')&&((l.sales_claimed_by&&l.sales_claimed_by===profile?.name)||(l.sales_claimed_by?false:l.cs_claimed_by===profile?.name)||profile?.is_management)&&((l.sales_follow_up_date||l.cs_follow_up_date)<new Date().toISOString().slice(0,10))).length,"showFollowupToday('OVERDUE')"],
-  ['📋 Semua Follow-up',allLeads.filter(l=>(l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL')&&((l.sales_claimed_by&&l.sales_claimed_by===profile?.name)||(l.sales_claimed_by?false:l.cs_claimed_by===profile?.name)||profile?.is_management)).length,"showFollowupToday('ALL')"]
+  ['🔔 Follow-up Hari Ini',followupItems('TODAY').length,"showFollowupToday('TODAY')"],
+  ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"],
+  ['📋 Semua Follow-up',followupItems('ALL').length,"showFollowupToday('ALL')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  const active=leads.filter(viewerLead).filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL');
  $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p><button class="secondary" onclick="showCurrentStatus(&quot;HASIL&quot;)">📋 Lihat Lead Selesai</button>';
@@ -439,17 +439,23 @@ function showTodayActivity(type){
  });
  $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>📅 Aktivitas '+esc(type)+' Hari Ini</h3><button class="secondary" onclick="render()">← Kembali</button></div></div>'+(items.map(historyCard).join('')||'<p class="small">Tidak ada aktivitas.</p>');
 }
-function showFollowupToday(mode){
- const today=new Date();today.setHours(0,0,0,0);
- const iso=today.toISOString().slice(0,10);
- const items=leads.filter(viewerLead).filter(l=>{
+function localDateISO(){
+ const d=new Date();
+ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function followupItems(mode){
+ const iso=localDateISO();
+ return leads.filter(viewerLead).filter(l=>{
   const potential=l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
-  const date=l.sales_follow_up_date||l.cs_follow_up_date;
+  const date=String(l.sales_follow_up_date||l.cs_follow_up_date||'').slice(0,10);
   if(!potential||!date)return false;
   if(mode==='TODAY')return date===iso;
   if(mode==='OVERDUE')return date<iso;
   return true;
  });
+}
+function showFollowupToday(mode){
+ const items=followupItems(mode);
  const title=mode==='TODAY'?'🔔 Follow-up Hari Ini':mode==='OVERDUE'?'🔴 Follow-up Terlambat':'📋 Semua Follow-up';
  $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>'+title+'</h3><button class="secondary" onclick="render()">← Kembali</button></div><p class="small">Customer POTENSIAL sesuai PIC dan tanggal follow-up.</p></div>'+
  (items.map(historyCard).join('')||'<p class="small">Tidak ada customer pada daftar ini.</p>');

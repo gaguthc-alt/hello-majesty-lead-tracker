@@ -414,7 +414,7 @@ function deleteLead(id){
 }
 async function confirmDelete(id){
  if($('dc').value.trim()!=='YA, HAPUS PERMANEN')return alert('Konfirmasi tidak sesuai.');
- const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:$('dc').value.trim()});if(x.error)return alert(x.error.message);closeModal();aw
+ const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:$('dc').value.trim()});if(x.error)return alert(x.error.message);closeModal();await loadLeads();}
 function showTodayLeads(){
  const todayStart=new Date();todayStart.setHours(0,0,0,0);
  const tomorrow=new Date(todayStart);tomorrow.setDate(tomorrow.getDate()+1);

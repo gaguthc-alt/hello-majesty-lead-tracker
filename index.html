@@ -149,7 +149,7 @@ async function render(){
   total:todayLeads.length,
   available:todayLeads.filter(l=>l.status_lead==='AVAILABLE').length,
   cs_lock:todayLeads.filter(l=>l.status_lead==='CS LOCK'&&!l.qualification_result).length,
-  potential_followup:todayLeads.filter(l=>l.qualification_result==='POTENSIAL').length,
+  potential_followup:todayLeads.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length,
   qualified:todayLeads.filter(l=>l.status_lead==='QUALIFIED').length,
   handle:todayLeads.filter(l=>l.status_lead==='HANDLE').length,
   selesai:todayLeads.filter(l=>l.status_lead==='HASIL').length,
@@ -162,21 +162,21 @@ async function render(){
  stat('Total Lead',v.total)+
  '<b style="grid-column:1/-1;margin-top:8px">🔄 STATUS SAAT INI</b>'+
  [
-  ['Available',v.available],
-  ['CS Lock — Belum Ada Hasil',v.cs_lock],
-  ['Potensial — Follow-up',v.potential_followup],
-  ['Menunggu Sales',v.qualified],
-  ['Handle',v.handle],
-  ['Selesai',v.selesai]
- ].map(x=>stat(x[0],x[1])).join('')+
+  ['Available',v.available,"showCurrentStatus('AVAILABLE')"],
+  ['CS Lock — Belum Ada Hasil',v.cs_lock,"showCurrentStatus('CS LOCK')"],
+  ['Potensial — Follow-up',v.potential_followup,"showHistory('POTENSIAL')"],
+  ['Menunggu Sales',v.qualified,"showCurrentStatus('QUALIFIED')"],
+  ['Handle',v.handle,"showCurrentStatus('HANDLE')"],
+  ['Selesai',v.selesai,"showCurrentStatus('HASIL')"]
+ ].map(x=>stat(x[0],x[1],x[2])).join('')+
  '<b style="grid-column:1/-1;margin-top:8px">🎯 HASIL DARI LEAD HARI INI</b>'+
  [
   ['Closing',v.closing,"showHistory('CLOSING')"],
   ['Potensial',v.potensial,"showHistory('POTENSIAL')"],
   ['Gagal',v.gagal,"showHistory('GAGAL')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
- const active=leads.filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead));
- $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p>';
+ const active=leads.filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL');
+ $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p><button class="secondary" onclick="showCurrentStatus('HASIL')">📋 Lihat Lead Selesai</button>';
 }
 async function renderTargetBoard(){
  const x=await sb.rpc('dashboard_target_summary');
@@ -414,6 +414,15 @@ function deleteLead(id){
 async function confirmDelete(id){
  if($('dc').value.trim()!=='YA, HAPUS PERMANEN')return alert('Konfirmasi tidak sesuai.');
  const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:$('dc').value.trim()});if(x.error)return alert(x.error.message);closeModal();await loadLeads();
+}
+function showCurrentStatus(type){
+ const items=leads.filter(l=>{
+  if(type==='HASIL')return l.status_lead==='HASIL';
+  if(type==='POTENSIAL')return l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
+  return l.status_lead===type;
+ });
+ $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>Status '+type+'</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Lead yang tampil berdasarkan status saat ini.</p></div>'+
+ (items.map(historyCard).join('')||'<p class="small">Tidak ada lead dengan status '+type+'.</p>');
 }
 function showHistory(type){
  const items=leads.filter(l=>{

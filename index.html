@@ -264,10 +264,27 @@ function salesReportText(d,label,target){
 }
 function stockReportText(d){
  const rows=d.ready_stock||[];
- let t='📦 LAPORAN STOCK READY\\nHello Majesty — '+(d.outlet||'-')+'\\n\\n';
- t+='🟢 Total READY: '+Number(d.ready_count||0)+' unit\\n\\n';
- rows.forEach((r,i)=>{t+=(i+1)+'. '+[r.product,r.variant,r.color].filter(Boolean).join(' ')+' | '+(r.grade?'Grade '+r.grade+' | ':'')+'Harga '+rupiahReport(r.asking_price)+' | '+(r.source_type||'MANAGEMENT')+'\\n';});
+ let t='📦 *LAPORAN STOCK READY*\\n';
+ t+='*Hello Majesty — '+(d.outlet||'-')+'*\\n\\n';
+ t+='🟢 *Total READY: '+Number(d.ready_count||0)+' Unit*\\n\\n';
+ let no=1;
+ const iphones=rows.filter(r=>String(r.product||'').toLowerCase().includes('iphone'));
+ const androids=rows.filter(r=>!String(r.product||'').toLowerCase().includes('iphone'));
+ if(iphones.length){
+   t+='*🍎 IPHONE*\\n';
+   iphones.forEach(r=>{
+     t+=String(no++).padStart(2,'0')+'. '+[r.product,r.variant,r.color].filter(Boolean).join(' — ')+' — '+rupiahReport(r.asking_price)+'\\n';
+   });
+   t+='\\n';
+ }
+ if(androids.length){
+   t+='*🤖 ANDROID*\\n';
+   androids.forEach(r=>{
+     t+=String(no++).padStart(2,'0')+'. '+[r.product,r.variant,r.color].filter(Boolean).join(' — ')+' — '+rupiahReport(r.asking_price)+'\\n';
+   });
+ }
  if(!rows.length)t+='Belum ada stock READY.';
+ t+='\\n\\n*— HELLO MAJESTY*\\n_Built on Trust._';
  return t;
 }
 async function shareFacilitatorReport(period,withStock){

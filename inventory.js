@@ -57,7 +57,7 @@ async function renderInventory(){
 async function refreshInventory(btn){if(btn?.disabled)return;try{if(btn){btn.disabled=true;btn.textContent='⏳ Loading...'}await renderInventory()}catch(e){console.error(e);alert('Refresh Product & Stock error: '+(e?.message||e))}finally{if(btn){btn.disabled=false;btn.textContent='↻ Refresh'}}}
 async function loadHunterDashboard(){const r=await sb.from('hunter_dashboard').select('*').order('total_commission',{ascending:false});if(r.error)throw r.error;hunterDashboard=r.data||[]}
 function fmtRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}
-async function markHunterCommissionPaid(id){if(!profile?.is_management)return alert('Akses Management diperlukan.');const note=prompt('Catatan pembayaran (opsional):')||null;const r=await sb.from('sales_transactions').update({hunter_commission_paid_at:new Date().toISOString(),hunter_commission_paid_by:profile.user_id,hunter_commission_payment_note:note}).eq('id',id).is('hunter_commission_paid_at',null);if(r.error)return alert(r.error.message);openHunterCommission()}
+async function markHunterCommissionPaid(id){if(!(profile?.is_management||profile?.role==='CONTENT_CREATOR'))return alert('Akses Management atau Content Creator diperlukan.');const note=prompt('Catatan pembayaran (opsional):')||null;const r=await sb.from('sales_transactions').update({hunter_commission_paid_at:new Date().toISOString(),hunter_commission_paid_by:profile.user_id,hunter_commission_payment_note:note}).eq('id',id).is('hunter_commission_paid_at',null);if(r.error)return alert(r.error.message);openHunterCommission()}
 async function openHunterCommission(){const r=await sb.from('sales_transactions').select('id,sold_at,hunter_user_id,hunter_commission,hunter_commission_paid_at,hunter_commission_payment_note,customer_name').not('hunter_user_id','is',null).order('sold_at',{ascending:false});if(r.error)return alert(r.error.message);const teams=await sb.from('team_directory').select('user_id,name');const names=Object.fromEntries((teams.data||[]).map(x=>[x.user_id,x.name]));const rows=r.data||[];$('mt').textContent='💸 Komisi Hunter';$('mb').innerHTML='<div class="small" style="margin-bottom:10px">Komisi 10% dari profit unit Hunter yang SOLD. Pembayaran hanya dapat diubah oleh Management.</div>'+rows.map(x=>'<div class="lead"><b>🏹 '+esc(names[x.hunter_user_id]||'Unknown')+'</b><div>'+new Date(x.sold_at).toLocaleDateString('id-ID')+' • Komisi <b>'+fmtRp(x.hunter_commission)+'</b></div><div class="small">'+(x.hunter_commission_paid_at?'🟢 Dibayar '+new Date(x.hunter_commission_paid_at).toLocaleDateString('id-ID'):'🟡 Belum dibayar')+'</div>'+((profile?.is_management&&!x.hunter_commission_paid_at)?'<button class="success" style="margin-top:6px" onclick="markHunterCommissionPaid(\''+x.id+'\')">✓ Tandai Sudah Dibayar</button>':'')+'</div>').join('')||'<p class="small">Belum ada transaksi komisi Hunter.</p>';$('modal').classList.remove('hidden')}
 async function openHunterDashboard(){try{await loadHunterDashboard()}catch(e){alert(e.message||e);return}$('mt').textContent='🏹 Dashboard Hunter';$('mb').innerHTML='<div class="small" style="margin-bottom:10px">Komisi = 10% dari profit unit Hunter yang sudah SOLD.</div>'+hunterDashboard.map(h=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>🏹 '+esc(h.hunter_name)+'</b><span class="badge">'+h.sold_units+' SOLD</span></div><div style="margin-top:8px">📦 Total unit: <b>'+h.total_units+'</b> • 🟢 Ready: <b>'+h.ready_units+'</b> • 🔴 Sold: <b>'+h.sold_units+'</b></div><div style="margin-top:5px">💰 Profit: <b>'+fmtRp(h.total_profit)+'</b> • 🎯 Komisi: <b>'+fmtRp(h.total_commission)+'</b></div></div>').join('')||'<p class="small">Belum ada stock Hunter.</p>';$('modal').classList.remove('hidden')}
 function invStat(label,val){return '<div class="stat"><div class="small">'+label+'</div><div class="num">'+Number(val||0).toLocaleString('id-ID')+'</div></div>'}
@@ -95,7 +95,7 @@ async function compressStockPhoto(file){
  return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Gagal kompres foto.')),'image/webp',quality));
 }
 async function uploadStockPhoto(stockId,slot,file){
- if(!profile?.is_management)return alert('Akses Management diperlukan.');
+ if(!(profile?.is_management||profile?.role==='CONTENT_CREATOR'))return alert('Akses Management atau Content Creator diperlukan.');
  try{
   const blob=await compressStockPhoto(file);if(blob.size>1048576)throw new Error('Foto masih lebih dari 1 MB setelah kompresi.');
   const path=`${stockId}/foto-${slot}.webp`;
@@ -107,7 +107,7 @@ async function uploadStockPhoto(stockId,slot,file){
  }catch(e){alert('Foto '+slot+' gagal diupload: '+(e?.message||e))}
 }
 async function deleteStockPhoto(stockId,slot){
- if(!profile?.is_management)return alert('Akses Management diperlukan.');
+ if(!(profile?.is_management||profile?.role==='CONTENT_CREATOR'))return alert('Akses Management atau Content Creator diperlukan.');
  if(!confirm('Hapus Foto '+slot+' dari unit ini?'))return;
  const path=`${stockId}/foto-${slot}.webp`;const rm=await sb.storage.from('stock-photos').remove([path]);if(rm.error)return alert(rm.error.message);
  const data={};data['photo_'+slot]=null;data.updated_at=new Date().toISOString();
@@ -165,7 +165,7 @@ function openProductMaster(){
  $('modal').classList.remove('hidden');
 }
 function openEditProduct(id){
- if(!profile?.is_management)return alert('Akses Management diperlukan.');
+ if(!(profile?.is_management||profile?.role==='CONTENT_CREATOR'))return alert('Akses Management atau Content Creator diperlukan.');
  const p=inventoryProducts.find(x=>x.id===id);if(!p)return;
  const iphone=String(p.category||'').startsWith('IPHONE'),second=String(p.category||'').includes('SECOND');
  $('mt').textContent='✏️ Edit Master Produk';
@@ -178,7 +178,7 @@ function toggleEditProductFields(){
  $('epmcolorBox')?.classList.toggle('hidden',!iphone);
 }
 async function saveEditProduct(id){
- if(!profile?.is_management)return alert('Akses Management diperlukan.');
+ if(!(profile?.is_management||profile?.role==='CONTENT_CREATOR'))return alert('Akses Management atau Content Creator diperlukan.');
  const cat=$('epmcat').value,isIphone=cat.startsWith('IPHONE'),isSecond=cat.includes('SECOND'),rawProduct=$('epmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('epmvar').value.trim();
  if(!product||!variant)return alert('Produk dan Storage wajib diisi.');
  const grade=(isIphone&&isSecond)?($('epmgrade').value||'-'):null;
@@ -186,7 +186,7 @@ async function saveEditProduct(id){
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
 async function deactivateProduct(id){
- if(!profile?.is_management)return alert('Akses Management diperlukan.');
+ if(!(profile?.is_management||profile?.role==='CONTENT_CREATOR'))return alert('Akses Management atau Content Creator diperlukan.');
  const p=inventoryProducts.find(x=>x.id===id);if(!p)return;
  if(!confirm('Hapus Master Produk "'+(p.product||'')+' '+(p.variant||'')+'"? Produk akan dinonaktifkan dan tidak dihapus dari histori stock.'))return;
  const x=await sb.from('product_master').update({active:false,updated_at:new Date().toISOString()}).eq('id',id);

@@ -274,8 +274,13 @@ function stockReportText(d){
   ['ANDROID_NEW','*🤖 Android New*'],
   ['ANDROID_SECOND','*🤖 Android Second*']
  ];
+ const cleanText=v=>String(v||'').replace(/\\s*GB\\b/ig,'').trim();
+ const cleanProduct=v=>String(v||'-').replace(/^IPhone\\b/,'iPhone').replace(/\\s+Gold$/i,'').replace(/\\s+Dessert Titanium$/i,'').trim();
  const stockLine=r=>{
-   const name=[r.product,String(r.variant||'').replace(/\\s*GB\\b/ig,'').trim(),r.color].filter(Boolean).join(' — ');
+   const product=cleanProduct(r.product);
+   const variant=cleanText(r.variant);
+   const color=cleanText(r.color);
+   const name=[product,variant,color].filter(Boolean).join(' — ');
    const bh=r.category==='IPHONE_SECOND'&&r.battery_health!==null&&r.battery_health!==undefined&&r.battery_health!==''?' — BH'+String(r.battery_health).replace('%',''):'';
    return String(no++).padStart(2,'0')+'. '+name+bh+' — '+rupiahReport(r.asking_price)+'\\n';
  };

@@ -76,8 +76,8 @@ function invCategory(c){return ({IPHONE_NEW:'iPhone New',IPHONE_SECOND:'iPhone S
 function masterProductLabel(p){const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();return [product,variant,p.color,suffix].filter(Boolean).join(' — ')}
 function stockCard(s){
  const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,canViewCost=management||facilitator,ready=s.status==='READY',sales=profile?.role==='SALES',c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
- const rawTitle=String(s.product||'').trim(),suffix=/(?:\\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';
- const cleanProduct=rawTitle.replace(/\\s+(NEW|SECOND)$/i,'').trim();
+ const rawTitle=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';
+ const cleanProduct=rawTitle.replace(/\s+(NEW|SECOND)$/i,'').trim();
  const title=[cleanProduct,s.variant,s.color,suffix].filter(Boolean).join(' — ');
  let meta=[];
  if(c==='IPHONE_SECOND'&&s.grade)meta.push('<b>Grade '+esc(s.grade)+'</b>');
@@ -96,11 +96,12 @@ function stockCard(s){
  return '<div class="lead" style="padding:14px;margin-bottom:10px">'+
    '<div class="row" style="justify-content:space-between;align-items:flex-start"><b style="font-size:18px;line-height:1.3">'+esc(title)+'</b><span class="badge">'+esc(s.status||'-')+'</span></div>'+
    '<div class="small" style="margin-top:8px">📍 Outlet: <b>'+esc(s.outlet||'-')+'</b>'+(s.status==='SOLD'?' • Terjual '+new Date(s.sold_at).toLocaleDateString('id-ID'):'')+'</div>'+
-   '<div class="small" style="margin-top:6px;line-height:1.45">'+meta.join(' • ')+'</div>'+\n   '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
+   '<div class="small" style="margin-top:6px;line-height:1.45">'+meta.join(' • ')+'</div>'+
+   '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
    cost+details+salePrice+
-   '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\\''+s.id+'\\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\\''+s.id+'\\')">🧾 Histori</button>'+
-   (ready&&sales?'<button class="success" onclick="openSellStock(\\''+s.id+'\\')">💰 Jual / Closing</button>':'')+
-   (management?'<button class="secondary" onclick="openEditStock(\\''+s.id+'\\')">Edit</button>':'')+
+   '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button>'+
+   (ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+
+   (management?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+
    '</div></div>';
 }
 function openProductMaster(){

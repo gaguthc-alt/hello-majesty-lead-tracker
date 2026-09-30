@@ -116,7 +116,7 @@ function openProductDetail(id){
  $('modal').classList.remove('hidden');
 }
 function invCategory(c){return ({IPHONE_NEW:'iPhone New',IPHONE_SECOND:'iPhone Second',ANDROID_NEW:'Android New',ANDROID_SECOND:'Android Second'})[c]||c}
-function masterProductLabel(p){const base=[p.product,p.variant,p.color].filter(Boolean).join(' ');const suffix=p.category==='IPHONE_NEW'?' — NEW':(p.category==='IPHONE_SECOND'?' — SECOND':' — '+(p.category||'').replace('_',' '));return base+suffix+(p.grade?' — Grade '+p.grade:'')}
+function masterProductLabel(p){const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();const base=[p.product,p.color,variant].filter(Boolean).join(' ');const suffix=p.category==='IPHONE_NEW'?' — NEW':(p.category==='IPHONE_SECOND'?' — SECOND':' — '+(p.category||'').replace('_',' '));return base+suffix+(p.grade?' — Grade '+p.grade:'')}
 function stockCard(s){
  const management=!!profile?.is_management,ready=s.status==='READY', sales=profile?.role==='SALES';
  const title=s.product+(s.variant?' '+s.variant:'')+(s.color?' • '+s.color:'');
@@ -131,20 +131,20 @@ function openProductMaster(){
  $('mt').textContent='⚙️ Master Produk';$('mb').innerHTML='<button class="success" onclick="openAddProduct()">＋ Tambah Produk</button><div style="margin-top:10px">'+inventoryProducts.map(p=>'<div class="lead"><b>'+esc(masterProductLabel(p))+'</b><div class="small">'+invCategory(p.category)+'</div></div>').join('')+'</div>';$('modal').classList.remove('hidden');
 }
 function openAddProduct(){
- $('mt').textContent='＋ Master Produk';$('mb').innerHTML='<label>Kategori</label><select id="pmcat" onchange="toggleProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option></select><label>Produk</label><input id="pmprod" placeholder="Contoh: iPhone 17 Pro Max"><label>Varian</label><input id="pmvar" placeholder="256GB"><div id="pmcolorBox"><label>Warna</label><input id="pmcolor" placeholder="Black"></div><div id="pmgradeBox" class="hidden"><label>Grade (Second)</label><select id="pmgrade"><option value="">— Pilih Grade —</option><option>A</option><option>B</option><option>C</option></select></div><button class="success" onclick="saveProduct()">Simpan Produk</button>';toggleProductFields();$('modal').classList.remove('hidden');
+ $('mt').textContent='＋ Master Produk';$('mb').innerHTML='<label>Kategori</label><select id="pmcat" onchange="toggleProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option></select><label>Produk</label><input id="pmprod" placeholder="Contoh: iPhone 17 Pro Max"><label>Varian</label><input id="pmvar" placeholder="256"><div id="pmcolorBox"><label>Warna</label><input id="pmcolor" placeholder="Black"></div><div id="pmgradeBox" class="hidden"><label>Grade (Second)</label><select id="pmgrade"><option value="-">-</option><option>A</option><option>B</option><option>C</option></select></div><button class="success" onclick="saveProduct()">Simpan Produk</button>';toggleProductFields();$('modal').classList.remove('hidden');
 }
 function toggleProductFields(){const cat=$('pmcat')?.value||'';const second=cat.includes('SECOND');const iphone=cat.startsWith('IPHONE');$('pmcolorBox')?.classList.toggle('hidden',!iphone);$('pmgradeBox')?.classList.toggle('hidden',!(iphone&&second))}
 async function saveProduct(){
  const cat=$('pmcat').value;
  const isIphone=cat.startsWith('IPHONE'),isSecond=cat.includes('SECOND');
- const x=await sb.from('product_master').insert({category:cat,product:$('pmprod').value.trim(),variant:$('pmvar').value.trim()||null,color:isIphone?($('pmcolor').value.trim()||null):null,grade:(isIphone&&isSecond)?($('pmgrade').value||null):null});
+ const product=$('pmprod').value.trim(),variant=$('pmvar').value.trim();if(!product||!variant)return alert('Produk dan Storage wajib diisi.');const grade=(isIphone&&isSecond)?($('pmgrade').value||'-'):null;const x=await sb.from('product_master').insert({category:cat,product,variant,color:isIphone?($('pmcolor').value.trim()||null):null,grade});
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();openProductMaster();
 }
 async function openReceiveStock(){
  const teams=await sb.from('team_directory').select('*').order('name');if(teams.error)return alert(teams.error.message);
  const products=inventoryProducts.map(p=>'<option value="'+p.id+'">'+esc(masterProductLabel(p))+'</option>').join('');
  const selected=inventoryProducts.find(p=>p.id===$('stprod')?.value);
- const isIphoneNew=selected?.category==='IPHONE_NEW';
+ const isIphoneNew=selected?.category==='IPHONE_NEW',isIphoneSecond=selected?.category==='IPHONE_SECOND';
  const hunters=(teams.data||[]).map(t=>'<option value="'+t.user_id+'">'+esc(t.name)+(t.role?' • '+esc(t.role):'')+'</option>').join('');
  const isMgmt=!!profile?.is_management; const hunterOptions=isMgmt?hunters:'<option value="'+profile.user_id+'">'+esc(profile.name||'Saya')+' • Hunter</option>';
  $('mt').textContent='📦 Barang Masuk';
@@ -163,18 +163,22 @@ async function openReceiveStock(){
 }
 function toggleReceiveFields(){
  const p=inventoryProducts.find(x=>x.id===$('stprod')?.value), isNew=p?.category==='IPHONE_NEW';
- $('standardReceiveFields')?.classList.toggle('hidden',isNew);
+ $('standardReceiveFields')?.classList.toggle('hidden',isNew||isSecond);
  $('standardPriceFields')?.classList.toggle('hidden',isNew||isSecond);
- $('iphoneNewFields')?.classList.toggle('hidden',!isNew); $('iphoneSecondFields')?.classList.toggle('hidden',!isSecond);
+ $('iphoneNewFields')?.classList.toggle('hidden',!isNew); $('iphoneSecondFields')?.classList.toggle('hidden',!isSecond); $('iphoneSecondFields')?.classList.toggle('hidden',!isSecond);
  const source=$('stsource');
  if(source)source.onchange=()=>{$('hunterBox')?.classList.toggle('hidden',source.value!=='HUNTER')};
 }
 async function saveStock(){
  const selectedProduct=inventoryProducts.find(p=>p.id===$('stprod')?.value);
- const isIphoneNew=selectedProduct?.category==='IPHONE_NEW';
+ const isIphoneNew=selectedProduct?.category==='IPHONE_NEW',isIphoneSecond=selectedProduct?.category==='IPHONE_SECOND';
  let data;
  if(isIphoneNew){
    data={product_id:$('stprod').value,imei_1:$('stimei1new').value.trim()||null,imei_2:$('stimei2new').value.trim()||null,grade:null,condition:null,battery_health:null,completeness:null,minus:null,source_type:'MANAGEMENT',hunter_user_id:null,cost:Number($('stcostnew').value||0),asking_price:Number($('stpricenew').value||0),supplier:$('stsupplier').value.trim()||null,notes:$('stnotesnew').value.trim()||null,receipt_ref:null,received_source_note:'Management',outlet:profile?.outlet||null};
+ }else if(isIphoneSecond){
+   const imei1=$('stimei1second').value.trim(),bh=$('stbhsecond').value,condition=$('stconditionsecond').value.trim(),complete=$('stcompletesecond').value.trim(),cost=$('stcostsecond').value,price=$('stpricesec').value;
+   if(!imei1||bh===''||!condition||!complete||cost===''||price==='')return alert('Untuk iPhone Second, IMEI 1, Battery Health, Kondisi, Kelengkapan, Harga Beli dan Harga Jual wajib diisi.');
+   data={product_id:$('stprod').value,imei_1:imei1,imei_2:$('stimei2second').value.trim()||null,grade:selectedProduct?.grade||'-',condition,battery_health:Number(bh),completeness:complete,minus:$('stminusseconde').value.trim()||null,source_type:'MANAGEMENT',hunter_user_id:null,cost:Number(cost),asking_price:Number(price),supplier:$('stsuppliersecond').value.trim()||null,notes:$('stnotessecond').value.trim()||null,receipt_ref:null,received_source_note:'Management',outlet:profile?.outlet||null};
  }else{
    const source=$('stsource').value,hunter=source==='HUNTER'?$('sthunter').value:null;
    if(source==='HUNTER'&&!hunter)return alert('Hunter wajib dipilih.');

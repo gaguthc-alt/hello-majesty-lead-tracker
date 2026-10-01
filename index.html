@@ -462,7 +462,9 @@ async function saveS(id){
  if(result==='CLOSING'){
    const stockId=$('ss')?.value;
    if(!stockId)return alert('Untuk CLOSING, wajib pilih produk/stock yang laku.');
-   const salePrice=Number($('sap')?.value||0);\n   if(!salePrice)return alert('Untuk CLOSING, Harga Jual Aktual wajib diisi.');\n   const x=await sb.rpc('set_sales_closing',{p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice});
+   const salePrice=Number($('sap')?.value||0);
+   if(!salePrice)return alert('Untuk CLOSING, Harga Jual Aktual wajib diisi.');
+   const x=await sb.rpc('set_sales_closing',{p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice});
    if(x.error)return alert('Closing gagal: '+x.error.message);
    closeModal();await loadLeads();showHistory('CLOSING');return;
  }

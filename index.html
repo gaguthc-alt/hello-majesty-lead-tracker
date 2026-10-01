@@ -140,18 +140,18 @@ async function refreshLeads(btn){
 }
 function openLeadSearch(){
  $('mt').textContent='🔎 Search Lead';
- $('mb').innerHTML='<label>Cari berdasarkan Lead ID, nama, WhatsApp, kebutuhan, outlet, atau status</label><div class="row"><input id="leadSearchInput" placeholder="Contoh: LM-7C6C1F45 / nama / 0812..." onkeydown="if(event.key===\\'Enter\\')doLeadSearch()"><button class="success" type="button" onclick="doLeadSearch()">🔎 Cari</button></div><div id="leadSearchResults" style="margin-top:12px"></div>';
+ $('mb').innerHTML='<label>Cari berdasarkan Lead ID, nama, WhatsApp, kebutuhan, outlet, atau status</label><div class="row"><input id="leadSearchInput" placeholder="Contoh: LM-7C6C1F45 / nama / 0812..." onkeydown="if(event.key===\'Enter\')doLeadSearch()"><button class="success" type="button" onclick="doLeadSearch()">🔎 Cari</button></div><div id="leadSearchResults" style="margin-top:12px"></div>';
  $('modal').classList.remove('hidden');
- setTimeout(()=>$(\'leadSearchInput\')?.focus(),50);
+ setTimeout(()=>$('leadSearchInput')?.focus(),50);
 }
 function doLeadSearch(){
- const q=String($(\'leadSearchInput\')?.value||\'\').trim().toLowerCase();
- const host=$(\'leadSearchResults\');
+ const q=String($('leadSearchInput')?.value||'').trim().toLowerCase();
+ const host=$('leadSearchResults');
  if(!host)return;
  if(!q){host.innerHTML='<div class="small">Masukkan kata kunci pencarian.</div>';return;}
  const rows=leads.filter(viewerLead).filter(l=>[
    l.lead_id,l.customer,l.name,l.whatsapp,l.need,l.need_type,l.outlet,l.status_lead,l.qualification_result,l.sales_result
- ].some(v=>String(v||\'\').toLowerCase().includes(q)));
+ ].some(v=>String(v||'').toLowerCase().includes(q)));
  host.innerHTML=rows.length?rows.map(l=>card(l)).join(''):'<div class="small">Lead tidak ditemukan.</div>';
 }
 window.openLeadSearch=openLeadSearch;

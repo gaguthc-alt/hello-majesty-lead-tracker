@@ -479,8 +479,7 @@ async function openTradeForm(){
  if(!wa)return;
  const n=waNumber(wa);
  if(!n){alert('Nomor WhatsApp tidak valid.');return;}
- const url='https://wa.me/'+n+'?text='+encodeURIComponent(tradeWaMessage());
- window.open(url,'_blank');
+ location.href='https://wa.me/'+n+'?text='+encodeURIComponent(tradeWaMessage());
 }
 function initTradePublic(){
  $('login')?.classList.add('hidden');$('app')?.classList.add('hidden');$('tradePublic')?.classList.remove('hidden');renderTradePublicForm();

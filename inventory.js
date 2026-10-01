@@ -155,9 +155,18 @@ function stockCard(s){
    '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button>'+
-   (ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+
+   (ready&&(management||facilitator)?'<button class="danger" onclick="markStockSold(\''+s.id+'\')">🔴 SOLD</button>':'')+(ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+
    (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
+}
+async function markStockSold(id){
+ if(!(profile?.is_management||inventoryCanFacilitator))return alert('Hanya Management atau Facilitator yang dapat menandai stock SOLD.');
+ const s=inventoryStock.find(x=>x.id===id);if(!s||s.status!=='READY')return;
+ const name=[s.product,s.variant,s.color].filter(Boolean).join(' — ');
+ if(!confirm('Tandai stock berikut sebagai SOLD?\\n\\n'+name+'\\nHarga Jual: Rp'+Number(s.asking_price||0).toLocaleString('id-ID')))return;
+ const x=await sb.rpc('mark_stock_sold',{p_stock_id:id});
+ if(x.error)return alert('Gagal menandai SOLD: '+x.error.message);
+ await renderInventory();
 }
 function openProductMaster(){
  const canOpen=!!profile?.is_management || inventoryCanFacilitator;

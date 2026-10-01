@@ -471,14 +471,16 @@ async function submitTradePublic(){
   $('tradePublicBody').innerHTML='<div class="box" style="background:#f0fdf4;border-color:#86efac"><h3>✅ Data Berhasil Dikirim</h3><p>Terima kasih. Tim Sales Hello Majesty akan memeriksa data perangkat dan menghubungi Anda melalui WhatsApp.</p><p class="small">Nomor pengajuan: <b>'+esc(x.data?.inquiry_id||'-')+'</b></p></div>';
  }catch(e){btn.disabled=false;btn.textContent='Kirim Data Tukar Tambah';msg.textContent=e?.message||'Data gagal dikirim.'}
 }
+function tradeWaMessage(){
+ return '📱 *FORM DATA TUKAR TAMBAH*\\n_Hello Majesty_\\n\\nAgar kami bisa membantu cek estimasi tukar tambah, mohon isi data berikut:\\n\\n*DATA HP YANG MAU DITUKAR*\\n1. Merek & Tipe:\\n2. Kapasitas:\\n3. Warna:\\n4. Battery Health:\\n5. Kondisi fisik:\\n6. Minus:\\n7. Kelengkapan:\\n8. Garansi: iBox / Inter / lainnya\\n9. Face ID:\\n10. True Tone:\\n11. Signal:\\n12. Kamera:\\n13. Speaker & Mic:\\n14. Charging:\\n15. Estimasi lama pemakaian:\\n\\n*HP YANG DIINGINKAN*\\n16. Tipe HP:\\n17. Estimasi budget / tambah dana:\\n\\nSilakan isi langsung pada pesan ini dan kirim kembali kepada kami.\\n\\nTerima kasih 🙏\\n— *HELLO MAJESTY*\\n_Built on Trust._';
+}
 async function openTradeForm(){
- const url=location.origin+location.pathname+'?trade=1&outlet='+encodeURIComponent(profile?.outlet||'');
- const msg='📱 FORM TUKAR TAMBAH — HELLO MAJESTY\\n\\nSilakan isi data HP yang ingin ditukar melalui link berikut.\\n\\n'+url+'\\n\\nSetelah diisi, tim kami akan memeriksa kondisi unit dan menghubungi Anda untuk proses selanjutnya.\\n\\n— HELLO MAJESTY\\nBuilt on Trust.';
- try{
-  if(navigator.share){await navigator.share({title:'Form Tukar Tambah Hello Majesty',text:msg});return;}
- }catch(e){if(e?.name==='AbortError')return;}
- try{await navigator.clipboard.writeText(msg);alert('Pesan form sudah disalin. Silakan paste ke WhatsApp customer.');}
- catch(e){prompt('Salin pesan ini ke WhatsApp customer:',msg);}
+ const wa=prompt('Masukkan No WhatsApp customer (contoh 081234567890):','');
+ if(!wa)return;
+ const n=waNumber(wa);
+ if(!n){alert('Nomor WhatsApp tidak valid.');return;}
+ const url='https://wa.me/'+n+'?text='+encodeURIComponent(tradeWaMessage());
+ window.open(url,'_blank');
 }
 function initTradePublic(){
  $('login')?.classList.add('hidden');$('app')?.classList.add('hidden');$('tradePublic')?.classList.remove('hidden');renderTradePublicForm();

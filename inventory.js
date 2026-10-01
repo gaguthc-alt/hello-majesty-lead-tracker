@@ -188,7 +188,12 @@ async function saveEditProduct(id){
 async function deactivateProduct(id){
  if(!profile?.is_management)return alert('Akses Management diperlukan.');
  const p=inventoryProducts.find(x=>x.id===id);if(!p)return;
- if(!confirm('Hapus Master Produk "'+(p.product||'')+' '+(p.variant||'')+'"? Produk akan dinonaktifkan dan tidak dihapus dari histori stock.'))return;
+ const chk=await sb.from('stock_units').select('id',{count:'exact',head:true}).eq('product_id',id);
+ if(chk.error)return alert('Gagal mengecek stock: '+chk.error.message);
+ if((chk.count||0)>0){
+  return alert('Master Produk tidak bisa dihapus karena masih digunakan oleh '+chk.count+' stock unit. Selesaikan/pindahkan stock terlebih dahulu.');
+ }
+ if(!confirm('Hapus Master Produk "'+(p.product||'')+' '+(p.variant||'')+'"? Produk akan dinonaktifkan dan tidak dihapus dari histori.'))return;
  const x=await sb.from('product_master').update({active:false,updated_at:new Date().toISOString()}).eq('id',id);
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }

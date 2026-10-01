@@ -475,11 +475,9 @@ function tradeWaMessage(){
  return '📱 *FORM DATA TUKAR TAMBAH*\\n*HELLO MAJESTY*\\n\\nMohon bantu isi data HP yang ingin ditukar:\\n\\n*DATA HP*\\n1. Merek & Tipe:\\n2. Kapasitas:\\n3. Warna:\\n4. Battery Health:\\n5. Kondisi fisik:\\n6. Minus:\\n7. Kelengkapan:\\n8. Garansi: iBox / Inter / lainnya\\n9. Face ID: ON / OFF\\n10. True Tone: ON / OFF\\n11. Signal: ON / OFF\\n12. Kamera:\\n13. Speaker & Mic:\\n14. Charging:\\n15. Lama pemakaian:\\n\\n*HP YANG DIINGINKAN*\\n16. Tipe HP:\\n17. Estimasi budget / tambah dana:\\n\\nSilakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏\\n\\nSetelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.\\n\\n— *HELLO MAJESTY*\\n_Built on Trust._';
 }
 async function openTradeForm(){
- const wa=prompt('Masukkan No WhatsApp customer (contoh 081234567890):','');
- if(!wa)return;
- const n=waNumber(wa);
- if(!n){alert('Nomor WhatsApp tidak valid.');return;}
- location.href='https://wa.me/'+n+'?text='+encodeURIComponent(tradeWaMessage());
+ const msg=tradeWaMessage();
+ navigator.clipboard?.writeText(msg).catch(()=>{});
+ location.href='https://wa.me/?text='+encodeURIComponent(msg);
 }
 function initTradePublic(){
  $('login')?.classList.add('hidden');$('app')?.classList.add('hidden');$('tradePublic')?.classList.remove('hidden');renderTradePublicForm();

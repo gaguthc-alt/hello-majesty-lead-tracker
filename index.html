@@ -270,7 +270,7 @@ function stockReportText(d){
  const rows=d.ready_stock||[];
  let t='📦 *LAPORAN STOCK READY*\n';
  t+='*Hello Majesty — '+(d.outlet||'-')+'*\n\n';
- t+='🟢 *Total READY: '+Number(d.ready_count||0)+' Unit*\n\n';
+ t+='🟢 *Total READY: '+Number(d.ready_count||0)+' Unit*\n';\n t+='📅 '+new Date().toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+' WITA\n\n';
  let no=1;
  const groups=[
   ['IPHONE_NEW','*🍎 iPhone New*'],
@@ -296,7 +296,7 @@ function stockReportText(d){
    const variant=cleanText(r.variant);
    const color=cleanText(r.color);
    const name=[product,variant,color].filter(Boolean).join(' — ');
-   const bh=(r.category==='IPHONE_SECOND'||r.category==='STOCK_SECOND_PUSAT')&&r.battery_health!==null&&r.battery_health!==undefined&&r.battery_health!==''?'\n   BH: '+String(r.battery_health).replace('%','')+'%':'';
+   const bh=(r.category==='IPHONE_SECOND'||r.category==='STOCK_SECOND_PUSAT')&&((r.battery_health!==null&&r.battery_health!==undefined&&r.battery_health!=='')||(r.grade!==null&&r.grade!==undefined&&r.grade!==''))?'\n   '+(r.battery_health!==null&&r.battery_health!==undefined&&r.battery_health!==''?'BH: '+String(r.battery_health).replace('%','')+'%':'BH: -')+' | Grade: '+(r.grade||'-'):'';
    return String(no++).padStart(2,'0')+'. '+name+'\n   IMEI 1: '+maskImei(r.imei_1||'')+bh+'\n   Harga Jual: '+rupiahReport(r.asking_price)+'\n';
  };
  groups.forEach(([cat,title])=>{

@@ -410,9 +410,29 @@ Mohon tim tidak melakukan follow up pada lead yang sama tanpa koordinasi dengan 
 function shareSalesClaim(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesClaimMessage(l));}
 async function handoverSales(id){ const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'}); if(x.error)return alert(x.error.message); await loadLeads(); openUrl(); }
 function share(id){
- const l=leads.find(x=>x.lead_id===id),link=location.origin+location.pathname+'?claim='+encodeURIComponent(id);
- const msg='🚨 LEAD QUALIFIED — SIAP DI-CLAIM SALES\n\nLead ID: '+l.lead_id+'\nKebutuhan: '+(l.need||'-')+'\nProduk: '+(l.product||'-')+'\nBudget: '+(l.budget||'-')+'\nTimeline: '+(l.timeline||'-')+'\nOutlet: '+(l.outlet||'-')+'\nCS: '+(l.cs_claimed_by||'-')+'\n\n📌 Buka link untuk melihat detail dan CLAIM:\n'+link+'\n\n— HELLO MAJESTY\nBuilt on Trust.';
- navigator.clipboard?.writeText(msg).catch(()=>{});location.href='https://wa.me/?text='+encodeURIComponent(msg);
+ const l=leads.find(x=>x.lead_id===id);
+ if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');
+ const link=location.origin+location.pathname+'?claim='+encodeURIComponent(id);
+ const d=l.initial_data||{};
+ const nl=String.fromCharCode(10);
+ const lines=['🚨 *LEAD QUALIFIED — SIAP DI-CLAIM SALES*','','*Lead ID:* '+l.lead_id,'*Kebutuhan:* '+(l.need_type||l.need||'-'),''];
+ if(l.need_type==='SERVICE'){
+  lines.push('📱 *DATA SERVICE*','Perangkat: '+(d.device||'-'),'Tipe / Model: '+(d.model||'-'),'Keluhan: '+(d.complaint||'-'),'Kondisi: '+(d.condition||'-'));
+ }else if(l.need_type==='PEMBELIAN'){
+  lines.push('📦 *DATA PEMBELIAN*','Produk: '+(d.product||'-'),'Budget: '+(d.budget||'-'),'Preferensi: '+(d.preference||'-'),'Kebutuhan Khusus: '+(d.special||'-'));
+ }else if(l.need_type==='TUKAR TAMBAH'){
+  lines.push('🔄 *DATA TUKAR TAMBAH*','HP Dimiliki: '+(d.device||'-'),'Kapasitas: '+(d.capacity||'-'),'Kondisi: '+(d.condition||'-'),'Kelengkapan: '+(d.completeness||'-'),'Battery Health: '+(d.battery_health||'-'),'Minus: '+(d.minus||'-'),'HP Diinginkan: '+(d.wanted_product||'-'),'Budget / Tambah Dana: '+(d.budget||'-'));
+ }else if(l.need_type==='KREDIT/CICILAN'){
+  lines.push('💳 *DATA KREDIT / CICILAN*','Produk: '+(d.product||'-'),'Harga / Estimasi: '+(d.price||'-'),'Tenor: '+(d.tenor||'-'),'DP / Budget: '+(d.dp_budget||'-'),'Pernah Ajukan Kredit: '+(d.credit_history||'-'));
+ }else if(l.need_type==='INFORMASI'){
+  lines.push('ℹ️ *DATA INFORMASI*','Informasi yang Dicari: '+(d.information||'-'),'Produk / Layanan: '+(d.related||'-'));
+ }else{
+  lines.push('Produk: '+(l.product||'-'),'Budget: '+(l.budget||'-'));
+ }
+ lines.push('','Outlet: '+(l.outlet||'-'),'CS: '+(l.cs_claimed_by||'-'),'','📌 Buka link untuk melihat detail dan CLAIM:',link,'','— HELLO MAJESTY','Built on Trust.');
+ const msg=lines.join(nl);
+ navigator.clipboard?.writeText(msg).catch(()=>{});
+ location.href='https://wa.me/?text='+encodeURIComponent(msg);
 }
 function openUrl(){
  const id=new URLSearchParams(location.search).get('claim');

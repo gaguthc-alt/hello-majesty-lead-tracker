@@ -608,166 +608,73 @@ async function saveLead(){
 function editLead(id){
  const l=leads.find(x=>x.lead_id===id);if(!l)return;
  const wa=profile?.is_management||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
+ const d=l.initial_data||{};
+ const type=l.need_type||'';
  $('mt').textContent='Lead '+l.lead_id;
+ let fields='';
+ if(type==='SERVICE'){
+  fields='<label>Perangkat</label><select id="ed_device"><option'+(d.device==='iPhone'?' selected':'')+'>iPhone</option><option'+(d.device==='Android'?' selected':'')+'>Android</option><option'+(d.device==='iPad'?' selected':'')+'>iPad</option><option'+(d.device==='MacBook'?' selected':'')+'>MacBook</option><option'+(d.device==='Apple Watch'?' selected':'')+'>Apple Watch</option><option'+(d.device==='Lainnya'?' selected':'')+'>Lainnya</option></select>'+
+  '<label>Tipe / Model</label><input id="ed_model" value="'+esc(d.model||'')+'">'+
+  '<label>Keluhan</label><textarea id="ed_complaint">'+esc(d.complaint||'')+'</textarea>'+
+  '<label>Kondisi yang Diketahui</label><input id="ed_condition" value="'+esc(d.condition||'')+'">';
+ }else if(type==='PEMBELIAN'){
+  fields='<label>Produk yang Dicari</label><input id="ed_product" value="'+esc(d.product||l.product||'')+'">'+
+  '<label>Budget</label><input id="ed_budget" value="'+esc(d.budget||l.budget||'')+'">'+
+  '<label>Preferensi</label><select id="ed_preference"><option'+(d.preference==='Baru'?' selected':'')+'>Baru</option><option'+(d.preference==='Second'?' selected':'')+'>Second</option><option'+(d.preference==='Bebas'?' selected':'')+'>Bebas</option></select>'+
+  '<label>Kebutuhan Khusus</label><input id="ed_special" value="'+esc(d.special||'')+'">';
+ }else if(type==='TUKAR TAMBAH'){
+  fields='<label>HP yang Dimiliki</label><input id="ed_trade_device" value="'+esc(d.device||'')+'">'+
+  '<label>Kapasitas</label><input id="ed_trade_capacity" value="'+esc(d.capacity||'')+'">'+
+  '<label>Kondisi Umum</label><input id="ed_trade_condition" value="'+esc(d.condition||'')+'">'+
+  '<label>Kelengkapan</label><input id="ed_trade_completeness" value="'+esc(d.completeness||'')+'">'+
+  '<label>Battery Health</label><input id="ed_trade_bh" value="'+esc(d.battery_health||'')+'">'+
+  '<label>Minus</label><input id="ed_trade_minus" value="'+esc(d.minus||'')+'">'+
+  '<label>Estimasi Lama Pemakaian</label><input id="ed_trade_usage" value="'+esc(d.usage_duration||'')+'">'+
+  '<label>HP yang Diinginkan</label><input id="ed_wanted" value="'+esc(d.wanted_product||'')+'">'+
+  '<label>Estimasi Budget / Tambah Dana</label><input id="ed_trade_budget" value="'+esc(d.budget||'')+'">';
+ }else if(type==='KREDIT/CICILAN'){
+  fields='<label>Produk yang Diminati</label><input id="ed_credit_product" value="'+esc(d.product||'')+'">'+
+  '<label>Harga / Estimasi</label><input id="ed_credit_price" value="'+esc(d.price||'')+'">'+
+  '<label>Tenor</label><select id="ed_tenor"><option value="">— Pilih —</option><option'+(d.tenor==='3 bulan'?' selected':'')+'>3 bulan</option><option'+(d.tenor==='6 bulan'?' selected':'')+'>6 bulan</option><option'+(d.tenor==='9 bulan'?' selected':'')+'>9 bulan</option><option'+(d.tenor==='12 bulan'?' selected':'')+'>12 bulan</option><option'+(d.tenor==='18 bulan'?' selected':'')+'>18 bulan</option><option'+(d.tenor==='24 bulan'?' selected':'')+'>24 bulan</option></select>'+
+  '<label>DP / Budget</label><input id="ed_dp" value="'+esc(d.dp_budget||'')+'">'+
+  '<label>Pernah Ajukan Kredit?</label><select id="ed_credit_history"><option'+(d.credit_history==='Tidak'?' selected':'')+'>Tidak</option><option'+(d.credit_history==='Ya'?' selected':'')+'>Ya</option></select>';
+ }else if(type==='INFORMASI'){
+  fields='<label>Informasi yang Dicari</label><textarea id="ed_info">'+esc(d.information||'')+'</textarea><label>Produk / Layanan Terkait</label><input id="ed_info_related" value="'+esc(d.related||'')+'">';
+ }else{
+  fields='<label>Produk</label><input id="ep" value="'+esc(l.product||'')+'"><label>Kebutuhan</label><textarea id="en">'+esc(l.need||'')+'</textarea><label>Budget</label><input id="eb" value="'+esc(l.budget||'')+'"><label>Preference</label><textarea id="epr">'+esc(l.preference||'')+'</textarea>';
+ }
  $('mb').innerHTML='<div class="small">'+esc(l.customer)+' • '+(wa?'<a href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank">📱 '+esc(l.whatsapp)+'</a>':'WhatsApp tersembunyi sampai menjadi tanggung jawab Anda.')+'</div>'+
  (l.qualification_result==='GAGAL'?'<div style="margin:10px 0;padding:10px;background:#fef2f2;border-radius:8px"><b>Keterangan Gagal</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+
- '<label>Produk</label><input id="ep" value="'+esc(l.product)+'"><label>Kebutuhan</label><textarea id="en">'+esc(l.need)+'</textarea><label>Budget</label><input id="eb" value="'+esc(l.budget)+'"><label>Preference</label><textarea id="epr">'+esc(l.preference)+'</textarea><label>Catatan</label><textarea id="ec">'+esc(l.catatan)+'</textarea><button id="updateBtn" class="success">Simpan Update</button>';
+ '<div class="small" style="margin:12px 0 4px"><b>Kebutuhan: '+esc(type||'-')+'</b></div>'+fields+
+ '<label>Catatan Awal</label><textarea id="ec">'+esc(l.catatan||'')+'</textarea><button id="updateBtn" class="success">Simpan Update</button>';
  $('updateBtn').onclick=()=>updateLead(id);$('modal').classList.remove('hidden');
 }
+
 async function updateLead(id){
- const x=await sb.rpc('update_lead',{p_lead_id:id,p_data:{product:$('ep').value,need:$('en').value,budget:$('eb').value,preference:$('epr').value,catatan:$('ec').value}});
+ const l=leads.find(x=>x.lead_id===id);if(!l)return;
+ const type=l.need_type||'';
+ let d={};
+ let p={need_type:type,catatan:$('ec')?.value.trim()||''};
+ if(type==='SERVICE'){
+  d={device:$('ed_device').value,model:$('ed_model').value.trim(),complaint:$('ed_complaint').value.trim(),condition:$('ed_condition').value.trim()};
+  p.need=d.device+' '+d.model+' — '+d.complaint;p.product=null;p.budget=null;p.preference=null;
+ }else if(type==='PEMBELIAN'){
+  d={product:$('ed_product').value.trim(),budget:$('ed_budget').value.trim(),preference:$('ed_preference').value,special:$('ed_special').value.trim()};
+  p.product=d.product;p.budget=d.budget;p.preference=d.preference;p.need=d.product;
+ }else if(type==='TUKAR TAMBAH'){
+  d={device:$('ed_trade_device').value.trim(),capacity:$('ed_trade_capacity').value.trim(),condition:$('ed_trade_condition').value.trim(),completeness:$('ed_trade_completeness').value.trim(),battery_health:$('ed_trade_bh').value.trim(),minus:$('ed_trade_minus').value.trim(),usage_duration:$('ed_trade_usage').value.trim(),wanted_product:$('ed_wanted').value.trim(),budget:$('ed_trade_budget').value.trim()};
+  p.product=d.wanted_product;p.budget=d.budget;p.need=d.device+' '+d.capacity+' → '+d.wanted_product;
+ }else if(type==='KREDIT/CICILAN'){
+  d={product:$('ed_credit_product').value.trim(),price:$('ed_credit_price').value.trim(),tenor:$('ed_tenor').value,dp_budget:$('ed_dp').value.trim(),credit_history:$('ed_credit_history').value};
+  p.product=d.product;p.budget=d.dp_budget||d.price;p.need=d.product;
+ }else if(type==='INFORMASI'){
+  d={information:$('ed_info').value.trim(),related:$('ed_info_related').value.trim()};
+  p.product=null;p.budget=null;p.need=d.information;
+ }else{
+  p.product=$('ep').value;p.need=$('en').value;p.budget=$('eb').value;p.preference=$('epr').value;
+ }
+ p.initial_data=d;
+ const x=await sb.rpc('update_lead',{p_lead_id:id,p_data:p});
  if(x.error)return alert(x.error.message);closeModal();await loadLeads();
 }
-async function resetLead(id){if(!confirm('Reset lead ke AVAILABLE?'))return;const x=await sb.rpc('reset_lead',{p_lead_id:id});if(x.error)return alert(x.error.message);await loadLeads()}
-function deleteLead(id){
- $('mt').textContent='🗑 Hapus Permanen';$('mb').innerHTML='<label>Ketik: YA, HAPUS PERMANEN</label><input id="dc"><button id="deleteBtn" class="danger">Hapus Permanen</button>';
- $('deleteBtn').onclick=()=>confirmDelete(id);$('modal').classList.remove('hidden');
-}
-async function confirmDelete(id){
- if($('dc').value.trim()!=='YA, HAPUS PERMANEN')return alert('Konfirmasi tidak sesuai.');
- const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:$('dc').value.trim()});if(x.error)return alert(x.error.message);closeModal();await loadLeads();
-}
-function showTodayLeads(){
- const todayStart=new Date();todayStart.setHours(0,0,0,0);
- const tomorrow=new Date(todayStart);tomorrow.setDate(tomorrow.getDate()+1);
- const items=leads.filter(viewerLead).filter(l=>{const d=new Date(l.created_at);return d>=todayStart&&d<tomorrow});
- $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>📥 Lead Masuk Hari Ini</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Detail lead hari ini.</p></div>'+(items.map(historyCard).join('')||'<p class="small">Belum ada lead masuk hari ini.</p>');
-}
-function showTodayActivity(type){
- const todayStart=new Date();todayStart.setHours(0,0,0,0);
- const tomorrow=new Date(todayStart);tomorrow.setDate(tomorrow.getDate()+1);
- const items=leads.filter(viewerLead).filter(l=>{const d=new Date(l.updated_at||l.created_at);return d>=todayStart&&d<tomorrow}).filter(l=>{
-  if(type==='QUALIFIED')return l.status_lead==='QUALIFIED';
-  if(type==='CLOSING')return l.sales_result==='CLOSING';
-  if(type==='GAGAL')return l.status_lead==='HASIL'&&(l.qualification_result==='GAGAL'||l.sales_result==='GAGAL'||l.hasil==='GAGAL'||l.hasil==='LOST');
-  return true;
- });
- $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>📅 Aktivitas '+esc(type)+' Hari Ini</h3><button class="secondary" onclick="render()">← Kembali</button></div></div>'+(items.map(historyCard).join('')||'<p class="small">Tidak ada aktivitas.</p>');
-}
-function localDateISO(){
- const d=new Date();
- return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function followupItems(mode){
- const iso=localDateISO();
- return leads.filter(viewerLead).filter(l=>{
-  const potential=l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
-  const date=String(l.sales_claimed_by?l.sales_follow_up_date:l.cs_follow_up_date||'').slice(0,10);
-  if(!potential||!date)return false;
-  if(mode==='TODAY')return date===iso;
-  if(mode==='OVERDUE')return date<iso;
-  return true;
- });
-}
-function showFollowupToday(mode){
- const items=followupItems(mode);
- const title=mode==='TODAY'?'🔔 Follow-up Hari Ini':mode==='OVERDUE'?'🔴 Follow-up Terlambat':'📋 Semua Follow-up';
- $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>'+title+'</h3><button class="secondary" onclick="render()">← Kembali</button></div><p class="small">Customer POTENSIAL sesuai PIC dan tanggal follow-up.</p></div>'+
- (items.map(historyCard).join('')||'<p class="small">Tidak ada customer pada daftar ini.</p>');
-}
-function showCurrentStatus(type){
- const items=leads.filter(viewerLead).filter(l=>{
-  if(type==='ALL')return true;
-  if(type==='HASIL')return l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL';
-  if(type==='POTENSIAL')return l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
-  if(type==='QUALIFIED')return l.status_lead==='QUALIFIED'&&!l.sales_claimed_by;
-  if(type==='HANDLE')return l.sales_claimed_by&&!((l.sales_result==='CLOSING'||l.sales_result==='GAGAL')||(l.qualification_result==='GAGAL'||l.qualification_result==='CLOSING')||(l.hasil==='GAGAL'||l.hasil==='LOST'||l.hasil==='CLOSING'));
-  return l.status_lead===type;
- });
- $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>Status '+type+'</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Lead yang tampil berdasarkan status saat ini.</p></div>'+
- (items.map(historyCard).join('')||'<p class="small">Tidak ada lead dengan status '+type+'.</p>');
-}
-function showHistory(type){
- const items=leads.filter(viewerLead).filter(l=>{
-   if(type==='CLOSING')return l.sales_result==='CLOSING';
-   if(type==='POTENSIAL')return l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
-   if(type==='GAGAL')return l.qualification_result==='GAGAL'||l.sales_result==='GAGAL';
-   return false;
- });
- $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>Histori '+type+'</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Detail histori hanya berasal dari lead yang menjadi tanggung jawab Anda. Management dapat melihat seluruh histori.</p></div>'+
- (items.map(historyCard).join('')||'<p class="small">Belum ada histori '+type+' yang dapat ditampilkan.</p>');
-}
-function historyCard(l){
- const isPotential=l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
- const isCS=profile?.name===l.cs_claimed_by;
- const isSales=profile?.name===l.sales_claimed_by;
- const owner=isCS||isSales||profile?.is_management;
- const action=isPotential&&!profile?.is_management?(isSales?'<button class="secondary" onclick="salesResult(\''+esc(l.lead_id)+'\')">↻ Kelola Follow-up</button>':isCS?'<button class="secondary" onclick="qualify(\''+esc(l.lead_id)+'\')">↻ Kelola Follow-up</button>':''): '';
- return '<div class="lead"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(l.sales_result||l.qualification_result||l.hasil||'HISTORI')+'</span></h3><div class="small">'+esc(l.lead_id)+' • '+esc(l.outlet)+'</div><div class="small">CS: '+esc(l.cs_claimed_by||'-')+' • Sales: '+esc(l.sales_claimed_by||'-')+'</div><div style="margin-top:8px"><b>Produk:</b> '+esc(l.product||'-')+'<br><b>Kebutuhan:</b> '+esc(l.need||'-')+'<br><b>Budget:</b> '+esc(l.budget||'-')+'</div>'+
- (l.qualification_result==='GAGAL'||l.sales_result==='GAGAL'?'<div style="margin-top:8px;padding:10px;background:#fef2f2;border-radius:8px"><b>Keterangan Gagal:</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+
- (l.sales_follow_up_date?'<div class="small" style="margin-top:6px">Sales follow-up: '+esc(l.sales_follow_up_date)+'</div>':'')+
- (l.cs_follow_up_date?'<div class="small" style="margin-top:6px">CS follow-up: '+esc(l.cs_follow_up_date)+'</div>':'')+
- '<div class="row" style="margin-top:8px">'+(owner&&profile?.is_management?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button>':'')+(isSales&&!profile?.is_management?'<button class="secondary" onclick="shareSalesResult(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+action+'</div></div>';
-}
-function closeModal(){$('modal').classList.add('hidden')}
-$('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
-/* Refresh uses direct onclick binding. */
-(async()=>{try{await ensureSupabase();if(new URLSearchParams(location.search).get("trade")==="1"){initTradePublic();return}sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')location.reload()});const x=await sb.auth.getSession();if(x.data.session)await start(x.data.session.user)}catch(ex){if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.'}})();
-async function renderContentPerformance(){
- const host=document.getElementById('contentPerformance')||document.createElement('div');
- host.id='contentPerformance'; host.className='box';
- const x=await sb.rpc('content_dashboard_summary',{p_month_start:contentSelectedMonth});
- if(x.error){host.innerHTML='<h3>🎬 Content Performance</h3><p class="small">'+esc(x.error.message)+'</p>';return}
- const d=x.data||{}, fmt=n=>Number(n||0).toLocaleString('id-ID');
- if(d.management){
-   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">Monitoring proses • target utama tetap WA outlet</div></div><div class="row"><select onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select><button class="secondary" onclick="showContentManagementDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.content_count||0),0))+'</div></div><div class="stat"><div class="small">👁️ Views</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.views||0),0))+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.comments||0),0))+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.dms||0),0))+'</div></div></div>';
- }else{
-   const t=d.team||{},o=d.own||{};
-   const can=await canContentCreator();
-   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">'+esc(d.outlet||'')+' • '+(d.locked?'🔒 Laporan terkunci':'Monitoring bulan ini')+'</div></div><div class="row"><select onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select>'+(can?'<button class="success" onclick="addContentPost()">＋ Tambah Content</button>':'')+'<button class="secondary" onclick="showMyContentDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten Outlet</div><div class="num">'+fmt(t.content_count)+'</div></div><div class="stat"><div class="small">👁️ Views Outlet</div><div class="num">'+fmt(t.views)+'</div></div><div class="stat"><div class="small">💬 Comments Outlet</div><div class="num">'+fmt(t.comments)+'</div></div><div class="stat"><div class="small">📩 DM Outlet</div><div class="num">'+fmt(t.dms)+'</div></div></div>'+(can?'<div class="box" style="margin-bottom:0"><b>Kontribusi Saya</b><div class="small">🎬 '+fmt(o.content_count)+' konten • 👁️ '+fmt(o.views)+' views • 💬 '+fmt(o.comments)+' comments • 📩 '+fmt(o.dms)+' DM</div></div>':'')
- }
- const dash=document.getElementById('dashboard'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(!dash.contains(host))dash.insertBefore(host,inventorySection||stats);
-}
-async function canContentCreator(){if(profile?.is_management)return true;const x=await sb.from('team_permissions').select('can_content_creator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();return !!x.data?.can_content_creator}
-async function loadContentPosts(){const x=await sb.from('content_posts').select('*').eq('active',true).order('posted_at',{ascending:false});if(x.error)throw x.error;return x.data||[]}
-let contentSelectedMonth=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';})();
-function contentMonthStart(){return contentSelectedMonth}
-function contentMonthOptions(){let a=[],d=new Date();d.setDate(1);for(let i=0;i<3;i++){const y=d.getFullYear(),m=d.getMonth()-i;const dt=new Date(y,m,1);const v=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-01';a.push('<option value="'+v+'" '+(v===contentSelectedMonth?'selected':'')+'>'+v.slice(0,7)+'</option>')}return a.join('')}
-async function addContentPost(){
- const cc=profile?.is_management?await sb.from('team_profiles').select('name').eq('outlet',profile?.outlet||'').eq('active',true).order('name'):await sb.from('team_permissions').select('name').eq('outlet',profile.outlet).eq('active',true).eq('can_content_creator',true).order('name');
- const names=(cc.data||[]).map(x=>'<option>'+esc(x.name)+'</option>').join('');
- $('mt').textContent='🎬 Tambah Content';$('mb').innerHTML='<label>Content Creator</label><select id="cpcreator">'+names+'</select><label>Platform</label><select id="cpplatform"><option>TIKTOK</option><option>INSTAGRAM</option><option>FACEBOOK</option><option>YOUTUBE</option></select><label>Link Content</label><input id="cpurl" placeholder="https://vt.tiktok.com/..."><label>Judul / Deskripsi</label><input id="cptitle"><label>Tanggal Upload</label><input id="cpposted" type="datetime-local" value="'+new Date().toISOString().slice(0,16)+'"><div class="row"><div style="flex:1"><label>Views</label><input id="cpviews" type="number" value="0"></div><div style="flex:1"><label>Comments</label><input id="cpcomments" type="number" value="0"></div></div><div class="row"><div style="flex:1"><label>DM</label><input id="cpdms" type="number" value="0"></div><div style="flex:1"><label>Likes</label><input id="cplikes" type="number" value="0"></div></div><label>Shares</label><input id="cpshares" type="number" value="0"><button class="success" onclick="saveContentPost()">Simpan Content</button>';
- $('modal').classList.remove('hidden');
-}
-async function saveContentPost(){
- const url=$('cpurl').value.trim();if(!url)return alert('Link content wajib diisi.');
- const creator=$('cpcreator').value;
- const x=await sb.from('content_posts').insert({outlet:profile.outlet,content_creator:creator,platform:$('cpplatform').value,post_url:url,title:$('cptitle').value.trim()||null,posted_at:new Date($('cpposted').value).toISOString(),views:Number($('cpviews').value||0),comments:Number($('cpcomments').value||0),dms:Number($('cpdms').value||0),likes:Number($('cplikes').value||0),shares:Number($('cpshares').value||0)});
- if(x.error)return alert(x.error.message);closeModal();await renderContentPerformance();
-}
-async function showMyContentDetail(){
- const posts=await loadContentPosts(), month=contentMonthStart(), mine=posts.filter(p=>p.outlet===profile.outlet&&p.month_start===month&&p.content_creator===profile.name);
- $('mt').textContent='🎬 Content Saya — '+month.slice(0,7);$('mb').innerHTML=(mine.map(contentDetailCard).join('')||'<p class="small">Belum ada content bulan ini.</p>')+'<button class="secondary" onclick="closeModal()">Tutup</button>'; $('modal').classList.remove('hidden');
-}
-async function showContentManagementDetail(){
- const posts=await loadContentPosts(), month=contentMonthStart(), groups={};
- posts.filter(p=>p.month_start===month).forEach(p=>{const k=p.outlet+' • '+p.content_creator;(groups[k]??=[]).push(p)});
- const locks=await sb.from('content_monthly_locks').select('outlet').eq('month_start',month);
- const locked=new Set((locks.data||[]).map(x=>x.outlet));
- const outlets=[...new Set(posts.filter(p=>p.month_start===month).map(p=>p.outlet))];
- $('mt').textContent='🎬 Content Performance — '+month.slice(0,7);
- $('mb').innerHTML=outlets.sort().map(outlet=>{
-   const people=Object.entries(groups).filter(([k])=>k.startsWith(outlet+' • '));
-   const total=posts.filter(p=>p.month_start===month&&p.outlet===outlet);
-   return '<div class="box"><h3>'+esc(outlet)+' '+(locked.has(outlet)?'🔒':'')+'</h3><div class="small">🎬 '+total.length+' • 👁️ '+Number(total.reduce((a,p)=>a+p.views,0)).toLocaleString('id-ID')+' • 💬 '+Number(total.reduce((a,p)=>a+p.comments,0)).toLocaleString('id-ID')+' • 📩 '+Number(total.reduce((a,p)=>a+p.dms,0)).toLocaleString('id-ID')+'</div><div style="margin-top:8px">'+people.map(([k,arr])=>'<div class="row" style="justify-content:space-between;margin:6px 0"><span>'+esc(k.replace(outlet+' • ',''))+' — '+arr.length+' content / '+Number(arr.reduce((a,p)=>a+p.views,0)).toLocaleString('id-ID')+' views</span><button class="secondary" onclick="showContentListFor(\''+encodeURIComponent(k)+'\')">Detail</button></div>').join('')+'</div>'+(!locked.has(outlet)?'<button class="danger" style="margin-top:10px" onclick="lockContentMonth(\''+encodeURIComponent(outlet)+'\')">🔒 Kunci Laporan Bulan Ini</button>':'<div class="small" style="margin-top:10px">Laporan bulan ini sudah dibekukan.</div>')+'</div>';
- }).join('')||'<p class="small">Belum ada content bulan ini.</p>';
- $('modal').classList.remove('hidden');
-}
-async function lockContentMonth(encodedOutlet){
- const outlet=decodeURIComponent(encodedOutlet);
- if(!confirm('Kunci laporan content '+outlet+' untuk bulan ini? Setelah dikunci, angka laporan tidak berubah.'))return;
- const x=await sb.rpc('content_lock_month',{p_month_start:contentMonthStart(),p_outlet:outlet});
- if(x.error)return alert(x.error.message);
- await renderContentPerformance(); showContentManagementDetail();
-}
-async function showContentListFor(encoded){
- const key=decodeURIComponent(encoded), posts=await loadContentPosts(), month=contentMonthStart(), mine=posts.filter(p=>(p.outlet+' • '+p.content_creator)===key&&p.month_start===month);
- $('mt').textContent='🎬 '+key;$('mb').innerHTML=(mine.map(contentDetailCard).join('')||'<p class="small">Belum ada content.</p>')+'<button class="secondary" onclick="showContentManagementDetail()">← Kembali</button>'; 
-}
-function contentDetailCard(p){
- return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(p.title||'Content '+p.content_id.slice(0,8))+'</b><span class="badge">'+esc(p.platform)+'</span></div><div class="small">'+new Date(p.posted_at).toLocaleString('id-ID')+'</div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">👁️ Views</div><div class="num">'+Number(p.views||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+Number(p.comments||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+Number(p.dms||0).toLocaleString('id-ID')+'</div></div></div><a href="'+esc(p.post_url)+'" target="_blank">🔗 Buka Content</a></div>';
-}
-const oldRender=window.render;
-window.render=async function(){const r=await oldRender();await renderContentPerformance();return r};
-
-</script><script src="performance.js?v=20261001-3"></script><script src="inventory.js?v=20261001-17"></script></body></html>
+>

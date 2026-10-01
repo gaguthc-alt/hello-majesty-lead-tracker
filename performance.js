@@ -2,10 +2,20 @@
 function perfFmt(n){return Number(n||0).toLocaleString('id-ID')}
 function perfDate(d){return d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}
 function perfPeriod(mode){
- const now=new Date();
- if(mode==='today') return {start:new Date(now.getFullYear(),now.getMonth(),now.getDate()),end:new Date(now.getFullYear(),now.getMonth(),now.getDate()),label:'HARI INI'};
- if(mode==='last_month') return {start:new Date(now.getFullYear(),now.getMonth()-1,1),end:new Date(now.getFullYear(),now.getMonth(),0),label:'BULAN KEMARIN'};
- return {start:new Date(now.getFullYear(),now.getMonth(),1),end:new Date(now.getFullYear(),now.getMonth()+1,0),label:'BULAN INI'};
+ const now=new Date(), parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Makassar',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));
+ const y=parts.year,m=parts.month,d=parts.day;
+ if(mode==='today'){
+   const start=new Date(Date.UTC(y,m-1,d)-8*3600000);
+   return {start,end:new Date(start),label:'HARI INI'};
+ }
+ if(mode==='last_month'){
+   const first=new Date(Date.UTC(y,m-2,1)-8*3600000);
+   const last=new Date(Date.UTC(y,m-1,0)-8*3600000);
+   return {start:first,end:last,label:'BULAN KEMARIN'};
+ }
+ const first=new Date(Date.UTC(y,m-1,1)-8*3600000);
+ const last=new Date(Date.UTC(y,m,0)-8*3600000);
+ return {start:first,end:last,label:'BULAN INI'};
 }
 function perfWa(text){window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank')}
 function perfRoles(){

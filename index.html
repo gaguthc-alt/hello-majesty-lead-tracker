@@ -439,10 +439,7 @@ async function addLead(){
  '<label>No WhatsApp</label><input id="fw" placeholder="08xxxxxxxxxx">'+
  '<label>Kebutuhan</label><select id="fneedtype" onchange="renderInitialNeedFields()"><option value="">— Pilih Kebutuhan —</option><option>PEMBELIAN</option><option>SERVICE</option><option>TUKAR TAMBAH</option><option>KREDIT/CICILAN</option><option>INFORMASI</option></select>'+
  '<div id="initialNeedFields"></div>'+
- '<label>Sumber</label><select id="fsource"><option>WhatsApp</option><option>Instagram</option><option>TikTok</option><option>Facebook</option><option>Walk-in</option><option>Referral</option><option>Lainnya</option></select>'+
- '<label>Catatan Awal</label><textarea id="fcatatan" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea>'+
- '<label>Content Creator</label><select id="fcc"><option value="">— Pilih / tidak diketahui —</option>'+opts+'</select>'+
- '<button id="saveLeadBtn" class="success">Simpan Lead</button>';
+ '<label>Catatan Awal</label><textarea id="fcatatan" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea>'+ '<button id="saveLeadBtn" class="success">Simpan Lead</button>';
  $('saveLeadBtn').onclick=saveLead;$('modal').classList.remove('hidden');
 }
 function renderInitialNeedFields(){
@@ -475,7 +472,7 @@ function renderInitialNeedFields(){
 }
 function initialField(id){return $(id)?.value?.trim()||''}
 function buildInitialData(){
- const t=$('fneedtype')?.value, d={source:initialField('fsource')};
+ const t=$('fneedtype')?.value, d={};
  if(t==='PEMBELIAN')Object.assign(d,{product:initialField('i_product'),budget:initialField('i_budget'),preference:initialField('i_preference'),special:initialField('i_special')});
  if(t==='SERVICE')Object.assign(d,{device:initialField('i_device'),model:initialField('i_model'),complaint:initialField('i_complaint'),condition:initialField('i_condition')});
  if(t==='TUKAR TAMBAH')Object.assign(d,{device:initialField('i_trade_device'),capacity:initialField('i_trade_capacity'),condition:initialField('i_trade_condition'),completeness:initialField('i_trade_completeness'),warranty:initialField('i_trade_warranty'),function_check:initialField('i_trade_function'),signal:initialField('i_trade_signal'),battery_health:initialField('i_trade_bh'),minus:initialField('i_trade_minus'),usage_duration:initialField('i_trade_usage'),wanted_product:initialField('i_wanted'),budget:initialField('i_trade_budget')});
@@ -487,7 +484,7 @@ async function saveLead(){
  const type=$('fneedtype').value;if(!type)return alert('Kebutuhan wajib dipilih.');
  const d=buildInitialData();
  const summary=type==='PEMBELIAN'?(d.product||'') : type==='SERVICE'?(d.device+' '+d.model+' — '+d.complaint) : type==='TUKAR TAMBAH'?(d.device+' '+d.capacity+' → '+d.wanted_product) : type==='KREDIT/CICILAN'?(d.product||'') : (d.information||'');
- const x=await sb.rpc('create_lead',{p_customer:$('fc').value,p_whatsapp:$('fw').value,p_product:d.product||d.wanted_product||null,p_need:summary||type,p_budget:d.budget||d.dp_budget||d.price||null,p_timeline:null,p_preference:d.preference||null,p_catatan:$('fcatatan').value.trim()||null,p_content_creator:$('fcc')?.value||null,p_need_type:type,p_initial_data:d});
+ const x=await sb.rpc('create_lead',{p_customer:$('fc').value,p_whatsapp:$('fw').value,p_product:d.product||d.wanted_product||null,p_need:summary||type,p_budget:d.budget||d.dp_budget||d.price||null,p_timeline:null,p_preference:d.preference||null,p_catatan:$('fcatatan').value.trim()||null,p_content_creator:null,p_need_type:type,p_initial_data:d});
  if(x.error)return alert(x.error.message);closeModal();await loadLeads();
 }
 function editLead(id){

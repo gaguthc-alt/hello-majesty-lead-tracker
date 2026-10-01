@@ -185,7 +185,7 @@ async function render(){
  const active=leads.filter(viewerLead).filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL');
  $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p><button class="secondary" onclick="showCurrentStatus(&quot;HASIL&quot;)">📋 Lihat Lead Selesai</button>';
 }
-async function shortNominal(n){if(!n)return '0';if(Math.abs(n)>=1000000000)return (n/1000000000).toFixed(1).replace('.0','')+'M';if(Math.abs(n)>=1000000)return (n/1000000).toFixed(1).replace('.0','')+'jt';if(Math.abs(n)>=1000)return (n/1000).toFixed(0)+'rb';return String(Math.round(n));}
+function shortNominal(n){if(!n)return '0';if(Math.abs(n)>=1000000000)return (n/1000000000).toFixed(1).replace('.0','')+'M';if(Math.abs(n)>=1000000)return (n/1000000).toFixed(1).replace('.0','')+'jt';if(Math.abs(n)>=1000)return (n/1000).toFixed(0)+'rb';return String(Math.round(n));}
 function renderTargetBoard(){
  const x=await sb.rpc('dashboard_target_summary');
  if(x.error)return;

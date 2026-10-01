@@ -260,9 +260,72 @@ async function saveStock(){
  const x=await sb.from('stock_units').insert(data);if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
 async function openEditStockPhotos(id){if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres ke WebP • target &lt; 1 MB/foto.</div>';$('modal').classList.remove('hidden')}
-function openEditStock(id){if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;const c=s.category;let f=`<div class="small">${esc(s.product)} • IMEI 1: ${esc(s.imei_1||'-')}</div>`;if(c==='IPHONE_SECOND')f+=`<label>Grade</label><select id="esgrade"><option value="-">-</option><option ${s.grade==='A'?'selected':''}>A</option><option ${s.grade==='B'?'selected':''}>B</option><option ${s.grade==='C'?'selected':''}>C</option></select><label>Kondisi</label><input id="escondition" value="${esc(s.condition||'')}"><label>Battery Health</label><input id="esbh" type="number" min="0" max="100" value="${s.battery_health??''}"><label>Kelengkapan</label><input id="escomplete" value="${esc(s.completeness||'')}"><label>Minus</label><textarea id="esminus">${esc(s.minus||'')}</textarea>`;else if(c==='ANDROID_SECOND')f+=`<label>Warna</label><input id="escolor" value="${esc(s.color||'')}"><label>Kondisi</label><input id="escondition" value="${esc(s.condition||'')}"><label>Kelengkapan</label><input id="escomplete" value="${esc(s.completeness||'')}"><label>Minus</label><textarea id="esminus">${esc(s.minus||'')}</textarea>`;else if(c==='ANDROID_NEW')f+=`<label>Warna</label><input id="escolor" value="${esc(s.color||'')}">`;f+=`<label>Harga Jual</label><input id="esprice" type="number" value="${Number(s.asking_price||0)}">${stockPhotoGallery(s,true)}<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres ke WebP • target &lt; 1 MB/foto.</div><button class="success" onclick="saveEditStock('${id}')">Simpan</button>`;$('mt').textContent='Edit Stock';$('mb').innerHTML=f;$('modal').classList.remove('hidden')}
-async function saveEditStock(id){if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;const c=s.category,data={asking_price:Number($('esprice').value||0),updated_at:new Date().toISOString()};if(c==='IPHONE_SECOND'){data.grade=$('esgrade').value||'-';data.condition=$('escondition').value.trim()||null;data.battery_health=$('esbh').value!==''?Number($('esbh').value):null;data.completeness=$('escomplete').value.trim()||null;data.minus=$('esminus').value.trim()||null}else if(c==='ANDROID_SECOND'){data.color=$('escolor').value.trim()||null;data.condition=$('escondition').value.trim()||null;data.completeness=$('escomplete').value.trim()||null;data.minus=$('esminus').value.trim()||null}else if(c==='ANDROID_NEW'){data.color=$('escolor').value.trim()||null}const x=await sb.from('stock_units').update(data).eq('id',id);if(x.error)return alert(x.error.message);closeModal();await renderInventory()}
-async function openStockHistory(id){const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});if(x.error)return alert(x.error.message);$('mt').textContent='🧾 Histori Stock';$('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';$('modal').classList.remove('hidden')}
+function openEditStock(id){
+ if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ const c=s.category;
+ let f='<div class="small">'+esc(s.product)+' • '+esc(s.variant||'')+' • IMEI 1: '+esc(s.imei_1||'-')+'</div>';
+ const input=(label,id,value,type='text',extra='')=>'<label>'+label+'</label><input id="'+id+'" type="'+type+'" value="'+esc(value??'')+'" '+extra+'>';
+ const area=(label,id,value)=>'<label>'+label+'</label><textarea id="'+id+'">'+esc(value||'')+'</textarea>';
+ f+=input('IMEI 1','esimei1',s.imei_1||'','text','inputmode="numeric"');
+ f+=input('IMEI 2','esimei2',s.imei_2||'','text','inputmode="numeric"');
+ if(c==='IPHONE_SECOND'){
+  f+='<label>Grade</label><select id="esgrade"><option value="">-</option><option '+(s.grade==='A'?'selected':'')+'>A</option><option '+(s.grade==='B'?'selected':'')+'>B</option><option '+(s.grade==='C'?'selected':'')+'>C</option></select>';
+  f+=input('Kondisi','escondition',s.condition||'');
+  f+=input('Battery Health','esbh',s.battery_health??'','number','min="0" max="100"');
+  f+=input('Kelengkapan','escomplete',s.completeness||'');
+  f+=area('Minus','esminus',s.minus||'');
+ }else if(c==='ANDROID_SECOND'){
+  f+=input('Warna','escolor',s.color||'');
+  f+=input('Kondisi','escondition',s.condition||'');
+  f+=input('Kelengkapan','escomplete',s.completeness||'');
+  f+=area('Minus','esminus',s.minus||'');
+ }else if(c==='ANDROID_NEW'){
+  f+=input('Warna','escolor',s.color||'');
+ }else if(c==='STOCK_NEW_PUSAT'||c==='STOCK_SECOND_PUSAT'){
+  f+=input('Kondisi','escondition',s.condition||'');
+  f+=input('Battery Health','esbh',s.battery_health??'','number','min="0" max="100"');
+  f+=input('Kelengkapan','escomplete',s.completeness||'');
+  f+=area('Minus','esminus',s.minus||'');
+ }
+ f+=input('Harga Beli','escost',s.cost??0,'number','min="0"');
+ f+=input('Harga Jual','esprice',s.asking_price??0,'number','min="0"');
+ f+=input('Supplier','essupplier',s.supplier||'');
+ f+=area('Catatan','esnotes',s.notes||'');
+ f+=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres ke WebP • target &lt; 1 MB/foto.</div><button class="success" onclick="saveEditStock(\''+id+'\')">Simpan</button>';
+ $('mt').textContent='Edit Stock';$('mb').innerHTML=f;$('modal').classList.remove('hidden');
+}
+async function saveEditStock(id){
+ if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ const c=s.category;
+ const imei1=$('esimei1').value.trim(),imei2=$('esimei2').value.trim()||null;
+ if(imei1&&!/^\\d{10,20}$/.test(imei1))return alert('IMEI 1 harus berupa angka 10–20 digit.');
+ if(imei2&&!/^\\d{10,20}$/.test(imei2))return alert('IMEI 2 harus berupa angka 10–20 digit.');
+ const data={imei_1:imei1||null,imei_2:imei2,asking_price:Number($('esprice').value||0),cost:Number($('escost').value||0),supplier:$('essupplier').value.trim()||null,notes:$('esnotes').value.trim()||null,updated_at:new Date().toISOString()};
+ if(c==='IPHONE_SECOND'){
+  data.grade=$('esgrade').value||null;
+  data.condition=$('escondition').value.trim()||null;
+  data.battery_health=$('esbh').value!==''?Number($('esbh').value):null;
+  data.completeness=$('escomplete').value.trim()||null;
+  data.minus=$('esminus').value.trim()||null;
+ }else if(c==='ANDROID_SECOND'){
+  data.color=$('escolor').value.trim()||null;
+  data.condition=$('escondition').value.trim()||null;
+  data.completeness=$('escomplete').value.trim()||null;
+  data.minus=$('esminus').value.trim()||null;
+ }else if(c==='ANDROID_NEW'){
+  data.color=$('escolor').value.trim()||null;
+ }else if(c==='STOCK_NEW_PUSAT'||c==='STOCK_SECOND_PUSAT'){
+  data.condition=$('escondition').value.trim()||null;
+  data.battery_health=$('esbh').value!==''?Number($('esbh').value):null;
+  data.completeness=$('escomplete').value.trim()||null;
+  data.minus=$('esminus').value.trim()||null;
+ }
+ const x=await sb.from('stock_units').update(data).eq('id',id);
+ if(x.error)return alert(x.error.message);
+ closeModal();await renderInventory();
+}async function openStockHistory(id){const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});if(x.error)return alert(x.error.message);$('mt').textContent='🧾 Histori Stock';$('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';$('modal').classList.remove('hidden')}
 async function openSalesReport(){
  const x=await sb.from('sales_transactions').select('*').order('sold_at',{ascending:false});
  if(x.error)return alert(x.error.message);

@@ -608,39 +608,17 @@ async function saveLead(){
 function editLead(id){
  const l=leads.find(x=>x.lead_id===id);if(!l)return;
  const wa=profile?.is_management||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
- const d=l.initial_data||{}; const type=l.need_type||'';
  $('mt').textContent='Lead '+l.lead_id;
- let fields='';
- if(type==='SERVICE'){
-  fields='<label>Perangkat</label><select id="ed_device"><option'+(d.device==='iPhone'?' selected':'')+'>iPhone</option><option'+(d.device==='Android'?' selected':'')+'>Android</option><option'+(d.device==='iPad'?' selected':'')+'>iPad</option><option'+(d.device==='MacBook'?' selected':'')+'>MacBook</option><option'+(d.device==='Apple Watch'?' selected':'')+'>Apple Watch</option><option'+(d.device==='Lainnya'?' selected':'')+'>Lainnya</option></select><label>Tipe / Model</label><input id="ed_model" value="'+esc(d.model||'')+'"><label>Keluhan</label><textarea id="ed_complaint">'+esc(d.complaint||'')+'</textarea><label>Kondisi yang Diketahui</label><input id="ed_condition" value="'+esc(d.condition||'')+'">';
- }else if(type==='PEMBELIAN'){
-  fields='<label>Produk yang Dicari</label><input id="ed_product" value="'+esc(d.product||l.product||'')+'"><label>Budget</label><input id="ed_budget" value="'+esc(d.budget||l.budget||'')+'"><label>Preferensi</label><select id="ed_preference"><option'+(d.preference==='Baru'?' selected':'')+'>Baru</option><option'+(d.preference==='Second'?' selected':'')+'>Second</option><option'+(d.preference==='Bebas'?' selected':'')+'>Bebas</option></select><label>Kebutuhan Khusus</label><input id="ed_special" value="'+esc(d.special||'')+'">';
- }else if(type==='TUKAR TAMBAH'){
-  fields='<label>HP yang Dimiliki</label><input id="ed_trade_device" value="'+esc(d.device||'')+'"><label>Kapasitas</label><input id="ed_trade_capacity" value="'+esc(d.capacity||'')+'"><label>Warna</label><input id="ed_trade_color" value="'+esc(d.color||'')+'"><label>Kondisi Umum</label><input id="ed_trade_condition" value="'+esc(d.condition||'')+'"><label>Kelengkapan</label><input id="ed_trade_completeness" value="'+esc(d.completeness||'')+'"><label>Battery Health</label><input id="ed_trade_bh" value="'+esc(d.battery_health||'')+'"><label>Minus</label><input id="ed_trade_minus" value="'+esc(d.minus||'')+'"><label>Estimasi Lama Pemakaian</label><input id="ed_trade_usage" value="'+esc(d.usage_duration||'')+'"><label>HP yang Diinginkan</label><input id="ed_wanted" value="'+esc(d.wanted_product||'')+'"><label>Estimasi Budget / Tambah Dana</label><input id="ed_trade_budget" value="'+esc(d.budget||'')+'">';
- }else if(type==='KREDIT/CICILAN'){
-  fields='<label>Produk yang Diminati</label><input id="ed_credit_product" value="'+esc(d.product||'')+'"><label>Harga / Estimasi</label><input id="ed_credit_price" value="'+esc(d.price||'')+'"><label>Tenor</label><input id="ed_tenor" value="'+esc(d.tenor||'')+'"><label>DP / Budget</label><input id="ed_dp" value="'+esc(d.dp_budget||'')+'"><label>Pernah Ajukan Kredit?</label><select id="ed_credit_history"><option'+(d.credit_history==='Tidak'?' selected':'')+'>Tidak</option><option'+(d.credit_history==='Ya'?' selected':'')+'>Ya</option></select>';
- }else if(type==='INFORMASI'){
-  fields='<label>Informasi yang Dicari</label><textarea id="ed_info">'+esc(d.information||'')+'</textarea><label>Produk / Layanan Terkait</label><input id="ed_info_related" value="'+esc(d.related||'')+'">';
- }else{
-  fields='<label>Produk</label><input id="ep" value="'+esc(l.product||'')+'"><label>Kebutuhan</label><textarea id="en">'+esc(l.need||'')+'</textarea><label>Budget</label><input id="eb" value="'+esc(l.budget||'')+'"><label>Preference</label><textarea id="epr">'+esc(l.preference||'')+'</textarea>';
- }
  $('mb').innerHTML='<div class="small">'+esc(l.customer)+' • '+(wa?'<a href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank">📱 '+esc(l.whatsapp)+'</a>':'WhatsApp tersembunyi sampai menjadi tanggung jawab Anda.')+'</div>'+
  (l.qualification_result==='GAGAL'?'<div style="margin:10px 0;padding:10px;background:#fef2f2;border-radius:8px"><b>Keterangan Gagal</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+
- '<div class="small" style="margin:12px 0 4px"><b>Kebutuhan: '+esc(type||'-')+'</b></div>'+fields+'<label>Catatan Awal</label><textarea id="ec">'+esc(l.catatan||'')+'</textarea><button id="updateBtn" class="success">Simpan Update</button>';
+ '<label>Produk</label><input id="ep" value="'+esc(l.product)+'"><label>Kebutuhan</label><textarea id="en">'+esc(l.need)+'</textarea><label>Budget</label><input id="eb" value="'+esc(l.budget)+'"><label>Preference</label><textarea id="epr">'+esc(l.preference)+'</textarea><label>Catatan</label><textarea id="ec">'+esc(l.catatan)+'</textarea><button id="updateBtn" class="success">Simpan Update</button>';
  $('updateBtn').onclick=()=>updateLead(id);$('modal').classList.remove('hidden');
 }
 async function updateLead(id){
- const l=leads.find(x=>x.lead_id===id);if(!l)return;
- const type=l.need_type||'';let d={};let p={need_type:type,catatan:$('ec')?.value.trim()||''};
- if(type==='SERVICE'){d={device:$('ed_device').value,model:$('ed_model').value.trim(),complaint:$('ed_complaint').value.trim(),condition:$('ed_condition').value.trim()};p.need=d.device+' '+d.model+' — '+d.complaint;}
- else if(type==='PEMBELIAN'){d={product:$('ed_product').value.trim(),budget:$('ed_budget').value.trim(),preference:$('ed_preference').value,special:$('ed_special').value.trim()};p.product=d.product;p.budget=d.budget;p.preference=d.preference;p.need=d.product;}
- else if(type==='TUKAR TAMBAH'){d={device:$('ed_trade_device').value.trim(),capacity:$('ed_trade_capacity').value.trim(),color:$('ed_trade_color').value.trim(),condition:$('ed_trade_condition').value.trim(),completeness:$('ed_trade_completeness').value.trim(),battery_health:$('ed_trade_bh').value.trim(),minus:$('ed_trade_minus').value.trim(),usage_duration:$('ed_trade_usage').value.trim(),wanted_product:$('ed_wanted').value.trim(),budget:$('ed_trade_budget').value.trim()};p.product=d.wanted_product;p.budget=d.budget;p.need=d.device+' '+d.capacity+' → '+d.wanted_product;}
- else if(type==='KREDIT/CICILAN'){d={product:$('ed_credit_product').value.trim(),price:$('ed_credit_price').value.trim(),tenor:$('ed_tenor').value.trim(),dp_budget:$('ed_dp').value.trim(),credit_history:$('ed_credit_history').value};p.product=d.product;p.budget=d.dp_budget||d.price;p.need=d.product;}
- else if(type==='INFORMASI'){d={information:$('ed_info').value.trim(),related:$('ed_info_related').value.trim()};p.need=d.information;}
- else{p.product=$('ep').value;p.need=$('en').value;p.budget=$('eb').value;p.preference=$('epr').value;}
- p.initial_data=d;const x=await sb.rpc('update_lead',{p_lead_id:id,p_data:p});if(x.error)return alert(x.error.message);closeModal();await loadLeads();
+ const x=await sb.rpc('update_lead',{p_lead_id:id,p_data:{product:$('ep').value,need:$('en').value,budget:$('eb').value,preference:$('epr').value,catatan:$('ec').value}});
+ if(x.error)return alert(x.error.message);closeModal();await loadLeads();
 }
-function resetLead(id){if(!confirm('Reset lead ke AVAILABLE?'))return;const x=await sb.rpc('reset_lead',{p_lead_id:id});if(x.error)return alert(x.error.message);await loadLeads()}
+async function resetLead(id){if(!confirm('Reset lead ke AVAILABLE?'))return;const x=await sb.rpc('reset_lead',{p_lead_id:id});if(x.error)return alert(x.error.message);await loadLeads()}
 function deleteLead(id){
  $('mt').textContent='🗑 Hapus Permanen';$('mb').innerHTML='<label>Ketik: YA, HAPUS PERMANEN</label><input id="dc"><button id="deleteBtn" class="danger">Hapus Permanen</button>';
  $('deleteBtn').onclick=()=>confirmDelete(id);$('modal').classList.remove('hidden');

@@ -472,7 +472,38 @@ async function submitTradePublic(){
  }catch(e){btn.disabled=false;btn.textContent='Kirim Data Tukar Tambah';msg.textContent=e?.message||'Data gagal dikirim.'}
 }
 function tradeWaMessage(){
- return '📱 *FORM DATA TUKAR TAMBAH*\n*HELLO MAJESTY*\n\nMohon bantu isi data HP yang ingin ditukar:\n\n*DATA HP*\n1. Merek & Tipe:\n2. Kapasitas:\n3. Warna:\n4. Battery Health:\n5. Kondisi fisik:\n6. Minus:\n7. Kelengkapan:\n8. Garansi: iBox / Inter / lainnya\n9. Face ID: ON / OFF\n10. True Tone: ON / OFF\n11. Signal: ON / OFF\n12. Kamera:\n13. Speaker & Mic:\n14. Charging:\n15. Lama pemakaian:\n\n*HP YANG DIINGINKAN*\n16. Tipe HP:\n17. Estimasi budget / tambah dana:\n\nSilakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏\n\nSetelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.\n\n— *HELLO MAJESTY*\n_Built on Trust._';
+ return `📱 *FORM DATA TUKAR TAMBAH*
+*HELLO MAJESTY*
+
+Mohon bantu isi data HP yang ingin ditukar:
+
+*DATA HP*
+1. Merek & Tipe:
+2. Kapasitas:
+3. Warna:
+4. Battery Health:
+5. Kondisi fisik:
+6. Minus:
+7. Kelengkapan:
+8. Garansi: iBox / Inter / lainnya
+9. Face ID: ON / OFF
+10. True Tone: ON / OFF
+11. Signal: ON / OFF
+12. Kamera:
+13. Speaker & Mic:
+14. Charging:
+15. Lama pemakaian:
+
+*HP YANG DIINGINKAN*
+16. Tipe HP:
+17. Estimasi budget / tambah dana:
+
+Silakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏
+
+Setelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.
+
+— *HELLO MAJESTY*
+_Built on Trust._`;
 }
 async function openTradeForm(){
  const msg=tradeWaMessage();

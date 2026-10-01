@@ -168,9 +168,26 @@ async function perfManagement(mode){
  const contentMap={};
  for(const r of (cp.data||[])){const k=r.outlet+'|'+r.content_creator;(contentMap[k]??={content_count:0,views:0,comments:0,dms:0,wa_generated:0});contentMap[k].content_count++;contentMap[k].views+=Number(r.views||0);contentMap[k].comments+=Number(r.comments||0);contentMap[k].dms+=Number(r.dms||0)}
  const target=await perfGetTarget(mode);
- const waRows=await sb.from('leads').select('content_creator,outlet').gte('created_at',p.start.toISOString()).lt('created_at',new Date(p.end.getTime()+86400000).toISOString()).not('content_creator','is',null);
+ const contentRows=await sb.from('content_posts').select('content_creator,outlet,posted_at').eq('active',true).gte('posted_at',p.start.toISOString()).lt('posted_at',new Date(p.end.getTime()+86400000).toISOString());
+ if(contentRows.error)throw contentRows.error;
+ const baliDate=x=>{
+   const z=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Makassar',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(x));
+   return z.find(v=>v.type==='year')?.value+'-'+z.find(v=>v.type==='month')?.value+'-'+z.find(v=>v.type==='day')?.value;
+ };
+ const contentDateMap={};
+ for(const w of (contentRows.data||[])){
+   const k=w.outlet+'|'+w.content_creator;
+   (contentDateMap[k]??=new Set()).add(baliDate(w.posted_at));
+ }
+ const waRows=await sb.from('leads').select('created_at,outlet').eq('outlet',profile?.outlet).gte('created_at',p.start.toISOString()).lt('created_at',new Date(p.end.getTime()+86400000).toISOString());
  if(waRows.error)throw waRows.error;
- for(const w of (waRows.data||[])){const k=w.outlet+'|'+w.content_creator;(contentMap[k]??={content_count:0,views:0,comments:0,dms:0,wa_generated:0});contentMap[k].wa_generated++}
+ for(const w of (waRows.data||[])){
+   const k=w.outlet;
+   const matches=Object.keys(contentDateMap).filter(x=>x.startsWith(k+'|')&&contentDateMap[x].has(baliDate(w.created_at)));
+   for(const mk of matches){
+     (contentMap[mk]??={content_count:0,views:0,comments:0,dms:0,wa_generated:0}).wa_generated++;
+   }
+ }
  const hunterRows=await sb.from('sales_transactions').select('hunter_user_id').not('hunter_user_id','is',null).gte('sold_at',p.start.toISOString()).lt('sold_at',new Date(p.end.getTime()+86400000).toISOString());
  if(hunterRows.error)throw hunterRows.error;
  const hunterMap={};for(const h of (hunterRows.data||[]))hunterMap[h.hunter_user_id]=(hunterMap[h.hunter_user_id]||0)+1;

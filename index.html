@@ -389,7 +389,7 @@ async function saveQ(id){
 }
 function salesClaimMessage(l){
  const tm=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
- return '🔒 *LEAD CLAIMED — FOLLOW UP*\\n\\n*Lead ID:* '+l.lead_id+'\\n👤 *PIC Sales:* '+(profile?.name||'-')+'\\n🕐 *Claim:* '+tm+'\\n\\nLead sedang ditangani oleh *'+(profile?.name||'-')+'* untuk proses konsultasi dan follow up.\\n\\nMohon tim tidak melakukan follow up pada lead yang sama tanpa koordinasi dengan PIC.\\n\\n— *HELLO MAJESTY*\\n*Built on Trust.*';
+ return '🔒 *LEAD CLAIMED — FOLLOW UP*\\n\\n*Lead ID:* '+l.lead_id+'\\n*PIC Sales:* '+(profile?.name||'-')+'\\n*Waktu Claim:* '+tm+'\\n\\n━━━━━━━━━━━━━━\\n\\nLead ini sedang ditangani oleh *'+(profile?.name||'-')+'* untuk proses konsultasi dan follow up.\\n\\nMohon tim tidak melakukan follow up pada lead yang sama tanpa koordinasi dengan PIC.\\n\\n━━━━━━━━━━━━━━\\n\\n— *HELLO MAJESTY*\\n*Built on Trust.*';
 }
 function shareSalesClaim(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesClaimMessage(l));}
 async function handoverSales(id){ const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'}); if(x.error)return alert(x.error.message); await loadLeads(); openUrl(); }

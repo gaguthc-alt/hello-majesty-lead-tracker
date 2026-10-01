@@ -459,9 +459,15 @@ function openUrl(){
 async function claimFromLink(id){
  const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'});if(x.error)return alert(x.error.message); const claimed=leads.find(x=>x.lead_id===id); history.replaceState({},'',location.pathname);closeModal();await loadLeads(); const fresh=leads.find(x=>x.lead_id===id)||claimed; if(fresh)shareSalesClaim(fresh); editLead(id);
 }
-function salesResult(id){
- $('mt').textContent='Hasil Sales';$('mb').innerHTML='<label>Hasil</label><select id="sr"><option value="CLOSING">CLOSING</option><option value="POTENSIAL">POTENSIAL</option><option value="GAGAL">GAGAL</option></select><div id="sdb" class="hidden"><label>Follow-up</label><input id="sd" type="date"></div><div id="sob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="sreason" placeholder="Contoh: budget tidak cocok, customer memilih produk lain..."></textarea></div><button id="saveSBtn" class="success">Simpan</button>';
- $('sr').onchange=()=>{$('sdb').classList.toggle('hidden',$('sr').value!=='POTENSIAL');$('sob').classList.toggle('hidden',$('sr').value!=='GAGAL')};$('saveSBtn').onclick=()=>saveS(id);$('modal').classList.remove('hidden');
+async function salesResult(id){
+ const l=leads.find(x=>x.lead_id===id); if(!l)return alert('Lead tidak ditemukan.');
+ const st=await sb.from('stock_units').select('id,product,variant,color,asking_price,status').eq('outlet',profile.outlet).eq('status','READY').order('product').order('variant').order('color');
+ if(st.error)return alert('Stock gagal dimuat: '+st.error.message);
+ const opts=(st.data||[]).map(s=>'<option value="'+esc(s.id)+'">'+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+' • Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</option>').join('');
+ $('mt').textContent='Hasil Sales';
+ $('mb').innerHTML='<label>Hasil</label><select id="sr"><option value="CLOSING">CLOSING</option><option value="POTENSIAL">POTENSIAL</option><option value="GAGAL">GAGAL</option></select><div id="stockBox"><label>📦 Produk / Stock yang Laku <span style="color:#b91c1c">*wajib untuk CLOSING</span></label><select id="ss"><option value="">— Pilih Stock READY —</option>'+opts+'</select><div class="small">Closing wajib memilih unit stock yang benar-benar terjual.</div></div><div id="sdb" class="hidden"><label>Follow-up</label><input id="sd" type="date"></div><div id="sob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="sreason" placeholder="Contoh: budget tidak cocok, customer memilih produk lain..."></textarea></div><button id="saveSBtn" class="success">Simpan</button>';
+ $('sr').onchange=()=>{$('sdb').classList.toggle('hidden',$('sr').value!=='POTENSIAL');$('sob').classList.toggle('hidden',$('sr').value!=='GAGAL');$('stockBox').classList.toggle('hidden',$('sr').value!=='CLOSING')};
+ $('saveSBtn').onclick=()=>saveS(id);$('modal').classList.remove('hidden');
 }
 function salesResultMessage(l){
  const result=l.sales_result||'-';
@@ -479,9 +485,16 @@ function salesResultMessage(l){
 }
 function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
 async function saveS(id){
- if($('sr').value==='POTENSIAL'&&!$('sd').value)return alert('Tanggal follow-up wajib.');
- if($('sr').value==='GAGAL'&&!$('sreason').value.trim())return alert('Keterangan kenapa gagal wajib diisi.');
  const result=$('sr').value;
+ if(result==='CLOSING'){
+   const stockId=$('ss')?.value;
+   if(!stockId)return alert('Untuk CLOSING, wajib pilih produk/stock yang laku.');
+   const x=await sb.rpc('set_sales_closing',{p_lead_id:id,p_stock_id:stockId});
+   if(x.error)return alert('Closing gagal: '+x.error.message);
+   closeModal();await loadLeads();showHistory('CLOSING');return;
+ }
+ if(result==='POTENSIAL'&&!$('sd').value)return alert('Tanggal follow-up wajib.');
+ if(result==='GAGAL'&&!$('sreason').value.trim())return alert('Keterangan kenapa gagal wajib diisi.');
  const x=await sb.rpc('set_sales_result',{p_lead_id:id,p_result:result,p_follow_up_date:$('sd').value||null,p_reason:$('sreason')?.value.trim()||null});
  if(x.error)return alert(x.error.message);closeModal();await loadLeads();showHistory(result);
 }

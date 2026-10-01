@@ -86,11 +86,16 @@ async function perfBuild(mode){
      const cpMonth=perfPeriod(mode==='today'?'today':'month');
      const cpDates=await sb.from('content_posts').select('posted_at').eq('outlet',profile?.outlet).eq('content_creator',profile?.name).eq('active',true).gte('posted_at',cpMonth.start.toISOString()).lt('posted_at',new Date(cpMonth.end.getTime()+86400000).toISOString());
      if(cpDates.error)throw cpDates.error;
-     const contentDates=new Set((cpDates.data||[]).map(x=>new Date(x.posted_at).toLocaleDateString('en-CA',{timeZone:'Asia/Makassar'})));
+     const baliDate=x=>{
+       const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Makassar',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(x));
+       const y=p.find(v=>v.type==='year')?.value,m=p.find(v=>v.type==='month')?.value,d=p.find(v=>v.type==='day')?.value;
+       return y+'-'+m+'-'+d;
+     };
+     const contentDates=new Set((cpDates.data||[]).map(x=>baliDate(x.posted_at)));
      const leadRange=mode==='today'?perfPeriod('today'):perfPeriod('month');
      const waLeads=await sb.from('leads').select('lead_id,created_at').eq('outlet',profile?.outlet).gte('created_at',leadRange.start.toISOString()).lt('created_at',new Date(leadRange.end.getTime()+86400000).toISOString());
      if(waLeads.error)throw waLeads.error;
-     const waCount=(waLeads.data||[]).filter(x=>contentDates.has(new Date(x.created_at).toLocaleDateString('en-CA',{timeZone:'Asia/Makassar'}))).length;
+     const waCount=(waLeads.data||[]).filter(x=>contentDates.has(baliDate(x.created_at))).length;
      lines.push('• WA Dihasilkan: '+perfFmt(waCount));
      lines.push('• Views: '+perfFmt(o.views));
      lines.push('• Comments: '+perfFmt(o.comments));

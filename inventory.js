@@ -282,7 +282,8 @@ function openEditStock(id){
   f+=area('Minus','esminus',s.minus||'');
  }else if(c==='ANDROID_NEW'){
   f+=input('Warna','escolor',s.color||'');
- }else if(c==='STOCK_NEW_PUSAT'||c==='STOCK_SECOND_PUSAT'){
+ }else if(c==='STOCK_SECOND_PUSAT'){
+  f+='<label>Grade</label><select id="esgrade"><option value="">-</option><option '+(s.grade==='A'?'selected':'')+'>A</option><option '+(s.grade==='B'?'selected':'')+'>B</option><option '+(s.grade==='C'?'selected':'')+'>C</option></select>';
   f+=input('Kondisi','escondition',s.condition||'');
   f+=input('Battery Health','esbh',s.battery_health??'','number','min="0" max="100"');
   f+=input('Kelengkapan','escomplete',s.completeness||'');
@@ -316,7 +317,8 @@ async function saveEditStock(id){
   data.minus=$('esminus').value.trim()||null;
  }else if(c==='ANDROID_NEW'){
   data.color=$('escolor').value.trim()||null;
- }else if(c==='STOCK_NEW_PUSAT'||c==='STOCK_SECOND_PUSAT'){
+ }else if(c==='STOCK_SECOND_PUSAT'){
+  data.grade=$('esgrade').value||null;
   data.condition=$('escondition').value.trim()||null;
   data.battery_health=$('esbh').value!==''?Number($('esbh').value):null;
   data.completeness=$('escomplete').value.trim()||null;

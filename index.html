@@ -471,10 +471,14 @@ async function submitTradePublic(){
   $('tradePublicBody').innerHTML='<div class="box" style="background:#f0fdf4;border-color:#86efac"><h3>✅ Data Berhasil Dikirim</h3><p>Terima kasih. Tim Sales Hello Majesty akan memeriksa data perangkat dan menghubungi Anda melalui WhatsApp.</p><p class="small">Nomor pengajuan: <b>'+esc(x.data?.inquiry_id||'-')+'</b></p></div>';
  }catch(e){btn.disabled=false;btn.textContent='Kirim Data Tukar Tambah';msg.textContent=e?.message||'Data gagal dikirim.'}
 }
-function openTradeForm(){
+async function openTradeForm(){
  const url=location.origin+location.pathname+'?trade=1&outlet='+encodeURIComponent(profile?.outlet||'');
- navigator.clipboard?.writeText(url).catch(()=>{});
- window.open(url,'_blank');
+ const msg='📱 FORM TUKAR TAMBAH — HELLO MAJESTY\\n\\nSilakan isi data HP yang ingin ditukar melalui link berikut.\\n\\n'+url+'\\n\\nSetelah diisi, tim kami akan memeriksa kondisi unit dan menghubungi Anda untuk proses selanjutnya.\\n\\n— HELLO MAJESTY\\nBuilt on Trust.';
+ try{
+  if(navigator.share){await navigator.share({title:'Form Tukar Tambah Hello Majesty',text:msg});return;}
+ }catch(e){if(e?.name==='AbortError')return;}
+ try{await navigator.clipboard.writeText(msg);alert('Pesan form sudah disalin. Silakan paste ke WhatsApp customer.');}
+ catch(e){prompt('Salin pesan ini ke WhatsApp customer:',msg);}
 }
 function initTradePublic(){
  $('login')?.classList.add('hidden');$('app')?.classList.add('hidden');$('tradePublic')?.classList.remove('hidden');renderTradePublicForm();

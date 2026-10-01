@@ -4,6 +4,7 @@ function perfDate(d){return d.toLocaleDateString('id-ID',{day:'2-digit',month:'l
 function perfPeriod(mode){
  const now=new Date();
  if(mode==='today') return {start:new Date(now.getFullYear(),now.getMonth(),now.getDate()),end:new Date(now.getFullYear(),now.getMonth(),now.getDate()),label:'HARI INI'};
+ if(mode==='last_month') return {start:new Date(now.getFullYear(),now.getMonth()-1,1),end:new Date(now.getFullYear(),now.getMonth(),0),label:'BULAN KEMARIN'};
  return {start:new Date(now.getFullYear(),now.getMonth(),1),end:new Date(now.getFullYear(),now.getMonth()+1,0),label:'BULAN INI'};
 }
 function perfWa(text){window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank')}
@@ -55,13 +56,19 @@ async function perfGetTeamMetrics(mode,outlet){
  for(const x of [l,q,s,h])if(x.error)throw x.error;
  return {wa:l.data?.length||0,qualified:q.data?.length||0,closing:s.data?.length||0,hunter:h.data?.length||0};
 }
-async function perfGetTarget(){
+async function perfGetTarget(mode='month'){
+ if(mode==='last_month'){
+   const p=perfPeriod('last_month'), pad=n=>String(n).padStart(2,'0'), monthStart=p.start.getFullYear()+'-'+pad(p.start.getMonth()+1)+'-'+pad(p.start.getDate());
+   const x=await sb.from('monthly_outlet_targets').select('*').eq('month_start',monthStart);
+   if(x.error)throw x.error;
+   return {outlets:(x.data||[]).map(o=>({outlet:o.outlet,wa_target:Number(o.wa_target||0),qualified_target:Number(o.qualified_target||0),closing_target:Number(o.closing_target||0),bonus_label:o.bonus_label||'',bonus_amount:Number(o.bonus_amount||0)})),roles:[]};
+ }
  const x=await sb.rpc('dashboard_target_summary');
  if(x.error)throw x.error;
  return x.data||{};
 }
 async function perfBuild(mode){
- const p=perfPeriod(mode), target=await perfGetTarget(); const roles=profile?.is_management?['Management']:(target.roles?.length?target.roles:perfRoles()); const sales=mode==='today'?await perfGetTodaySales():await perfGetSales(mode);
+ const p=perfPeriod(mode), target=await perfGetTarget(mode); const roles=profile?.is_management?['Management']:(target.roles?.length?target.roles:perfRoles()); const sales=mode==='today'?await perfGetTodaySales():await perfGetSales(mode);
  const lines=[];
  lines.push('📊 *PERFORMANCE '+p.label+'*');
  lines.push('🏪 *Outlet:* '+(profile?.outlet||'Management'));
@@ -116,10 +123,10 @@ async function perfBuild(mode){
      lines.push('');
    }
  }
- if(mode==='month'){
+ if(mode==='month'||mode==='last_month'){
    const o=(target.outlets||[]).find(x=>x.outlet===profile?.outlet);
    if(o){
-     lines.push('🎯 *TARGET OUTLET BULAN INI*');
+     lines.push('🎯 *TARGET OUTLET '+(mode==='last_month'?'BULAN KEMARIN':'BULAN INI')+'*');
      lines.push('• WA: '+perfFmt(o.wa_actual)+' / '+perfFmt(o.wa_target));
      lines.push('• Qualified: '+perfFmt(o.qualified_actual)+' / '+perfFmt(o.qualified_target));
      lines.push('• Closing: '+perfFmt(o.closing_actual)+' / '+perfFmt(o.closing_target));
@@ -148,7 +155,7 @@ async function perfManagement(mode){
  if(cp.error)throw cp.error;
  const contentMap={};
  for(const r of (cp.data||[])){const k=r.outlet+'|'+r.content_creator;(contentMap[k]??={content_count:0,views:0,comments:0,dms:0,wa_generated:0});contentMap[k].content_count++;contentMap[k].views+=Number(r.views||0);contentMap[k].comments+=Number(r.comments||0);contentMap[k].dms+=Number(r.dms||0)}
- const target=await perfGetTarget();
+ const target=await perfGetTarget(mode);
  const waRows=await sb.from('leads').select('content_creator,outlet').gte('created_at',p.start.toISOString()).lt('created_at',new Date(p.end.getTime()+86400000).toISOString()).not('content_creator','is',null);
  if(waRows.error)throw waRows.error;
  for(const w of (waRows.data||[])){const k=w.outlet+'|'+w.content_creator;(contentMap[k]??={content_count:0,views:0,comments:0,dms:0,wa_generated:0});contentMap[k].wa_generated++}
@@ -195,11 +202,12 @@ window.openPerformance=async function(){
  box.classList.remove('hidden');
  box.innerHTML='<h3>'+ (mg?'📊 Laporan Performa Tim':'📊 Performa Saya')+'</h3>'+
    (mg?'<div class="small" style="margin-bottom:10px">Performance seluruh karyawan • data langsung dari sistem.</div>':'<div class="small" style="margin-bottom:10px">Pilih periode lalu kirim laporan sesuai peran akun secara otomatis.</div>')+
-   '<div class="row"><button class="secondary" id="perfToday">📅 Hari Ini</button><button class="secondary" id="perfMonth">📊 Bulan Ini</button></div>'+
+   '<div class="row"><button class="secondary" id="perfToday">📅 Hari Ini</button><button class="secondary" id="perfMonth">📊 Bulan Ini</button><button class="secondary" id="perfLastMonth">↩️ Bulan Kemarin</button></div>'+
    '<div id="perfBody" style="margin-top:10px"></div>';
- if(mg){box.querySelector('#perfToday').onclick=()=>perfShowManagement('today');box.querySelector('#perfMonth').onclick=()=>perfShowManagement('month');await perfShowManagement('today');return}
+ if(mg){box.querySelector('#perfToday').onclick=()=>perfShowManagement('today');box.querySelector('#perfMonth').onclick=()=>perfShowManagement('month');box.querySelector('#perfLastMonth').onclick=()=>perfShowManagement('last_month');await perfShowManagement('today');return}
  box.querySelector('#perfToday').onclick=()=>perfShow('today');
  box.querySelector('#perfMonth').onclick=()=>perfShow('month');
+ box.querySelector('#perfLastMonth').onclick=()=>perfShow('last_month');
  await perfShow('today');
 };
 async function perfShowManagement(mode){

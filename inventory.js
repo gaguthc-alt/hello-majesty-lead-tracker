@@ -164,33 +164,29 @@ function openProductMaster(){
  if(!canOpen)return;
  const management=!!profile?.is_management;
  $('mt').textContent='⚙️ Master Produk';
- $('mb').innerHTML=(canOpen?'<button class="success" onclick="openAddProduct()">＋ Tambah Produk</button>':'')+
- '<div style="margin-top:10px">'+inventoryProducts.map(p=>'<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(masterProductLabel(p))+'</b><div class="small">'+invCategory(p.category)+'</div></div>'+(management?'<div class="row"><button class="secondary" onclick="openEditProduct(\''+p.id+'\')">Edit</button><button class="danger" onclick="deactivateProduct(\''+p.id+'\')">Hapus</button></div>':'')+'</div></div>').join('')+'</div>';
+ $('mb').innerHTML='<button class="success" onclick="openAddProduct()">＋ Tambah Produk</button><div style="margin-top:10px">'+inventoryProducts.map(p=>'<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(masterProductLabel(p))+'</b><div class="small">'+invCategory(p.category)+'</div></div><div class="row"><button class="secondary" onclick="openEditProduct(\''+p.id+'\')">✏️ Edit</button>'+(management?'<button class="danger" onclick="deactivateProduct(\''+p.id+'\')">Hapus</button>':'')+'</div></div></div>').join('')+'</div>';
  $('modal').classList.remove('hidden');
 }
 function openEditProduct(id){
- if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
+ if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
  const p=inventoryProducts.find(x=>x.id===id);if(!p)return;
- const iphone=String(p.category||'').startsWith('IPHONE'),second=String(p.category||'').includes('SECOND');
  $('mt').textContent='✏️ Edit Master Produk';
- $('mb').innerHTML='<label>Kategori</label><select id="epmcat"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option><option value="STOCK_NEW_PUSAT">Stock New Pusat</option><option value="STOCK_SECOND_PUSAT">Stock Second Pusat</option></select><label>Produk</label><input id="epmprod" value="'+esc(p.product||'')+'"><label>Varian</label><input id="epmvar" value="'+esc(p.variant||'')+'"><div id="epmcolorBox"><label>Warna</label><input id="epmcolor" value="'+esc(p.color||'')+'"></div><button class="success" onclick="saveEditProduct(\''+id+'\')">Simpan Perubahan</button>';
- $('epmcat').value=p.category||'ANDROID_NEW';
- toggleEditProductFields();$('modal').classList.remove('hidden');
+ $('mb').innerHTML='<label>Kategori</label><select id="epmcat" onchange="toggleEditProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option><option value="STOCK_NEW_PUSAT">Stock New Pusat</option><option value="STOCK_SECOND_PUSAT">Stock Second Pusat</option></select><label>Produk</label><input id="epmprod" value="'+esc(p.product||'')+'"><label>Varian</label><input id="epmvar" value="'+esc(p.variant||'')+'"><div id="epmcolorBox"><label>Warna</label><input id="epmcolor" value="'+esc(p.color||'')+'"></div><button class="success" onclick="saveEditProduct(\''+id+'\')">Simpan Perubahan</button>';
+ $('epmcat').value=p.category||'ANDROID_NEW';toggleEditProductFields();$('modal').classList.remove('hidden');
 }
 function toggleEditProductFields(){
- const cat=$('epmcat')?.value||'',second=cat.includes('SECOND'),iphone=cat.startsWith('IPHONE');
+ const cat=$('epmcat')?.value||'',iphone=cat.startsWith('IPHONE');
  $('epmcolorBox')?.classList.toggle('hidden',!iphone);
 }
 async function saveEditProduct(id){
- if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
- const cat=$('epmcat').value,isIphone=cat.startsWith('IPHONE'),isSecond=cat.includes('SECOND'),rawProduct=$('epmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('epmvar').value.trim();
+ if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
+ const cat=$('epmcat').value,isIphone=cat.startsWith('IPHONE'),rawProduct=$('epmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('epmvar').value.trim();
  if(!product||!variant)return alert('Produk dan Storage wajib diisi.');
- const grade=(isIphone&&isSecond)?($('epmgrade').value||'-'):null;
- const x=await sb.from('product_master').update({category:cat,product,variant,color:isIphone?($('epmcolor').value.trim()||null):null,grade,updated_at:new Date().toISOString()}).eq('id',id);
+ const x=await sb.from('product_master').update({category:cat,product,variant,color:isIphone?($('epmcolor').value.trim()||null):null,updated_at:new Date().toISOString()}).eq('id',id);
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
 async function deactivateProduct(id){
- if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
+ if(!profile?.is_management)return alert('Akses Management diperlukan.');
  const p=inventoryProducts.find(x=>x.id===id);if(!p)return;
  if(!confirm('Hapus Master Produk "'+(p.product||'')+' '+(p.variant||'')+'"? Produk akan dinonaktifkan dan tidak dihapus dari histori stock.'))return;
  const x=await sb.from('product_master').update({active:false,updated_at:new Date().toISOString()}).eq('id',id);

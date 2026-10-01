@@ -300,8 +300,8 @@ async function saveEditStock(id){
  const s=inventoryStock.find(x=>x.id===id);if(!s)return;
  const c=s.category;
  const imei1=$('esimei1').value.trim(),imei2=$('esimei2').value.trim()||null;
- if(imei1&&!/^\\d{10,20}$/.test(imei1))return alert('IMEI 1 harus berupa angka 10–20 digit.');
- if(imei2&&!/^\\d{10,20}$/.test(imei2))return alert('IMEI 2 harus berupa angka 10–20 digit.');
+ if(imei1&&!/^\d{15}$/.test(imei1))return alert('IMEI 1 harus berupa 15 digit angka.');
+ if(imei2&&!/^\d{15}$/.test(imei2))return alert('IMEI 2 harus berupa 15 digit angka.');
  const data={imei_1:imei1||null,imei_2:imei2,asking_price:Number($('esprice').value||0),cost:Number($('escost').value||0),supplier:$('essupplier').value.trim()||null,notes:$('esnotes').value.trim()||null,updated_at:new Date().toISOString()};
  if(c==='IPHONE_SECOND'){
   data.grade=$('esgrade').value||null;

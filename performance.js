@@ -49,12 +49,13 @@ async function perfGetTeamMetrics(mode,outlet){
  const p=perfPeriod(mode), start=p.start.toISOString(), end=new Date(p.end.getTime()+86400000).toISOString();
  const [l,q,s,h]=await Promise.all([
   sb.from('leads').select('lead_id').eq('outlet',outlet).gte('created_at',start).lt('created_at',end),
-  sb.from('lead_events').select('id').eq('outlet',outlet).eq('event_type','CS_QUALIFIED').gte('event_at',start).lt('event_at',end),
+  sb.from('lead_events').select('lead_id').eq('outlet',outlet).in('event_type',['CS_QUALIFIED','CS_POTENSIAL']).gte('event_at',start).lt('event_at',end),
   sb.from('sales_transactions').select('id').eq('outlet',outlet).gte('sold_at',start).lt('sold_at',end),
   sb.from('sales_transactions').select('id').eq('outlet',outlet).eq('hunter_user_id',profile?.user_id).gte('sold_at',start).lt('sold_at',end)
  ]);
  for(const x of [l,q,s,h])if(x.error)throw x.error;
- return {wa:l.data?.length||0,qualified:q.data?.length||0,closing:s.data?.length||0,hunter:h.data?.length||0};
+ const handoverIds=new Set((q.data||[]).map(x=>x.lead_id).filter(Boolean));
+ return {wa:l.data?.length||0,qualified:handoverIds.size,closing:s.data?.length||0,hunter:h.data?.length||0};
 }
 async function perfGetTarget(mode='month'){
  if(mode==='last_month'){

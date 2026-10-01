@@ -461,7 +461,7 @@ function renderInitialNeedFields(){
  '<label>Kondisi Umum</label><input id="i_trade_condition">'+
  '<label>Kelengkapan</label><input id="i_trade_completeness" placeholder="Unit + Box + Kabel">'+
  '<label>Battery Health</label><input id="i_trade_bh" placeholder="Khusus iPhone, contoh 85%">'+
- '<label>Minus</label><input id="i_trade_minus">'+
+ '<label>Minus</label><input id="i_trade_minus"><label>Estimasi Lama Pemakaian</label><input id="i_trade_usage" placeholder="Contoh: ±2 tahun">'+
  '<label>HP yang Diinginkan</label><input id="i_wanted" placeholder="Unit yang ingin dibeli">'+
  '<label>Estimasi Budget / Tambah Dana</label><input id="i_trade_budget" placeholder="Contoh: tambah 5 juta">';
  else if(t==='KREDIT/CICILAN')h.innerHTML='<label>Produk yang Diminati</label><input id="i_credit_product">'+
@@ -478,7 +478,7 @@ function buildInitialData(){
  const t=$('fneedtype')?.value, d={source:initialField('fsource')};
  if(t==='PEMBELIAN')Object.assign(d,{product:initialField('i_product'),budget:initialField('i_budget'),preference:initialField('i_preference'),special:initialField('i_special')});
  if(t==='SERVICE')Object.assign(d,{device:initialField('i_device'),model:initialField('i_model'),complaint:initialField('i_complaint'),condition:initialField('i_condition')});
- if(t==='TUKAR TAMBAH')Object.assign(d,{device:initialField('i_trade_device'),capacity:initialField('i_trade_capacity'),condition:initialField('i_trade_condition'),completeness:initialField('i_trade_completeness'),battery_health:initialField('i_trade_bh'),minus:initialField('i_trade_minus'),wanted_product:initialField('i_wanted'),budget:initialField('i_trade_budget')});
+ if(t==='TUKAR TAMBAH')Object.assign(d,{device:initialField('i_trade_device'),capacity:initialField('i_trade_capacity'),condition:initialField('i_trade_condition'),completeness:initialField('i_trade_completeness'),warranty:initialField('i_trade_warranty'),function_check:initialField('i_trade_function'),signal:initialField('i_trade_signal'),battery_health:initialField('i_trade_bh'),minus:initialField('i_trade_minus'),usage_duration:initialField('i_trade_usage'),wanted_product:initialField('i_wanted'),budget:initialField('i_trade_budget')});
  if(t==='KREDIT/CICILAN')Object.assign(d,{product:initialField('i_credit_product'),price:initialField('i_credit_price'),tenor:initialField('i_tenor'),dp_budget:initialField('i_dp'),credit_history:initialField('i_credit_history')});
  if(t==='INFORMASI')Object.assign(d,{information:initialField('i_info'),related:initialField('i_info_related')});
  return d;

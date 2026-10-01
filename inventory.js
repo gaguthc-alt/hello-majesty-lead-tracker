@@ -155,10 +155,11 @@ function stockCard(s){
    '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button>'+
-   (ready&&(management||facilitator)?'<button class="danger" onclick="markStockSold(\''+s.id+'\')">🔴 SOLD</button>':'')+(ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+
+   (ready&&canMarkStockSold()?'<button class="danger" onclick="markStockSold(\''+s.id+'\')">🔴 SOLD</button>':'')+(ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+
    (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
 }
+function canMarkStockSold(){ return !!profile?.is_management || !!inventoryCanFacilitator; }
 async function markStockSold(id){
  if(!(profile?.is_management||inventoryCanFacilitator))return alert('Hanya Management atau Facilitator yang dapat menandai stock SOLD.');
  const s=inventoryStock.find(x=>x.id===id);if(!s||s.status!=='READY')return;

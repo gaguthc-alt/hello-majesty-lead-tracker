@@ -389,7 +389,22 @@ async function saveQ(id){
 }
 function salesClaimMessage(l){
  const tm=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
- return '🔒 *LEAD CLAIMED — FOLLOW UP*\\n\\n*Lead ID:* '+l.lead_id+'\\n*PIC Sales:* '+(profile?.name||'-')+'\\n*Waktu Claim:* '+tm+'\\n\\n━━━━━━━━━━━━━━\\n\\nLead ini sedang ditangani oleh *'+(profile?.name||'-')+'* untuk proses konsultasi dan follow up.\\n\\nMohon tim tidak melakukan follow up pada lead yang sama tanpa koordinasi dengan PIC.\\n\\n━━━━━━━━━━━━━━\\n\\n— *HELLO MAJESTY*\\n*Built on Trust.*';
+ return `🔒 *LEAD CLAIMED — FOLLOW UP*
+
+*Lead ID:* ${l.lead_id}
+*PIC Sales:* ${profile?.name||'-'}
+*Waktu Claim:* ${tm}
+
+━━━━━━━━━━━━━━
+
+Lead ini sedang ditangani oleh *${profile?.name||'-'}* untuk proses konsultasi dan follow up.
+
+Mohon tim tidak melakukan follow up pada lead yang sama tanpa koordinasi dengan PIC.
+
+━━━━━━━━━━━━━━
+
+— *HELLO MAJESTY*
+*Built on Trust.*`;
 }
 function shareSalesClaim(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesClaimMessage(l));}
 async function handoverSales(id){ const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'}); if(x.error)return alert(x.error.message); await loadLeads(); openUrl(); }
@@ -480,23 +495,22 @@ Mohon bantu isi data HP yang ingin ditukar:
 *DATA HP*
 1. Merek & Tipe:
 2. Kapasitas:
-3. Warna:
-4. Battery Health:
-5. Kondisi fisik:
-6. Minus:
-7. Kelengkapan:
-8. Garansi: iBox / Inter / lainnya
-9. Face ID: ON / OFF
-10. True Tone: ON / OFF
-11. Signal: ON / OFF
-12. Kamera:
-13. Speaker & Mic:
-14. Charging:
-15. Lama pemakaian:
+3. Battery Health:
+4. Kondisi fisik:
+5. Minus:
+6. Kelengkapan:
+7. Garansi: iBox / Inter / lainnya
+8. Face ID: ON / OFF
+9. True Tone: ON / OFF
+10. Signal: ON / OFF
+11. Kamera:
+12. Speaker & Mic:
+13. Charging:
+14. Lama pemakaian:
 
 *HP YANG DIINGINKAN*
-16. Tipe HP:
-17. Estimasi budget / tambah dana:
+15. Tipe HP:
+16. Estimasi budget / tambah dana:
 
 Silakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏
 

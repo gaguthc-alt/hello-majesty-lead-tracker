@@ -117,7 +117,8 @@ async function uploadStockPhoto(stockId,slot,file){
 async function deleteStockPhoto(stockId,slot){
  if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
  if(!confirm('Hapus Foto '+slot+' dari unit ini?'))return;
- const path=`${stockId}/foto-${slot}.webp`;const rm=await sb.storage.from('stock-photos').remove([path]);if(rm.error)return alert(rm.error.message);
+ const paths=['jpg','jpeg','png','webp'].map(ext=>`${stockId}/foto-${slot}.${ext}`);
+ const rm=await sb.storage.from('stock-photos').remove(paths);if(rm.error)return alert(rm.error.message);
  const data={};data['photo_'+slot]=null;data.updated_at=new Date().toISOString();
  const db=await sb.from('stock_units').update(data).eq('id',stockId);if(db.error)return alert(db.error.message);
  await renderInventory();openProductDetail(stockId);

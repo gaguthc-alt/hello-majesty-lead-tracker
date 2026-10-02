@@ -32,6 +32,18 @@ async function loadInventoryData(){
   ]);
   if(p.error) throw p.error; if(s.error) throw s.error;
   inventoryProducts=p.data||[]; inventoryStock=s.data||[];
+  // Foto unit disimpan di stock_units, sementara view inventory tidak selalu mengekspos kolom foto.
+  // Ambil hanya kolom foto dan merge ke hasil view agar Detail Produk/Card selalu menampilkan foto.
+  if(inventoryStock.length){
+    const ids=inventoryStock.map(x=>x.id).filter(Boolean);
+    const photos=await sb.from('stock_units').select('id,photo_1,photo_2,photo_3,photo_4,photo_5').in('id',ids);
+    if(!photos.error){
+      const byId=Object.fromEntries((photos.data||[]).map(x=>[x.id,x]));
+      inventoryStock=inventoryStock.map(x=>({...x,...(byId[x.id]||{})}));
+    }else{
+      console.warn('[HM] Foto stock tidak dapat dimuat:',photos.error);
+    }
+  }
 }
 
 async function renderInventory(){

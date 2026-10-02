@@ -22,11 +22,24 @@ function hmBrochureBrands(){
 }
 async function hmEnsureBrochureAccess(){
   if(profile?.is_management || String(profile?.role||'').toUpperCase()==='FASILITATOR')return true;
-  if(inventoryCanFacilitator || window.hmCanFacilitator)return true;
+  if(window.hmCanFacilitator || (typeof inventoryCanFacilitator!=='undefined' && inventoryCanFacilitator))return true;
+  try{
+    const p=await sb.from('team_permissions')
+      .select('can_facilitator')
+      .eq('name',profile?.name)
+      .eq('outlet',profile?.outlet)
+      .eq('active',true)
+      .maybeSingle();
+    if(!p.error && p.data?.can_facilitator){
+      if(typeof inventoryCanFacilitator!=='undefined')inventoryCanFacilitator=true;
+      window.hmCanFacilitator=true;
+      return true;
+    }
+  }catch(e){}
   try{
     const r=await sb.rpc('has_facilitator_inventory_access');
     if(!r.error && r.data){
-      inventoryCanFacilitator=true;
+      if(typeof inventoryCanFacilitator!=='undefined')inventoryCanFacilitator=true;
       window.hmCanFacilitator=true;
       return true;
     }

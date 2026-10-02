@@ -408,3 +408,87 @@ function showSalesReportPeriod(period){
 }
 window.renderInventory=renderInventory;
 window.refreshInventory=refreshInventory;
+
+
+/* HM STOCK AI — contextual Tanya AI */
+(function(){
+  const _hmOriginalOpenProductDetail = window.openProductDetail;
+  function stockAIContext(s){
+    const canInternal = !!profile?.is_management || !!inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR';
+    return {
+      stock_id:s?.id||'',
+      product:s?.product||'',
+      variant:s?.variant||'',
+      color:s?.color||'',
+      category:s?.category||'',
+      status:s?.status||'',
+      outlet:s?.outlet||'',
+      grade:s?.grade||null,
+      battery_health:s?.battery_health??null,
+      condition:s?.condition||null,
+      completeness:s?.completeness||null,
+      minus:s?.minus||null,
+      asking_price:s?.asking_price??null,
+      cost:canInternal?(s?.cost??null):null,
+      imei_1:canInternal?(s?.imei_1||null):null,
+      imei_2:canInternal?(s?.imei_2||null):null
+    };
+  }
+  window.openStockAI=function(stockId){
+    const s=inventoryStock.find(x=>x.id===stockId);
+    if(!s)return alert('Data stock tidak ditemukan.');
+    const ctx=stockAIContext(s);
+    $('mt').textContent='🤖 Tanya AI — '+[s.product,s.variant,s.color].filter(Boolean).join(' — ');
+    $('mb').innerHTML=
+      '<div class="notice"><b>Konteks Stock:</b> '+esc(s.product||'-')+' • '+esc(s.variant||'-')+' • '+esc(s.color||'-')+'<br><span class="small">'+esc(invCategory(s.category)||s.category||'-')+' • Status: '+esc(s.status||'-')+'</span></div>'+
+      '<label>Pertanyaan</label>'+
+      '<textarea id="stockAIQuestion" rows="4" placeholder="Contoh: Bagaimana cara menawarkan produk ini ke customer?"></textarea>'+
+      '<div class="small" style="margin-top:6px">AI menggunakan konteks stock yang sedang dibuka dan mengikuti kewenangan role Anda.</div>'+
+      '<button id="stockAIAskBtn" class="success" style="margin-top:10px" onclick="askStockAI(\''+String(stockId).replace(/'/g,"\\'")+'\')">🤖 Tanya AI</button>'+
+      '<div id="stockAIAnswer" class="box hidden" style="white-space:pre-wrap;margin-top:12px"></div>';
+    $('modal').classList.remove('hidden');
+    setTimeout(()=>$('stockAIQuestion')?.focus(),50);
+  };
+  window.askStockAI=async function(stockId){
+    const q=String($('stockAIQuestion')?.value||'').trim();
+    if(!q)return alert('Pertanyaan wajib diisi.');
+    const btn=$('stockAIAskBtn'),out=$('stockAIAnswer');
+    if(btn)btn.disabled=true;
+    if(out){out.classList.remove('hidden');out.textContent='AI sedang menganalisis...';}
+    const s=inventoryStock.find(x=>x.id===stockId);
+    if(!s){if(out)out.textContent='Stock tidak ditemukan.';if(btn)btn.disabled=false;return;}
+    const ctx=stockAIContext(s);
+    const contextText='KONTEKS STOCK HELLO MAJESTY (gunakan hanya untuk menjawab pertanyaan user): '+JSON.stringify(ctx)+'\n\nPERTANYAAN USER: '+q;
+    const payload={
+      question:contextText,
+      profile:{name:profile?.name||'',role:profile?.role||'',outlet:profile?.outlet||'',is_management:!!profile?.is_management},
+      lead:null
+    };
+    try{
+      const x=await sb.functions.invoke('hello-majesty-ai-gemini',{body:payload});
+      if(x.error){
+        let detail=x.error?.message||String(x.error);
+        try{if(x.error?.context){const t=await x.error.context.text();detail=t||detail;}}catch(_e){}
+        throw new Error(detail);
+      }
+      const answer=x.data?.answer||'AI tidak memberikan jawaban.';
+      if(out)out.textContent=answer;
+      const input=$('stockAIQuestion');if(input)input.value='';
+    }catch(e){
+      if(out)out.textContent='AI belum dapat digunakan.\n\n'+(e?.message||e);
+    }finally{if(btn)btn.disabled=false;}
+  };
+  window.openProductDetail=function(id){
+    if(typeof _hmOriginalOpenProductDetail==='function')_hmOriginalOpenProductDetail(id);
+    const s=inventoryStock.find(x=>x.id===id);
+    const body=$('mb');
+    if(!s||!body)return;
+    const exists=body.querySelector('[data-hm-stock-ai]');
+    if(exists)return;
+    const box=document.createElement('div');
+    box.setAttribute('data-hm-stock-ai','1');
+    box.style.marginTop='12px';
+    box.innerHTML='<button class="success" style="width:100%" type="button" onclick="openStockAI(\''+String(id).replace(/'/g,"\\'")+'\')">🤖 Tanya AI tentang Produk Ini</button>';
+    body.appendChild(box);
+  };
+})();

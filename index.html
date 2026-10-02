@@ -351,7 +351,7 @@ function card(l){
  (q?'<button class="success" onclick="qualify(\''+esc(l.lead_id)+'\')">✓ Qualification</button>':'')+
  (sh?'<button class="success" onclick="handoverSales(\''+esc(l.lead_id)+'\')">🤝 Handover ke Sales</button><button class="secondary" onclick="share(\''+esc(l.lead_id)+'\')">📢 Share ke Group WA</button>':'')+
  (sr?'<button class="success" onclick="salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button><button class="secondary" onclick="shareSalesClaim(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+
- (own?'<button class="secondary" onclick="openAI(\''+esc(l.lead_id)+'\')">Buka / Update</button>':'')+
+ (own?'<button class="secondary" onclick="editLead(\''+esc(l.lead_id)+'\')">Buka / Update</button><button class="secondary" onclick="openAI(\''+esc(l.lead_id)+'\')">🤖 Tanya AI</button>':'')+
  (mg?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button><button class="danger" onclick="deleteLead(\''+esc(l.lead_id)+'\')">🗑 Delete</button>':'')+
  '</div></div>';
 }

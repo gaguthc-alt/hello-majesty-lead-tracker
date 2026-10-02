@@ -20,8 +20,23 @@ function hmBrochureBrands(){
   const all=[...HM_BROCHURE_BRANDS,...hmBrochures.map(x=>x.brand||'')].filter(Boolean);
   return [...new Map(all.map(x=>[String(x).trim().toLowerCase(),String(x).trim()])).values()].sort((a,b)=>a.localeCompare(b,'id'));
 }
+async function hmEnsureBrochureAccess(){
+  if(profile?.is_management || String(profile?.role||'').toUpperCase()==='FASILITATOR')return true;
+  if(inventoryCanFacilitator || window.hmCanFacilitator)return true;
+  try{
+    const r=await sb.rpc('has_facilitator_inventory_access');
+    if(!r.error && r.data){
+      inventoryCanFacilitator=true;
+      window.hmCanFacilitator=true;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
 async function openBrochures(){
   try{await loadBrochures();}catch(e){return alert('Brosur gagal dimuat: '+(e?.message||e));}
+
+  const can=await hmEnsureBrochureAccess();
   $('mt').textContent='📖 BROSUR';
   $('mb').innerHTML=
     '<div class="small" style="margin-bottom:10px">Pilih merk untuk melihat brosur yang tersedia.</div>'+
@@ -45,7 +60,7 @@ function brochureCard(b){
     '<div class="row" style="justify-content:space-between;align-items:center"><b>'+esc(b.title||b.brand||'Brosur')+'</b><span class="badge">'+esc(b.brand||'-')+'</span></div>'+
     '<img src="'+esc(url)+'" alt="'+esc(b.title||'Brosur')+'" style="width:100%;max-height:520px;object-fit:contain;border:1px solid #ddd;border-radius:10px;margin-top:8px;background:#f8f8f8">'+
     '<div class="row" style="margin-top:8px">'+
-      '<a class="secondary" style="display:inline-block;text-decoration:none;padding:10px;border-radius:8px;color:#111" href="'+esc(url)+'" target="_blank" rel="noopener">⬇️ Download</a>'+
+      '<a class="secondary" style="display:inline-block;text-decoration:none;padding:10px;border-radius:8px;color:#111" href="'+esc(url+'?download='+encodeURIComponent((b.title||b.brand||'brosur').replace(/[^a-z0-9-_ ]/gi,'')+'.jpg'))+'" target="_blank" rel="noopener">⬇️ Download</a>'+
       '<button class="success" type="button" onclick="shareBrochure(\''+esc(b.id).replace(/'/g,"\\'")+'\')">📲 Kirim ke WA</button>'+
       (can?'<button class="danger" type="button" onclick="deleteBrochure(\''+esc(b.id).replace(/'/g,"\\'")+'\')">🗑️ Hapus</button>':'')+
     '</div></div>';
@@ -62,7 +77,7 @@ function openBrochureUpload(defaultBrand){
   $('modal').classList.remove('hidden');
 }
 async function saveBrochure(){
-  if(!hmBrochureCanManage())return alert('Hanya Management atau Facilitator yang dapat upload brosur.');
+  if(!(await hmEnsureBrochureAccess()))return alert('Hanya Management atau Facilitator yang dapat upload brosur.');
   const brand=String($('brochureBrand')?.value||'').trim();
   const title=String($('brochureTitle')?.value||'').trim();
   const file=$('brochureFile')?.files?.[0];
@@ -102,7 +117,7 @@ async function shareBrochure(id){
   window.open(wa,'_blank');
 }
 async function deleteBrochure(id){
-  if(!hmBrochureCanManage())return alert('Hanya Management atau Facilitator yang dapat menghapus brosur.');
+  if(!(await hmEnsureBrochureAccess()))return alert('Hanya Management atau Facilitator yang dapat menghapus brosur.');
   const b=hmBrochures.find(x=>x.id===id);if(!b)return;
   if(!confirm('Hapus brosur '+(b.title||b.brand)+'?'))return;
   const rm=await sb.storage.from('brochures').remove([b.storage_path]);

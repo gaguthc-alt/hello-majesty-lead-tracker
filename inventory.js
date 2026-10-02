@@ -119,15 +119,32 @@ async function prepareStockPhoto(file){
 }
 async function uploadStockPhoto(stockId,slot,file){
  if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
+ if(!file)return;
  try{
-  const prepared=await prepareStockPhoto(file);
-  const path=`${stockId}/foto-${slot}.${prepared.ext}`;
-  const up=await sb.storage.from('stock-photos').upload(path,prepared.blob,{contentType:prepared.contentType,cacheControl:'31536000',upsert:true});if(up.error)throw up.error;
+  const btn=document.activeElement;
+  if(btn&&btn.tagName==='INPUT')btn.disabled=true;
+  let prepared;
+  try{
+   prepared=await prepareStockPhoto(file);
+  }catch(prepErr){
+   if(file.size>8*1024*1024)throw prepErr;
+   prepared={blob:file,ext:(file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg'),contentType:file.type||'image/jpeg'};
+  }
+  const path=stockId+'/foto-'+slot+'.'+prepared.ext;
+  const up=await sb.storage.from('stock-photos').upload(path,prepared.blob,{contentType:prepared.contentType,cacheControl:'31536000',upsert:true});
+  if(up.error)throw up.error;
   const pub=sb.storage.from('stock-photos').getPublicUrl(path);
-  const data={};data['photo_'+slot]=pub.data.publicUrl;data.updated_at=new Date().toISOString();
-  const db=await sb.from('stock_units').update(data).eq('id',stockId);if(db.error)throw db.error;
-  await renderInventory();openProductDetail(stockId);
- }catch(e){alert('Foto '+slot+' gagal diupload: '+(e?.message||e))}
+  const url=pub?.data?.publicUrl;
+  if(!url)throw new Error('URL foto tidak berhasil dibuat.');
+  const rpc=await sb.rpc('update_stock_photo',{p_stock_id:stockId,p_slot:Number(slot),p_photo_url:url});
+  if(rpc.error)throw rpc.error;
+  alert('✅ Foto '+slot+' berhasil diupload.');
+  await renderInventory();
+  openProductDetail(stockId);
+ }catch(e){
+  console.error('[HM] uploadStockPhoto',e);
+  alert('Foto '+slot+' gagal diupload: '+(e?.message||e));
+ }
 }
 async function deleteStockPhoto(stockId,slot){
  if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');

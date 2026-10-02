@@ -159,10 +159,30 @@ function stockCard(s){
    '<div class="small" style="margin-top:6px;line-height:1.45">'+meta.join(' • ')+'</div>'+
    '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
    cost+details+salePrice+
-   '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button>'+
+   '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
    (ready&&canMarkStockSold()?'<button class="danger" onclick="markStockSold(\''+s.id+'\')">🔴 SOLD</button>':'')+(ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+
    (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
+}
+function openStockAI(id){
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ $('mt').textContent='🤖 Tanya AI — '+[s.product,s.variant,s.color].filter(Boolean).join(' — ');
+ $('mb').innerHTML='<div class="notice"><b>Produk:</b> '+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+'<br><b>Status:</b> '+esc(s.status||'-')+'<br><b>Harga Jual:</b> '+fmtRp(s.asking_price)+'</div><label>Pertanyaan</label><textarea id="stockAIQuestion" rows="4" placeholder="Contoh: Bagaimana cara menawarkan produk ini ke customer?"></textarea><div class="small" style="margin-top:6px">AI menggunakan Master Prompt Hello Majesty dan konteks produk ini. Harga beli/modal tidak dikirim untuk role yang tidak berwenang.</div><button id="stockAIAskBtn" class="success" style="margin-top:10px" onclick="askStockAI(' + JSON.stringify(s.id) + ')">🤖 Tanya AI</button><div id="stockAIAnswer" class="box hidden" style="white-space:pre-wrap;margin-top:12px"></div>';
+ $('modal').classList.remove('hidden');setTimeout(()=>$('stockAIQuestion')?.focus(),50);
+}
+async function askStockAI(id){
+ const q=String($('stockAIQuestion')?.value||'').trim();if(!q)return alert('Pertanyaan wajib diisi.');
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ const btn=$('stockAIAskBtn'),out=$('stockAIAnswer');if(btn)btn.disabled=true;if(out){out.classList.remove('hidden');out.textContent='AI sedang menganalisis produk...';}
+ const canViewCost=!!profile?.is_management||!!inventoryCanFacilitator;
+ const stock={id:s.id,category:s.category,product:s.product,variant:s.variant,color:s.color,grade:s.grade,battery_health:s.battery_health,condition:s.condition,completeness:s.completeness,minus:s.minus,status:s.status,asking_price:s.asking_price,outlet:s.outlet};
+ if(canViewCost){stock.cost=s.cost;stock.imei_1=s.imei_1;stock.imei_2=s.imei_2;}
+ try{
+  const x=await sb.functions.invoke('hello-majesty-ai',{body:{question:q,profile:{name:profile?.name||'',role:profile?.role||'',outlet:profile?.outlet||'',is_management:!!profile?.is_management},stock}});
+  if(x.error)throw x.error;
+  if(out)out.textContent=x.data?.answer||'AI tidak memberikan jawaban.';
+ }catch(e){if(out)out.textContent='AI belum dapat digunakan. Pastikan layanan AI sudah dikonfigurasi oleh Management.\n\n'+(e?.message||e)}
+ finally{if(btn)btn.disabled=false}
 }
 function canMarkStockSold(){ return !!profile?.is_management || !!inventoryCanFacilitator; }
 async function cleanupSoldStockPhotos(stockId){

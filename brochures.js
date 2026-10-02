@@ -44,15 +44,17 @@ async function openBrochures(){
     '<div id="brochureBrandBody" style="margin-top:14px"><div class="small">Pilih salah satu merk.</div></div>';
   $('modal').classList.remove('hidden');
 }
+let hmSelectedBrochureBrand='';
 function showBrochureBrand(brand){
+  hmSelectedBrochureBrand=String(brand||'').trim();
   const rows=hmBrochures.filter(x=>String(x.brand||'').trim().toLowerCase()===String(brand||'').trim().toLowerCase());
   const can=hmBrochureCanManage();
   const body=$('brochureBrandBody');if(!body)return;
   body.innerHTML=
     '<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">📱 '+esc(brand)+'</h3><div class="small">'+rows.length+' brosur</div></div>'+
-    (can?'<button class="success" type="button" onclick="openBrochureUpload(\''+esc(brand).replace(/'/g,"\\'")+'\')">＋ Upload Brosur</button>':'')+
+    (can?'<button class="success" type="button" onclick="openBrochureUpload()">＋ Upload Brosur</button>':'')+
     '</div>'+
-    (rows.length?rows.map(brochureCard).join(''):'<div class="box"><div class="small">Belum ada brosur untuk merk ini.</div>'+(can?'<button class="secondary" style="margin-top:8px" type="button" onclick="openBrochureUpload(\''+esc(brand).replace(/'/g,"\\'")+'\')">＋ Tambah Brosur</button>':'')+'</div>');
+    (rows.length?rows.map(brochureCard).join(''):'<div class="box"><div class="small">Belum ada brosur untuk merk ini.</div>'+(can?'<button class="secondary" style="margin-top:8px" type="button" onclick="openBrochureUpload()">＋ Tambah Brosur</button>':'')+'</div>');
 }
 function brochureCard(b){
   const url=hmBrochureUrl(b.storage_path),can=hmBrochureCanManage();
@@ -66,6 +68,7 @@ function brochureCard(b){
     '</div></div>';
 }
 function openBrochureUpload(defaultBrand){
+  const brand=String(defaultBrand||hmSelectedBrochureBrand||'').trim();
   if(!hmBrochureCanManage())return alert('Hanya Management atau Facilitator yang dapat upload brosur.');
   $('mt').textContent='＋ Upload Brosur';
   $('mb').innerHTML=
@@ -78,6 +81,7 @@ function openBrochureUpload(defaultBrand){
 }
 async function saveBrochure(){
   if(!(await hmEnsureBrochureAccess()))return alert('Hanya Management atau Facilitator yang dapat upload brosur.');
+  if(!sb?.storage)return alert('Layanan storage belum siap. Silakan refresh aplikasi.');
   const brand=String($('brochureBrand')?.value||'').trim();
   const title=String($('brochureTitle')?.value||'').trim();
   const file=$('brochureFile')?.files?.[0];

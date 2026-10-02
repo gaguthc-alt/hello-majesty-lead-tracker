@@ -353,7 +353,7 @@ function card(l){
  (sh?'<button class="success" onclick="handoverSales(\''+esc(l.lead_id)+'\')">🤝 Handover ke Sales</button><button class="secondary" onclick="share(\''+esc(l.lead_id)+'\')">📢 Share ke Group WA</button>':'')+
  (sr?'<button class="success" onclick="salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button><button class="secondary" onclick="shareSalesClaim(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+
  (own?'<button class="secondary" onclick="editLead(\''+esc(l.lead_id)+'\')">Buka / Update</button>':'')+
- (canAI?'<button class="secondary" type="button" data-ai-lead="'+esc(l.lead_id)+'">🤖 Tanya AI</button>':'')+
+ (canAI?'<button class="secondary" type="button" onclick="window.openAI && window.openAI(\''+esc(l.lead_id).replace(/'/g,"\\'")+'\')">🤖 Tanya AI</button>':'')+
  (mg?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button><button class="danger" onclick="deleteLead(\''+esc(l.lead_id)+'\')">🗑 Delete</button>':'')+
  '</div></div>';
 }
@@ -812,9 +812,5 @@ async function askAI(leadId){
  }catch(e){if(out)out.textContent='AI belum dapat digunakan. Pastikan layanan AI sudah dikonfigurasi oleh Management.\n\n'+(e?.message||e)}
  finally{if(btn)btn.disabled=false}
 }
-document.addEventListener('click',function(e){
- const b=e.target.closest('[data-ai-lead]');
- if(b){e.preventDefault();e.stopPropagation();openAI(b.getAttribute('data-ai-lead'));}
-});
 window.openAI=openAI;window.askAI=askAI;
-</script><script src="performance.js?v=20261002-12"></script><script src="inventory.js?v=20261002-24"></script><script src="brochures.js?v=20261002-2"></script></body></html>
+</script><script src="performance.js?v=20261002-13"></script><script src="inventory.js?v=20261002-24"></script><script src="brochures.js?v=20261002-2"></script></body></html>

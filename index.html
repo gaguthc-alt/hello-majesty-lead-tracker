@@ -803,6 +803,8 @@ async function askAI(leadId){
   }
   const answer=x.data?.answer||'AI tidak memberikan jawaban.';
   if(out)out.textContent=answer;
+  const input=$('aiQuestion');
+  if(input)input.value='';
  }catch(e){if(out)out.textContent='AI belum dapat digunakan. Pastikan layanan AI sudah dikonfigurasi oleh Management.\n\n'+(e?.message||e)}
  finally{if(btn)btn.disabled=false}
 }

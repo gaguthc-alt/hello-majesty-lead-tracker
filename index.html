@@ -466,6 +466,12 @@ async function saveS(id){
    if(!salePrice)return alert('Untuk CLOSING, Harga Jual Aktual wajib diisi.');
    const x=await sb.rpc('set_sales_closing',{p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice});
    if(x.error)return alert('Closing gagal: '+x.error.message);
+   try{
+     if(typeof cleanupSoldStockPhotos==='function')await cleanupSoldStockPhotos(stockId);
+   }catch(e){
+     console.error('[HM] Closing photo cleanup error',e);
+     alert('Closing berhasil, tetapi foto stock belum berhasil dibersihkan. Coba buka ulang aplikasi dan bersihkan foto unit tersebut.\\n\\n'+(e?.message||e));
+   }
    closeModal();await loadLeads();showHistory('CLOSING');return;
  }
  if(result==='POTENSIAL'&&!$('sd').value)return alert('Tanggal follow-up wajib.');
@@ -776,4 +782,4 @@ function contentDetailCard(p){
 const oldRender=window.render;
 window.render=async function(){const r=await oldRender();await renderContentPerformance();return r};
 
-</script><script src="performance.js?v=20261001-10"></script><script src="inventory.js?v=20261001-19"></script></body></html>
+</script><script src="performance.js?v=20261001-10"></script><script src="inventory.js?v=20261001-20"></script></body></html>

@@ -91,15 +91,30 @@ async function shareProduct(s){
 function stockPhotoUrls(s){return [s?.photo_1,s?.photo_2,s?.photo_3,s?.photo_4,s?.photo_5].filter(Boolean)}
 async function prepareStockPhoto(file){
  if(!file||!file.type?.startsWith('image/'))throw new Error('File harus berupa gambar.');
- const maxBytes=8*1024*1024;
- const type=String(file.type||'').toLowerCase();
- if(file.size<=maxBytes&&['image/jpeg','image/png','image/webp'].includes(type))return {blob:file,ext:type==='image/png'?'png':type==='image/webp'?'webp':'jpg',contentType:type};
+ const targetBytes=700*1024;
+ const maxSide=1600;
  const img=await new Promise((resolve,reject)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);resolve(im)};im.onerror=()=>{URL.revokeObjectURL(u);reject(new Error('Foto tidak dapat dibaca.'))};im.src=u});
- const maxSide=2560,scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
- const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
- const ctx=canvas.getContext('2d',{alpha:false});ctx.drawImage(img,0,0,canvas.width,canvas.height);
- const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Gagal menyiapkan foto.')),'image/jpeg',.92));
- if(blob.size>maxBytes)throw new Error('Foto terlalu besar. Coba pilih foto dengan ukuran lebih kecil.');
+ let side=Math.min(maxSide,Math.max(img.naturalWidth,img.naturalHeight));
+ let blob=null;
+ for(let pass=0;pass<5;pass++){
+   const scale=Math.min(1,side/Math.max(img.naturalWidth,img.naturalHeight));
+   const canvas=document.createElement('canvas');
+   canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+   canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+   const ctx=canvas.getContext('2d',{alpha:false});
+   if(!ctx)throw new Error('Browser tidak mendukung pemrosesan foto.');
+   ctx.imageSmoothingEnabled=true;
+   ctx.imageSmoothingQuality='high';
+   ctx.fillStyle='#fff';
+   ctx.fillRect(0,0,canvas.width,canvas.height);
+   ctx.drawImage(img,0,0,canvas.width,canvas.height);
+   for(const quality of [.86,.80,.74,.68,.62]){
+     blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Gagal menyiapkan foto.')),'image/jpeg',quality));
+     if(blob.size<=targetBytes)return {blob,ext:'jpg',contentType:'image/jpeg'};
+   }
+   side=Math.max(1200,Math.round(side*.85));
+ }
+ if(!blob)throw new Error('Gagal menyiapkan foto.');
  return {blob,ext:'jpg',contentType:'image/jpeg'};
 }
 async function uploadStockPhoto(stockId,slot,file){
@@ -321,7 +336,7 @@ async function saveStock(){
  }
  const x=await sb.from('stock_units').insert(data);if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
-async function openEditStockPhotos(id){if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • foto hingga 8 MB • kualitas asli dipertahankan bila memenuhi batas.</div>';$('modal').classList.remove('hidden')}
+async function openEditStockPhotos(id){if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres maksimal ±700 KB/foto • resolusi hingga 1600 px.</div>';$('modal').classList.remove('hidden')}
 function openEditStock(id){
  if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
  const s=inventoryStock.find(x=>x.id===id);if(!s)return;
@@ -355,7 +370,7 @@ function openEditStock(id){
  f+=input('Harga Jual','esprice',s.asking_price??0,'number','min="0"');
  f+=input('Supplier','essupplier',s.supplier||'');
  f+=area('Catatan','esnotes',s.notes||'');
- f+=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • foto hingga 8 MB • kualitas asli dipertahankan bila memenuhi batas.</div><button class="success" onclick="saveEditStock(\''+id+'\')">Simpan</button>';
+ f+=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres maksimal ±700 KB/foto • resolusi hingga 1600 px.</div><button class="success" onclick="saveEditStock(\''+id+'\')">Simpan</button>';
  $('mt').textContent='Edit Stock';$('mb').innerHTML=f;$('modal').classList.remove('hidden');
 }
 async function saveEditStock(id){

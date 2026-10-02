@@ -164,6 +164,20 @@ function stockCard(s){
    '</div></div>';
 }
 function canMarkStockSold(){ return !!profile?.is_management || !!inventoryCanFacilitator; }
+async function cleanupSoldStockPhotos(stockId){
+ const paths=[];
+ ['jpg','jpeg','png','webp'].forEach(ext=>{
+  for(let slot=1;slot<=5;slot++)paths.push(stockId+'/foto-'+slot+'.'+ext);
+ });
+ const rm=await sb.storage.from('stock-photos').remove(paths);
+ if(rm.error)throw rm.error;
+ const db=await sb.from('stock_units').update({
+  photo_1:null,photo_2:null,photo_3:null,photo_4:null,photo_5:null,
+  updated_at:new Date().toISOString()
+ }).eq('id',stockId);
+ if(db.error)throw db.error;
+ return true;
+}
 async function markStockSold(id){
  if(!(profile?.is_management||inventoryCanFacilitator))return alert('Hanya Management atau Facilitator yang dapat menandai stock SOLD.');
  const s=inventoryStock.find(x=>x.id===id);if(!s||s.status!=='READY')return;
@@ -175,6 +189,12 @@ async function markStockSold(id){
  if(!confirm('Tandai stock sebagai SOLD?\\n\\n'+name+'\\nHarga Jual Aktual: Rp'+salePrice.toLocaleString('id-ID')))return;
  const x=await sb.rpc('mark_stock_sold',{p_stock_id:id,p_sale_price:salePrice});
  if(x.error)return alert('Gagal menandai SOLD: '+x.error.message);
+ try{
+  await cleanupSoldStockPhotos(id);
+ }catch(e){
+  console.error('[HM] SOLD photo cleanup error',e);
+  alert('Stock sudah SOLD, tetapi foto belum berhasil dibersihkan. Coba lagi dari unit tersebut.\\n\\n'+(e?.message||e));
+ }
  await renderInventory();
 }
 function openProductMaster(){
@@ -277,7 +297,7 @@ async function saveStock(){
  }
  const x=await sb.from('stock_units').insert(data);if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
-async function openEditStockPhotos(id){if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres ke WebP • target &lt; 1 MB/foto.</div>';$('modal').classList.remove('hidden')}
+async function openEditStockPhotos(id){if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • foto hingga 8 MB • kualitas asli dipertahankan bila memenuhi batas.</div>';$('modal').classList.remove('hidden')}
 function openEditStock(id){
  if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
  const s=inventoryStock.find(x=>x.id===id);if(!s)return;
@@ -311,7 +331,7 @@ function openEditStock(id){
  f+=input('Harga Jual','esprice',s.asking_price??0,'number','min="0"');
  f+=input('Supplier','essupplier',s.supplier||'');
  f+=area('Catatan','esnotes',s.notes||'');
- f+=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres ke WebP • target &lt; 1 MB/foto.</div><button class="success" onclick="saveEditStock(\''+id+'\')">Simpan</button>';
+ f+=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • foto hingga 8 MB • kualitas asli dipertahankan bila memenuhi batas.</div><button class="success" onclick="saveEditStock(\''+id+'\')">Simpan</button>';
  $('mt').textContent='Edit Stock';$('mb').innerHTML=f;$('modal').classList.remove('hidden');
 }
 async function saveEditStock(id){

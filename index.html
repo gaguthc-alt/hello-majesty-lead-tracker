@@ -796,7 +796,11 @@ async function askAI(leadId){
  const payload={question:q,profile:{name:profile?.name||'',role:profile?.role||'',outlet:profile?.outlet||'',is_management:!!profile?.is_management},lead:l?{lead_id:l.lead_id,customer:l.customer,need_type:l.need_type,initial_data:l.initial_data,product:l.product,need:l.need,budget:l.budget,preference:l.preference,status_lead:l.status_lead,qualification_result:l.qualification_result,sales_claimed_by:l.sales_claimed_by,cs_claimed_by:l.cs_claimed_by}:null};
  try{
   const x=await sb.functions.invoke('hello-majesty-ai-gemini',{body:payload});
-  if(x.error)throw x.error;
+  if(x.error){
+   let detail=x.error?.message||String(x.error);
+   try{if(x.error?.context){const t=await x.error.context.text();detail=t||detail;}}catch(_e){}
+   throw new Error(detail);
+  }
   const answer=x.data?.answer||'AI tidak memberikan jawaban.';
   if(out)out.textContent=answer;
  }catch(e){if(out)out.textContent='AI belum dapat digunakan. Pastikan layanan AI sudah dikonfigurasi oleh Management.\n\n'+(e?.message||e)}

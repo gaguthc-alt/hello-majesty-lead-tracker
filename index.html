@@ -434,7 +434,7 @@ async function claimFromLink(id){
 }
 async function salesResult(id){
  const l=leads.find(x=>x.lead_id===id); if(!l)return alert('Lead tidak ditemukan.');
- const st=await sb.from('stock_units').select('id,product,variant,color,asking_price,status').eq('outlet',profile.outlet).eq('status','READY').order('product').order('variant').order('color');
+ const st=await sb.from('stock_catalog').select('id,product,variant,color,asking_price,status,outlet').eq('outlet',profile.outlet).eq('status','READY').order('product').order('variant').order('color');
  if(st.error)return alert('Stock gagal dimuat: '+st.error.message);
  const rows=st.data||[];
  const opts=rows.map(s=>'<option value="'+esc(s.id)+'">'+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+' • List Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</option>').join('');

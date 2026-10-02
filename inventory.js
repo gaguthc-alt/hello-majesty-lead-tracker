@@ -89,21 +89,25 @@ async function shareProduct(s){
  alert(urls.length?'Info produk disalin. Foto tersedia di Detail Produk.':'Info produk sudah disalin. Silakan paste ke WhatsApp customer.');
 }
 function stockPhotoUrls(s){return [s?.photo_1,s?.photo_2,s?.photo_3,s?.photo_4,s?.photo_5].filter(Boolean)}
-async function compressStockPhoto(file){
+async function prepareStockPhoto(file){
  if(!file||!file.type?.startsWith('image/'))throw new Error('File harus berupa gambar.');
- const max=1600,quality=.78;
+ const maxBytes=8*1024*1024;
+ const type=String(file.type||'').toLowerCase();
+ if(file.size<=maxBytes&&['image/jpeg','image/png','image/webp'].includes(type))return {blob:file,ext:type==='image/png'?'png':type==='image/webp'?'webp':'jpg',contentType:type};
  const img=await new Promise((resolve,reject)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);resolve(im)};im.onerror=()=>{URL.revokeObjectURL(u);reject(new Error('Foto tidak dapat dibaca.'))};im.src=u});
- const scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+ const maxSide=2560,scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
- canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
- return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Gagal kompres foto.')),'image/webp',quality));
+ const ctx=canvas.getContext('2d',{alpha:false});ctx.drawImage(img,0,0,canvas.width,canvas.height);
+ const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Gagal menyiapkan foto.')),'image/jpeg',.92));
+ if(blob.size>maxBytes)throw new Error('Foto terlalu besar. Coba pilih foto dengan ukuran lebih kecil.');
+ return {blob,ext:'jpg',contentType:'image/jpeg'};
 }
 async function uploadStockPhoto(stockId,slot,file){
  if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
  try{
-  const blob=await compressStockPhoto(file);if(blob.size>1048576)throw new Error('Foto masih lebih dari 1 MB setelah kompresi.');
-  const path=`${stockId}/foto-${slot}.webp`;
-  const up=await sb.storage.from('stock-photos').upload(path,blob,{contentType:'image/webp',cacheControl:'31536000',upsert:true});if(up.error)throw up.error;
+  const prepared=await prepareStockPhoto(file);
+  const path=`${stockId}/foto-${slot}.${prepared.ext}`;
+  const up=await sb.storage.from('stock-photos').upload(path,prepared.blob,{contentType:prepared.contentType,cacheControl:'31536000',upsert:true});if(up.error)throw up.error;
   const pub=sb.storage.from('stock-photos').getPublicUrl(path);
   const data={};data['photo_'+slot]=pub.data.publicUrl;data.updated_at=new Date().toISOString();
   const db=await sb.from('stock_units').update(data).eq('id',stockId);if(db.error)throw db.error;

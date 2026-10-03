@@ -46,18 +46,6 @@ async function loadInventoryData(){
   }
 }
 
-function openInventoryStatusDetail(status){
- const allowed={SOLD:'🔴 TERJUAL',RESERVED:'🟡 RESERVED',RETURN:'↩️ RETUR'};
- if(!allowed[status])return;
- const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';
- const rows=inventoryStock.filter(s=>s.status===status&&(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
- const rupiah=n=>'Rp'+inventoryNumber(n).toLocaleString('id-ID');
- const title=s=>[String(s.product||'').replace(/\s+(NEW|SECOND)$/i,'').trim(),s.variant,s.color].filter(Boolean).join(' — ');
- $('mt').textContent=allowed[status]+' • '+rows.length+' UNIT';
- $('mb').innerHTML=rows.length?rows.map((s,i)=>'<div class="lead" style="cursor:pointer" onclick="closeModal();openProductDetail(\\''+esc(s.id)+'\\')"><div class="row" style="justify-content:space-between"><b>'+(i+1)+'. '+esc(title(s))+'</b><b>'+esc(s.outlet||'-')+'</b></div><div class="small">'+esc(s.status||'-')+' • '+(s.updated_at?new Date(s.updated_at).toLocaleString('id-ID'):'-')+'</div><div>IMEI: '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+' • Harga Jual: '+rupiah(s.asking_price)+'</div></div>').join(''):'<p class="small">Tidak ada data untuk status ini.</p>';
- $('modal').classList.remove('hidden');
-}
-
 function canViewInventoryDashboard(){return !!profile?.is_management;}
 async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');
@@ -141,7 +129,7 @@ async function renderInventoryDashboardBody(){
  body.innerHTML=
   '<div class="box"><h3 style="margin:0">📊 DASHBOARD INVENTORY</h3><div class="small" style="margin-top:5px">Kontrol stock untuk keputusan pembelian, penjualan, dan pergerakan barang.</div>'+
   '<div class="row" style="margin-top:10px"><select id="invDashOutlet">'+(isManagement?'<option value="">📍 Semua Outlet</option>':'')+outlets.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select><select id="invDashCat"><option value="">Semua Kategori</option>'+cats.map(x=>'<option value="'+x+'">'+invCategory(x)+'</option>').join('')+'</select></div></div>'+
-  '<div class="stats inventory-dashboard-stats">'+invStat('🟢 READY',ready.length)+invStat('💰 Modal READY',canViewCost?rp(modal):'—')+invStat('🏷️ Nilai Jual',canViewCost?rp(jual):'—')+invStat('📈 Potensi Laba',canViewCost?rp(profit):'—')+'<div class="stat" role="button" tabindex="0" style="cursor:pointer" onclick="openInventoryStatusDetail(\'RESERVED\')">🟡 Reserved<div class="num">'+reserved.length+'</div></div><div class="stat" role="button" tabindex="0" style="cursor:pointer" onclick="openInventoryStatusDetail(\'RETURN\')">↩️ Retur<div class="num">'+returned.length+'</div></div><div class="stat" role="button" tabindex="0" style="cursor:pointer" onclick="openInventoryStatusDetail(\'SOLD\')">🔴 Terjual<div class="num">'+rows.filter(s=>s.status===\'SOLD\').length+'</div></div>'+invStat('⚠️ Missing',missing.length)+'</div>'+
+  '<div class="stats inventory-dashboard-stats">'+invStat('🟢 READY',ready.length)+invStat('💰 Modal READY',canViewCost?rp(modal):'—')+invStat('🏷️ Nilai Jual',canViewCost?rp(jual):'—')+invStat('📈 Potensi Laba',canViewCost?rp(profit):'—')+invStat('🟡 Reserved',reserved.length)+invStat('↩️ Retur',returned.length)+invStat('⚠️ Missing',missing.length)+'</div>'+
   '<div class="row" style="margin-top:10px"><button class="secondary" onclick="inventoryView=\'stock\';renderInventoryBody()">📦 Lihat Stock</button><button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button></div>'+
   '<div class="box"><h3 style="margin:0 0 8px">⚡ Perhatian</h3><div class="stats"><div class="stat"><div class="small">Barang masuk hari ini</div><div class="num">'+receivedToday+'</div></div><div class="stat"><div class="small">Stock >30 hari</div><div class="num">'+old30+'</div></div><div class="stat"><div class="small">Stock >60 hari</div><div class="num">'+old60+'</div></div></div></div>'+
   '<div class="box"><h3 style="margin:0 0 8px">🏪 Stock per Outlet</h3>'+(byOutlet.length?byOutlet.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.o)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Potensi '+rp(x.jual-x.cost):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+

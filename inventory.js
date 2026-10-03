@@ -47,7 +47,7 @@ async function loadInventoryData(){
 }
 
 function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||role==='ADMIN FINANCE';}
-function canReceiveStock(){return !!profile?.is_management;}
+function canReceiveStock(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||role==='FASILITATOR';}
 async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');
   host.innerHTML='<div class="small">⏳ Memuat Product & Stock...</div>';
@@ -72,7 +72,7 @@ async function renderInventory(){
   host.onclick=(e)=>{const tab=e.target.closest('[data-inventory-view]');if(tab){e.preventDefault();setInventoryView(tab.dataset.inventoryView)}};
   renderInventoryBody();
 }
-function openInventoryDashboard(){if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management.');return;}const panel=$('inventoryPanel'),btn=$('stockToggleBtn');if(!panel)return;panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Stock';inventoryView='dashboard';renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));}
+function openInventoryDashboard(){if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management dan Admin Finance.');return;}const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;const open=!panel.classList.contains('hidden');if(open){panel.classList.add('hidden');if(btn)btn.textContent='📊 Dashboard Inventory';return}panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Dashboard';inventoryView='dashboard';renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));}
 async function refreshInventory(btn){if(btn?.disabled)return;try{if(btn){btn.disabled=true;btn.textContent='⏳ Loading...'}await renderInventory()}catch(e){console.error(e);alert('Refresh Product & Stock error: '+(e?.message||e))}finally{if(btn){btn.disabled=false;btn.textContent='↻ Refresh'}}}
 async function loadHunterDashboard(){const r=await sb.from('hunter_dashboard').select('*').order('total_commission',{ascending:false});if(r.error)throw r.error;hunterDashboard=r.data||[]}
 function fmtRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}
@@ -397,7 +397,7 @@ function normalizeSearch(q){return String(q||'').toLowerCase().trim().replace(/\
 function searchHaystack(value,q){const hay=normalizeSearch(value),needle=normalizeSearch(q);if(!needle)return true;return hay.includes(needle)||hay.replace(/\s+/g,'').includes(needle.replace(/\s+/g,''))}
 async function filterReceiveProducts(){const q=($('stprodsearch')?.value||'').trim().toLowerCase();const sel=$('stprod');if(!sel)return;const current=sel.value;Array.from(sel.options).forEach(o=>{const p=inventoryProducts.find(x=>x.id===o.value);if(!p){o.hidden=false;return;}const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ').toLowerCase();o.hidden=!!q&&!searchHaystack(hay,q);});if(current&&!sel.querySelector('option[value="'+CSS.escape(current)+'"]')?.hidden)sel.value=current;toggleReceiveFields();}
 async function openReceiveStock(){
- if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management.');return;}
+ if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management dan Facilitator.');return;}
  const teams=await sb.from('team_directory').select('*').order('name');if(teams.error)return alert(teams.error.message);
  const products=inventoryProducts.map(p=>'<option value="'+p.id+'">'+esc(masterProductLabel(p))+'</option>').join('');
  const selected=inventoryProducts.find(p=>p.id===$('stprod')?.value);

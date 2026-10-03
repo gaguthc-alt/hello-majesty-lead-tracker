@@ -204,9 +204,35 @@ function stockCard(s){
    '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
-   (ready&&canMarkStockSold()?'<button class="danger" onclick="markStockSold(\''+s.id+'\')">🔴 SOLD</button>':'')+(ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+
+   (ready&&canMarkStockSold()?'<button class="danger" onclick="markStockSold(\''+s.id+'\')">🔴 SOLD</button>':'')+(ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">💰 Jual / Closing</button>':'')+((ready&&(management||facilitator))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
    (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
+}
+async function openSupplierReturn(id){
+ const s=inventoryStock.find(x=>x.id===id);
+ if(!s)return alert('Stock tidak ditemukan.');
+ if(s.status!=='READY')return alert('Hanya stock READY yang dapat diretur.');
+ if(!(profile?.is_management||inventoryCanFacilitator))return alert('Hanya Management atau Facilitator yang dapat melakukan retur supplier.');
+ const label=[s.product,s.variant,s.color].filter(Boolean).join(' — ');
+ $('mt').textContent='↩️ Retur Supplier';
+ $('mb').innerHTML='<div class="notice"><b>Barang:</b> '+esc(label)+'<br><b>Outlet:</b> '+esc(s.outlet||'-')+'<br><b>IMEI:</b> '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+'</div>'+
+ '<label>Alasan Retur</label><textarea id="retReason" rows="3" placeholder="Contoh: Unit bermasalah / salah kirim / tidak sesuai kondisi"></textarea>'+
+ '<label>Penyelesaian dengan Supplier</label><select id="retSettlement"><option value="CREDIT_SUPPLIER">Potong Hutang Supplier</option><option value="REFUND_CASH">Uang Dikembalikan Supplier</option><option value="EXCHANGE">Tukar Barang</option><option value="PENDING">Menunggu Penyelesaian</option></select>'+
+ '<label>Catatan (opsional)</label><textarea id="retNotes" rows="2"></textarea>'+
+ '<button class="danger" onclick="confirmSupplierReturn(\''+String(id).replace(/'/g,"\\'")+'\')">↩️ Konfirmasi Retur</button>';
+ $('modal').classList.remove('hidden');
+}
+async function confirmSupplierReturn(id){
+ const reason=String($('retReason')?.value||'').trim();
+ if(!reason)return alert('Alasan retur wajib diisi.');
+ const settlement=$('retSettlement')?.value||'CREDIT_SUPPLIER';
+ const notes=String($('retNotes')?.value||'').trim()||null;
+ if(!confirm('Yakin barang ini dikembalikan ke supplier? Stock akan berubah menjadi RETURN dan tidak dapat dijual lagi.'))return;
+ const r=await sb.rpc('return_stock_to_supplier',{p_stock_id:id,p_reason:reason,p_settlement_type:settlement,p_actor_user_id:profile?.user_id||null,p_return_value:null,p_notes:notes});
+ if(r.error)return alert('Retur gagal: '+r.error.message);
+ alert('✅ Retur supplier berhasil dicatat.');
+ closeModal();
+ await renderInventory();
 }
 function openStockAI(id){
  const s=inventoryStock.find(x=>x.id===id);if(!s)return;

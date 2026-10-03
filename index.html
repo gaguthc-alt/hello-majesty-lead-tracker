@@ -935,7 +935,7 @@ async function openAccountingModule(module){
     if(s.error)return host.innerHTML='<p>'+escA(s.error.message)+'</p>';
     const z=(t.data||[])[0]||{},rows=s.data||[];
     host.innerHTML='<h3>📈 Laba Rugi</h3><div class="small">'+d.start+' s/d '+d.end+'</div>'+
-      '<div class="box" style="margin-top:8px"><label>Cabang</label><select onchange="window.financeProfitOutlet=this.value;openAccountingModule(\\'profit\\')">'+outletOptions+'</select></div>'+
+      '<div class="box" style="margin-top:8px"><label>Cabang</label><select onchange="window.financeProfitOutlet=this.value;openAccountingModule(\'profit\')">'+outletOptions+'</select></div>'+
       '<div class="stats" style="margin-top:8px"><div class="stat"><div class="small">Pendapatan</div><div class="num">'+accountingRp(z.total_revenue)+'</div></div><div class="stat"><div class="small">HPP</div><div class="num">'+accountingRp(z.total_cogs)+'</div></div><div class="stat"><div class="small">Laba Kotor</div><div class="num">'+accountingRp(z.gross_profit)+'</div></div><div class="stat"><div class="small">Beban</div><div class="num">'+accountingRp(z.total_expense)+'</div></div><div class="stat"><div class="small">Laba Bersih</div><div class="num">'+accountingRp(z.net_profit)+'</div></div></div>'+
       rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+escA(r.account_code)+' — '+escA(r.account_name)+'</b><b>'+accountingRp(r.amount)+'</b></div><div class="small">'+escA(r.section)+'</div></div>').join('');return;
   }

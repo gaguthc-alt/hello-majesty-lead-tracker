@@ -23,7 +23,8 @@ async function loadInventoryData(){
   }
   if(!profile?.is_management && !inventoryCanContentCreator){const cc=await sb.from('team_permissions').select('can_content_creator').eq('name',profile?.name).eq('outlet',profile?.outlet).eq('active',true).maybeSingle();if(!cc.error)inventoryCanContentCreator=!!cc.data?.can_content_creator;}
   window.hmCanFacilitator=inventoryCanFacilitator; window.hmCanContentCreator=inventoryCanContentCreator;
-  const stockView=profile?.is_management?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
+  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+  const stockView=(profile?.is_management||role==='ADMIN FINANCE')?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
   if(!profile?.is_management && profile?.outlet) stockQuery=stockQuery.eq('outlet',profile.outlet);
   const [p,s]=await Promise.all([
@@ -134,8 +135,10 @@ async function openInventoryReturnDetail(){
 function renderInventoryDashboardBody(){
  const body=document.getElementById('inventoryBody');if(!body)return;
  if(!canViewInventoryDashboard()){inventoryView='stock';renderInventoryBody();return;}
- const isManagement=!!profile?.is_management,canViewCost=isManagement;
- const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';
+ const isManagement=!!profile?.is_management;
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),isAdminFinance=role==='ADMIN FINANCE';
+ const canViewCost=isManagement||isAdminFinance;
+ const outletSel=isAdminFinance?(profile?.outlet||''):($('invDashOutlet')?.value||''),catSel=$('invDashCat')?.value||'';
  const rows=inventoryStock.filter(s=>(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
  const ready=rows.filter(s=>s.status==='READY'),sold=rows.filter(s=>s.status==='SOLD'),reserved=rows.filter(s=>s.status==='RESERVED'),returned=rows.filter(s=>s.status==='RETURN'),missing=rows.filter(s=>s.status==='MISSING');
  const modal=ready.reduce((a,s)=>a+inventoryNumber(s.cost),0),jual=ready.reduce((a,s)=>a+inventoryNumber(s.asking_price),0),profit=jual-modal;
@@ -150,7 +153,7 @@ function renderInventoryDashboardBody(){
  const rp=n=>'Rp'+inventoryNumber(n).toLocaleString('id-ID'),pct=(a,b)=>b?Math.round(a/b*100)+'%':'0%';
  body.innerHTML=
   '<div class="box"><h3 style="margin:0">📊 DASHBOARD INVENTORY</h3><div class="small" style="margin-top:5px">Kontrol stock untuk keputusan pembelian, penjualan, dan pergerakan barang.</div>'+
-  '<div class="row" style="margin-top:10px"><select id="invDashOutlet">'+(isManagement?'<option value="">📍 Semua Outlet</option>':'')+outlets.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select><select id="invDashCat"><option value="">Semua Kategori</option>'+cats.map(x=>'<option value="'+x+'">'+invCategory(x)+'</option>').join('')+'</select></div></div>'+
+  '<div class="row" style="margin-top:10px"><select id="invDashOutlet"'+(isAdminFinance?' disabled':'')+'>'+(isManagement?'<option value="">📍 Semua Outlet</option>':'')+outlets.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select><select id="invDashCat"><option value="">Semua Kategori</option>'+cats.map(x=>'<option value="'+x+'">'+invCategory(x)+'</option>').join('')+'</select></div></div>'+
   '<div class="stats inventory-dashboard-stats">'+invStat('💰 Modal READY',canViewCost?rp(modal):'—')+invStat('🏷️ Nilai Jual',canViewCost?rp(jual):'—')+invStat('📈 Potensi Laba',canViewCost?rp(profit):'—')+'</div>'+
   '<div class="row" style="margin-top:10px"><button class="secondary" onclick="inventoryView=\'stock\';renderInventoryBody()">📦 Lihat Stock</button>'+(canReceiveStock()?'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button>':'')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">⚡ Perhatian</h3><div class="stats"><div class="stat"><div class="small">Barang masuk hari ini</div><div class="num">'+receivedToday+'</div></div><div class="stat"><div class="small">Stock >30 hari</div><div class="num">'+old30+'</div></div><div class="stat"><div class="small">Stock >60 hari</div><div class="num">'+old60+'</div></div></div></div>'+

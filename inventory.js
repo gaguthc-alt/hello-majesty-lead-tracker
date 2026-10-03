@@ -53,7 +53,7 @@ async function loadInventoryData(){
 }
 
 function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||role==='ADMIN FINANCE';}
-function canReceiveStock(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||role==='FASILITATOR';}
+function canReceiveStock(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||inventoryCanFacilitator||role==='FASILITATOR';}
 async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');
   host.innerHTML='<div class="small">⏳ Memuat Product & Stock...</div>';
@@ -467,7 +467,7 @@ function toggleReceiveFields(){
  const source=$('stsource');if(source)source.onchange=()=>{$('hunterBox')?.classList.toggle('hidden',source.value!=='HUNTER')};
 }
 async function saveStock(){
- if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management.');return;}
+ if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management dan Facilitator.');return;}
  const receiveOutlet=inventoryReceiveOutlet();
  const source=$('stsource')?.value||'MANAGEMENT';
  const hunter=source==='HUNTER'?($('sthunter')?.value||''):null;

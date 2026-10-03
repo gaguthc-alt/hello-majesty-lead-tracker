@@ -854,6 +854,21 @@ async function loadAccountingDashboard(){
   const box=document.getElementById('accountingSummary');
   if(box)box.innerHTML='<div class="stat accounting-stat"><div class="small">💰 Total Aset</div><div class="num accounting-num">'+accountingRp(bs.total_assets)+'</div></div><div class="stat accounting-stat"><div class="small">🧾 Liabilitas</div><div class="num accounting-num">'+accountingRp(bs.total_liabilities)+'</div></div><div class="stat accounting-stat"><div class="small">🏦 Ekuitas</div><div class="num accounting-num">'+accountingRp(bs.total_equity)+'</div></div><div class="stat accounting-stat"><div class="small">📈 Laba Bersih</div><div class="num accounting-num">'+accountingRp(p.net_profit)+'</div></div>';
 }
+window.openBalanceAccountDetail=async function(accountId,accountCode,accountName){
+  const host=document.getElementById('accountingDetail');if(!host)return;
+  const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  host.classList.remove('hidden');host.innerHTML='<b>Memuat rincian...</b>';
+  const selected=window.accountingBalanceOutlet||'ALL';
+  const x=await sb.rpc('balance_sheet_account_detail',{p_account_id:accountId,p_as_of_date:d.end,p_outlet:selected==='ALL'?null:selected});
+  if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';
+  const rows=x.data||[];
+  host.innerHTML='<button type="button" class="secondary" onclick="openAccountingModule(\\'balance\\')">← Kembali Neraca</button>'+
+    '<h3 style="margin:10px 0 4px">📌 '+escA(accountCode)+' — '+escA(accountName)+'</h3>'+
+    '<div class="small">Rincian sampai '+d.end+(selected==='ALL'?' • Semua Pusat & Outlet':' • '+escA(selected))+'</div>'+
+    '<div class="box accounting-section"><h4>Mutasi Jurnal</h4>'+
+    (rows.length?rows.map(r=>'<div class="lead" style="margin:7px 0"><div class="small">'+new Date(r.journal_date).toLocaleString('id-ID')+' • '+escA(r.journal_no)+' • '+escA(r.outlet||'Pusat')+'</div><b>'+escA(r.description||'-')+'</b><div class="small" style="margin-top:5px">Debit: '+accountingRp(r.debit)+' • Kredit: '+accountingRp(r.credit)+'</div><div style="margin-top:4px"><b>Saldo: '+accountingRp(r.balance)+'</b></div></div>').join(''):'<div class="small">Belum ada transaksi.</div>')+
+    '</div>';
+};
 async function openAccountingModule(module){
   const host=document.getElementById('accountingDetail');if(!host)return;
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
@@ -867,20 +882,30 @@ async function openAccountingModule(module){
     const outlets=[...new Set((outletRes.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean))];
     const selected=window.accountingBalanceOutlet||'ALL';
     const options='<option value="ALL" '+(selected==='ALL'?'selected':'')+'>Semua Pusat & Outlet</option>'+outlets.map(o=>'<option value="'+escA(o).replace(/"/g,'&quot;')+'" '+(selected===o?'selected':'')+'>'+escA(o)+'</option>').join('');
-    const selector='<label>Lokasi</label><select id="accountingBalanceOutlet" onchange="window.accountingBalanceOutlet=this.value;openAccountingModule(\'balance\')">'+options+'</select>';
-    if(selected==='ALL'){
-      const x=await sb.rpc('balance_sheet_totals',{p_as_of_date:d.end});if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';const z=(x.data||[])[0]||{};
-      host.innerHTML='<h3>⚖️ Neraca Konsolidasi</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+selector+'<div class="stats" style="margin-top:8px;grid-template-columns:1fr;gap:8px"><div class="stat accounting-stat"><div class="small">Total Aset</div><div class="num accounting-num">'+accountingRp(z.total_assets)+'</div></div><div class="stat accounting-stat"><div class="small">Liabilitas</div><div class="num accounting-num">'+accountingRp(z.total_liabilities)+'</div></div><div class="stat accounting-stat" style="grid-column:1 / -1"><div class="small">Ekuitas</div><div class="num accounting-num">'+accountingRp(z.total_equity)+'</div></div></div><div class="lead"><b>'+(z.is_balanced?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(z.balance_difference)+'</div></div>';
-    }else{
-      const [t,rows]=await Promise.all([sb.rpc('balance_sheet_outlet_totals',{p_outlet:selected,p_as_of_date:d.end}),sb.rpc('balance_sheet_outlet',{p_outlet:selected,p_as_of_date:d.end})]);
-      if(t.error)return host.innerHTML='<p>'+escA(t.error.message)+'</p>';if(rows.error)return host.innerHTML='<p>'+escA(rows.error.message)+'</p>';
-      const z=(t.data||[])[0]||{}, all=rows.data||[];
-      const assets=all.filter(r=>r.account_type==='ASSET'&&Math.abs(Number(r.balance||0))>0.0001);
-      const liabilities=all.filter(r=>r.account_type==='LIABILITY'&&Math.abs(Number(r.balance||0))>0.0001);
-      const equity=all.filter(r=>r.account_type==='EQUITY'&&Math.abs(Number(r.balance||0))>0.0001);
-      const section=(title,arr)=>'<div class="box accounting-section"><h4>'+title+'</h4>'+(arr.length?arr.map(r=>'<div class="row" style="justify-content:space-between;margin:7px 0"><span>'+escA(r.account_code)+' — '+escA(r.account_name)+'</span><b>'+accountingRp(r.balance)+'</b></div>').join(''):'<div class="small">Belum ada saldo.</div>')+'</div>';
-      host.innerHTML='<h3>⚖️ Neraca — '+escA(selected)+'</h3><div class="small">Per '+d.end+' • Bank dicatat di Pusat</div>'+selector+section('ASET',assets)+'<div class="stats" style="grid-template-columns:1fr;gap:8px"><div class="stat accounting-stat"><div class="small">Total Aset</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_assets)+'</div></div><div class="stat"><div class="small">Liabilitas</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_liabilities)+'</div></div><div class="stat accounting-stat" style="grid-column:1 / -1"><div class="small">Ekuitas + Laba Berjalan</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_equity)+'</div></div></div>'+section('LIABILITAS',liabilities)+section('EKUITAS',equity)+'<div class="lead"><b>'+(z.is_balanced?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(z.balance_difference)+'</div></div>';
-    }
+    const selector='<label>Lokasi</label><select id="accountingBalanceOutlet" onchange="window.accountingBalanceOutlet=this.value;openAccountingModule(\\'balance\\')">'+options+'</select>';
+    const outletParam=selected==='ALL'?null:selected;
+    const summary=await sb.rpc('balance_sheet_account_summary',{p_as_of_date:d.end,p_outlet:outletParam});
+    if(summary.error)return host.innerHTML='<p>'+escA(summary.error.message)+'</p>';
+    const all=summary.data||[];
+    const assets=all.filter(r=>r.account_type==='ASSET');
+    const liabilities=all.filter(r=>r.account_type==='LIABILITY');
+    const equity=all.filter(r=>r.account_type==='EQUITY');
+    const totalByType=(arr)=>arr.reduce((n,r)=>n+Number(r.balance||0),0);
+    const totalAssets=totalByType(assets);
+    const totalLiabilities=totalByType(liabilities);
+    const totalEquity=totalByType(equity);
+    const totalExpected=totalAssets-totalLiabilities-totalEquity;
+    const section=(title,arr)=>'<div class="box accounting-section"><h4>'+title+'</h4>'+
+      (arr.length?arr.map(r=>'<button type="button" class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="openBalanceAccountDetail(\\''+escA(r.account_id)+'\\',\\''+escA(r.account_code)+'\\',\\''+escA(r.account_name).replace(/'/g,"&#39;")+'\\')"><div class="row" style="justify-content:space-between;gap:10px"><span><b>'+escA(r.account_code)+'</b> — '+escA(r.account_name)+'</span><b style="white-space:nowrap">'+accountingRp(r.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+
+      '</div>';
+    host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+selector+
+      section('ASET',assets)+
+      '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Aset</div><div class="num accounting-num">'+accountingRp(totalAssets)+'</div></div>'+
+      section('LIABILITAS',liabilities)+
+      '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Liabilitas</div><div class="num accounting-num">'+accountingRp(totalLiabilities)+'</div></div>'+
+      section('EKUITAS',equity)+
+      '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Ekuitas</div><div class="num accounting-num">'+accountingRp(totalEquity)+'</div></div>'+
+      '<div class="lead" style="margin-top:10px"><b>'+(Math.abs(totalExpected)<0.01?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(totalExpected)+'</div><div class="small" style="margin-top:6px">💡 Tekan akun untuk melihat jurnal pembentuk saldo.</div></div>';
     return;
   }
   if(module==='profit'){

@@ -120,7 +120,7 @@ function inventoryReceiveOutlet(){
  const sel=$('stoutlet');
  return profile?.is_management ? (sel?.value||'') : (profile?.outlet||'');
 }
-function setInventoryView(view){if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';return;}inventoryView=view;renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
+function setInventoryView(view){if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';return;}inventoryView=view;if(view==='sales'){renderInventorySalesReport();}else renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
 async function openInventorySoldDetail(){
  const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';
  const rows=inventoryStock.filter(s=>s.status==='SOLD'&&(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
@@ -546,27 +546,36 @@ async function saveEditStock(id){
  if(x.error)return alert(x.error.message);
  closeModal();await renderInventory();
 }async function openStockHistory(id){const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});if(x.error)return alert(x.error.message);$('mt').textContent='🧾 Histori Stock';$('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';$('modal').classList.remove('hidden')}
-async function openSalesReport(){
- const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const isAdminFinance=role==='ADMIN FINANCE';
+async async function openSalesReport(){
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const isAdminFinance=role==='ADMIN FINANCE';
  const q=sb.from('sales_transactions').select('*').order('sold_at',{ascending:false});
- if(isAdminFinance && profile?.outlet) q.eq('outlet',profile.outlet);
+ if(isAdminFinance&&profile?.outlet)q.eq('outlet',profile.outlet);
  const x=await q;
  if(x.error)return alert(x.error.message);
  const rows=x.data||[];
- const now=new Date();
- const y=now.getFullYear(),m=now.getMonth(),d=now.getDate();
- const isToday=r=>{const z=new Date(r.sold_at);return z.getFullYear()===y&&z.getMonth()===m&&z.getDate()===d};
+ const now=new Date(),y=now.getFullYear(),m=now.getMonth();
+ const isToday=r=>{const z=new Date(r.sold_at);return z.getFullYear()===y&&z.getMonth()===m&&z.getDate()===now.getDate()};
  const isMonth=r=>{const z=new Date(r.sold_at);return z.getFullYear()===y&&z.getMonth()===m};
  const calc=list=>({rows:list,total:list.reduce((a,r)=>a+Number(r.sale_price||0)-Number(r.discount||0),0),profit:list.reduce((a,r)=>a+Number(r.gross_profit||0),0)});
- const today=calc(rows.filter(isToday)),month=calc(rows.filter(isMonth));
- const detail=list=>list.map(r=>'<div class="lead"><b>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</b><div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+' • Sales: '+esc(r.sales_user_id||'-')+'</div><div>Jual Rp'+Number(r.sale_price||0)-Number(r.discount||0).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div>').join('')||'<p class="small">Belum ada penjualan pada periode ini.</p>';
- $('mt').textContent='📊 Laporan Penjualan';
- $('mb').innerHTML='<div class="row" style="margin-bottom:10px"><button class="success" onclick="showSalesReportPeriod(\'TODAY\')">📅 Hari Ini</button><button class="secondary" onclick="showSalesReportPeriod(\'MONTH\')">📆 Bulan Ini</button></div><div id="salesReportBody"></div>';
- window.hmSalesReport={today,month}; showSalesReportPeriod('TODAY'); $('modal').classList.remove('hidden');
+ window.hmSalesReport={today:calc(rows.filter(isToday)),month:calc(rows.filter(isMonth))};
+ inventoryView='sales';
+ const panel=$('inventoryPanel');
+ if(panel)panel.classList.remove('hidden');
+ const btn=$('inventoryDashboardBtn');if(btn)btn.textContent='✖ Tutup Product & Stock';
+ renderInventorySalesReport();
+}
+function renderInventorySalesReport(){
+ const d=window.hmSalesReport;
+ if(!d)return;
+ const body=$('inventoryBody');if(!body)return;
+ const period=window.hmSalesReportPeriod||'TODAY';
+ const x=d[period==='MONTH'?'month':'today'];
+ body.innerHTML='<div class="box"><h3 style="margin-top:0">📊 LAPORAN PENJUALAN</h3><div class="small">'+(profile?.outlet?'Outlet: '+esc(profile.outlet):'Seluruh Outlet Management')+'</div><div class="row" style="margin:12px 0"><button class="'+(period==='TODAY'?'':'secondary')+'" onclick="showSalesReportPeriod(\'TODAY\')">📅 Hari Ini</button><button class="'+(period==='MONTH'?'':'secondary')+'" onclick="showSalesReportPeriod(\'MONTH\')">📆 Bulan Ini</button></div><div class="stats">'+invStat('Omzet',x.total)+invStat('Laba',x.profit)+'</div>'+(x.rows.length?x.rows.map(r=>'<div class="lead"><b>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</b><div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+' • Sales: '+esc(r.sales_user_id||'-')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
 }
 function showSalesReportPeriod(period){
- const d=window.hmSalesReport?.[period==='MONTH'?'month':'today']; if(!d)return;
- $('salesReportBody').innerHTML='<div class="small" style="margin-bottom:8px">'+(period==='MONTH'?'📆 Bulan '+new Date().toLocaleDateString('id-ID',{month:'long',year:'numeric'}):'📅 '+new Date().toLocaleDateString('id-ID'))+'</div><div class="stats">'+invStat('Omzet',d.total)+invStat('Laba',d.profit)+'</div>'+d.rows.map(r=>'<div class="lead"><b>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</b><div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+' • Sales: '+esc(r.sales_user_id||'-')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div>').join('')||'<p class="small">Belum ada penjualan pada periode ini.</p>';
+ window.hmSalesReportPeriod=period==='MONTH'?'MONTH':'TODAY';
+ if(window.hmSalesReport)renderInventorySalesReport();
 }
 window.renderInventory=renderInventory;
 window.refreshInventory=refreshInventory;

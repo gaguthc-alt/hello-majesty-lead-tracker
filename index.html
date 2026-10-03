@@ -847,8 +847,25 @@ async function openAccountingModule(module){
     const z=x.data||{};host.innerHTML='<h3>🩺 Health Check</h3><div class="lead"><b>'+(z.status==='HEALTHY'?'🟢 ACCOUNTING SEHAT':'🔴 PERLU PERHATIAN')+'</b><div class="small" style="margin-top:8px">Diperiksa: '+new Date(z.checked_at||Date.now()).toLocaleString('id-ID')+'</div></div>'+((z.issues||[]).map(i=>'<div class="lead"><b>'+escA(i.code)+'</b><div class="small">'+escA(i.message)+' • '+i.count+'</div></div>').join('')||'<div class="small">Tidak ada masalah ditemukan.</div>');return;
   }
   if(module==='balance'){
-    const x=await sb.rpc('balance_sheet_totals',{p_as_of_date:d.end});if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';const z=(x.data||[])[0]||{};
-    host.innerHTML='<h3>⚖️ Neraca</h3><div class="small">Per '+d.end+'</div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">Total Aset</div><div class="num">'+accountingRp(z.total_assets)+'</div></div><div class="stat"><div class="small">Liabilitas</div><div class="num">'+accountingRp(z.total_liabilities)+'</div></div><div class="stat"><div class="small">Ekuitas</div><div class="num">'+accountingRp(z.total_equity)+'</div></div></div><div class="lead"><b>'+(z.is_balanced?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(z.balance_difference)+'</div></div>';return;
+    const outletRes=await sb.from('team_profiles').select('outlet').eq('active',true).not('outlet','is',null).order('outlet');
+    const outlets=[...new Set((outletRes.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean))];
+    const selected=window.accountingBalanceOutlet||'ALL';
+    const options='<option value="ALL" '+(selected==='ALL'?'selected':'')+'>Semua Pusat & Outlet</option>'+outlets.map(o=>'<option value="'+escA(o).replace(/"/g,'&quot;')+'" '+(selected===o?'selected':'')+'>'+escA(o)+'</option>').join('');
+    const selector='<label>Lokasi Neraca</label><select id="accountingBalanceOutlet" onchange="window.accountingBalanceOutlet=this.value;openAccountingModule(\'balance\')">'+options+'</select>';
+    if(selected==='ALL'){
+      const x=await sb.rpc('balance_sheet_totals',{p_as_of_date:d.end});if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';const z=(x.data||[])[0]||{};
+      host.innerHTML='<h3>⚖️ Neraca Konsolidasi</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+selector+'<div class="stats" style="margin-top:8px"><div class="stat"><div class="small">Total Aset</div><div class="num">'+accountingRp(z.total_assets)+'</div></div><div class="stat"><div class="small">Liabilitas</div><div class="num">'+accountingRp(z.total_liabilities)+'</div></div><div class="stat"><div class="small">Ekuitas</div><div class="num">'+accountingRp(z.total_equity)+'</div></div></div><div class="lead"><b>'+(z.is_balanced?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(z.balance_difference)+'</div></div>';
+    }else{
+      const [t,rows]=await Promise.all([sb.rpc('balance_sheet_outlet_totals',{p_outlet:selected,p_as_of_date:d.end}),sb.rpc('balance_sheet_outlet',{p_outlet:selected,p_as_of_date:d.end})]);
+      if(t.error)return host.innerHTML='<p>'+escA(t.error.message)+'</p>';if(rows.error)return host.innerHTML='<p>'+escA(rows.error.message)+'</p>';
+      const z=(t.data||[])[0]||{}, all=rows.data||[];
+      const assets=all.filter(r=>r.account_type==='ASSET'&&Math.abs(Number(r.balance||0))>0.0001);
+      const liabilities=all.filter(r=>r.account_type==='LIABILITY'&&Math.abs(Number(r.balance||0))>0.0001);
+      const equity=all.filter(r=>r.account_type==='EQUITY'&&Math.abs(Number(r.balance||0))>0.0001);
+      const section=(title,arr)=>'<div class="box"><h4>'+title+'</h4>'+(arr.length?arr.map(r=>'<div class="row" style="justify-content:space-between;margin:7px 0"><span>'+escA(r.account_code)+' — '+escA(r.account_name)+'</span><b>'+accountingRp(r.balance)+'</b></div>').join(''):'<div class="small">Belum ada saldo.</div>')+'</div>';
+      host.innerHTML='<h3>⚖️ Neraca — '+escA(selected)+'</h3><div class="small">Per '+d.end+' • Bank dicatat di Pusat</div>'+selector+section('ASET',assets)+'<div class="stats"><div class="stat"><div class="small">Total Aset</div><div class="num">'+accountingRp(z.total_assets)+'</div></div><div class="stat"><div class="small">Liabilitas</div><div class="num">'+accountingRp(z.total_liabilities)+'</div></div><div class="stat"><div class="small">Ekuitas + Laba Berjalan</div><div class="num">'+accountingRp(z.total_equity)+'</div></div></div>'+section('LIABILITAS',liabilities)+section('EKUITAS',equity)+'<div class="lead"><b>'+(z.is_balanced?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(z.balance_difference)+'</div></div>';
+    }
+    return;
   }
   if(module==='profit'){
     const [t,s]=await Promise.all([sb.rpc('profit_loss_totals',{p_start_date:d.start,p_end_date:d.end}),sb.rpc('profit_loss_summary',{p_start_date:d.start,p_end_date:d.end})]);if(t.error)return host.innerHTML='<p>'+escA(t.error.message)+'</p>';if(s.error)return host.innerHTML='<p>'+escA(s.error.message)+'</p>';const z=(t.data||[])[0]||{},rows=s.data||[];

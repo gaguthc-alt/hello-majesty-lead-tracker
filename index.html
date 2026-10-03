@@ -822,7 +822,7 @@ $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('pass
 async function openAccounting(){
   if(!profile?.is_management){return alert('Accounting hanya dapat diakses Management.');}
   $('mt').textContent='📊 Accounting';
-  $('mb').innerHTML='<div id="accountingPanel"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">📊 ACCOUNTING</h3><div class="small">Sumber data: Journal Engine • Jurnal POSTED</div></div></div><div class="box" style="margin-top:10px"><label>Periode Laba Rugi</label><select id="accountingPeriod" onchange="loadAccountingDashboard()"><option value="MONTH">Bulan Ini</option><option value="TODAY">Hari Ini</option><option value="YEAR">Tahun Ini</option></select></div><div id="accountingHealth" class="box">Memuat...</div><div id="accountingSummary" class="stats" style="grid-template-columns:1fr;gap:8px"></div><div class="row" style="margin-top:10px"><button class="secondary" onclick="openAccountingModule(\'journal\')">📒 Jurnal Umum</button><button class="secondary" onclick="openAccountingModule(\'ledger\')">📖 Buku Besar</button><button class="secondary" onclick="openAccountingModule(\'balance\')">⚖️ Neraca</button><button class="secondary" onclick="openAccountingModule(\'profit\')">📈 Laba Rugi</button><button class="secondary" onclick="openAccountingModule(\'health\')">🩺 Health Check</button></div><div id="accountingDetail" class="box hidden" style="margin-top:10px"></div></div>';
+  $('mb').innerHTML='<div id="accountingPanel"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">📊 ACCOUNTING</h3><div class="small">Sumber data: Journal Engine • Jurnal POSTED</div></div></div><div class="box" style="margin-top:10px"><label>Periode Laba Rugi</label><select id="accountingPeriod" onchange="loadAccountingDashboard()"><option value="MONTH">Bulan Ini</option><option value="TODAY">Hari Ini</option><option value="YEAR">Tahun Ini</option></select></div><div id="accountingHealth" class="box">Memuat...</div><div id="accountingSummary" class="stats" style="grid-template-columns:1fr;gap:8px"></div><div class="row" style="margin-top:10px"><button class="secondary" onclick="openAccountingModule(\'journal\')">📒 Jurnal Umum</button><button class="secondary" onclick="openAccountingModule(\'ledger\')">📖 Buku Besar</button><button class="secondary" onclick="openAccountingModule(\'balance\')">⚖️ Neraca</button><button class="secondary" onclick="openAccountingModule(\'profit\')">📈 Laba Rugi</button><button class="secondary" onclick="openAccountingModule(\'health\')">🩺 Health Check</button><button class="secondary" onclick="openAccountingModule(\'transfer\')">💸 Transfer Kas ke Pusat</button></div><div id="accountingDetail" class="box hidden" style="margin-top:10px"></div></div>';
   $('modal').classList.remove('hidden');
   await loadAccountingDashboard();
 }
@@ -887,6 +887,27 @@ async function openAccountingModule(module){
   const host=document.getElementById('accountingDetail');if(!host)return;
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
   const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  if(module==='transfer'){
+    const accounts=await sb.from('accounting_accounts').select('code,name').eq('active',true).eq('account_type','ASSET').in('code',['1110','1111','1112','1113','1114']).order('code');
+    if(accounts.error)return host.innerHTML='<p>'+escA(accounts.error.message)+'</p>';
+    const banks=accounts.data||[];
+    const bankOptions=banks.map(a=>'<option value="'+escA(a.code)+'">'+escA(a.code)+' — '+escA(a.name)+'</option>').join('');
+    const x=await sb.from('cash_transfers').select('id,transfer_date,from_outlet,to_account_id,amount,note,created_at').order('transfer_date',{ascending:false}).limit(50);
+    if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';
+    const rows=x.data||[], ids=[...new Set(rows.map(r=>r.to_account_id).filter(Boolean))];
+    let names={};
+    if(ids.length){const ar=await sb.from('accounting_accounts').select('id,code,name').in('id',ids);(ar.data||[]).forEach(a=>names[a.id]=a);}
+    host.innerHTML='<h3>💸 Transfer Kas ke Pusat</h3><div class="small">Transfer outlet dicatat sebagai Piutang ke Pusat, sedangkan Pusat mencatat Hutang ke Outlet. Tidak memengaruhi omzet/laba.</div>'+
+      '<div class="box" style="margin-top:10px"><label>Dari Outlet</label><select id="cashTransferOutlet"><option>Majesty Plaza iPhone</option><option>Majesty Refill Phone</option></select>'+
+      '<label style="margin-top:8px">Masuk ke</label><select id="cashTransferBank">'+bankOptions+'</select>'+
+      '<label style="margin-top:8px">Nominal</label><input id="cashTransferAmount" type="number" min="1" step="1" placeholder="Contoh: 10000000">'+
+      '<label style="margin-top:8px">Tanggal</label><input id="cashTransferDate" type="date" value="'+new Date().toISOString().slice(0,10)+'">'+
+      '<label style="margin-top:8px">Keterangan</label><input id="cashTransferNote" type="text" placeholder="Contoh: Setoran kas outlet ke pusat">'+
+      '<button type="button" style="width:100%;margin-top:10px" onclick="submitCashTransfer()">💸 Simpan Transfer</button></div>'+
+      '<div class="box" style="margin-top:10px"><h4 style="margin-top:0">Riwayat Transfer</h4>'+
+      (rows.length?rows.map(r=>{const a=names[r.to_account_id]||{};return '<div class="lead" style="margin:7px 0"><div class="row" style="justify-content:space-between"><b>'+escA(r.from_outlet)+'</b><b>'+accountingRp(r.amount)+'</b></div><div class="small">'+new Date(r.transfer_date).toLocaleDateString('id-ID')+' • '+escA(a.code||'')+' — '+escA(a.name||'Pusat')+'</div><div class="small">'+escA(r.note||'Transfer kas ke Pusat')+'</div></div>';}).join(''):'<div class="small">Belum ada transfer.</div>')+'</div>';
+    return;
+  }
   if(module==='health'){
     const x=await sb.rpc('accounting_health_check');if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';
     const z=x.data||{};host.innerHTML='<h3>🩺 Health Check</h3><div class="lead"><b>'+(z.status==='HEALTHY'?'🟢 ACCOUNTING SEHAT':'🔴 PERLU PERHATIAN')+'</b><div class="small" style="margin-top:8px">Diperiksa: '+new Date(z.checked_at||Date.now()).toLocaleString('id-ID')+'</div></div>'+((z.issues||[]).map(i=>'<div class="lead"><b>'+escA(i.code)+'</b><div class="small">'+escA(i.message)+' • '+i.count+'</div></div>').join('')||'<div class="small">Tidak ada masalah ditemukan.</div>');return;
@@ -948,6 +969,20 @@ async function openAccountingModule(module){
     host.innerHTML='<h3>📒 Jurnal Umum</h3>'+rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+escA(r.journal_no)+'</b><span class="badge">'+escA(r.source_type)+'</span></div><div class="small">'+new Date(r.journal_date).toLocaleString('id-ID')+' • '+escA(r.description||'-')+'</div></div>').join('')||'<div class="small">Belum ada jurnal POSTED.</div>';
   }
 }
+window.submitCashTransfer=async function(){
+  if(!profile?.is_management)return alert('Accounting hanya dapat diakses Management.');
+  const outlet=document.getElementById('cashTransferOutlet')?.value;
+  const bank=document.getElementById('cashTransferBank')?.value;
+  const amount=Number(document.getElementById('cashTransferAmount')?.value||0);
+  const date=document.getElementById('cashTransferDate')?.value;
+  const note=document.getElementById('cashTransferNote')?.value||null;
+  if(!outlet||!bank||amount<=0||!date)return alert('Lengkapi outlet, akun pusat, nominal, dan tanggal.');
+  if(!confirm('Simpan transfer '+accountingRp(amount)+' dari '+outlet+' ke Pusat?'))return;
+  const x=await sb.rpc('create_cash_transfer_to_center',{p_from_outlet:outlet,p_to_account_code:bank,p_amount:amount,p_transfer_date:date,p_note:note});
+  if(x.error)return alert('Transfer gagal: '+x.error.message);
+  alert('Transfer kas berhasil dicatat.');
+  await openAccountingModule('transfer');
+};
 window.openAccounting=openAccounting;
 window.openAccountingModule=openAccountingModule;
 

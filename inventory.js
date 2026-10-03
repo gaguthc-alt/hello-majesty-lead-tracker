@@ -24,7 +24,7 @@ async function loadInventoryData(){
   if(!profile?.is_management && !inventoryCanContentCreator){const cc=await sb.from('team_permissions').select('can_content_creator').eq('name',profile?.name).eq('outlet',profile?.outlet).eq('active',true).maybeSingle();if(!cc.error)inventoryCanContentCreator=!!cc.data?.can_content_creator;}
   window.hmCanFacilitator=inventoryCanFacilitator; window.hmCanContentCreator=inventoryCanContentCreator;
   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
-  const stockView=(profile?.is_management||role==='ADMIN FINANCE')?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
+  const stockView=profile?.is_management?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
   if(!profile?.is_management && profile?.outlet) stockQuery=stockQuery.eq('outlet',profile.outlet);
   const [p,s]=await Promise.all([
@@ -33,6 +33,11 @@ async function loadInventoryData(){
   ]);
   if(p.error) throw p.error; if(s.error) throw s.error;
   inventoryProducts=p.data||[]; inventoryStock=s.data||[];
+  if(role==='ADMIN FINANCE' && inventoryStock.length){
+    const ids=inventoryStock.map(x=>x.id).filter(Boolean);
+    const costs=await sb.from('stock_units').select('id,cost').in('id',ids);
+    if(!costs.error){const byId=Object.fromEntries((costs.data||[]).map(x=>[x.id,x.cost]));inventoryStock=inventoryStock.map(x=>({...x,cost:byId[x.id]??null}));}
+  }
   // Foto unit disimpan di stock_units, sementara view inventory tidak selalu mengekspos kolom foto.
   // Ambil hanya kolom foto dan merge ke hasil view agar Detail Produk/Card selalu menampilkan foto.
   if(inventoryStock.length){

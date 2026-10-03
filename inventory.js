@@ -110,7 +110,15 @@ function inventoryReceiveOutlet(){
  return profile?.is_management ? (sel?.value||'') : (profile?.outlet||'');
 }
 function setInventoryView(view){if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';return;}inventoryView=view;renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
-async function renderInventoryDashboardBody(){
+async function openInventoryReturnDetail(){
+ const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';
+ const rows=inventoryStock.filter(s=>s.status==='RETURN'&&(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
+ const title=s=>[String(s.product||'').replace(/\\s+(NEW|SECOND)$/i,'').trim(),s.variant,s.color].filter(Boolean).join(' — ');
+ $('mt').textContent='↩️ RETUR • '+rows.length+' UNIT';
+ $('mb').innerHTML=rows.length?rows.map((s,i)=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+String(i+1).padStart(2,'0')+'. '+esc(title(s))+'</b><b>'+esc(s.outlet||'-')+'</b></div><div class="small">Status: RETUR • '+esc(s.return_reason||s.received_source_note||'-')+'</div><div>IMEI 1: '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+' • Harga Jual: '+esc('Rp'+inventoryNumber(s.asking_price).toLocaleString('id-ID'))+'</div></div>').join(''):'<div class="small">Tidak ada stock yang berstatus RETUR untuk filter ini.</div>';
+ $('modal').classList.remove('hidden');
+}
+function renderInventoryDashboardBody(){
  const body=document.getElementById('inventoryBody');if(!body)return;
  if(!canViewInventoryDashboard()){inventoryView='stock';renderInventoryBody();return;}
  const isManagement=!!profile?.is_management,canViewCost=isManagement;
@@ -136,6 +144,7 @@ async function renderInventoryDashboardBody(){
   '<div class="box"><h3 style="margin:0 0 8px">🏪 Stock per Outlet</h3>'+(byOutlet.length?byOutlet.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.o)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Potensi '+rp(x.jual-x.cost):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">📱 Stock per Kategori</h3>'+(byCategory.length?byCategory.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+invCategory(x.cat)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Margin '+pct(x.jual-x.cost,x.jual):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">⏳ Stock Terlama — READY</h3>'+(oldest.length?oldest.map(s=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+'</b><span class="badge">'+age(s)+' hari</span></div><div class="small">'+esc(s.outlet||'-')+' • '+(s.grade?'Grade '+esc(s.grade)+' • ':'')+(s.battery_health!=null?'BH '+s.battery_health+'% • ':'')+(canViewCost?rp(s.cost):'Harga beli tersembunyi')+'</div></div>').join(''):'<div class="small">Belum ada stock READY.</div>')+'</div>';
+ const returnStat=[...body.querySelectorAll('.stat')].find(el=>String(el.textContent||'').includes('↩️ Retur'));if(returnStat){returnStat.style.cursor='pointer';returnStat.title='Klik untuk melihat produk yang diretur';returnStat.onclick=()=>openInventoryReturnDetail();}
  $('invDashOutlet').value=outletSel;$('invDashCat').value=catSel;
  $('invDashOutlet').onchange=()=>renderInventoryBody();$('invDashCat').onchange=()=>renderInventoryBody();
 }

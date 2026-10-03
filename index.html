@@ -128,7 +128,6 @@ function applyRoleVisibility(){
    el.classList.toggle('hidden',hide);
  });
 }
-function toggleStockPanel(){const panel=$('inventoryPanel'),btn=$('stockToggleBtn');if(!panel)return;const open=!panel.classList.contains('hidden');if(open){panel.classList.add('hidden');if(btn)btn.textContent='📦 Buka Stock';return}panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Stock';inventoryView='stock';if(window.renderInventory)renderInventory().then(()=>{inventoryView='stock';renderInventoryBody();}).catch(e=>console.error('[HM] Inventory render error',e))}
 async function logout(){await sb.auth.signOut();location.reload()}
 async function loadLeads(){
  await sb.rpc('archive_completed_leads');

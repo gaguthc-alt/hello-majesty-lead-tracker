@@ -95,6 +95,7 @@ async function start(u){
   if(x.error)throw new Error('Profile belum terdaftar: '+x.error.message);
   profile=x.data;
   $('identity').textContent=profile.name+' • '+(profile.is_management?'Management':profile.outlet);
+  applyRoleVisibility();
   renderCommissionActions();
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}
   $('dashboard').classList.remove('hidden');
@@ -115,6 +116,17 @@ async function changePassword(){
  x=await sb.from('team_profiles').update({must_change_password:false}).eq('user_id',profile.user_id);
  if(x.error){pe.textContent=x.error.message;return}
  $('passwordBox').classList.add('hidden');$('dashboard').classList.remove('hidden');await loadLeads();openUrl();
+}
+function applyRoleVisibility(){
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const hideForAdminFinance=role==='ADMIN FINANCE';
+ ['searchLeadBtn','perfBtn'].forEach(id=>{const el=$(id);if(el)el.classList.toggle('hidden',hideForAdminFinance)});
+ const actionButtons=[...document.querySelectorAll('#dashboard .row > button')];
+ actionButtons.forEach(el=>{
+   const label=String(el.textContent||'').trim().toUpperCase();
+   const hide=hideForAdminFinance && (label.includes('WA MASUK') || label.includes('FORM TUKAR TAMBAH'));
+   el.classList.toggle('hidden',hide);
+ });
 }
 function toggleStockPanel(){const panel=$('inventoryPanel'),btn=$('stockToggleBtn');if(!panel)return;const open=!panel.classList.contains('hidden');if(open){panel.classList.add('hidden');if(btn)btn.textContent='📦 Buka Stock';return}panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Stock';if(window.renderInventory)renderInventory().catch(e=>console.error('[HM] Inventory render error',e))}
 async function logout(){await sb.auth.signOut();location.reload()}

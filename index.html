@@ -859,13 +859,27 @@ window.openBalanceAccountDetail=async function(accountId,accountCode,accountName
   const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   host.classList.remove('hidden');host.innerHTML='<b>Memuat rincian...</b>';
   const selected=window.accountingBalanceOutlet||'ALL';
-  const x=await sb.rpc('balance_sheet_account_detail',{p_account_id:accountId,p_as_of_date:d.end,p_outlet:selected==='ALL'?null:selected});
+  const outletParam=selected==='ALL'?null:selected;
+  const x=await sb.rpc('balance_sheet_account_detail',{p_account_id:accountId,p_as_of_date:d.end,p_outlet:outletParam});
   if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';
   const rows=x.data||[];
+  let inventoryHtml='';
+  if(accountCode==='1202'){
+    const inv=await sb.rpc('balance_sheet_inventory_detail',{p_as_of_date:d.end,p_outlet:outletParam});
+    if(inv.error)return host.innerHTML='<p>'+escA(inv.error.message)+'</p>';
+    const ir=inv.data||[];
+    const qty=ir.reduce((n,r)=>n+Number(r.qty||0),0);
+    const cost=ir.reduce((n,r)=>n+Number(r.total_cost||0),0);
+    inventoryHtml='<div class="box accounting-section"><h4>📦 Stock yang Membentuk Persediaan</h4>'+
+      '<div class="small">Ready: '+qty+' unit • Total modal: '+accountingRp(cost)+'</div>'+
+      (ir.length?ir.map(r=>'<div class="lead" style="margin:7px 0"><div class="row" style="justify-content:space-between;gap:10px"><b>'+escA(r.product)+'</b><b>'+Number(r.qty||0)+' unit</b></div><div class="small">'+escA(r.outlet||'Pusat')+' • '+escA(r.category)+' • '+escA(r.variant)+'</div><div style="margin-top:4px"><b>'+accountingRp(r.total_cost)+'</b></div></div>').join(''):'<div class="small">Belum ada stock READY.</div>')+
+      '</div>';
+  }
   host.innerHTML='<button type="button" class="secondary" onclick="openAccountingModule(\\'balance\\')">← Kembali Neraca</button>'+
     '<h3 style="margin:10px 0 4px">📌 '+escA(accountCode)+' — '+escA(accountName)+'</h3>'+
     '<div class="small">Rincian sampai '+d.end+(selected==='ALL'?' • Semua Pusat & Outlet':' • '+escA(selected))+'</div>'+
-    '<div class="box accounting-section"><h4>Mutasi Jurnal</h4>'+
+    inventoryHtml+
+    '<div class="box accounting-section"><h4>📒 Mutasi Jurnal</h4>'+
     (rows.length?rows.map(r=>'<div class="lead" style="margin:7px 0"><div class="small">'+new Date(r.journal_date).toLocaleString('id-ID')+' • '+escA(r.journal_no)+' • '+escA(r.outlet||'Pusat')+'</div><b>'+escA(r.description||'-')+'</b><div class="small" style="margin-top:5px">Debit: '+accountingRp(r.debit)+' • Kredit: '+accountingRp(r.credit)+'</div><div style="margin-top:4px"><b>Saldo: '+accountingRp(r.balance)+'</b></div></div>').join(''):'<div class="small">Belum ada transaksi.</div>')+
     '</div>';
 };

@@ -470,6 +470,15 @@ async function saveS(id){
    const x=await sb.rpc('set_sales_closing',{p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice});
    if(x.error)return alert('Closing gagal: '+x.error.message);
    try{
+     const saleId = x.data?.accurate_sale_id || null;
+     if(saleId){
+       const sync=await sb.functions.invoke('accurate-sync',{body:{action:'sync_sale',sale_id:saleId}});
+       if(sync.error)console.warn('[HM Accurate] Sync error:',sync.error);
+     }
+   }catch(e){
+     console.warn('[HM Accurate] Sync trigger error:',e);
+   }
+   try{
      if(typeof cleanupSoldStockPhotos==='function')await cleanupSoldStockPhotos(stockId);
    }catch(e){
      console.error('[HM] Closing photo cleanup error',e);

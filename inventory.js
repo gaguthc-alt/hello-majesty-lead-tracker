@@ -547,7 +547,10 @@ async function saveEditStock(id){
  closeModal();await renderInventory();
 }async function openStockHistory(id){const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});if(x.error)return alert(x.error.message);$('mt').textContent='🧾 Histori Stock';$('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';$('modal').classList.remove('hidden')}
 async function openSalesReport(){
- const x=await sb.from('sales_transactions').select('*').order('sold_at',{ascending:false});
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const isAdminFinance=role==='ADMIN FINANCE';
+ const q=sb.from('sales_transactions').select('*').order('sold_at',{ascending:false});
+ if(isAdminFinance && profile?.outlet) q.eq('outlet',profile.outlet);
+ const x=await q;
  if(x.error)return alert(x.error.message);
  const rows=x.data||[];
  const now=new Date();

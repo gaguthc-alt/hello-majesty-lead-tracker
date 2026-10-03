@@ -94,7 +94,7 @@ async function start(u){
   const x=await sb.from('team_profiles').select('*').eq('user_id',u.id).single();
   if(x.error)throw new Error('Profile belum terdaftar: '+x.error.message);
   profile=x.data;
-  $('identity').textContent=profile.name+' • '+(profile.is_management?'Management':profile.outlet);
+  $('identity').textContent=profile.name+' • '+(profile.is_management?'Management':(profile.role||'')+' • '+profile.outlet);
   applyRoleVisibility();
   renderCommissionActions();
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}

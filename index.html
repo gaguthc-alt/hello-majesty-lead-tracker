@@ -796,6 +796,36 @@ function closeModal(){$('modal').classList.add('hidden')}
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 /* Refresh uses direct onclick binding. */
 (async()=>{try{await ensureSupabase();if(new URLSearchParams(location.search).get("trade")==="1"){initTradePublic();return}sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')location.reload()});const x=await sb.auth.getSession();if(x.data.session)await start(x.data.session.user)}catch(ex){if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.'}})();
+let contentPerformanceOpen=true;
+function toggleContentPerformance(){
+  contentPerformanceOpen=!contentPerformanceOpen;
+  const body=document.getElementById('contentPerformanceBody');
+  const btn=document.getElementById('contentPerformanceToggle');
+  if(body)body.classList.toggle('hidden',!contentPerformanceOpen);
+  if(btn)btn.textContent=contentPerformanceOpen?'✖ Tutup':'📂 Buka';
+}
+function decorateContentPerformance(){
+  const host=document.getElementById('contentPerformance');if(!host)return;
+  const header=host.querySelector('.row');if(!header)return;
+  let btn=document.getElementById('contentPerformanceToggle');
+  if(!btn){
+    btn=document.createElement('button');
+    btn.id='contentPerformanceToggle';
+    btn.className='secondary';
+    btn.type='button';
+    btn.onclick=toggleContentPerformance;
+    header.appendChild(btn);
+  }
+  btn.textContent=contentPerformanceOpen?'✖ Tutup':'📂 Buka';
+  let body=document.getElementById('contentPerformanceBody');
+  if(!body){
+    body=document.createElement('div');
+    body.id='contentPerformanceBody';
+    while(header.nextSibling)body.appendChild(header.nextSibling);
+    host.appendChild(body);
+  }
+  body.classList.toggle('hidden',!contentPerformanceOpen);
+}
 async function renderContentPerformance(){ if(String(profile?.role||'').trim().toUpperCase()==='ADMIN FINANCE')return;
  const host=document.getElementById('contentPerformance')||document.createElement('div');
  host.id='contentPerformance'; host.className='box';
@@ -809,7 +839,7 @@ async function renderContentPerformance(){ if(String(profile?.role||'').trim().t
    const can=await canContentCreator();
    host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">'+esc(d.outlet||'')+' • '+(d.locked?'🔒 Laporan terkunci':'Monitoring bulan ini')+'</div></div><div class="row"><select onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select>'+(can?'<button class="success" onclick="addContentPost()">＋ Tambah Content</button>':'')+'<button class="secondary" onclick="showMyContentDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten Outlet</div><div class="num">'+fmt(t.content_count)+'</div></div><div class="stat"><div class="small">👁️ Views Outlet</div><div class="num">'+fmt(t.views)+'</div></div><div class="stat"><div class="small">💬 Comments Outlet</div><div class="num">'+fmt(t.comments)+'</div></div><div class="stat"><div class="small">📩 DM Outlet</div><div class="num">'+fmt(t.dms)+'</div></div></div>'+(can?'<div class="box" style="margin-bottom:0"><b>Kontribusi Saya</b><div class="small">🎬 '+fmt(o.content_count)+' konten • 👁️ '+fmt(o.views)+' views • 💬 '+fmt(o.comments)+' comments • 📩 '+fmt(o.dms)+' DM</div></div>':'')
  }
- const dash=document.getElementById('dashboard'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(!dash.contains(host))dash.insertBefore(host,inventorySection||stats);
+ decorateContentPerformance(); const dash=document.getElementById('dashboard'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(!dash.contains(host))dash.insertBefore(host,inventorySection||stats);
 }
 async function canContentCreator(){if(profile?.is_management)return true;const x=await sb.from('team_permissions').select('can_content_creator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();return !!x.data?.can_content_creator}
 async function loadContentPosts(){const x=await sb.from('content_posts').select('*').eq('active',true).order('posted_at',{ascending:false});if(x.error)throw x.error;return x.data||[]}

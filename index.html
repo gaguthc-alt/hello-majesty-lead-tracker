@@ -820,6 +820,16 @@ $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('pass
 async function openFinance(){
  if(!profile?.is_management){alert('Finance hanya dapat diakses Management.');return;}
  $('mt').textContent='💰 Finance';
+ $('mb').innerHTML='<div id="financePanel"><h3 style="margin-top:0">💰 FINANCE MANAGEMENT</h3><div class="small">Ringkasan keuangan • Pusat ↔ Outlet</div><div id="financeDashboard" style="margin-top:10px"></div><div class="box" style="margin-top:10px"><h4>🏦 Pusat → Outlet</h4><label>Outlet</label><select id="finOutletTo"><option>Majesty Plaza iPhone</option><option>Majesty Refill Phone</option></select><label>Bank Pusat</label><select id="finBankTo"></select><label>Nominal</label><input id="finAmountTo" type="number" min="1"><label>Keterangan</label><input id="finNoteTo"><button class="success" style="margin-top:8px" onclick="doFinanceTransfer('TO')">💸 Transfer ke Outlet</button><hr style="margin:16px 0;border:0;border-top:1px solid #ddd"><h4>🏪 Outlet → Pusat</h4><label>Outlet</label><select id="finOutletFrom"><option>Majesty Plaza iPhone</option><option>Majesty Refill Phone</option></select><label>Bank Pusat</label><select id="finBankFrom"></select><label>Nominal</label><input id="finAmountFrom" type="number" min="1"><label>Keterangan</label><input id="finNoteFrom"><button style="margin-top:8px" onclick="doFinanceTransfer('FROM')">🏦 Terima dari Outlet</button><div id="finMsg" style="margin-top:12px"></div></div></div>';
+ $('modal').classList.remove('hidden');
+ const q=await sb.from('accounting_accounts').select('code,name').in('code',['1110','1111','1112','1113','1114']).eq('active',true).order('code');
+ if(q.error){$('finMsg').textContent=q.error.message;return;}
+ const opts=(q.data||[]).map(x=>'<option value="'+x.code+'">'+x.code+' — '+x.name+'</option>').join('');
+ $('finBankTo').innerHTML=opts;$('finBankFrom').innerHTML=opts;
+ await loadFinanceDashboard();
+}
+ if(!profile?.is_management){alert('Finance hanya dapat diakses Management.');return;}
+ $('mt').textContent='💰 Finance';
  $('mb').innerHTML=`<div class="box">
  <h3 style="margin-top:0">💰 FINANCE MANAGEMENT</h3>
  <div class="small">Pusat ↔ Outlet • transaksi otomatis menjadi jurnal accounting.</div>
@@ -858,6 +868,27 @@ async function doFinanceTransfer(dir){
   const x=await sb.rpc(rpc,args);if(x.error)throw x.error;
   msg.innerHTML='<div class="lead"><b>🟢 Transfer berhasil</b><div class="small">'+accountingRp(amount)+' • '+outlet+'</div></div>';
  }catch(e){msg.innerHTML='<div class="lead"><b>🔴 Transfer gagal</b><div class="small">'+String(e?.message||e)+'</div></div>';}
+}
+async function loadFinanceDashboard(){
+ const host=$('financeDashboard'); if(!host)return;
+ host.innerHTML='<div class="small">Memuat Finance...</div>';
+ const [cash,ap,ar]=await Promise.all([
+  sb.from('financial_transactions').select('transaction_type,amount').in('transaction_type',['IN','OUT']),
+  sb.from('supplier_payables').select('amount,paid_amount,status'),
+  sb.from('sales_transactions').select('sale_price,discount').eq('status','CLOSING')
+ ]);
+ if(cash.error||ap.error||ar.error){host.innerHTML='<div class="small">Gagal memuat Finance.</div>';return;}
+ const ins=(cash.data||[]).filter(x=>x.transaction_type==='IN').reduce((a,x)=>a+Number(x.amount||0),0);
+ const outs=(cash.data||[]).filter(x=>x.transaction_type==='OUT').reduce((a,x)=>a+Number(x.amount||0),0);
+ const hutang=(ap.data||[]).reduce((a,x)=>a+Math.max(0,Number(x.amount||0)-Number(x.paid_amount||0)),0);
+ const piutang=(ar.data||[]).reduce((a,x)=>a+Math.max(0,Number(x.sale_price||0)-Number(x.discount||0)),0);
+ const fmt=n=>accountingRp(n);
+ host.innerHTML='<div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">'+
+ '<div class="stat"><div class="small">💰 Uang Masuk</div><div class="num">'+fmt(ins)+'</div></div>'+
+ '<div class="stat"><div class="small">💸 Uang Keluar</div><div class="num">'+fmt(outs)+'</div></div>'+
+ '<div class="stat"><div class="small">🏭 Hutang Supplier</div><div class="num">'+fmt(hutang)+'</div></div>'+
+ '<div class="stat"><div class="small">👤 Piutang Customer</div><div class="num">'+fmt(piutang)+'</div></div>'+
+ '<div class="stat" style="grid-column:1/-1"><div class="small">📊 Net Cashflow</div><div class="num">'+fmt(ins-outs)+'</div></div></div>';
 }
 async function openAccounting(){
   if(!profile?.is_management){return alert('Accounting hanya dapat diakses Management.');}
@@ -1073,4 +1104,4 @@ async function askAI(leadId){
  finally{if(btn)btn.disabled=false}
 }
 window.openAI=openAI;window.askAI=askAI;
-</script><script src="performance.js?v=20261002-17"></script><script src="inventory.js?v=20261003-35"></script><script src="brochures.js?v=20261002-3"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-7";</script></body></html>
+</script><script src="performance.js?v=20261002-17"></script><script src="inventory.js?v=20261003-35"></script><script src="brochures.js?v=20261002-3"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-8";</script></body></html>

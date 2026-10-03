@@ -47,6 +47,7 @@ async function loadInventoryData(){
 }
 
 function canViewInventoryDashboard(){return !!profile?.is_management;}
+function canReceiveStock(){return !!profile?.is_management;}
 async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');
   host.innerHTML='<div class="small">⏳ Memuat Product & Stock...</div>';
@@ -130,7 +131,7 @@ async function renderInventoryDashboardBody(){
   '<div class="box"><h3 style="margin:0">📊 DASHBOARD INVENTORY</h3><div class="small" style="margin-top:5px">Kontrol stock untuk keputusan pembelian, penjualan, dan pergerakan barang.</div>'+
   '<div class="row" style="margin-top:10px"><select id="invDashOutlet">'+(isManagement?'<option value="">📍 Semua Outlet</option>':'')+outlets.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select><select id="invDashCat"><option value="">Semua Kategori</option>'+cats.map(x=>'<option value="'+x+'">'+invCategory(x)+'</option>').join('')+'</select></div></div>'+
   '<div class="stats inventory-dashboard-stats">'+invStat('🟢 READY',ready.length)+invStat('💰 Modal READY',canViewCost?rp(modal):'—')+invStat('🏷️ Nilai Jual',canViewCost?rp(jual):'—')+invStat('📈 Potensi Laba',canViewCost?rp(profit):'—')+invStat('🟡 Reserved',reserved.length)+invStat('↩️ Retur',returned.length)+invStat('⚠️ Missing',missing.length)+'</div>'+
-  '<div class="row" style="margin-top:10px"><button class="secondary" onclick="inventoryView=\'stock\';renderInventoryBody()">📦 Lihat Stock</button><button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button></div>'+
+  '<div class="row" style="margin-top:10px"><button class="secondary" onclick="inventoryView=\'stock\';renderInventoryBody()">📦 Lihat Stock</button>'+(canReceiveStock()?'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button>':'')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">⚡ Perhatian</h3><div class="stats"><div class="stat"><div class="small">Barang masuk hari ini</div><div class="num">'+receivedToday+'</div></div><div class="stat"><div class="small">Stock >30 hari</div><div class="num">'+old30+'</div></div><div class="stat"><div class="small">Stock >60 hari</div><div class="num">'+old60+'</div></div></div></div>'+
   '<div class="box"><h3 style="margin:0 0 8px">🏪 Stock per Outlet</h3>'+(byOutlet.length?byOutlet.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.o)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Potensi '+rp(x.jual-x.cost):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">📱 Stock per Kategori</h3>'+(byCategory.length?byCategory.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+invCategory(x.cat)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Margin '+pct(x.jual-x.cost,x.jual):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+
@@ -387,6 +388,7 @@ function normalizeSearch(q){return String(q||'').toLowerCase().trim().replace(/\
 function searchHaystack(value,q){const hay=normalizeSearch(value),needle=normalizeSearch(q);if(!needle)return true;return hay.includes(needle)||hay.replace(/\s+/g,'').includes(needle.replace(/\s+/g,''))}
 async function filterReceiveProducts(){const q=($('stprodsearch')?.value||'').trim().toLowerCase();const sel=$('stprod');if(!sel)return;const current=sel.value;Array.from(sel.options).forEach(o=>{const p=inventoryProducts.find(x=>x.id===o.value);if(!p){o.hidden=false;return;}const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ').toLowerCase();o.hidden=!!q&&!searchHaystack(hay,q);});if(current&&!sel.querySelector('option[value="'+CSS.escape(current)+'"]')?.hidden)sel.value=current;toggleReceiveFields();}
 async function openReceiveStock(){
+ if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management.');return;}
  const teams=await sb.from('team_directory').select('*').order('name');if(teams.error)return alert(teams.error.message);
  const products=inventoryProducts.map(p=>'<option value="'+p.id+'">'+esc(masterProductLabel(p))+'</option>').join('');
  const selected=inventoryProducts.find(p=>p.id===$('stprod')?.value);
@@ -417,6 +419,7 @@ function toggleReceiveFields(){
  const source=$('stsource');if(source)source.onchange=()=>{$('hunterBox')?.classList.toggle('hidden',source.value!=='HUNTER')};
 }
 async function saveStock(){
+ if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management.');return;}
  const receiveOutlet=inventoryReceiveOutlet();
  const source=$('stsource')?.value||'MANAGEMENT';
  const hunter=source==='HUNTER'?($('sthunter')?.value||''):null;

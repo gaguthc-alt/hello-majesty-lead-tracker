@@ -109,25 +109,18 @@ function inventoryReceiveOutlet(){
  return profile?.is_management ? (sel?.value||'') : (profile?.outlet||'');
 }
 function setInventoryView(view){if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';return;}inventoryView=view;renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
-async function invStatusCard(label,status,count){return '<button type="button" class="stat inventory-status-card" data-inv-status="'+status+'">'+label+'<div class="num">'+count+'</div></button>';}
-function bindInventoryStatusCards(){
- document.querySelectorAll('.inventory-status-card[data-inv-status]').forEach(el=>{
-  el.onclick=()=>openInventoryStatusDetail(el.getAttribute('data-inv-status'));
- });
-}
+async function invStatusCard(label,status,count){return '<button type="button" class="stat inventory-status-card" onclick="openInventoryStatusDetail(&quot;'+status+'&quot;)">'+label+'<div class="num">'+count+'</div></button>';}
+function bindInventoryStatusCards(){}
 function openInventoryStatusDetail(status){
  const allowed={SOLD:'🔴 TERJUAL',RESERVED:'🟡 RESERVED',RETURN:'↩️ RETUR'};
  if(!allowed[status])return;
+ const body=document.getElementById('inventoryBody');if(!body)return;
  const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';
  const rows=inventoryStock.filter(s=>s.status===status&&(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
- $('mt').textContent=allowed[status]+' • '+rows.length+' UNIT';
- $('mb').innerHTML=rows.length?rows.map((s,i)=>{
-  const name=[s.product,s.variant,s.color].filter(Boolean).join(' — ');
-  const imei=canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1||'');
-  return '<div class="lead" style="cursor:pointer" data-detail-stock="'+esc(s.id)+'"><div class="row" style="justify-content:space-between"><b>'+((i+1)+'. '+esc(name))+'</b><b>'+esc(s.outlet||'-')+'</b></div><div class="small">'+esc(s.status||'-')+' • '+esc(s.category||'-')+'</div><div>IMEI: '+esc(imei)+' • Harga Jual: Rp'+inventoryNumber(s.asking_price).toLocaleString('id-ID')+'</div></div>';
- }).join(''):'<p class="small">Tidak ada data untuk status ini.</p>';
- document.querySelectorAll('[data-detail-stock]').forEach(el=>el.onclick=()=>{const id=el.getAttribute('data-detail-stock');closeModal();openProductDetail(id);});
- $('modal').classList.remove('hidden');
+ const rupiah=n=>'Rp'+inventoryNumber(n).toLocaleString('id-ID');
+ const title=s=>[s.product,s.variant,s.color].filter(Boolean).join(' — ');
+ body.innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">'+allowed[status]+'</h3><div class="small">'+rows.length+' unit</div></div><button class="secondary" type="button" onclick="inventoryView=\'dashboard\';renderInventoryBody()">← Kembali</button></div></div>'+
+ (rows.length?rows.map((s,i)=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+((i+1)+'. '+esc(title(s)))+'</b><b>'+esc(s.outlet||'-')+'</b></div><div class="small">'+esc(s.status||'-')+' • '+esc(s.category||'-')+'</div><div>IMEI: '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1||''))+'</div><div>Harga Jual: <b>'+rupiah(s.asking_price)+'</b></div><button class="secondary" type="button" style="margin-top:8px" onclick="openProductDetail(\''+esc(s.id)+'\')">Buka Detail</button></div>').join(''):'<div class="box"><div class="small">Tidak ada data untuk status ini.</div></div>');
 }
 function renderInventoryDashboardBody(){
  const body=document.getElementById('inventoryBody');if(!body)return;

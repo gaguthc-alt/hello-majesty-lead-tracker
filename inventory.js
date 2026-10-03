@@ -46,7 +46,7 @@ async function loadInventoryData(){
   }
 }
 
-function canViewInventoryDashboard(){return !!profile?.is_management;}
+function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||role==='ADMIN FINANCE';}
 function canReceiveStock(){return !!profile?.is_management;}
 async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');

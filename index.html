@@ -118,7 +118,7 @@ async function changePassword(){
  $('passwordBox').classList.add('hidden');$('dashboard').classList.remove('hidden');await loadLeads();openUrl();
 }
 function applyRoleVisibility(){
- const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const adminFinance=role==='ADMIN FINANCE'; const leadBox=$('leadTrackerBox'); const leadStats=$('stats'); if(leadBox)leadBox.classList.toggle('hidden',adminFinance); if(leadStats)leadStats.classList.toggle('hidden',adminFinance);
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const targetBoard=$('targetBoard'); if(targetBoard)targetBoard.classList.toggle('hidden',role==='ADMIN FINANCE'); const adminFinance=role==='ADMIN FINANCE'; const leadBox=$('leadTrackerBox'); const leadStats=$('stats'); if(leadBox)leadBox.classList.toggle('hidden',adminFinance); if(leadStats)leadStats.classList.toggle('hidden',adminFinance);
  const hideForAdminFinance=role==='ADMIN FINANCE';
  ['searchLeadBtn','perfBtn','waMasukBtn','tradeBtn'].forEach(id=>{const el=$(id);if(el)el.classList.toggle('hidden',hideForAdminFinance)});
  const actionButtons=[...document.querySelectorAll('#dashboard .row > button')];

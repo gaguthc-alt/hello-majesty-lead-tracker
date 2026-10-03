@@ -831,7 +831,7 @@ function accountingDates(){
   if(p==='TODAY')start=new Date(end);
   else if(p==='YEAR')start=new Date(now.getFullYear(),0,1);
   else start=new Date(now.getFullYear(),now.getMonth(),1);
-  const iso=d=>d.toISOString().slice(0,10);
+  const iso=d=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};
   return {start:iso(start),end:iso(end)};
 }
 function accountingRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID');}
@@ -877,7 +877,7 @@ async function openAccountingModule(module){
       const liabilities=all.filter(r=>r.account_type==='LIABILITY'&&Math.abs(Number(r.balance||0))>0.0001);
       const equity=all.filter(r=>r.account_type==='EQUITY'&&Math.abs(Number(r.balance||0))>0.0001);
       const section=(title,arr)=>'<div class="box"><h4>'+title+'</h4>'+(arr.length?arr.map(r=>'<div class="row" style="justify-content:space-between;margin:7px 0"><span>'+escA(r.account_code)+' — '+escA(r.account_name)+'</span><b>'+accountingRp(r.balance)+'</b></div>').join(''):'<div class="small">Belum ada saldo.</div>')+'</div>';
-      host.innerHTML='<h3>⚖️ Neraca — '+escA(selected)+'</h3><div class="small">Per '+d.end+' • Bank dicatat di Pusat</div>'+selector+section('ASET',assets)+'<div class="stats"><div class="stat"><div class="small">Total Aset</div><div class="num">'+accountingRp(z.total_assets)+'</div></div><div class="stat"><div class="small">Liabilitas</div><div class="num">'+accountingRp(z.total_liabilities)+'</div></div><div class="stat"><div class="small">Ekuitas + Laba Berjalan</div><div class="num">'+accountingRp(z.total_equity)+'</div></div></div>'+section('LIABILITAS',liabilities)+section('EKUITAS',equity)+'<div class="lead"><b>'+(z.is_balanced?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(z.balance_difference)+'</div></div>';
+      host.innerHTML='<h3>⚖️ Neraca — '+escA(selected)+'</h3><div class="small">Per '+d.end+' • Bank dicatat di Pusat</div>'+selector+section('ASET',assets)+'<div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><div class="stat"><div class="small">Total Aset</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_assets)+'</div></div><div class="stat"><div class="small">Liabilitas</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_liabilities)+'</div></div><div class="stat" style="grid-column:1 / -1"><div class="small">Ekuitas + Laba Berjalan</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_equity)+'</div></div></div>'+section('LIABILITAS',liabilities)+section('EKUITAS',equity)+'<div class="lead"><b>'+(z.is_balanced?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(z.balance_difference)+'</div></div>';
     }
     return;
   }
@@ -1031,4 +1031,4 @@ async function askAI(leadId){
  finally{if(btn)btn.disabled=false}
 }
 window.openAI=openAI;window.askAI=askAI;
-</script><script src="performance.js?v=20261002-17"></script><script src="inventory.js?v=20261003-33"></script><script src="brochures.js?v=20261002-3"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-2";</script></body></html>
+</script><script src="performance.js?v=20261002-17"></script><script src="inventory.js?v=20261003-34"></script><script src="brochures.js?v=20261002-3"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-3";</script></body></html>

@@ -87,8 +87,9 @@ function openInventoryDashboard(){
  if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management dan Admin Finance.');return;}
  const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;
  const open=!panel.classList.contains('hidden');
- if(open){panel.classList.add('hidden');if(btn)btn.textContent='📊 Dashboard Inventory';return;}
+ if(open && inventoryView==='dashboard'){panel.classList.add('hidden');if(btn)btn.textContent='📊 Dashboard Inventory';return;}
  panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Product & Stock';
+ if(open){setInventoryView('dashboard');return;}
  inventoryView='dashboard';renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));
 }
 async function openInventorySection(view){

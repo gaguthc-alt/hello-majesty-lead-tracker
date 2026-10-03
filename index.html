@@ -470,7 +470,8 @@ async function saveS(id){
    const x=await sb.rpc('set_sales_closing',{p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice});
    if(x.error)return alert('Closing gagal: '+x.error.message);
    try{
-     const saleId = x.data?.accurate_sale_id || null;
+     const saleRow=await sb.from('sales_transactions').select('id').eq('stock_unit_id',stockId).maybeSingle();
+     const saleId=saleRow.data?.id||null;
      if(saleId){
        const sync=await sb.functions.invoke('accurate-sync',{body:{action:'sync_sale',sale_id:saleId}});
        if(sync.error)console.warn('[HM Accurate] Sync error:',sync.error);

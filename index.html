@@ -791,7 +791,7 @@ function closeModal(){$('modal').classList.add('hidden')}
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 /* Refresh uses direct onclick binding. */
 (async()=>{try{await ensureSupabase();if(new URLSearchParams(location.search).get("trade")==="1"){initTradePublic();return}sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')location.reload()});const x=await sb.auth.getSession();if(x.data.session)await start(x.data.session.user)}catch(ex){if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.'}})();
-async function renderContentPerformance(){
+async function renderContentPerformance(){ if(String(profile?.role||'').trim().toUpperCase()==='ADMIN FINANCE')return;
  const host=document.getElementById('contentPerformance')||document.createElement('div');
  host.id='contentPerformance'; host.className='box';
  const x=await sb.rpc('content_dashboard_summary',{p_month_start:contentSelectedMonth});

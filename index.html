@@ -219,7 +219,7 @@ function shortNominal(n){if(!n)return '0';if(Math.abs(n)>=1000000000)return (n/1
 async function renderTargetBoard(){
  const x=await sb.rpc('dashboard_target_summary');
  if(x.error)return;
- const d=x.data||{}, outlets=d.outlets||[], roles=(d.management?['Management']:(d.roles||[]));
+ const d=x.data||{}, outlets=d.outlets||[]; const profileRole=String(profile?.role||'').trim(); const roles=d.management?['Management']:(d.roles?.length?d.roles:[profileRole].filter(Boolean));
  const facPerm=(!d.management&&profile?.name&&profile?.outlet)?await sb.from('team_permissions').select('can_facilitator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle():{data:null};
  if(!d.management&&facPerm?.data?.can_facilitator&&!roles.includes('Fasilitator'))roles.push('Fasilitator');
  window.hmRoles=roles;

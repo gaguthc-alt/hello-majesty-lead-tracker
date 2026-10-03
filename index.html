@@ -287,14 +287,14 @@ function salesReportText(d,label,target){
 }
 function stockReportText(d){
  const rows=d.ready_stock||[];
- let t='📦 *LAPORAN STOCK READY*\\n';
- t+='*Hello Majesty — '+(d.outlet||'-')+'*\\n\\n';
- t+='🟢 *Total READY: '+Number(d.ready_count||0)+' Unit*\\n';
- t+='📅 '+new Date().toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+' WITA\\n\\n';
+ let t='📦 *LAPORAN STOCK READY*\n';
+ t+='*Hello Majesty — '+(d.outlet||'-')+'*\n\n';
+ t+='🟢 *Total READY: '+Number(d.ready_count||0)+' Unit*\n';
+ t+='📅 '+new Date().toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+' WITA\n\n';
  let no=1;
  const groups=[['IPHONE_NEW','*🍎 iPhone New*'],['IPHONE_SECOND','*🍎 iPhone Second*'],['ANDROID_NEW','*🤖 Android New*'],['ANDROID_SECOND','*🤖 Android Second*'],['STOCK_NEW_PUSAT','*🏢 Stock New Pusat*'],['STOCK_SECOND_PUSAT','*🏢 Stock Second Pusat*']];
- const cleanText=v=>String(v??'').replace(/\\s*GB\\b/ig,'').trim();
- const cleanProduct=v=>String(v??'-').replace(/^IPhone\\b/i,'iPhone').replace(/\\s+Gold$/i,'').replace(/\\s+Dessert Titanium$/i,'').trim();
+ const cleanText=v=>String(v??'').replace(/\s*GB\b/ig,'').trim();
+ const cleanProduct=v=>String(v??'-').replace(/^IPhone\b/i,'iPhone').replace(/\s+Gold$/i,'').replace(/\s+Dessert Titanium$/i,'').trim();
  const alpha=(a,b)=>{
    const ka=cleanProduct(a.product).toLowerCase(),kb=cleanProduct(b.product).toLowerCase();
    const p=ka.localeCompare(kb,'id',{sensitivity:'base',numeric:true});if(p)return p;
@@ -306,26 +306,26 @@ function stockReportText(d){
    const variant=cleanText(r.variant);
    const color=cleanText(r.color);
    const spec=[variant,color].filter(Boolean).join(' — ');
-   const secondLine=spec?'\\n'+spec:'';
+   const secondLine=spec?'\n'+spec:'';
    const hasBH=r.battery_health!==null&&r.battery_health!==undefined&&r.battery_health!=='';
    const hasGrade=r.grade!==null&&r.grade!==undefined&&r.grade!=='';
    const showCondition=(r.category==='IPHONE_SECOND'||r.category==='STOCK_SECOND_PUSAT')&&(hasBH||hasGrade);
    const condition=showCondition
-     ? '\\nBH: '+(hasBH?String(r.battery_health).replace('%','')+'%':'-')+' | Grade: '+(r.grade||'-')
+     ? '\nBH: '+(hasBH?String(r.battery_health).replace('%','')+'%':'-')+' | Grade: '+(r.grade||'-')
      : '';
-   const imei='\\nIMEI 1: '+maskImei(r.imei_1||'');
-   const price='\\nHarga Jual: *'+rupiahReport(r.asking_price)+'*';
-   return '*'+String(no++).padStart(2,'0')+'. '+product+'*'+secondLine+imei+condition+price+'\\n\\n';
+   const imei='\nIMEI 1: '+maskImei(r.imei_1||'');
+   const price='\nHarga Jual: *'+rupiahReport(r.asking_price)+'*';
+   return '*'+String(no++).padStart(2,'0')+'. '+product+'*'+secondLine+imei+condition+price+'\n\n';
  };
  groups.forEach(([cat,title])=>{
    const items=rows.filter(r=>r.category===cat).sort(alpha);
    if(items.length){
-     t+=title+'\\n\\n';
+     t+=title+'\n\n';
      items.forEach(r=>{t+=stockLine(r);});
    }
  });
- if(!rows.length)t+='Belum ada stock READY.\\n';
- t+='*— HELLO MAJESTY*\\n_Built on Trust._';
+ if(!rows.length)t+='Belum ada stock READY.\n';
+ t+='*— HELLO MAJESTY*\n_Built on Trust._';
  return t;
 }
 async function shareFacilitatorReport(period,withStock){

@@ -923,8 +923,21 @@ async function openAccountingModule(module){
     return;
   }
   if(module==='profit'){
-    const [t,s]=await Promise.all([sb.rpc('profit_loss_totals',{p_start_date:d.start,p_end_date:d.end}),sb.rpc('profit_loss_summary',{p_start_date:d.start,p_end_date:d.end})]);if(t.error)return host.innerHTML='<p>'+escA(t.error.message)+'</p>';if(s.error)return host.innerHTML='<p>'+escA(s.error.message)+'</p>';const z=(t.data||[])[0]||{},rows=s.data||[];
-    host.innerHTML='<h3>📈 Laba Rugi</h3><div class="small">'+d.start+' s/d '+d.end+'</div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">Pendapatan</div><div class="num">'+accountingRp(z.total_revenue)+'</div></div><div class="stat"><div class="small">HPP</div><div class="num">'+accountingRp(z.total_cogs)+'</div></div><div class="stat"><div class="small">Laba Kotor</div><div class="num">'+accountingRp(z.gross_profit)+'</div></div><div class="stat"><div class="small">Beban</div><div class="num">'+accountingRp(z.total_expense)+'</div></div><div class="stat"><div class="small">Laba Bersih</div><div class="num">'+accountingRp(z.net_profit)+'</div></div></div>'+rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+escA(r.account_code)+' — '+escA(r.account_name)+'</b><b>'+accountingRp(r.amount)+'</b></div><div class="small">'+escA(r.section)+'</div></div>').join('');return;
+    const outletState = window.financeProfitOutlet || '';
+    const outletsRes = await sb.from('journal_lines').select('outlet').not('outlet','is',null);
+    const outlets = [...new Set((outletsRes.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean))].sort();
+    const outletOptions = '<option value="">Semua Cabang</option>'+outlets.map(o=>'<option value="'+escA(o)+'" '+(o===outletState?'selected':'')+'>'+escA(o)+'</option>').join('');
+    const [t,s]=await Promise.all([
+      sb.rpc('profit_loss_totals',{p_start_date:d.start,p_end_date:d.end,p_outlet:outletState||null}),
+      sb.rpc('profit_loss_summary',{p_start_date:d.start,p_end_date:d.end,p_outlet:outletState||null})
+    ]);
+    if(t.error)return host.innerHTML='<p>'+escA(t.error.message)+'</p>';
+    if(s.error)return host.innerHTML='<p>'+escA(s.error.message)+'</p>';
+    const z=(t.data||[])[0]||{},rows=s.data||[];
+    host.innerHTML='<h3>📈 Laba Rugi</h3><div class="small">'+d.start+' s/d '+d.end+'</div>'+
+      '<div class="box" style="margin-top:8px"><label>Cabang</label><select onchange="window.financeProfitOutlet=this.value;openAccountingModule(\\'profit\\')">'+outletOptions+'</select></div>'+
+      '<div class="stats" style="margin-top:8px"><div class="stat"><div class="small">Pendapatan</div><div class="num">'+accountingRp(z.total_revenue)+'</div></div><div class="stat"><div class="small">HPP</div><div class="num">'+accountingRp(z.total_cogs)+'</div></div><div class="stat"><div class="small">Laba Kotor</div><div class="num">'+accountingRp(z.gross_profit)+'</div></div><div class="stat"><div class="small">Beban</div><div class="num">'+accountingRp(z.total_expense)+'</div></div><div class="stat"><div class="small">Laba Bersih</div><div class="num">'+accountingRp(z.net_profit)+'</div></div></div>'+
+      rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+escA(r.account_code)+' — '+escA(r.account_name)+'</b><b>'+accountingRp(r.amount)+'</b></div><div class="small">'+escA(r.section)+'</div></div>').join('');return;
   }
   if(module==='ledger'){
     const x=await sb.rpc('general_ledger_accounts_summary',{p_start_date:d.start,p_end_date:d.end});if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';const rows=x.data||[];

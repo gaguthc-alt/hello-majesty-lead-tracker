@@ -96,7 +96,12 @@ function inventoryNumber(v){
  const n=Number(s);
  return Number.isFinite(n)?n:0;
 }
-function invStat(label,val){return '<div class="stat"><div class="small">'+label+'</div><div class="num">'+Number(val||0).toLocaleString('id-ID')+'</div></div>'}
+function invStat(label,val){
+ const display=typeof val==='number'
+  ? (Number.isFinite(val)?val:0).toLocaleString('id-ID')
+  : String(val??'');
+ return '<div class="stat"><div class="small">'+label+'</div><div class="num">'+display+'</div></div>';
+}
 function filterHunterOptions(){ const sel=$('sthunter'),outlet=String($('stoutlet')?.value||profile?.outlet||'').trim().toLowerCase(); if(!sel)return; [...sel.options].forEach(o=>{const ho=String(o.getAttribute('data-hunter-outlet')||'').trim().toLowerCase(); o.hidden=ho!==outlet;}); if(sel.selectedOptions[0]?.hidden)sel.value=''; }
 function toggleHunterField(){const box=$('hunterBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='HUNTER');}
 function inventoryReceiveOutlet(){

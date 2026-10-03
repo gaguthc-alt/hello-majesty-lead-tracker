@@ -38,9 +38,9 @@ async function loadInventoryData(){
     const costs=await sb.from('stock_units').select('id,cost').in('id',ids);
     if(!costs.error){const byId=Object.fromEntries((costs.data||[]).map(x=>[x.id,x.cost]));inventoryStock=inventoryStock.map(x=>({...x,cost:byId[x.id]??null}));}
   }
-  // Foto unit disimpan di stock_units, sementara view inventory tidak selalu mengekspos kolom foto.
-  // Ambil hanya kolom foto dan merge ke hasil view agar Detail Produk/Card selalu menampilkan foto.
-  if(inventoryStock.length){
+  // Dashboard tidak membutuhkan foto unit. Foto hanya dimuat saat membuka Stock/Produk
+  // agar tombol Dashboard Inventory langsung responsif.
+  if(inventoryView!=='dashboard' && inventoryStock.length){
     const ids=inventoryStock.map(x=>x.id).filter(Boolean);
     const photos=await sb.from('stock_units').select('id,photo_1,photo_2,photo_3,photo_4,photo_5').in('id',ids);
     if(!photos.error){

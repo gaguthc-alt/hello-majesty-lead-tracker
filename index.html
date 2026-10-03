@@ -217,6 +217,12 @@ async function render(){
 }
 function shortNominal(n){if(!n)return '0';if(Math.abs(n)>=1000000000)return (n/1000000000).toFixed(1).replace('.0','')+'M';if(Math.abs(n)>=1000000)return (n/1000000).toFixed(1).replace('.0','')+'jt';if(Math.abs(n)>=1000)return (n/1000).toFixed(0)+'rb';return String(Math.round(n));}
 async function renderTargetBoard(){
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const existing=document.getElementById('targetBoard');
+ if(role==='ADMIN FINANCE'){
+  if(existing)existing.classList.add('hidden');
+  return;
+ }
  const x=await sb.rpc('dashboard_target_summary');
  if(x.error)return;
  const d=x.data||{}, outlets=d.outlets||[]; const profileRole=String(profile?.role||'').trim(); const roles=d.management?['Management']:(d.roles?.length?d.roles:[profileRole].filter(Boolean));

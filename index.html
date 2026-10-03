@@ -875,7 +875,7 @@ window.openBalanceAccountDetail=async function(accountId,accountCode,accountName
       (ir.length?ir.map(r=>'<div class="lead" style="margin:7px 0"><div class="row" style="justify-content:space-between;gap:10px"><b>'+escA(r.product)+'</b><b>'+Number(r.qty||0)+' unit</b></div><div class="small">'+escA(r.outlet||'Pusat')+' • '+escA(r.category)+' • '+escA(r.variant)+'</div><div style="margin-top:4px"><b>'+accountingRp(r.total_cost)+'</b></div></div>').join(''):'<div class="small">Belum ada stock READY.</div>')+
       '</div>';
   }
-  host.innerHTML='<button type="button" class="secondary" onclick="openAccountingModule(\\'balance\\')">← Kembali Neraca</button>'+
+  host.innerHTML='<button type="button" class="secondary" onclick="openAccountingModule(\'balance\')">← Kembali Neraca</button>'+
     '<h3 style="margin:10px 0 4px">📌 '+escA(accountCode)+' — '+escA(accountName)+'</h3>'+
     '<div class="small">Rincian sampai '+d.end+(selected==='ALL'?' • Semua Pusat & Outlet':' • '+escA(selected))+'</div>'+
     inventoryHtml+
@@ -896,7 +896,7 @@ async function openAccountingModule(module){
     const outlets=[...new Set((outletRes.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean))];
     const selected=window.accountingBalanceOutlet||'ALL';
     const options='<option value="ALL" '+(selected==='ALL'?'selected':'')+'>Semua Pusat & Outlet</option>'+outlets.map(o=>'<option value="'+escA(o).replace(/"/g,'&quot;')+'" '+(selected===o?'selected':'')+'>'+escA(o)+'</option>').join('');
-    const selector='<label>Lokasi</label><select id="accountingBalanceOutlet" onchange="window.accountingBalanceOutlet=this.value;openAccountingModule(\\'balance\\')">'+options+'</select>';
+    const selector='<label>Lokasi</label><select id="accountingBalanceOutlet" onchange="window.accountingBalanceOutlet=this.value;openAccountingModule(\'balance\')">'+options+'</select>';
     const outletParam=selected==='ALL'?null:selected;
     const summary=await sb.rpc('balance_sheet_account_summary',{p_as_of_date:d.end,p_outlet:outletParam});
     if(summary.error)return host.innerHTML='<p>'+escA(summary.error.message)+'</p>';
@@ -910,7 +910,7 @@ async function openAccountingModule(module){
     const totalEquity=totalByType(equity);
     const totalExpected=totalAssets-totalLiabilities-totalEquity;
     const section=(title,arr)=>'<div class="box accounting-section"><h4>'+title+'</h4>'+
-      (arr.length?arr.map(r=>'<button type="button" class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="openBalanceAccountDetail(\\''+escA(r.account_id)+'\\',\\''+escA(r.account_code)+'\\',\\''+escA(r.account_name).replace(/'/g,"&#39;")+'\\')"><div class="row" style="justify-content:space-between;gap:10px"><span><b>'+escA(r.account_code)+'</b> — '+escA(r.account_name)+'</span><b style="white-space:nowrap">'+accountingRp(r.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+
+      (arr.length?arr.map(r=>'<button type="button" class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="openBalanceAccountDetail(\''+escA(r.account_id)+'\',\''+escA(r.account_code)+'\',\''+escA(r.account_name).replace(/'/g,"&#39;")+'\')"><div class="row" style="justify-content:space-between;gap:10px"><span><b>'+escA(r.account_code)+'</b> — '+escA(r.account_name)+'</span><b style="white-space:nowrap">'+accountingRp(r.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+
       '</div>';
     host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+selector+
       section('ASET',assets)+

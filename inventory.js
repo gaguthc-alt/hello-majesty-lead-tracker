@@ -47,7 +47,7 @@ async function loadInventoryData(){
 }
 
 function canViewInventoryDashboard(){return !!profile?.is_management;}
-async function renderInventory(){
+async async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');
   host.innerHTML='<div class="small">⏳ Memuat Product & Stock...</div>';
   host.id='inventoryPanel';host.className='box';

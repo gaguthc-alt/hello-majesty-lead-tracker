@@ -109,11 +109,10 @@ function inventoryReceiveOutlet(){
  return profile?.is_management ? (sel?.value||'') : (profile?.outlet||'');
 }
 function setInventoryView(view){if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';return;}inventoryView=view;renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
-async function invStatusCard(label,status,count){return '<div class="stat" role="button" tabindex="0" style="cursor:pointer" data-inv-status="'+status+'">'+label+'<div class="num">'+count+'</div></div>';}
+async function invStatusCard(label,status,count){return '<button type="button" class="stat inventory-status-card" data-inv-status="'+status+'">'+label+'<div class="num">'+count+'</div></button>';}
 function bindInventoryStatusCards(){
- document.querySelectorAll('[data-inv-status]').forEach(el=>{
-  const fn=()=>openInventoryStatusDetail(el.getAttribute('data-inv-status'));
-  el.onclick=fn;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' ')fn();};
+ document.querySelectorAll('.inventory-status-card[data-inv-status]').forEach(el=>{
+  el.onclick=()=>openInventoryStatusDetail(el.getAttribute('data-inv-status'));
  });
 }
 function openInventoryStatusDetail(status){

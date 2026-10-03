@@ -110,6 +110,14 @@ function inventoryReceiveOutlet(){
  return profile?.is_management ? (sel?.value||'') : (profile?.outlet||'');
 }
 function setInventoryView(view){if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';return;}inventoryView=view;renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
+async function openInventorySoldDetail(){
+ const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';
+ const rows=inventoryStock.filter(s=>s.status==='SOLD'&&(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
+ const title=s=>[String(s.product||'').replace(/\\s+(NEW|SECOND)$/i,'').trim(),s.variant,s.color].filter(Boolean).join(' — ');
+ $('mt').textContent='🔴 TERJUAL • '+rows.length+' UNIT';
+ $('mb').innerHTML=rows.length?rows.map((s,i)=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+String(i+1).padStart(2,'0')+'. '+esc(title(s))+'</b><b>'+esc(s.outlet||'-')+'</b></div><div class="small">Status: TERJUAL</div><div>IMEI 1: '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+' • Harga Jual: '+esc('Rp'+inventoryNumber(s.asking_price).toLocaleString('id-ID'))+'</div></div>').join(''):'<div class="small">Tidak ada stock yang berstatus TERJUAL untuk filter ini.</div>';
+ $('modal').classList.remove('hidden');
+}
 async function openInventoryReturnDetail(){
  const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';
  const rows=inventoryStock.filter(s=>s.status==='RETURN'&&(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
@@ -124,7 +132,7 @@ function renderInventoryDashboardBody(){
  const isManagement=!!profile?.is_management,canViewCost=isManagement;
  const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';
  const rows=inventoryStock.filter(s=>(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
- const ready=rows.filter(s=>s.status==='READY'),reserved=rows.filter(s=>s.status==='RESERVED'),returned=rows.filter(s=>s.status==='RETURN'),missing=rows.filter(s=>s.status==='MISSING');
+ const ready=rows.filter(s=>s.status==='READY'),sold=rows.filter(s=>s.status==='SOLD'),reserved=rows.filter(s=>s.status==='RESERVED'),returned=rows.filter(s=>s.status==='RETURN'),missing=rows.filter(s=>s.status==='MISSING');
  const modal=ready.reduce((a,s)=>a+inventoryNumber(s.cost),0),jual=ready.reduce((a,s)=>a+inventoryNumber(s.asking_price),0),profit=jual-modal;
  const now=new Date(),sameDay=d=>{const x=new Date(d||0);return x.getFullYear()===now.getFullYear()&&x.getMonth()===now.getMonth()&&x.getDate()===now.getDate()};
  const age=s=>Math.max(0,Math.floor((Date.now()-new Date(s.received_at||s.created_at).getTime())/86400000));
@@ -138,13 +146,13 @@ function renderInventoryDashboardBody(){
  body.innerHTML=
   '<div class="box"><h3 style="margin:0">📊 DASHBOARD INVENTORY</h3><div class="small" style="margin-top:5px">Kontrol stock untuk keputusan pembelian, penjualan, dan pergerakan barang.</div>'+
   '<div class="row" style="margin-top:10px"><select id="invDashOutlet">'+(isManagement?'<option value="">📍 Semua Outlet</option>':'')+outlets.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select><select id="invDashCat"><option value="">Semua Kategori</option>'+cats.map(x=>'<option value="'+x+'">'+invCategory(x)+'</option>').join('')+'</select></div></div>'+
-  '<div class="stats inventory-dashboard-stats">'+invStat('🟢 READY',ready.length)+invStat('💰 Modal READY',canViewCost?rp(modal):'—')+invStat('🏷️ Nilai Jual',canViewCost?rp(jual):'—')+invStat('📈 Potensi Laba',canViewCost?rp(profit):'—')+invStat('🟡 Reserved',reserved.length)+invStat('↩️ Retur',returned.length)+invStat('⚠️ Missing',missing.length)+'</div>'+
+  '<div class="stats inventory-dashboard-stats">'+invStat('🟢 READY',ready.length)+invStat('💰 Modal READY',canViewCost?rp(modal):'—')+invStat('🏷️ Nilai Jual',canViewCost?rp(jual):'—')+invStat('📈 Potensi Laba',canViewCost?rp(profit):'—')+invStat('🔴 Terjual',sold.length)+invStat('🟡 Reserved',reserved.length)+invStat('↩️ Retur',returned.length)+invStat('⚠️ Missing',missing.length)+'</div>'+
   '<div class="row" style="margin-top:10px"><button class="secondary" onclick="inventoryView=\'stock\';renderInventoryBody()">📦 Lihat Stock</button>'+(canReceiveStock()?'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button>':'')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">⚡ Perhatian</h3><div class="stats"><div class="stat"><div class="small">Barang masuk hari ini</div><div class="num">'+receivedToday+'</div></div><div class="stat"><div class="small">Stock >30 hari</div><div class="num">'+old30+'</div></div><div class="stat"><div class="small">Stock >60 hari</div><div class="num">'+old60+'</div></div></div></div>'+
   '<div class="box"><h3 style="margin:0 0 8px">🏪 Stock per Outlet</h3>'+(byOutlet.length?byOutlet.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.o)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Potensi '+rp(x.jual-x.cost):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">📱 Stock per Kategori</h3>'+(byCategory.length?byCategory.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+invCategory(x.cat)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Margin '+pct(x.jual-x.cost,x.jual):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">⏳ Stock Terlama — READY</h3>'+(oldest.length?oldest.map(s=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+'</b><span class="badge">'+age(s)+' hari</span></div><div class="small">'+esc(s.outlet||'-')+' • '+(s.grade?'Grade '+esc(s.grade)+' • ':'')+(s.battery_health!=null?'BH '+s.battery_health+'% • ':'')+(canViewCost?rp(s.cost):'Harga beli tersembunyi')+'</div></div>').join(''):'<div class="small">Belum ada stock READY.</div>')+'</div>';
- const returnStat=[...body.querySelectorAll('.stat')].find(el=>String(el.textContent||'').includes('↩️ Retur'));if(returnStat){returnStat.style.cursor='pointer';returnStat.title='Klik untuk melihat produk yang diretur';returnStat.onclick=()=>openInventoryReturnDetail();}
+ const soldStat=[...body.querySelectorAll('.stat')].find(el=>String(el.textContent||'').includes('🔴 Terjual'));if(soldStat){soldStat.style.cursor='pointer';soldStat.title='Klik untuk melihat produk yang terjual';soldStat.onclick=()=>openInventorySoldDetail();} const returnStat=[...body.querySelectorAll('.stat')].find(el=>String(el.textContent||'').includes('↩️ Retur'));if(returnStat){returnStat.style.cursor='pointer';returnStat.title='Klik untuk melihat produk yang diretur';returnStat.onclick=()=>openInventoryReturnDetail();}
  $('invDashOutlet').value=outletSel;$('invDashCat').value=catSel;
  $('invDashOutlet').onchange=()=>renderInventoryBody();$('invDashCat').onchange=()=>renderInventoryBody();
 }

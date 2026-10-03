@@ -852,6 +852,28 @@ async function loadAccountingDashboard(){
   const box=document.getElementById('accountingSummary');
   if(box)box.innerHTML='<div class="stat"><div class="small">💰 Total Aset</div><div class="num">'+accountingRp(bs.total_assets)+'</div></div><div class="stat"><div class="small">🧾 Liabilitas</div><div class="num">'+accountingRp(bs.total_liabilities)+'</div></div><div class="stat"><div class="small">🏦 Ekuitas</div><div class="num">'+accountingRp(bs.total_equity)+'</div></div><div class="stat"><div class="small">📈 Laba Bersih</div><div class="num">'+accountingRp(p.net_profit)+'</div></div>';
 }
+async function accountingBalanceDrill(type){
+  const host=document.getElementById('accountingDetail');if(!host)return;
+  host.classList.remove('hidden');host.innerHTML='<b>Memuat rincian...</b>';
+  const d=accountingDates(),selected=window.accountingBalanceOutlet||'ALL';
+  const x=await sb.rpc('balance_sheet_accounts',{p_outlet:selected,p_account_type:type,p_as_of_date:d.end});
+  if(x.error)return host.innerHTML='<p>'+String(x.error.message||'Gagal memuat rincian')+'</p>';
+  const rows=x.data||[],title=type==='ASSET'?'ASET':type==='LIABILITY'?'LIABILITAS':'EKUITAS';
+  host.innerHTML='<h3>🔎 Rincian '+title+'</h3><div class="small">'+(selected==='ALL'?'Semua Pusat & Outlet':escA(selected))+' • Per '+d.end+'</div>'+
+    (rows.length?rows.map(r=>'<div class="lead" style="cursor:pointer" onclick="accountingLedgerAccount(\''+escA(r.account_code).replace(/'/g,"\\'")+'\')"><div class="row" style="justify-content:space-between"><b>'+escA(r.account_code)+' — '+escA(r.account_name)+'</b><b>'+accountingRp(r.balance)+'</b></div><div class="small">Klik untuk lihat buku besar akun</div></div>').join(''):'<div class="box"><div class="small">Belum ada saldo.</div></div>');
+  host.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+async function accountingLedgerAccount(code){
+  const host=document.getElementById('accountingDetail');if(!host)return;
+  const d=accountingDates(),selected=window.accountingBalanceOutlet||'ALL';
+  const a=await sb.from('accounting_accounts').select('id,code,name,account_type').eq('code',code).maybeSingle();
+  if(a.error||!a.data)return;
+  const x=await sb.rpc('general_ledger_account',{p_account_id:a.data.id,p_start_date:'2000-01-01',p_end_date:d.end});
+  if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';
+  const rows=(x.data||[]).filter(r=>selected==='ALL'||r.outlet===selected||(!r.outlet&&selected==='ALL'));
+  host.innerHTML='<h3>📖 Buku Besar — '+escA(a.data.code)+' '+escA(a.data.name)+'</h3><div class="small">'+(selected==='ALL'?'Semua Pusat & Outlet':escA(selected))+'</div>'+
+    (rows.length?rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><span>'+escA(String(r.journal_date||'').slice(0,10))+' • '+escA(r.journal_no)+'</span><b>'+accountingRp(r.running_balance)+'</b></div><div class="small">'+escA(r.description||'')+' • Dr '+accountingRp(r.debit)+' • Cr '+accountingRp(r.credit)+'</div></div>').join(''):'<div class="box"><div class="small">Belum ada transaksi.</div></div>');
+}
 async function openAccountingModule(module){
   const host=document.getElementById('accountingDetail');if(!host)return;
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
@@ -868,7 +890,7 @@ async function openAccountingModule(module){
     const selector='<label>Lokasi Neraca</label><select id="accountingBalanceOutlet" onchange="window.accountingBalanceOutlet=this.value;openAccountingModule(\'balance\')">'+options+'</select>';
     if(selected==='ALL'){
       const x=await sb.rpc('balance_sheet_totals',{p_as_of_date:d.end});if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';const z=(x.data||[])[0]||{};
-      host.innerHTML='<h3>⚖️ Neraca Konsolidasi</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+selector+'<div class="stats" style="margin-top:8px;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><div class="stat"><div class="small">Total Aset</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_assets)+'</div></div><div class="stat"><div class="small">Liabilitas</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_liabilities)+'</div></div><div class="stat" style="grid-column:1 / -1"><div class="small">Ekuitas</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_equity)+'</div></div></div><div class="lead"><b>'+(z.is_balanced?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(z.balance_difference)+'</div></div>';
+      host.innerHTML='<h3>⚖️ Neraca Konsolidasi</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+selector+'<div class="stats" style="margin-top:8px;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><div class="stat" role="button" tabindex="0" onclick="accountingBalanceDrill('ASSET')" style="cursor:pointer"><div class="small">Total Aset</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_assets)+'</div><div class="small">👆 Klik untuk rincian</div></div><div class="stat" role="button" tabindex="0" onclick="accountingBalanceDrill('LIABILITY')" style="cursor:pointer"><div class="small">Liabilitas</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_liabilities)+'</div><div class="small">👆 Klik untuk rincian</div></div><div class="stat" role="button" tabindex="0" onclick="accountingBalanceDrill('EQUITY')" style="grid-column:1 / -1;cursor:pointer"><div class="small">Ekuitas</div><div class="num" style="font-size:24px;line-height:1.15;white-space:nowrap">'+accountingRp(z.total_equity)+'</div><div class="small">👆 Klik untuk rincian</div></div></div><div class="lead"><b>'+(z.is_balanced?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(z.balance_difference)+'</div></div>';
     }else{
       const [t,rows]=await Promise.all([sb.rpc('balance_sheet_outlet_totals',{p_outlet:selected,p_as_of_date:d.end}),sb.rpc('balance_sheet_outlet',{p_outlet:selected,p_as_of_date:d.end})]);
       if(t.error)return host.innerHTML='<p>'+escA(t.error.message)+'</p>';if(rows.error)return host.innerHTML='<p>'+escA(rows.error.message)+'</p>';
@@ -1031,4 +1053,4 @@ async function askAI(leadId){
  finally{if(btn)btn.disabled=false}
 }
 window.openAI=openAI;window.askAI=askAI;
-</script><script src="performance.js?v=20261002-17"></script><script src="inventory.js?v=20261003-35"></script><script src="brochures.js?v=20261002-3"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-4";</script></body></html>
+</script><script src="performance.js?v=20261002-17"></script><script src="inventory.js?v=20261003-36"></script><script src="brochures.js?v=20261002-3"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-5";</script></body></html>

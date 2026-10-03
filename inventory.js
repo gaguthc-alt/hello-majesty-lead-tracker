@@ -71,7 +71,7 @@ async function renderInventory(){
   host.onclick=(e)=>{const tab=e.target.closest('[data-inventory-view]');if(tab){e.preventDefault();setInventoryView(tab.dataset.inventoryView)}};
   renderInventoryBody();
 }
-function openInventoryDashboard(){if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management.');return;}const panel=$('inventoryPanel'),btn=$('stockToggleBtn');if(!panel)return;panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Stock';inventoryView='dashboard';renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));}
+function openInventoryDashboard(){if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management.');return;}const panel=$('inventoryPanel'),btn=$('stockToggleBtn');if(!panel)return;panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Stock';inventoryView='dashboard';renderInventory().then(()=>{inventoryView='dashboard';renderInventoryBody();}).catch(e=>console.error('[HM] Inventory dashboard error',e));}
 async function refreshInventory(btn){if(btn?.disabled)return;try{if(btn){btn.disabled=true;btn.textContent='⏳ Loading...'}await renderInventory()}catch(e){console.error(e);alert('Refresh Product & Stock error: '+(e?.message||e))}finally{if(btn){btn.disabled=false;btn.textContent='↻ Refresh'}}}
 async function loadHunterDashboard(){const r=await sb.from('hunter_dashboard').select('*').order('total_commission',{ascending:false});if(r.error)throw r.error;hunterDashboard=r.data||[]}
 function fmtRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}

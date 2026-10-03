@@ -109,7 +109,7 @@ function inventoryReceiveOutlet(){
  return profile?.is_management ? (sel?.value||'') : (profile?.outlet||'');
 }
 function setInventoryView(view){if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';return;}inventoryView=view;renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
-async function invStatusCard(label,status,count){return '<button type="button" class="stat inventory-status-card" onclick="openInventoryStatusDetail(&quot;'+status+'&quot;)">'+label+'<div class="num">'+count+'</div></button>';}
+function invStatusCard(label,status,count){return '<button type="button" class="stat inventory-status-card" onclick="openInventoryStatusDetail(&quot;'+status+'&quot;)">'+label+'<div class="num">'+count+'</div></button>';}
 function bindInventoryStatusCards(){}
 function openInventoryStatusDetail(status){
  const allowed={SOLD:'🔴 TERJUAL',RESERVED:'🟡 RESERVED',RETURN:'↩️ RETUR'};

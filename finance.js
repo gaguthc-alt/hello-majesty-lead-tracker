@@ -100,7 +100,24 @@ window.loadPartnerSettlementDetail=async function(outlet){
   }
   const {data:rows,error}=await sb.from('partner_capital_due').select('*').eq('outlet',outlet).order('sold_at',{ascending:false});
   if(error){box.innerHTML='<div class="small">'+error.message+'</div>';return;}
-  box.innerHTML=rows?.length?'<div class="small">Centang unit yang ingin dibayar sekarang.</div>'+rows.map(r=>'<label style="display:block;padding:10px 0;border-bottom:1px solid #ddd"><input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" style="width:auto;margin-right:8px"><b>'+String(r.sales_transaction_id||'').slice(0,8)+'</b> · '+hmRp(r.capital_due)+'<br><span class="small">Jual '+hmRp(r.sale_price)+' · Profit '+hmRp(r.gross_profit)+'</span></label>').join('')+'<button class="success" style="margin-top:12px" onclick="window.payPartnerCapitalSettlement()">💸 Setor Modal Terpilih</button>':'<div class="small">Tidak ada modal Cell yang belum disetor.</div>';
+  const ids=(rows||[]).map(r=>r.stock_unit_id).filter(Boolean);
+  const stockRes=ids.length?await sb.from('stock_units').select('*').in('id',ids):{data:[]};
+  const stockMap={};(stockRes.data||[]).forEach(s=>stockMap[s.id]=s);
+  const unitName=s=>{
+    if(!s)return 'Stock '+String(Math.random()).slice(2,8);
+    const product=s.product||s.product_name||'Stock';
+    const variant=s.variant||'';
+    const color=s.color||'';
+    const storage=s.storage_gb||s.storage||'';
+    return [product,variant,color,storage?String(storage).replace(/GB$/i,'')+'GB':''].filter(Boolean).join(' — ');
+  };
+  box.innerHTML=rows?.length?'<div class="small">Centang unit yang ingin dibayar sekarang.</div>'+rows.map(r=>{
+    const s=stockMap[r.stock_unit_id]||{};
+    const imei=s.imei_1||s.imei||'-';
+    const grade=s.grade?' • Grade '+esc(String(s.grade)):'';
+    const bh=s.battery_health!=null?' • BH '+Number(s.battery_health)+'%':'';
+    return '<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd"><input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" style="width:auto;margin-right:8px"><b>'+esc(unitName(s))+'</b><br><span class="small">'+grade.replace(/^ • /,'')+(bh?' • BH '+Number(s.battery_health)+'%':'')+' • Modal '+hmRp(r.capital_due)+' • IMEI '+esc(String(imei))+'</span><br><span class="small">Jual '+hmRp(r.sale_price)+' • Profit '+hmRp(r.gross_profit)+'</span></label>';
+  }).join('')+'<button class="success" style="margin-top:12px" onclick="window.payPartnerCapitalSettlement()">💸 Setor Modal Terpilih</button>':'<div class="small">Tidak ada modal Cell yang belum disetor.</div>';
 };
 window.payPartnerPlazaHistoricalCapital=async function(){
   const ids=[...document.querySelectorAll('.partner-plaza-capital-check:checked')].map(x=>x.value);

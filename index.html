@@ -969,7 +969,7 @@ async function openAccountingModule(module){
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
   const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   if(module==='transfer'){
-    const accounts=await sb.from('accounting_accounts').select('code,name').eq('active',true).eq('account_type','ASSET').in('code',['1110','1111','1112','1113','1114']).order('code');
+    const accounts=await sb.from('accounting_accounts').select('code,name').eq('active',true).eq('account_type','ASSET').in('code',['1103','1104','1110','1111','1112','1113','1114']).order('code');
     if(accounts.error)return host.innerHTML='<p>'+escA(accounts.error.message)+'</p>';
     const banks=accounts.data||[];
     const bankOptions=banks.map(a=>'<option value="'+escA(a.code)+'">'+escA(a.code)+' — '+escA(a.name)+'</option>').join('');

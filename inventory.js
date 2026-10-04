@@ -54,6 +54,44 @@ async function loadInventoryData(){
 }
 
 function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');if(role==='ADMIN FINANCE MAJESTY CELL')return false;return !!profile?.is_management||role==='ADMIN FINANCE';}
+
+async function loadWalkinApprovalCount(){
+ const role=inventoryReviewerRole(), can=!!profile?.is_management||role==='FASILITATOR';
+ const btn=document.getElementById('walkinApprovalBtn');
+ if(!can||!btn)return;
+ const r=await sb.from('walkin_sale_approvals').select('id',{count:'exact',head:true}).eq('status','PENDING');
+ if(!r.error)btn.textContent='🚶 Persetujuan Walk-In'+(r.count?' ('+r.count+')':'');
+}
+async function openWalkinApprovals(){
+ const role=inventoryReviewerRole();
+ const can=!!profile?.is_management||role==='FASILITATOR';
+ if(!can)return alert('Hanya Management atau Facilitator yang dapat memverifikasi Walk-In.');
+ const a=await sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false});
+ if(a.error)return alert(a.error.message);
+ const rows=a.data||[], ids=rows.map(x=>x.stock_unit_id);
+ const s=ids.length?await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,cost,asking_price,status').in('id',ids):{data:[]};
+ const stocks=s.data||[], pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
+ const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};
+ const products=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));
+ const u=rows.length?await sb.from('team_profiles').select('user_id,name,role').in('user_id',rows.map(x=>x.requested_by)):{data:[]};
+ const users=Object.fromEntries((u.data||[]).map(x=>[x.user_id,x]));
+ $('mt').textContent='🚶 Persetujuan Walk-In ('+rows.length+')';
+ $('mb').innerHTML=rows.map((a,i)=>{
+   const st=stocks.find(x=>x.id===a.stock_unit_id)||{}, p=products[st.product_id]||{}, rq=users[a.requested_by]||{};
+   const canReview=!!profile?.is_management||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='FASILITATOR';
+   return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">'+esc(st.outlet||'-')+' • '+esc(st.color||'-')+' • Diajukan oleh '+esc(rq.name||'User')+' • '+new Date(a.requested_at).toLocaleString('id-ID')+'</div><div>Harga Walk-In: <b>Rp'+Number(a.sale_price||0).toLocaleString('id-ID')+'</b> • Modal: Rp'+Number(st.cost||0).toLocaleString('id-ID')+'</div><div class="small">Status: MENUNGGU VERIFIKASI</div>'+ (canReview&&rq.user_id!==profile?.user_id?'<div class="row" style="margin-top:8px"><button class="success" onclick="reviewWalkinSale(\''+a.id+'\',\'APPROVE\')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewWalkinSale(\''+a.id+'\',\'REJECT\')">✕ Tolak</button></div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi Management/Facilitator.</div>')+'</div>';
+ }).join('')||'<div class="small">Tidak ada Walk-In yang menunggu verifikasi.</div>';
+ $('modal').classList.remove('hidden');
+}
+async function reviewWalkinSale(id,action){
+ let note=null;
+ if(action==='REJECT'){note=prompt('Alasan penolakan Walk-In:')||'';if(!note.trim())return alert('Alasan wajib diisi.');}
+ const r=await sb.rpc('review_walkin_sale_approval',{p_approval_id:id,p_action:action,p_note:note});
+ if(r.error)return alert('Verifikasi Walk-In gagal: '+r.error.message);
+ alert(action==='APPROVE'?'Walk-In disetujui dan transaksi menjadi SOLD.':'Walk-In ditolak.');
+ closeModal(); await renderInventory();
+}
+
 function canReceiveStock(source=null){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');if(!!profile?.is_management||inventoryCanFacilitator||role==='FASILITATOR')return true;if(role==='ADMIN FINANCE MAJESTY CELL')return source===null||source==='MAJESTY_CELL';return false;}
 function inventoryReviewerRole(){return String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')}
 function canReviewInventoryReceive(requesterRole,isCell,requestedBy){const me=inventoryReviewerRole();const self=String(profile?.user_id||'')===String(requestedBy||'');if(isCell){if(requesterRole==='FASILITATOR')return (me==='ADMIN FINANCE MAJESTY CELL'||!!profile?.is_management)&&!self;if(requesterRole==='ADMIN FINANCE MAJESTY CELL')return (me==='FASILITATOR'||!!profile?.is_management)&&!self;if(!!profile?.is_management)return !self;return false;}return !!profile?.is_management||me==='FASILITATOR';}
@@ -81,14 +119,14 @@ async function renderInventory(){
   const canManage=!!profile?.is_management || inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR' || (Array.isArray(window.hmRoles) && window.hmRoles.some(r=>String(r).toUpperCase()==='FASILITATOR'));
   const isCellFinance=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='ADMIN FINANCE MAJESTY CELL';
   if(isCellFinance) inventoryView='stock';
-  host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Database produk untuk CS/Sales + kontrol inventory Management</div></div><div class="row"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button>'+(canManage?'<button class="secondary" onclick="openProductMaster()">⚙️ Master Produk</button>':'')+(canManage?'<button class="secondary" id="inventoryApprovalBtn" onclick="openInventoryApprovals()">🔔 Persetujuan Barang Masuk</button>':'')+'<button class="success" onclick="openReceiveStock()">＋ BARANG MASUK</button></div></div>'+
+  host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Database produk untuk CS/Sales + kontrol inventory Management</div></div><div class="row"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button>'+(canManage?'<button class="secondary" onclick="openProductMaster()">⚙️ Master Produk</button>':'')+(canManage?'<button class="secondary" id="inventoryApprovalBtn" onclick="openInventoryApprovals()">🔔 Persetujuan Barang Masuk</button>':'')+(canManage?'<button class="secondary" id="walkinApprovalBtn" onclick="openWalkinApprovals()">🚶 Persetujuan Walk-In</button>':'')+'<button class="success" onclick="openReceiveStock()">＋ BARANG MASUK</button></div></div>'+
   '<div class="stats" style="margin-top:10px">'+
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('↩️ Retur',returned)+'</div>'+
   '<div class="row" style="margin-top:12px">'+(canViewInventoryDashboard()?'<button class="'+(inventoryView==='dashboard'?'':'secondary')+'" id="invDashboardTab" type="button" data-inventory-view="dashboard">📊 Dashboard</button>':'')+'<button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button><button class="'+(inventoryView==='products'?'':'secondary')+'" id="invProductsTab" type="button" data-inventory-view="products">Produk</button><button class="secondary" onclick="openSalesReport()">Laporan Penjualan</button>'+'</div>'+
   '<div id="inventoryViewDebug" class="small" style="margin-top:8px;font-weight:700"></div><div id="inventoryBody" style="margin-top:10px"></div>';
   host.onclick=(e)=>{const tab=e.target.closest('[data-inventory-view]');if(tab){e.preventDefault();setInventoryView(tab.dataset.inventoryView)}};
   renderInventoryBody();
-  loadInventoryApprovalCount().catch(()=>{});
+  loadInventoryApprovalCount().catch(()=>{}); loadWalkinApprovalCount().catch(()=>{});
   const topStats=host.querySelectorAll('.stats[style*="margin-top:10px"] .stat');
   const bindTop=(needle,fn,title)=>{const el=[...topStats].find(x=>String(x.textContent||'').includes(needle));if(el){el.style.cursor='pointer';el.title=title;el.onclick=fn;}};
   bindTop('🟢 Ready',()=>{inventoryView='stock';renderInventoryBody();},'Klik untuk membuka stock READY');

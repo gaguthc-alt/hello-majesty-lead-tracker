@@ -46,14 +46,13 @@ window.openPartnerSettlement=async function(){
   t.textContent='🤝 Kewajiban Majesty Cell';
   const {data:rows,error}=await sb.rpc('partner_obligation_summary');
   if(error){console.error('[HM] Partner obligation summary:',error);alert('Gagal memuat kewajiban Majesty Cell: '+(error.message||error));return;}
-  const s=(rows||[]).find(x=>String(x.partner_name||'').toUpperCase()==='MAJESTY CELL' && x.outlet==='Majesty Refill Phone') || (rows||[])[0] || {};
-  const cap=Number(s.capital_due||0), profit=Number(s.profit_share_due||0);
-  b.innerHTML='<div class="fin-grid">'+
-    '<div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+hmRp(cap)+'</div></div>'+
-    '<div class="fin-card"><div class="small">Profit Sharing Bulan Ini</div><div class="fin-big">'+hmRp(profit)+'</div></div>'+
-    '</div>'+
-    '<div class="small" style="margin-top:14px">Refill: modal Cell dibayar sesuai unit/transaksi yang dipilih. Profit sharing dihitung bulanan.</div>'+
-    '<div class="row" style="margin-top:14px"><button class="primary" onclick="window.loadPartnerSettlementDetail()">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement()">🤝 Setor Profit Sharing</button><button class="secondary" onclick="window.openCellFinanceReport()">📊 Laporan Finance Cell</button></div>'+
+  const list=(rows||[]).filter(x=>String(x.partner_name||'').toUpperCase()==='MAJESTY CELL' && ['Majesty Refill Phone','Majesty Plaza iPhone'].includes(x.outlet));
+  const refill=list.find(x=>x.outlet==='Majesty Refill Phone')||{};
+  const plaza=list.find(x=>x.outlet==='Majesty Plaza iPhone')||{};
+  const card=(label,x,buttons)=>'<div class="box" style="margin-top:12px"><h3>'+label+'</h3><div class="fin-grid"><div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+hmRp(Number(x.capital_due||0))+'</div></div><div class="fin-card"><div class="small">Profit Sharing</div><div class="fin-big">'+hmRp(Number(x.profit_share_due||0))+'</div></div></div><div style="margin-top:10px"><b>Total Kewajiban: '+hmRp(Number(x.capital_due||0)+Number(x.profit_share_due||0))+'</b></div>'+buttons+'</div>';
+  b.innerHTML='<div class="small">Kewajiban Majesty Cell dipisahkan berdasarkan outlet.</div>'+
+    card('📱 Majesty Refill Phone',refill,'<div class="row" style="margin-top:12px"><button class="primary" onclick="window.loadPartnerSettlementDetail('Majesty Refill Phone')">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement('Majesty Refill Phone')">🤝 Setor Profit Sharing</button></div>')+
+    card('📱 Majesty Plaza iPhone',plaza,'<div class="row" style="margin-top:12px"><button class="primary" onclick="window.loadPartnerSettlementDetail('Majesty Plaza iPhone')">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement('Majesty Plaza iPhone')">🤝 Setor Profit Sharing</button></div>')+
     '<div id="partnerSettlementDetail" style="margin-top:14px"></div>';
   m.style.display='flex';
 };

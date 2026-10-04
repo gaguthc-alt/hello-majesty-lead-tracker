@@ -898,7 +898,7 @@ function historyCard(l){
  (l.cs_follow_up_date?'<div class="small" style="margin-top:6px">CS follow-up: '+esc(l.cs_follow_up_date)+'</div>':'')+
  '<div class="row" style="margin-top:8px">'+(owner&&profile?.is_management?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button>':'')+(isSales&&!profile?.is_management?'<button class="secondary" onclick="shareSalesResult(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+action+'</div></div>';
 }
-function closeModal(ev){if(ev){ev.preventDefault();ev.stopPropagation();}const m=document.getElementById('modal');if(m){m.classList.add('hidden');m.style.display='none';}return false}window.closeModal=closeModal;
+function closeModal(ev){if(ev){ev.preventDefault();ev.stopPropagation();}const m=document.getElementById('modal');if(m){m.classList.add('hidden');m.style.removeProperty('display');}return false}window.closeModal=closeModal;
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 async function openAccounting(){
   if(!profile?.is_management){return alert('Accounting hanya dapat diakses Management.');}

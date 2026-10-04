@@ -93,3 +93,142 @@ window.hmFinanceLoad=async function(mode){const box=document.getElementById('hmF
 window.hmFinanceBack=async function(){await window.openFinance();};
 window.hmOpenCash=async function(code){const sb=window.sb,p=window.profile||{},a=(window.hmCashAccounts||[]).find(x=>x.code===code);if(!sb||!p.is_management||!a)return;const[tb,mb]=[document.getElementById('mt'),document.getElementById('mb')];tb.textContent='💵 '+a.name;mb.innerHTML='<div class="box"><button type="button" class="secondary" onclick="hmFinanceBack()">← Kembali Finance</button><h3 style="margin:8px 0 4px">'+a.code+' — '+a.name+'</h3><div class="small">Mutasi bulan ini</div><div id="hmCashDetail">Memuat...</div></div>';const[start,end]=hmDateRange('month');const x=await sb.from('accounting_accounts').select('id').eq('code',code).eq('active',true).maybeSingle();if(x.error||!x.data){document.getElementById('hmCashDetail').textContent='Akun tidak ditemukan.';return;}const r=await sb.rpc('finance_cash_account_mutation',{p_account_id:x.data.id,p_start_date:start,p_end_date:end});if(r.error){document.getElementById('hmCashDetail').textContent='Gagal memuat mutasi: '+r.error.message;return;}const d=r.data||{};document.getElementById('hmCashDetail').innerHTML='<div class="stats" style="grid-template-columns:1fr;gap:8px">'+[['Saldo Awal',d.opening],['Masuk',d.debit],['Keluar',d.credit],['Saldo Akhir',d.closing]].map(c=>'<div class="stat" style="min-width:0"><div class="small">'+c[0]+'</div><div class="num" style="'+hmFinNum(c[1])+'">'+hmRp(c[1])+'</div></div>').join('')+'</div><div style="margin-top:10px">'+((d.rows||[]).length?(d.rows||[]).map(r=>'<div class="lead"><div class="small">'+new Date(r.date).toLocaleString('id-ID')+' • '+r.journal_no+'</div><b>'+String(r.description||'-')+'</b><div style="margin-top:4px">Masuk: '+hmRp(r.debit)+' • Keluar: '+hmRp(r.credit)+'</div></div>').join(''):'<div class="small">Belum ada mutasi pada periode ini.</div>')+'</div>';};
 })();
+
+/* FINANCE SALES — SPAYLATER / KREDIVO / AKULAKU */
+(function(){
+  const FIN_CODES = ['SPAYLATER','KREDIVO','AKULAKU'];
+  let wrapped = false;
+
+  function isFinancePayment(){
+    const s=document.getElementById('salePayment');
+    const o=s?.selectedOptions?.[0];
+    return FIN_CODES.includes(String(o?.dataset?.code||'').toUpperCase());
+  }
+  function escF(v){return String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+  function addFinanceFields(){
+    const pay=document.getElementById('salePayment');
+    if(!pay || document.getElementById('financeSaleBox')) return;
+    const box=document.createElement('div');
+    box.id='financeSaleBox';
+    box.className='box';
+    box.style.marginTop='10px';
+    box.innerHTML='<b>🏦 Finance</b>'+
+      '<div class="small" style="margin-top:4px">Potongan di bawah hanya estimasi. Angka final dapat direvisi saat dana benar-benar cair.</div>'+
+      '<label>Estimasi Potongan Finance</label><input id="financeEstimatedFee" type="number" min="0" step="1000" value="0" placeholder="Contoh: 300000">'+
+      '<div id="financeEstimatedNet" class="small" style="margin-top:5px"></div>'+
+      '<label>Catatan</label><input id="financeNotes" placeholder="Opsional">';
+    pay.parentElement?.insertAdjacentElement('afterend',box);
+    const update=()=>{
+      const price=Number(document.getElementById('sap')?.value||0);
+      const fee=Math.max(Number(document.getElementById('financeEstimatedFee')?.value||0),0);
+      const net=Math.max(price-fee,0);
+      const h=document.getElementById('financeEstimatedNet');
+      if(h)h.textContent='Estimasi dana cair: Rp'+net.toLocaleString('id-ID')+' • Status: Menunggu Pencairan';
+    };
+    document.getElementById('sap')?.addEventListener('input',update);
+    document.getElementById('financeEstimatedFee')?.addEventListener('input',update);
+    update();
+  }
+  function removeFinanceFields(){document.getElementById('financeSaleBox')?.remove();}
+
+  function bindPaymentUI(){
+    const pay=document.getElementById('salePayment');
+    if(!pay) return false;
+    if(!pay.dataset.financeBound){
+      pay.dataset.financeBound='1';
+      pay.addEventListener('change',()=>{
+        if(isFinancePayment()) addFinanceFields(); else removeFinanceFields();
+        const a=document.getElementById('saleAccount');
+        if(a) a.disabled=isFinancePayment() || pay.value==='PIUTANG';
+      });
+    }
+    if(isFinancePayment()) addFinanceFields();
+    return true;
+  }
+
+  async function financeSaveS(id){
+    const result=document.getElementById('sr')?.value;
+    if(result!=='CLOSING') return window.__hmOriginalSaveS(id);
+    const stockId=document.getElementById('ss')?.value;
+    const salePrice=Number(document.getElementById('sap')?.value||0);
+    const teamMemberIds=[...document.querySelectorAll('.closingSalesMember:checked')].map(x=>x.value);
+    const pay=document.getElementById('salePayment');
+    const methodId=pay?.value;
+    const code=pay?.selectedOptions?.[0]?.dataset?.code;
+    if(!FIN_CODES.includes(String(code||'').toUpperCase())) return window.__hmOriginalSaveS(id);
+    const fee=Math.max(Number(document.getElementById('financeEstimatedFee')?.value||0),0);
+    const notes=document.getElementById('financeNotes')?.value?.trim()||null;
+    if(!stockId)return alert('Stock yang dijual wajib dipilih.');
+    if(!salePrice)return alert('Harga Jual Aktual wajib diisi.');
+    if(fee>salePrice)return alert('Estimasi potongan tidak boleh melebihi harga jual.');
+    const x=await window.sb.rpc('set_sales_closing_with_finance',{
+      p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,
+      p_payment_method_id:methodId,p_estimated_fee:fee,p_notes:notes
+    });
+    if(x.error)return alert('Closing Finance gagal: '+x.error.message);
+    alert(code+' tersimpan sebagai PIUTANG FINANCE. Estimasi cair Rp'+Number(x.data?.estimated_disbursement||0).toLocaleString('id-ID')+'. Dana belum dianggap masuk sampai pencairan dicatat.');
+    if(typeof window.closeModal==='function') window.closeModal();
+    if(typeof window.render==='function') await window.render();
+  }
+
+  async function openFinanceDisbursement(){
+    const p=window.profile||{};
+    if(!p.is_management && String(p.role||'').toUpperCase()!=='ADMIN FINANCE' && String(p.role||'').toUpperCase()!=='ADMIN FINANCE MAJESTY CELL'){
+      alert('Akses pencairan finance tidak diizinkan.'); return;
+    }
+    const {data:rows,error}=await window.sb.from('sales_transactions')
+      .select('id,sold_at,sale_price,discount,finance_status,finance_estimated_fee,finance_estimated_disbursement,finance_actual_fee,finance_actual_disbursement,finance_disbursement_date,customer_name,finance_payment_method_id,outlet')
+      .eq('finance_status','PENDING').order('sold_at',{ascending:false});
+    if(error)return alert(error.message);
+    const ids=(rows||[]).map(r=>r.finance_payment_method_id).filter(Boolean);
+    const pm=ids.length?await window.sb.from('payment_methods').select('id,code,name').in('id',ids):{data:[]};
+    const map={};(pm.data||[]).forEach(x=>map[x.id]=x);
+    const fa=await window.sb.from('financial_accounts').select('id,name,outlet').eq('active',true).order('name');
+    const accounts=(fa.data||[]).map(x=>'<option value="'+escF(x.id)+'">'+escF(x.name)+(x.outlet?' — '+escF(x.outlet):'')+'</option>').join('');
+    const b=document.getElementById('mb'),t=document.getElementById('mt'),m=document.getElementById('modal');
+    t.textContent='💳 Pencairan Finance';
+    b.innerHTML=(rows||[]).length?rows.map(r=>{
+      const provider=map[r.finance_payment_method_id]?.name||'Finance';
+      return '<div class="lead"><b>'+escF(provider)+' • '+escF(r.customer_name||'-')+'</b>'+
+        '<div class="small">'+escF(r.outlet)+' • '+new Date(r.sold_at).toLocaleString('id-ID')+'</div>'+
+        '<div style="margin-top:5px">Penjualan: <b>Rp'+Number(r.sale_price||0).toLocaleString('id-ID')+'</b> • Estimasi potongan: Rp'+Number(r.finance_estimated_fee||0).toLocaleString('id-ID')+'</div>'+
+        '<label>Potongan Aktual</label><input id="ff-'+r.id+'" type="number" min="0" step="1000" value="'+Number(r.finance_estimated_fee||0)+'">'+
+        '<label>Akun Pencairan</label><select id="fa-'+r.id+'">'+accounts+'</select>'+
+        '<label>Tanggal Cair</label><input id="fd-'+r.id+'" type="date" value="'+new Date().toISOString().slice(0,10)+'">'+
+        '<button class="success" onclick="window.hmDisburseFinance(\''+r.id+'\')">💸 Catat Dana Cair</button></div>';
+    }).join(''):'<div class="small">Tidak ada pencairan finance yang menunggu.</div>';
+    m.classList.remove('hidden');m.style.display='flex';
+  }
+
+  window.hmDisburseFinance=async function(id){
+    const fee=Number(document.getElementById('ff-'+id)?.value||0);
+    const account=document.getElementById('fa-'+id)?.value;
+    const date=document.getElementById('fd-'+id)?.value;
+    const x=await window.sb.rpc('disburse_finance_sale',{p_sale_id:id,p_actual_fee:fee,p_financial_account_id:account,p_disbursement_date:date,p_notes:'Pencairan Finance aktual'});
+    if(x.error)return alert('Pencairan gagal: '+x.error.message);
+    alert(x.data?.provider+' cair Rp'+Number(x.data?.actual_disbursement||0).toLocaleString('id-ID')+' • Potongan aktual Rp'+Number(x.data?.actual_fee||0).toLocaleString('id-ID'));
+    await openFinanceDisbursement();
+  };
+  window.openFinanceDisbursement=openFinanceDisbursement;
+
+  function patchAfterInline(){
+    if(typeof window.saveS==='function' && !window.__hmOriginalSaveS){
+      window.__hmOriginalSaveS=window.saveS;
+      window.saveS=financeSaveS;
+      wrapped=true;
+    }
+    bindPaymentUI();
+    if(window.profile?.is_management){
+      const actions=document.getElementById('dashboardActions');
+      if(actions && !document.getElementById('financeDisbursementBtn')){
+        const b=document.createElement('button');b.id='financeDisbursementBtn';b.className='secondary';b.type='button';
+        b.textContent='💳 Pencairan Finance';b.onclick=openFinanceDisbursement;actions.appendChild(b);
+      }
+    }
+  }
+
+  const obs=new MutationObserver(()=>{try{patchAfterInline();}catch(e){console.error('[HM Finance Sales]',e)}});
+  obs.observe(document.documentElement,{childList:true,subtree:true});
+  setInterval(patchAfterInline,500);
+  window.hmFinanceSalesReady=true;
+})();

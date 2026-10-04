@@ -1030,13 +1030,21 @@ window.openAccountingModule=openAccountingModule;
 /* Refresh uses direct onclick binding. */
 (async()=>{try{await ensureSupabase();if(new URLSearchParams(location.search).get("trade")==="1"){initTradePublic();return}sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')location.reload()});const x=await sb.auth.getSession();if(x.data.session)await start(x.data.session.user)}catch(ex){if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.'}})();
 let contentPerformanceOpen=true;
-function toggleContentPerformance(){
-  contentPerformanceOpen=!contentPerformanceOpen;
+function toggleContentPerformance(ev){
+  if(ev){ev.preventDefault();ev.stopPropagation();}
   const body=document.getElementById('contentPerformanceBody');
   const btn=document.getElementById('contentPerformanceToggle');
-  if(body)body.classList.toggle('hidden',!contentPerformanceOpen);
-  if(btn)btn.textContent=contentPerformanceOpen?'✖ Tutup':'📂 Buka';
+  if(!body)return;
+  contentPerformanceOpen=!contentPerformanceOpen;
+  body.classList.toggle('hidden',!contentPerformanceOpen);
+  if(btn){
+    btn.type='button';
+  btn.setAttribute('aria-expanded',contentPerformanceOpen?'true':'false');
+  btn.textContent=contentPerformanceOpen?'✖ Tutup':'📂 Buka';
+    btn.setAttribute('aria-expanded',contentPerformanceOpen?'true':'false');
+  }
 }
+window.toggleContentPerformance=toggleContentPerformance;
 function decorateContentPerformance(){
   const host=document.getElementById('contentPerformance');if(!host)return;
   const header=host.querySelector('.row');if(!header)return;
@@ -1046,7 +1054,8 @@ function decorateContentPerformance(){
     btn.id='contentPerformanceToggle';
     btn.className='secondary';
     btn.type='button';
-    btn.onclick=toggleContentPerformance;
+    btn.setAttribute('aria-expanded','true');
+    btn.addEventListener('click',toggleContentPerformance,{passive:false});
     header.appendChild(btn);
   }
   btn.textContent=contentPerformanceOpen?'✖ Tutup':'📂 Buka';

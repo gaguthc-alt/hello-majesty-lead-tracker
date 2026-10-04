@@ -8,8 +8,10 @@ window.openPartnerSettlement=async function(){
   const m=document.getElementById('modal'),t=document.getElementById('mt'),b=document.getElementById('mb');
   if(!m||!t||!b)return;
   t.textContent='🤝 Kewajiban Majesty Cell';
-  const {data:s}=await sb.from('partner_obligation_summary').select('*').single();
-  const cap=Number(s?.capital_due||0), profit=Number(s?.profit_share_due||0);
+  const {data:rows,error}=await sb.rpc('partner_obligation_summary');
+  if(error){console.error('[HM] Partner obligation summary:',error);alert('Gagal memuat kewajiban Majesty Cell: '+(error.message||error));return;}
+  const s=(rows||[]).find(x=>String(x.partner_name||'').toUpperCase()==='MAJESTY CELL' && x.outlet==='Majesty Refill Phone') || (rows||[])[0] || {};
+  const cap=Number(s.capital_due||0), profit=Number(s.profit_share_due||0);
   b.innerHTML='<div class="fin-grid">'+
     '<div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+hmRp(cap)+'</div></div>'+
     '<div class="fin-card"><div class="small">Profit Sharing Bulan Ini</div><div class="fin-big">'+hmRp(profit)+'</div></div>'+

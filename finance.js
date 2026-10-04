@@ -7,8 +7,8 @@ window.openCellFinanceReport=async function(){
   if(!p.is_management && role!=='ADMIN FINANCE MAJESTY CELL' && role!=='FASILITATOR'){alert('Akses laporan tidak diizinkan.');return;}
   const m=document.getElementById('modal'),t=document.getElementById('mt'),b=document.getElementById('mb');if(!m||!t||!b)return;
   t.textContent='📊 Laporan Finance Majesty Cell';
-  const d=new Date(),start=new Date(d.getFullYear(),d.getMonth(),1),end=new Date(d.getFullYear(),d.getMonth()+1,0);
-  const iso=x=>x.toISOString().slice(0,10);
+  const d=new Date(),start=new Date(d.getFullYear(),d.getMonth(),1),end=d;
+  const iso=x=>{const y=x.getFullYear(),m=String(x.getMonth()+1).padStart(2,'0'),day=String(x.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};
   b.innerHTML='<div class="row" style="margin-bottom:12px"><button class="secondary" type="button" onclick="window.openPartnerSettlement()">← Kembali</button><button class="primary" type="button" onclick="window.loadCellFinanceReport()">🔄 Refresh</button></div>'+
     '<div class="row"><label style="flex:1">Dari<input id="cellReportStart" type="date" value="'+iso(start)+'"></label><label style="flex:1">Sampai<input id="cellReportEnd" type="date" value="'+iso(end)+'"></label></div>'+
     '<div id="cellFinanceReportBody" style="margin-top:12px">Memuat...</div>';

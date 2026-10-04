@@ -191,7 +191,7 @@ function applyRoleVisibility(){
  toggle('brochureBtn',!restrictedFinance&&!facilitator||sales||cs||creator);
  toggle('accountingBtn',mg);
  toggle('perfBtn',!restrictedFinance);
- toggle('waMasukBtn',!restrictedFinance&&(!sales&&!creator||cs||facilitator||mg));
+ toggle('waMasukBtn',!restrictedFinance);
  toggle('tradeBtn',!restrictedFinance&&!creator&&!facilitator);
  toggle('commissionActions',mg||sales||cs||facilitator);
  const finance=$('financeBtn');

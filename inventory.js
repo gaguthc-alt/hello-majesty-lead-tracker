@@ -54,7 +54,7 @@ async function loadInventoryData(){
 }
 
 function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL';}
-function canReceiveStock(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||inventoryCanFacilitator||role==='FASILITATOR'||role==='ADMIN FINANCE MAJESTY CELL';}
+function canReceiveStock(source=null){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');if(!!profile?.is_management||inventoryCanFacilitator||role==='FASILITATOR')return true;if(role==='ADMIN FINANCE MAJESTY CELL')return source===null||source==='MAJESTY_CELL';return false;}
 async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');
   host.innerHTML='<div class="small">⏳ Memuat Product & Stock...</div>';
@@ -438,7 +438,7 @@ function normalizeSearch(q){return String(q||'').toLowerCase().trim().replace(/\
 function searchHaystack(value,q){const hay=normalizeSearch(value),needle=normalizeSearch(q);if(!needle)return true;return hay.includes(needle)||hay.replace(/\s+/g,'').includes(needle.replace(/\s+/g,''))}
 async function filterReceiveProducts(){const q=($('stprodsearch')?.value||'').trim().toLowerCase();const sel=$('stprod');if(!sel)return;const current=sel.value;Array.from(sel.options).forEach(o=>{const p=inventoryProducts.find(x=>x.id===o.value);if(!p){o.hidden=false;return;}const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ').toLowerCase();o.hidden=!!q&&!searchHaystack(hay,q);});if(current&&!sel.querySelector('option[value="'+CSS.escape(current)+'"]')?.hidden)sel.value=current;toggleReceiveFields();}
 async function openReceiveStock(){
- if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management dan Facilitator.');return;}
+ if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management, Fasilitator, dan Admin Finance Majesty Cell.');return;}
  const teams=await sb.from('team_directory').select('*').order('name');if(teams.error)return alert(teams.error.message);
  const products=inventoryProducts.map(p=>'<option value="'+p.id+'">'+esc(masterProductLabel(p))+'</option>').join('');
  const selected=inventoryProducts.find(p=>p.id===$('stprod')?.value);
@@ -469,9 +469,9 @@ function toggleReceiveFields(){
  const source=$('stsource');if(source)source.onchange=()=>{$('hunterBox')?.classList.toggle('hidden',source.value!=='HUNTER')};
 }
 async function saveStock(){
- if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management dan Facilitator.');return;}
- const receiveOutlet=inventoryReceiveOutlet();
  const source=$('stsource')?.value||'MANAGEMENT';
+ if(!canReceiveStock(source)){alert('Admin Finance Majesty Cell hanya dapat input Barang Masuk sumber Majesty Cell.');return;}
+ const receiveOutlet=inventoryReceiveOutlet();
  const hunter=source==='HUNTER'?($('sthunter')?.value||''):null;
  const partnerName=$('stpartner')?.value||null;
  if(source==='HUNTER'&&!hunter)return alert('Hunter wajib dipilih.');

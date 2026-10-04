@@ -121,45 +121,48 @@ async function changePassword(){
  if(x.error){pe.textContent=x.error.message;return}
  $('passwordBox').classList.add('hidden');$('dashboard').classList.remove('hidden');await loadLeads();openUrl();
 }
+function getActiveRoles(){
+ const raw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ return [...new Set(raw.split(/[,;|/+]+/).map(x=>x.trim()).filter(Boolean))];
+}
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
- const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- const mg=!!profile?.is_management;
- const configs=mg
-  ? {title:'Management',sub:'Pusat kendali bisnis • target, performa, finance, inventory',cards:[['🎯','Target & Performa','Pantau pencapaian seluruh outlet'],['📦','Product & Stock','Kontrol inventory dan pergerakan barang'],['💰','Finance & Accounting','Pantau kas, laba, neraca dan kewajiban'],['🎬','Content Performance','Monitoring content seluruh outlet']]}
-  : role==='FASILITATOR'
-  ? {title:'Fasilitator',sub:'Koordinasi tim, lead, target dan kontrol operasional',cards:[['🎯','Target Outlet','Pantau target dan progres outlet'],['👥','Lead & Handover','Bantu tim menjaga alur lead'],['📦','Product & Stock','Kontrol stock dan persetujuan barang masuk'],['🎬','Content Performance','Pantau aktivitas content outlet']]}
-  : role==='SALES'
-  ? {title:'Sales',sub:'Fokus konsultasi, follow-up dan closing',cards:[['🎯','Target & Performa','Pantau target dan hasil closing'],['👥','Lead Tracker','Kerjakan lead yang menjadi tanggung jawab'],['📦','Product & Stock','Cek produk dan stock siap dijual'],['💬','Tanya AI','Bantu konsultasi dan strategi closing']]}
-  : role==='CS'
-  ? {title:'Customer Service',sub:'Fokus response cepat, qualification dan handover',cards:[['🎯','Target & Performa','Pantau WA, handover dan qualification'],['👥','Lead Tracker','Kelola lead dan follow-up customer'],['📦','Product & Stock','Cek ketersediaan produk'],['💬','Tanya AI','Bantu qualification dan follow-up']]}
-  : role==='CONTENT CREATOR'
-  ? {title:'Content Creator',sub:'Fokus content, engagement dan menghasilkan peluang WA',cards:[['🎬','Content Performance','Pantau content, views, comments dan DM'],['🎯','Target & Performa','Lihat kontribusi ke target outlet'],['💬','Tanya AI','Bantu ide content dan response DM'],['📖','Brosur','Gunakan materi produk untuk content']]}
-  : role==='ADMIN FINANCE MAJESTY CELL'
-  ? {title:'Finance Majesty Cell',sub:'Fokus administrasi stock dan kewajiban Majesty Cell',cards:[['📊','Laporan Finance Cell','Barang masuk, stock, modal dan profit sharing'],['📦','Product & Stock','Kelola stock Cell dan approval'],['🤝','Kewajiban Cell','Modal dan profit sharing yang harus disetor'],['🤖','Tanya AI','Tanya mekanisme Finance Majesty Cell']]}
-  : {title:profile?.role||'Tim Hello Majesty',sub:'Workspace sesuai peran aktif',cards:[['🎯','Target','Pantau target outlet'],['👥','Lead','Kelola pekerjaan utama'],['📦','Product & Stock','Cek kebutuhan operasional'],['🤖','Tanya AI','Minta bantuan']]};
- host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+' — '+esc(configs.title)+'</h3><div class="role-sub">'+esc(configs.sub)+'</div><div class="role-home-grid">'+configs.cards.map(x=>'<div class="role-home-card"><b>'+x[0]+' '+esc(x[1])+'</b><span>'+esc(x[2])+'</span></div>').join('')+'</div></div>';
+ const roles=getActiveRoles(),mg=!!profile?.is_management;
+ const has=r=>roles.includes(r);
+ let title=mg?'Management':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty');
+ let sub=mg?'Pusat kendali bisnis • target, performa, finance, inventory':'Workspace gabungan sesuai seluruh peran aktif';
+ let cards=[];
+ const add=(a,b,c)=>{if(!cards.some(x=>x[1]===b))cards.push([a,b,c])};
+ if(mg){add('🎯','Target & Performa','Pantau pencapaian seluruh outlet');add('📦','Product & Stock','Kontrol inventory dan pergerakan barang');add('💰','Finance & Accounting','Pantau kas, laba, neraca dan kewajiban');add('🎬','Content Performance','Monitoring content seluruh outlet');}
+ if(has('FASILITATOR')){add('🎯','Target Outlet','Pantau target dan progres outlet');add('👥','Lead & Handover','Bantu tim menjaga alur lead');add('📦','Product & Stock','Kontrol stock dan persetujuan barang masuk');add('🎬','Content Performance','Pantau aktivitas content outlet');}
+ if(has('SALES')){add('🎯','Target & Performa','Pantau target dan hasil closing');add('👥','Lead Tracker','Kerjakan lead yang menjadi tanggung jawab');add('📦','Product & Stock','Cek produk dan stock siap dijual');add('💬','Tanya AI','Bantu konsultasi dan strategi closing');}
+ if(has('CS')){add('🎯','Target & Performa','Pantau WA, handover dan qualification');add('👥','Lead Tracker','Kelola lead dan follow-up customer');add('📦','Product & Stock','Cek ketersediaan produk');add('💬','Tanya AI','Bantu qualification dan follow-up');}
+ if(has('CONTENT CREATOR')){add('🎬','Content Performance','Pantau content, views, comments dan DM');add('🎯','Target & Performa','Lihat kontribusi ke target outlet');add('💬','Tanya AI','Bantu ide content dan response DM');add('📖','Brosur','Gunakan materi produk untuk content');}
+ if(has('ADMIN FINANCE MAJESTY CELL')){add('📊','Laporan Finance Cell','Barang masuk, stock, modal dan profit sharing');add('📦','Product & Stock','Kelola stock Cell dan approval');add('🤝','Kewajiban Cell','Modal dan profit sharing yang harus disetor');add('🤖','Tanya AI','Tanya mekanisme Finance Majesty Cell');}
+ if(has('ADMIN FINANCE')){add('💰','Finance','Kelola finance outlet sesuai kewenangan');add('📊','Laporan Finance','Pantau laporan keuangan');add('🤖','Tanya AI','Bantu pekerjaan finance');}
+ if(!cards.length){add('🎯','Target','Pantau target outlet');add('👥','Lead','Kelola pekerjaan utama');add('📦','Product & Stock','Cek kebutuhan operasional');add('🤖','Tanya AI','Minta bantuan');}
+ host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+' — '+esc(title)+'</h3><div class="role-sub">'+esc(sub)+'</div><div class="role-home-grid">'+cards.map(x=>'<div class="role-home-card"><b>'+x[0]+' '+esc(x[1])+'</b><span>'+esc(x[2])+'</span></div>').join('')+'</div></div>';
 }
 function applyRoleVisibility(){
- const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- const mg=!!profile?.is_management;
- const cellFinance=role==='ADMIN FINANCE MAJESTY CELL',adminFinance=role==='ADMIN FINANCE';
- const facilitator=role==='FASILITATOR',sales=role==='SALES',cs=role==='CS',creator=role==='CONTENT CREATOR';
+ const roles=getActiveRoles(),mg=!!profile?.is_management;
+ const has=r=>roles.includes(r);
+ const cellFinance=has('ADMIN FINANCE MAJESTY CELL'),adminFinance=has('ADMIN FINANCE');
+ const facilitator=has('FASILITATOR'),sales=has('SALES'),cs=has('CS'),creator=has('CONTENT CREATOR');
  const restrictedFinance=adminFinance||cellFinance;
  const toggle=(id,show)=>{const e=$(id);if(e)e.classList.toggle('hidden',!show)};
  toggle('targetBoard',!restrictedFinance);
- toggle('leadTrackerBox',!restrictedFinance&&!creator);
- toggle('stats',!cellFinance&&!adminFinance);
- toggle('contentPerformance',!cellFinance&&!adminFinance&&!sales&&!cs);
- toggle('inventorySection',!creator&&!adminFinance);
+ toggle('leadTrackerBox',!restrictedFinance&&(!creator||sales||cs||facilitator));
+ toggle('stats',!restrictedFinance);
+ toggle('contentPerformance',!restrictedFinance&&(!sales&&!cs||creator||facilitator||mg));
+ toggle('inventorySection',!adminFinance||cellFinance);
  toggle('inventoryDashboardBtn',mg||facilitator||cs);
  toggle('inventorySalesBtn',mg||facilitator||sales);
- toggle('searchLeadBtn',!restrictedFinance&&!creator);
+ toggle('searchLeadBtn',!restrictedFinance&&(!creator||sales||cs||facilitator));
  toggle('aiBtn',true);
- toggle('brochureBtn',!restrictedFinance&&!facilitator);
+ toggle('brochureBtn',!restrictedFinance&&!facilitator||sales||cs||creator);
  toggle('accountingBtn',mg);
  toggle('perfBtn',!restrictedFinance);
- toggle('waMasukBtn',!restrictedFinance&&!sales&&!creator);
+ toggle('waMasukBtn',!restrictedFinance&&(!sales&&!creator||cs||facilitator||mg));
  toggle('tradeBtn',!restrictedFinance&&!creator&&!facilitator);
  toggle('commissionActions',mg||sales||cs||facilitator);
  const finance=$('financeBtn');

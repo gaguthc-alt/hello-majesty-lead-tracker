@@ -103,13 +103,16 @@ window.loadPartnerSettlementDetail=async function(outlet){
   const ids=(rows||[]).map(r=>r.stock_unit_id).filter(Boolean);
   const stockRes=ids.length?await sb.from('stock_units').select('*').in('id',ids):{data:[]};
   const stockMap={};(stockRes.data||[]).forEach(s=>stockMap[s.id]=s);
+  const productIds=(stockRes.data||[]).map(s=>s.product_id).filter(Boolean);
+  const pmRes=productIds.length?await sb.from('product_master').select('id,product,variant,grade').in('id',productIds):{data:[]};
+  const pmMap={};(pmRes.data||[]).forEach(p=>pmMap[p.id]=p);
   const unitName=s=>{
-    if(!s)return 'Stock '+String(Math.random()).slice(2,8);
-    const product=s.product||s.product_name||'Stock';
-    const variant=s.variant||'';
+    if(!s)return 'Stock';
+    const pm=pmMap[s.product_id]||{};
+    const product=pm.product||s.product||s.product_name||'Stock';
+    const variant=pm.variant||s.variant||'';
     const color=s.color||'';
-    const storage=s.storage_gb||s.storage||'';
-    return [product,variant,color,storage?String(storage).replace(/GB$/i,'')+'GB':''].filter(Boolean).join(' — ');
+    return [product,variant,color].filter(Boolean).join(' — ');
   };
   box.innerHTML=rows?.length?'<div class="small">Centang unit yang ingin dibayar sekarang.</div>'+rows.map(r=>{
     const s=stockMap[r.stock_unit_id]||{};

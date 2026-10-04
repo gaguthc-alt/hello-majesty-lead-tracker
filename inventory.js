@@ -24,16 +24,17 @@ async function loadInventoryData(){
   if(!profile?.is_management && !inventoryCanContentCreator){const cc=await sb.from('team_permissions').select('can_content_creator').eq('name',profile?.name).eq('outlet',profile?.outlet).eq('active',true).maybeSingle();if(!cc.error)inventoryCanContentCreator=!!cc.data?.can_content_creator;}
   window.hmCanFacilitator=inventoryCanFacilitator; window.hmCanContentCreator=inventoryCanContentCreator;
   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+  const isPartnerFinance=role==='ADMIN FINANCE MAJESTY CELL';
   const stockView=profile?.is_management?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
-  if(!profile?.is_management && profile?.outlet) stockQuery=stockQuery.eq('outlet',profile.outlet);
+  if(!profile?.is_management && profile?.outlet && !isPartnerFinance) stockQuery=stockQuery.eq('outlet',profile.outlet);
   const [p,s]=await Promise.all([
     sb.from('product_master').select('*').eq('active',true).order('category').order('product'),
     stockQuery
   ]);
   if(p.error) throw p.error; if(s.error) throw s.error;
   inventoryProducts=p.data||[]; inventoryStock=s.data||[];
-  if(role==='ADMIN FINANCE' && inventoryStock.length){
+  if((role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL') && inventoryStock.length){
     const ids=inventoryStock.map(x=>x.id).filter(Boolean);
     const costs=await sb.from('stock_units').select('id,cost').in('id',ids);
     if(!costs.error){const byId=Object.fromEntries((costs.data||[]).map(x=>[x.id,x.cost]));inventoryStock=inventoryStock.map(x=>({...x,cost:byId[x.id]??null}));}
@@ -52,7 +53,7 @@ async function loadInventoryData(){
   }
 }
 
-function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||role==='ADMIN FINANCE';}
+function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL';}
 function canReceiveStock(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||inventoryCanFacilitator||role==='FASILITATOR'||role==='ADMIN FINANCE MAJESTY CELL';}
 async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');
@@ -570,7 +571,7 @@ async function saveEditStock(id){
 }async function openStockHistory(id){const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});if(x.error)return alert(x.error.message);$('mt').textContent='🧾 Histori Stock';$('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';$('modal').classList.remove('hidden')}
 async function openSalesReport(){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- const isAdminFinance=role==='ADMIN FINANCE';
+ const isAdminFinance=role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL';
  const q=sb.from('sales_transactions').select('*').order('sold_at',{ascending:false});
  if(isAdminFinance&&profile?.outlet)q.eq('outlet',profile.outlet);
  const x=await q;

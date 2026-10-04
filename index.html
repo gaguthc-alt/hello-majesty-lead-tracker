@@ -176,7 +176,7 @@ function applyRoleVisibility(){
  const roles=getActiveRoles(),mg=!!profile?.is_management;
  const has=r=>roles.includes(r);
  const cellFinance=has('ADMIN FINANCE MAJESTY CELL'),adminFinance=has('ADMIN FINANCE');
- const facilitator=has('FASILITATOR'),sales=has('SALES'),cs=has('CS'),creator=has('CONTENT CREATOR');
+ const facilitator=has('FASILITATOR'),sales=has('SALES'),cs=has('CS')||has('CUSTOMER SERVICE'),creator=has('CONTENT CREATOR');
  const restrictedFinance=adminFinance||cellFinance;
  const toggle=(id,show)=>{const e=$(id);if(e)e.classList.toggle('hidden',!show)};
  toggle('targetBoard',!restrictedFinance);

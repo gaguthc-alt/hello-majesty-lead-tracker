@@ -123,7 +123,7 @@ async function changePassword(){
 }
 function getActiveRoles(){
  const raw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- return [...new Set(raw.split(/[,;|/+]+/).map(x=>x.trim()).filter(Boolean))];
+ return [...new Set(raw.split(/[,;|+]+/).map(x=>x.trim()).filter(Boolean))];
 }
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;

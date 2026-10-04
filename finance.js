@@ -119,7 +119,7 @@ window.loadPartnerSettlementDetail=async function(outlet){
     const imei=s.imei_1||s.imei||'-';
     const grade=s.grade?' • Grade '+esc(String(s.grade)):'';
     const bh=s.battery_health!=null?' • BH '+Number(s.battery_health)+'%':'';
-    return '<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd"><input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" style="width:auto;margin-right:8px"><b>'+esc(unitName(s))+'</b><br><span class="small">'+grade.replace(/^ • /,'')+(bh?' • BH '+Number(s.battery_health)+'%':'')+' • Modal '+hmRp(r.capital_due)+' • IMEI '+esc(String(imei))+'</span><br><span class="small">Jual '+hmRp(r.sale_price)+' • Profit '+hmRp(r.gross_profit)+'</span></label>';
+    return '<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd"><input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" style="width:auto;margin-right:8px"><b>'+esc(unitName(s))+'</b><br><span class="small">'+grade.replace(/^ • /,'')+(bh?' • BH '+Number(s.battery_health)+'%':'')+' • Modal '+hmRp(r.capital_due)+' • IMEI '+esc(String(imei))+'</span></label>';
   }).join('')+'<button class="success" style="margin-top:12px" onclick="window.payPartnerCapitalSettlement()">💸 Setor Modal Terpilih</button>':'<div class="small">Tidak ada modal Cell yang belum disetor.</div>';
 };
 window.payPartnerPlazaHistoricalCapital=async function(){

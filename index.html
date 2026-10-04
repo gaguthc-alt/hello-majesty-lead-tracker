@@ -191,7 +191,7 @@ function applyRoleVisibility(){
  toggle('searchLeadBtn',!restrictedFinance&&(!creator||sales||cs||facilitator));
  toggle('aiBtn',true);
  toggle('brochureBtn',!restrictedFinance&&!facilitator||sales||cs||creator);
- toggle('accountingBtn',mg);
+ toggle('accountingBtn',mg||facilitator);
  toggle('perfBtn',!restrictedFinance);
  toggle('waMasukBtn',cs);
  toggle('tradeBtn',!restrictedFinance&&!creator&&!facilitator);
@@ -903,7 +903,8 @@ function historyCard(l){
 function closeModal(ev){if(ev){ev.preventDefault();ev.stopPropagation();}const m=document.getElementById('modal');if(m){m.classList.add('hidden');m.style.removeProperty('display');}return false}window.closeModal=closeModal;
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 async function openAccounting(){
-  if(!profile?.is_management){return alert('Accounting hanya dapat diakses Management.');}
+  const accountingAllowed=!!profile?.is_management||getActiveRoles().includes('FASILITATOR');
+  if(!accountingAllowed){return alert('Accounting hanya dapat diakses Management atau Fasilitator.');}
   $('mt').textContent='📊 Accounting';
   $('mb').innerHTML='<div id="accountingPanel"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">📊 ACCOUNTING</h3><div class="small">Sumber data: Journal Engine • Jurnal POSTED</div></div></div><div class="box" style="margin-top:10px"><label>Periode Laba Rugi</label><select id="accountingPeriod" onchange="loadAccountingDashboard()"><option value="MONTH">Bulan Ini</option><option value="TODAY">Hari Ini</option><option value="YEAR">Tahun Ini</option></select></div><div id="accountingHealth" class="box">Memuat...</div><div id="accountingSummary" class="stats" style="grid-template-columns:1fr;gap:8px"></div><div class="row" style="margin-top:10px"><button class="secondary" onclick="openAccountingModule(\'journal\')">📒 Jurnal Umum</button><button class="secondary" onclick="openAccountingModule(\'ledger\')">📖 Buku Besar</button><button class="secondary" onclick="openAccountingModule(\'balance\')">⚖️ Neraca</button><button class="secondary" onclick="openAccountingModule(\'profit\')">📈 Laba Rugi</button><button class="secondary" onclick="openAccountingModule(\'health\')">🩺 Health Check</button><button class="secondary" onclick="openAccountingModule(\'transfer\')">💸 Transfer Kas ke Pusat</button></div><div id="accountingDetail" class="box hidden" style="margin-top:10px"></div></div>';
   $('modal').classList.remove('hidden');

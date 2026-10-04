@@ -18,11 +18,12 @@ window.loadCellFinanceReport=async function(){
   const box=document.getElementById('cellFinanceReportBody'),sb=window.sb;if(!box||!sb)return;
   const start=document.getElementById('cellReportStart')?.value,end=document.getElementById('cellReportEnd')?.value;
   box.innerHTML='<div class="small">Memuat laporan Majesty Cell...</div>';
-  const {data,error}=await sb.rpc('majesty_cell_finance_report',{p_start_date:start,p_end_date:end});
-  if(error){box.innerHTML='<div class="danger box">Gagal memuat laporan: '+esc(String(error.message||error))+'</div>';return;}
-  const d=data||{},tot=d.stock_totals||{},rows=d.receipts||[],sales=d.sales||[],due=d.capital_due||[],profit=d.profit_sharing||[],sett=d.settlements||[];
+  const [rep,stockRep]=await Promise.all([sb.rpc('majesty_cell_finance_report',{p_start_date:start,p_end_date:end}),sb.rpc('majesty_cell_stock_detail_report')]);
+  if(rep.error){box.innerHTML='<div class="danger box">Gagal memuat laporan: '+esc(String(rep.error.message||rep.error))+'</div>';return;}
+  const d=rep.data||{},stockDetail=stockRep.data||[],tot=d.stock_totals||{},rows=d.receipts||[],sales=d.sales||[],due=d.capital_due||[],profit=d.profit_sharing||[],sett=d.settlements||[];
   const money=v=>hmRp(v),name=x=>esc(String(x||'-'));
   const stockHtml=(d.stock_summary||[]).map(x=>'<div class="lead"><b>'+name(x.status)+'</b><br>'+Number(x.units||0)+' unit • '+money(x.cost)+'</div>').join('')||'<div class="small">Belum ada data.</div>';
+  const stockDetailHtml=stockDetail.map(x=>'<div class="lead"><b>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+'</b><div class="small">Status: '+name(x.status)+' • '+name(x.color)+(x.grade?' • Grade '+name(x.grade):'')+(x.battery_health!=null?' • BH '+Number(x.battery_health)+'%':'')+'</div><div>Modal: '+money(x.cost)+' • Jual: '+money(x.asking_price)+(x.sold_price!=null?' • Terjual: '+money(x.sold_price):'')+'</div></div>').join('')||'<div class="small">Belum ada stock Cell.</div>';
   const receiptHtml=rows.map(x=>'<div class="lead"><b>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+'</b><div class="small">'+new Date(x.requested_at).toLocaleString('id-ID')+' • '+name(x.status)+'</div><div>Modal: '+money(x.cost)+' • Jual: '+money(x.asking_price)+'</div><div class="small">Input: '+name(x.requester)+' • Verifikasi: '+name(x.reviewer)+'</div>'+(x.review_note?'<div class="small">Catatan: '+name(x.review_note)+'</div>':'')+'</div>').join('')||'<div class="small">Tidak ada barang masuk pada periode ini.</div>';
   const salesHtml=sales.map(x=>'<div class="lead"><b>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+'</b><div class="small">'+new Date(x.sold_at).toLocaleString('id-ID')+'</div><div>Modal: '+money(x.cost)+' • Jual: '+money(x.sale_price)+' • Profit: '+money(x.gross_profit)+'</div></div>').join('')||'<div class="small">Tidak ada penjualan pada periode ini.</div>';
   const dueHtml=due.map(x=>'<div class="lead"><b>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+'</b><div class="small">'+new Date(x.sold_at).toLocaleString('id-ID')+'</div><div>Modal wajib dibayar: <b>'+money(x.capital_due)+'</b> • Jual: '+money(x.sale_price)+' • Profit: '+money(x.gross_profit)+'</div></div>').join('')||'<div class="small">Tidak ada modal yang belum disetor.</div>';
@@ -31,7 +32,7 @@ window.loadCellFinanceReport=async function(){
   box.innerHTML='<div class="small">Periode '+name(start)+' s/d '+name(end)+'</div>'+
     '<div class="fin-grid" style="margin-top:10px"><div class="fin-card"><div class="small">READY</div><div class="fin-big">'+Number(tot.ready_units||0)+' unit</div><div class="small">'+money(tot.ready_cost)+'</div></div><div class="fin-card"><div class="small">SOLD</div><div class="fin-big">'+Number(tot.sold_units||0)+' unit</div><div class="small">Modal '+money(tot.sold_cost)+'</div></div><div class="fin-card"><div class="small">PENDING</div><div class="fin-big">'+Number(tot.pending_units||0)+' unit</div></div><div class="fin-card"><div class="small">RETURN</div><div class="fin-big">'+Number(tot.return_units||0)+' unit</div></div></div>'+
     '<div class="box" style="margin-top:12px"><h3>📦 1. Barang Masuk Cell</h3>'+receiptHtml+'</div>'+
-    '<div class="box" style="margin-top:12px"><h3>📱 2. Ringkasan Stock Cell</h3>'+stockHtml+'</div>'+
+    '<div class="box" style="margin-top:12px"><h3>📱 2. Stock Cell</h3>'+stockHtml+'<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">Lihat detail semua unit</summary><div style="margin-top:8px">'+stockDetailHtml+'</div></details></div>'+
     '<div class="box" style="margin-top:12px"><h3>💰 3. Modal Cell Belum Disetor</h3>'+dueHtml+'</div>'+
     '<div class="box" style="margin-top:12px"><h3>🧾 4. Penjualan Stock Cell</h3>'+salesHtml+'</div>'+
     '<div class="box" style="margin-top:12px"><h3>🤝 5. Profit Sharing</h3>'+profitHtml+'</div>'+

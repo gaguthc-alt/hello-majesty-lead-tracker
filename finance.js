@@ -15,9 +15,25 @@ window.openPartnerSettlement=async function(){
     '<div class="fin-card"><div class="small">Profit Sharing Bulan Ini</div><div class="fin-big">'+hmRp(profit)+'</div></div>'+
     '</div>'+
     '<div class="small" style="margin-top:14px">Refill: modal Cell dibayar sesuai unit/transaksi yang dipilih. Profit sharing dihitung bulanan.</div>'+
-    '<div style="margin-top:14px"><button class="primary" onclick="window.loadPartnerSettlementDetail()">📋 Lihat Rincian</button></div>'+
+    '<div class="row" style="margin-top:14px"><button class="primary" onclick="window.loadPartnerSettlementDetail()">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement()">🤝 Setor Profit Sharing</button></div>'+
     '<div id="partnerSettlementDetail" style="margin-top:14px"></div>';
   m.style.display='flex';
+};
+window.loadPartnerProfitSettlement=async function(){
+  const box=document.getElementById('partnerSettlementDetail');if(!box)return;
+  const now=new Date(),start=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
+  const {data:r}=await sb.from('partner_profit_share_monthly').select('*').eq('outlet','Majesty Refill Phone').eq('partner_name','Majesty Cell').eq('period_start',start).maybeSingle();
+  const gross=Number(r?.partner_profit_share||0);
+  const {data:p}=await sb.from('partner_settlements').select('amount').eq('partner_name','Majesty Cell').eq('outlet','Majesty Refill Phone').eq('settlement_type','PROFIT_SHARING').eq('status','PAID').eq('period_start',start);
+  const paid=(p||[]).reduce((s,x)=>s+Number(x.amount||0),0),due=Math.max(gross-paid,0);
+  box.innerHTML='<div class="lead"><b>Profit Sharing '+start+'</b><br>Hak Majesty Cell: '+hmRp(gross)+'<br>Sudah disetor: '+hmRp(paid)+'<br><b>Sisa: '+hmRp(due)+'</b>'+(due>0?'<div style="margin-top:10px"><button class="success" onclick="window.payPartnerProfitSettlement(\''+start+'\')">💸 Setor Sekarang</button></div>':'<div class="small" style="margin-top:8px">Tidak ada profit sharing yang perlu disetor.</div>')+'</div>';
+};
+window.payPartnerProfitSettlement=async function(start){
+  if(!confirm('Setor profit sharing Majesty Cell periode '+start+' sekarang?'))return;
+  const {data,error}=await sb.rpc('create_partner_profit_settlement',{p_period_start:start,p_settlement_date:new Date().toISOString().slice(0,10),p_note:'Pembayaran profit sharing Majesty Cell'});
+  if(error){alert(error.message);return;}
+  alert('Settlement berhasil. '+hmRp(data?.amount||0)+' disetor.');
+  window.openPartnerSettlement();
 };
 window.loadPartnerSettlementDetail=async function(){
   const box=document.getElementById('partnerSettlementDetail');if(!box)return;

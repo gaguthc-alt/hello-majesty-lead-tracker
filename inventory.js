@@ -372,7 +372,7 @@ async function askStockAI(id){
  }catch(e){if(out)out.textContent='AI belum dapat digunakan. Pastikan layanan AI sudah dikonfigurasi oleh Management.\n\n'+(e?.message||e)}
  finally{if(btn)btn.disabled=false}
 }
-function canMarkStockSold(){ return !!profile?.is_management || !!inventoryCanFacilitator; }
+function canMarkStockSold(){ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); return !!profile?.is_management || !!inventoryCanFacilitator || role==='SALES' || role==='CS'; }
 async function cleanupSoldStockPhotos(stockId){
  const paths=[];
  ['jpg','jpeg','png','webp'].forEach(ext=>{

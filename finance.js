@@ -2,6 +2,41 @@
 function hmRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID');}
 function hmFinNum(v){return 'font-size:clamp(18px,5.5vw,24px);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'}
 function hmDateRange(mode){const d=new Date(),iso=x=>{const y=x.getFullYear(),m=String(x.getMonth()+1).padStart(2,'0'),day=String(x.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};if(mode==='today'){const s=new Date(d.getFullYear(),d.getMonth(),d.getDate());return[iso(s),iso(s)];}if(mode==='year')return[d.getFullYear()+'-01-01',d.getFullYear()+'-12-31'];return[iso(new Date(d.getFullYear(),d.getMonth(),1)),iso(new Date(d.getFullYear(),d.getMonth()+1,0))];}
+window.openCellFinanceReport=async function(){
+  const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
+  if(!p.is_management && role!=='ADMIN FINANCE MAJESTY CELL' && role!=='FASILITATOR'){alert('Akses laporan tidak diizinkan.');return;}
+  const m=document.getElementById('modal'),t=document.getElementById('mt'),b=document.getElementById('mb');if(!m||!t||!b)return;
+  t.textContent='📊 Laporan Finance Majesty Cell';
+  const d=new Date(),start=new Date(d.getFullYear(),d.getMonth(),1),end=new Date(d.getFullYear(),d.getMonth()+1,0);
+  const iso=x=>x.toISOString().slice(0,10);
+  b.innerHTML='<div class="row" style="margin-bottom:12px"><button class="secondary" type="button" onclick="window.openPartnerSettlement()">← Kembali</button><button class="primary" type="button" onclick="window.loadCellFinanceReport()">🔄 Refresh</button></div>'+
+    '<div class="row"><label style="flex:1">Dari<input id="cellReportStart" type="date" value="'+iso(start)+'"></label><label style="flex:1">Sampai<input id="cellReportEnd" type="date" value="'+iso(end)+'"></label></div>'+
+    '<div id="cellFinanceReportBody" style="margin-top:12px">Memuat...</div>';
+  m.classList.remove('hidden');m.style.display='flex';await window.loadCellFinanceReport();
+};
+window.loadCellFinanceReport=async function(){
+  const box=document.getElementById('cellFinanceReportBody'),sb=window.sb;if(!box||!sb)return;
+  const start=document.getElementById('cellReportStart')?.value,end=document.getElementById('cellReportEnd')?.value;
+  box.innerHTML='<div class="small">Memuat laporan Majesty Cell...</div>';
+  const {data,error}=await sb.rpc('majesty_cell_finance_report',{p_start_date:start,p_end_date:end});
+  if(error){box.innerHTML='<div class="danger box">Gagal memuat laporan: '+esc(String(error.message||error))+'</div>';return;}
+  const d=data||{},tot=d.stock_totals||{},rows=d.receipts||[],sales=d.sales||[],due=d.capital_due||[],profit=d.profit_sharing||[],sett=d.settlements||[];
+  const money=v=>hmRp(v),name=x=>esc(String(x||'-'));
+  const stockHtml=(d.stock_summary||[]).map(x=>'<div class="lead"><b>'+name(x.status)+'</b><br>'+Number(x.units||0)+' unit • '+money(x.cost)+'</div>').join('')||'<div class="small">Belum ada data.</div>';
+  const receiptHtml=rows.map(x=>'<div class="lead"><b>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+'</b><div class="small">'+new Date(x.requested_at).toLocaleString('id-ID')+' • '+name(x.status)+'</div><div>Modal: '+money(x.cost)+' • Jual: '+money(x.asking_price)+'</div><div class="small">Input: '+name(x.requester)+' • Verifikasi: '+name(x.reviewer)+'</div>'+(x.review_note?'<div class="small">Catatan: '+name(x.review_note)+'</div>':'')+'</div>').join('')||'<div class="small">Tidak ada barang masuk pada periode ini.</div>';
+  const salesHtml=sales.map(x=>'<div class="lead"><b>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+'</b><div class="small">'+new Date(x.sold_at).toLocaleString('id-ID')+'</div><div>Modal: '+money(x.cost)+' • Jual: '+money(x.sale_price)+' • Profit: '+money(x.gross_profit)+'</div></div>').join('')||'<div class="small">Tidak ada penjualan pada periode ini.</div>';
+  const dueHtml=due.map(x=>'<div class="lead"><b>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+'</b><div class="small">'+new Date(x.sold_at).toLocaleString('id-ID')+'</div><div>Modal wajib dibayar: <b>'+money(x.capital_due)+'</b> • Jual: '+money(x.sale_price)+' • Profit: '+money(x.gross_profit)+'</div></div>').join('')||'<div class="small">Tidak ada modal yang belum disetor.</div>';
+  const profitHtml=profit.map(x=>'<div class="lead"><b>'+name(x.period_start)+' s/d '+name(x.period_end)+'</b><div>'+Number(x.transactions||0)+' transaksi • Profit: '+money(x.total_profit)+'</div><div>Hak Cell '+Number(x.profit_share_pct||30)+'%: <b>'+money(x.partner_profit_share)+'</b></div></div>').join('')||'<div class="small">Belum ada profit sharing.</div>';
+  const settHtml=sett.map(x=>'<div class="lead"><b>'+name(x.type)+'</b><div class="small">'+name(x.date)+' • '+name(x.status)+'</div><div>Nominal: <b>'+money(x.amount)+'</b></div>'+(x.note?'<div class="small">'+name(x.note)+'</div>':'')+'</div>').join('')||'<div class="small">Belum ada settlement pada periode ini.</div>';
+  box.innerHTML='<div class="small">Periode '+name(start)+' s/d '+name(end)+'</div>'+
+    '<div class="fin-grid" style="margin-top:10px"><div class="fin-card"><div class="small">READY</div><div class="fin-big">'+Number(tot.ready_units||0)+' unit</div><div class="small">'+money(tot.ready_cost)+'</div></div><div class="fin-card"><div class="small">SOLD</div><div class="fin-big">'+Number(tot.sold_units||0)+' unit</div><div class="small">Modal '+money(tot.sold_cost)+'</div></div><div class="fin-card"><div class="small">PENDING</div><div class="fin-big">'+Number(tot.pending_units||0)+' unit</div></div><div class="fin-card"><div class="small">RETURN</div><div class="fin-big">'+Number(tot.return_units||0)+' unit</div></div></div>'+
+    '<div class="box" style="margin-top:12px"><h3>📦 1. Barang Masuk Cell</h3>'+receiptHtml+'</div>'+
+    '<div class="box" style="margin-top:12px"><h3>📱 2. Ringkasan Stock Cell</h3>'+stockHtml+'</div>'+
+    '<div class="box" style="margin-top:12px"><h3>💰 3. Modal Cell Belum Disetor</h3>'+dueHtml+'</div>'+
+    '<div class="box" style="margin-top:12px"><h3>🧾 4. Penjualan Stock Cell</h3>'+salesHtml+'</div>'+
+    '<div class="box" style="margin-top:12px"><h3>🤝 5. Profit Sharing</h3>'+profitHtml+'</div>'+
+    '<div class="box" style="margin-top:12px"><h3>💸 6. Riwayat Settlement</h3>'+settHtml+'</div>';
+};
 window.openPartnerSettlement=async function(){
   const p=window.profile||{};
   if(!p.is_management && String(p.role||'').toUpperCase()!=='ADMIN FINANCE MAJESTY CELL'){alert('Akses settlement tidak diizinkan.');return;}
@@ -17,7 +52,7 @@ window.openPartnerSettlement=async function(){
     '<div class="fin-card"><div class="small">Profit Sharing Bulan Ini</div><div class="fin-big">'+hmRp(profit)+'</div></div>'+
     '</div>'+
     '<div class="small" style="margin-top:14px">Refill: modal Cell dibayar sesuai unit/transaksi yang dipilih. Profit sharing dihitung bulanan.</div>'+
-    '<div class="row" style="margin-top:14px"><button class="primary" onclick="window.loadPartnerSettlementDetail()">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement()">🤝 Setor Profit Sharing</button></div>'+
+    '<div class="row" style="margin-top:14px"><button class="primary" onclick="window.loadPartnerSettlementDetail()">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement()">🤝 Setor Profit Sharing</button><button class="secondary" onclick="window.openCellFinanceReport()">📊 Laporan Finance Cell</button></div>'+
     '<div id="partnerSettlementDetail" style="margin-top:14px"></div>';
   m.style.display='flex';
 };

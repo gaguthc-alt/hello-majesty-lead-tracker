@@ -85,16 +85,31 @@ window.loadPartnerSettlementDetail=async function(outlet){
   const box=document.getElementById('partnerSettlementDetail');if(!box)return;
   outlet=outlet||'Majesty Refill Phone';
   if(outlet==='Majesty Plaza iPhone'){
-    const {data:rows,error}=await sb.rpc('partner_obligation_summary');
+    const {data:rows,error}=await sb.from('partner_historical_stock_details').select('*').eq('outlet',outlet).eq('partner_name','Majesty Cell').order('created_at',{ascending:true});
     if(error){box.innerHTML='<div class="small">'+error.message+'</div>';return;}
-    const x=(rows||[]).find(r=>r.outlet==='Majesty Plaza iPhone')||{};
-    const due=Number(x.capital_due||0);
-    box.innerHTML='<div class="lead"><b>📋 Modal Majesty Cell — Plaza</b><br>Saldo kewajiban modal: <b>'+hmRp(due)+'</b><br><span class="small">Settlement Plaza dilakukan berdasarkan saldo kewajiban modal pada akun 2303.</span>'+(due>0?'<div style="margin-top:10px"><button class="success" onclick="window.payPartnerCapitalBalance(\'Majesty Plaza iPhone\','+due+')">💸 Setor Modal Plaza</button></div>':'<div class="small" style="margin-top:8px">Tidak ada modal Plaza yang perlu disetor.</div>')+'</div>';
+    const units=rows||[], total=units.reduce((s,r)=>s+Number(r.cost||0),0), unpaid=units.filter(r=>!r.settlement_id), unpaidTotal=unpaid.reduce((s,r)=>s+Number(r.cost||0),0);
+    const escV=v=>esc(String(v??''));
+    box.innerHTML=units.length?
+      '<div class="small">5 unit historis stock Majesty Cell yang sudah terjual di Plaza. Centang unit yang ingin dibayar sekarang.</div>'+
+      units.map((r,i)=>'<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd;'+(r.settlement_id?'opacity:.55':'')+'"><input class="partner-plaza-capital-check" type="checkbox" value="'+r.id+'" data-amount="'+Number(r.cost||0)+'" '+(r.settlement_id?'disabled':'')+' style="width:auto;margin-right:8px">'+
+      '<b>'+String(i+1)+'. '+escV(r.product_name)+' '+escV(r.color||'')+' '+(r.storage_gb?escV(r.storage_gb)+'GB':'')+'</b><br><span class="small">'+escV(r.condition||'')+(r.grade?' • Grade '+escV(r.grade):'')+' • Modal '+hmRp(r.cost)+(r.settlement_id?' • SUDAH DISETOR':'')+'</span></label>').join('')+
+      '<div style="margin-top:10px"><b>Total 5 unit: '+hmRp(total)+'</b><br><span class="small">Belum disetor: '+hmRp(unpaidTotal)+'</span></div>'+
+      (unpaid.length?'<button class="success" style="margin-top:12px" onclick="window.payPartnerPlazaHistoricalCapital()">💸 Setor Modal Terpilih</button>':'<div class="small" style="margin-top:10px">Semua modal historis Plaza sudah disetor.</div>')
+      :'<div class="small">Rincian historis Plaza belum tersedia.</div>';
     return;
   }
   const {data:rows,error}=await sb.from('partner_capital_due').select('*').eq('outlet',outlet).order('sold_at',{ascending:false});
   if(error){box.innerHTML='<div class="small">'+error.message+'</div>';return;}
   box.innerHTML=rows?.length?'<div class="small">Centang unit yang ingin dibayar sekarang.</div>'+rows.map(r=>'<label style="display:block;padding:10px 0;border-bottom:1px solid #ddd"><input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" style="width:auto;margin-right:8px"><b>'+String(r.sales_transaction_id||'').slice(0,8)+'</b> · '+hmRp(r.capital_due)+'<br><span class="small">Jual '+hmRp(r.sale_price)+' · Profit '+hmRp(r.gross_profit)+'</span></label>').join('')+'<button class="success" style="margin-top:12px" onclick="window.payPartnerCapitalSettlement()">💸 Setor Modal Terpilih</button>':'<div class="small">Tidak ada modal Cell yang belum disetor.</div>';
+};
+window.payPartnerPlazaHistoricalCapital=async function(){
+  const ids=[...document.querySelectorAll('.partner-plaza-capital-check:checked')].map(x=>x.value);
+  if(!ids.length){alert('Pilih minimal 1 unit.');return;}
+  if(!confirm('Setor modal Plaza untuk '+ids.length+' unit terpilih sekarang?'))return;
+  const {data,error}=await sb.rpc('create_partner_historical_capital_settlement',{p_ids:ids,p_settlement_date:new Date().toISOString().slice(0,10),p_note:'Pembayaran modal historis Majesty Cell - Plaza'});
+  if(error){alert(error.message);return;}
+  alert('Settlement modal Plaza berhasil. '+hmRp(data?.amount||0)+' disetor.');
+  window.openPartnerSettlement();
 };
 window.payPartnerCapitalBalance=async function(outlet,amount){
   if(!confirm('Setor modal Majesty Cell Plaza sebesar '+hmRp(amount)+' sekarang?'))return;

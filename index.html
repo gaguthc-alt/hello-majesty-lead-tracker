@@ -458,7 +458,7 @@ function card(l){
  const available=l.status_lead==='AVAILABLE';
  const canClaimCS=available&&!mg;
  const q=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK'&&!l.qualification_result;
- const sh=!mg&&window.hmCanSales&&l.cs_claimed_by!==profile?.name&&!l.sales_claimed_by&&['QUALIFIED','POTENSIAL'].includes(l.qualification_result);
+ const sh=!mg&&!l.sales_claimed_by&&['QUALIFIED','POTENSIAL'].includes(l.qualification_result)&&(l.cs_claimed_by===profile?.name||window.hmCanSales);
  const sr=!mg&&l.sales_claimed_by===profile?.name&&l.status_lead==='HANDLE';
  const isFac=!!window.hmCanFacilitator||String(profile?.role||'').toUpperCase()==='FACILITATOR';
  const canAI=mg||(isFac&&l.outlet===profile?.outlet)||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;

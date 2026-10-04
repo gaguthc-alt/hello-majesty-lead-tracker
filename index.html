@@ -101,6 +101,8 @@ async function start(u){
   renderCommissionActions();
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}
   $('dashboard').classList.remove('hidden');
+  // Re-apply role visibility after dashboard is rendered; some modules render asynchronously.
+  applyRoleVisibility();
   try{await loadLeads();openUrl();}
   catch(ex){
    console.error('[HM] Dashboard load error',ex);
@@ -1057,7 +1059,14 @@ function decorateContentPerformance(){
   }
   body.classList.toggle('hidden',!contentPerformanceOpen);
 }
-async function renderContentPerformance(){ if(String(profile?.role||'').trim().toUpperCase()==='ADMIN FINANCE')return;
+async function renderContentPerformance(){
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ // Finance Cell must not render Content Performance at all; hiding only the container is not enough because this function can recreate it.
+ if(role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL'){
+   const existing=document.getElementById('contentPerformance');
+   if(existing)existing.remove();
+   return;
+ }
  const host=document.getElementById('contentPerformance')||document.createElement('div');
  host.id='contentPerformance'; host.className='box';
  const x=await sb.rpc('content_dashboard_summary',{p_month_start:contentSelectedMonth});
@@ -1122,7 +1131,7 @@ function contentDetailCard(p){
  return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(p.title||'Content '+p.content_id.slice(0,8))+'</b><span class="badge">'+esc(p.platform)+'</span></div><div class="small">'+new Date(p.posted_at).toLocaleString('id-ID')+'</div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">👁️ Views</div><div class="num">'+Number(p.views||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+Number(p.comments||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+Number(p.dms||0).toLocaleString('id-ID')+'</div></div></div><a href="'+esc(p.post_url)+'" target="_blank">🔗 Buka Content</a></div>';
 }
 const oldRender=window.render;
-window.render=async function(){const r=await oldRender();await renderContentPerformance();return r};
+window.render=async function(){const r=await oldRender();await renderContentPerformance();applyRoleVisibility();return r};
 
 async function openAI(leadId){
  if(leadId && !leads.some(x=>x.lead_id===leadId))leadId=null;

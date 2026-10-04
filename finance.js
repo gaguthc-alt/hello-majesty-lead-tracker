@@ -81,9 +81,10 @@ window.payPartnerProfitSettlement=async function(start){
   alert('Settlement berhasil. '+hmRp(data?.amount||0)+' disetor.');
   window.openPartnerSettlement();
 };
-window.loadPartnerSettlementDetail=async function(){
+window.loadPartnerSettlementDetail=async function(outlet){
   const box=document.getElementById('partnerSettlementDetail');if(!box)return;
-  const {data:rows,error}=await sb.from('partner_capital_due').select('*').eq('outlet','Majesty Refill Phone').order('sold_at',{ascending:false});
+  outlet=outlet||'Majesty Refill Phone';
+  const {data:rows,error}=await sb.from('partner_capital_due').select('*').eq('outlet',outlet).order('sold_at',{ascending:false});
   if(error){box.innerHTML='<div class="small">'+error.message+'</div>';return;}
   box.innerHTML=rows?.length?'<div class="small">Centang unit yang ingin dibayar sekarang.</div>'+rows.map(r=>'<label style="display:block;padding:10px 0;border-bottom:1px solid #ddd"><input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" style="width:auto;margin-right:8px"><b>'+String(r.sales_transaction_id||'').slice(0,8)+'</b> · '+hmRp(r.capital_due)+'<br><span class="small">Jual '+hmRp(r.sale_price)+' · Profit '+hmRp(r.gross_profit)+'</span></label>').join('')+'<button class="success" style="margin-top:12px" onclick="window.payPartnerCapitalSettlement()">💸 Setor Modal Terpilih</button>':'<div class="small">Tidak ada modal Cell yang belum disetor.</div>';
 };

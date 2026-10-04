@@ -120,13 +120,48 @@ async function changePassword(){
  $('passwordBox').classList.add('hidden');$('dashboard').classList.remove('hidden');await loadLeads();openUrl();
 }
 function applyRoleVisibility(){
- const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const targetBoard=$('targetBoard'); if(targetBoard)targetBoard.classList.toggle('hidden',role==='ADMIN FINANCE'); const adminFinance=role==='ADMIN FINANCE'; const leadBox=$('leadTrackerBox'); const leadStats=$('stats'); if(leadBox)leadBox.classList.toggle('hidden',adminFinance); if(leadStats)leadStats.classList.toggle('hidden',adminFinance);
- const hideForAdminFinance=role==='ADMIN FINANCE';
- ['searchLeadBtn','perfBtn','waMasukBtn','tradeBtn'].forEach(id=>{const el=$(id);if(el)el.classList.toggle('hidden',hideForAdminFinance)});
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const targetBoard=$('targetBoard');
+ if(targetBoard)targetBoard.classList.toggle('hidden',role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL');
+
+ const adminFinance=role==='ADMIN FINANCE';
+ const cellFinance=role==='ADMIN FINANCE MAJESTY CELL';
+ const restrictedFinance=adminFinance||cellFinance;
+
+ const leadBox=$('leadTrackerBox'),leadStats=$('stats'),content=$('contentPerformance');
+ if(leadBox)leadBox.classList.toggle('hidden',restrictedFinance);
+ if(leadStats)leadStats.classList.toggle('hidden',restrictedFinance);
+ if(content)content.classList.toggle('hidden',restrictedFinance);
+
+ ['searchLeadBtn','perfBtn','waMasukBtn','tradeBtn','brochureBtn','accountingBtn'].forEach(id=>{
+   const el=$(id);if(el)el.classList.toggle('hidden',restrictedFinance);
+ });
+
+ const financeBtn=$('financeBtn');
+ if(financeBtn){
+   financeBtn.classList.toggle('hidden',cellFinance);
+   if(cellFinance){
+     financeBtn.textContent='🤝 Finance Majesty Cell';
+     financeBtn.onclick=()=>window.openPartnerSettlement();
+   }else{
+     financeBtn.textContent='💰 Finance';
+     financeBtn.onclick=()=>window.openFinance();
+   }
+ }
+
+ const commission=$('commissionActions');
+ if(commission)commission.classList.toggle('hidden',restrictedFinance);
+
  const actionButtons=[...document.querySelectorAll('#dashboard .row > button')];
  actionButtons.forEach(el=>{
    const label=String(el.textContent||'').trim().toUpperCase();
-   const hide=hideForAdminFinance && (label.includes('WA MASUK') || label.includes('FORM TUKAR TAMBAH'));
+   const hide=restrictedFinance && (
+     label.includes('WA MASUK') ||
+     label.includes('FORM TUKAR TAMBAH') ||
+     label.includes('LAPORAN PERFORMA') ||
+     label.includes('BROSUR') ||
+     label.includes('ACCOUNTING')
+   );
    el.classList.toggle('hidden',hide);
  });
 }

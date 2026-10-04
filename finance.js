@@ -92,7 +92,7 @@ window.loadPartnerSettlementDetail=async function(outlet){
     box.innerHTML=units.length?
       '<div class="small">5 unit historis stock Majesty Cell yang sudah terjual di Plaza. Centang unit yang ingin dibayar sekarang.</div>'+
       units.map((r,i)=>'<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd;'+(r.settlement_id?'opacity:.55':'')+'"><input class="partner-plaza-capital-check" type="checkbox" value="'+r.id+'" data-amount="'+Number(r.cost||0)+'" '+(r.settlement_id?'disabled':'')+' style="width:auto;margin-right:8px">'+
-      '<b>'+String(i+1)+'. '+escV(r.product_name)+' '+escV(r.color||'')+' '+(r.storage_gb?escV(r.storage_gb)+'GB':'')+'</b><br><span class="small">'+escV(r.condition||'')+(r.grade?' • Grade '+escV(r.grade):'')+' • Modal '+hmRp(r.cost)+(r.settlement_id?' • SUDAH DISETOR':'')+'</span></label>').join('')+
+      '<b>'+String(i+1)+'. '+escV(r.product_name)+' '+escV(r.color||'')+' '+(r.storage_gb?escV(r.storage_gb)+'GB':'')+'</b><br><span class="small">'+escV(r.condition||'')+(r.grade?' • Grade '+escV(r.grade):'')+' • Modal '+hmRp(r.cost)+' • IMEI '+escV(r.imei_1||'-')+(r.settlement_id?' • SUDAH DISETOR':'')+'</span></label>').join('')+
       '<div style="margin-top:10px"><b>Total 5 unit: '+hmRp(total)+'</b><br><span class="small">Belum disetor: '+hmRp(unpaidTotal)+'</span></div>'+
       (unpaid.length?'<button class="success" style="margin-top:12px" onclick="window.payPartnerPlazaHistoricalCapital()">💸 Setor Modal Terpilih</button>':'<div class="small" style="margin-top:10px">Semua modal historis Plaza sudah disetor.</div>')
       :'<div class="small">Rincian historis Plaza belum tersedia.</div>';

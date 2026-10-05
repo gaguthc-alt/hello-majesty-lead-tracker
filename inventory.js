@@ -177,7 +177,7 @@ async async window.refreshHunterLauncher=async function(){
     if(!r.error && r.data===true)btn.classList.remove('hidden');
   }catch(e){console.warn('[HM] Hunter launcher access check',e);}
 };
-function openInventorySection(view){
+async function openInventorySection(view){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  if(role==='ADMIN FINANCE MAJESTY CELL' && (view==='dashboard'||view==='sales')){alert('Bagian ini tidak termasuk akses Finance Majesty Cell.');return;}
  const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;

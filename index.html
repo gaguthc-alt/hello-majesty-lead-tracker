@@ -1290,7 +1290,14 @@ async function ensureSupabase(){
   });
  }
  if(!window.supabase?.createClient)throw new Error('Library Supabase belum tersedia.');
- sb=window.supabase.createClient(SUPABASE_URL,KEY);
+ // Fallback client wajib memakai accessToken provider juga.
+ // Client polos akan membuat Supabase JS mencoba auth.getSession(),
+ // yang tidak tersedia pada mode login REST kita.
+ if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
+ sb=window.supabase.createClient(SUPABASE_URL,KEY,{
+   accessToken:async()=>window.hmAccessToken(),
+   auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+ });
  return sb;
 }
 async function start(u,authClient){

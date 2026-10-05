@@ -1460,6 +1460,17 @@ function hmOpenLeadHandover(){
 async function hmOpenPerformanceReport(){
   if(typeof openPerformance==='function') await openPerformance();
 }
+async function hmOpenFacilitatorReportsInline(){
+  const panel=document.getElementById('hmMenuPanel'),title=document.getElementById('hmMenuPanelTitle'),body=document.getElementById('hmMenuPanelBody');
+  if(!panel||!title||!body)return;
+  await openFacilitatorReports();
+  const modalBody=document.getElementById('mb');
+  title.textContent='📲 Laporan Fasilitator';
+  body.innerHTML=modalBody?modalBody.innerHTML:'';
+  panel.classList.remove('hidden');
+  const modal=document.getElementById('modal');
+  if(modal)modal.classList.add('hidden');
+}
 async function hmOpenFinanceReport(){
   if(typeof openFinance==='function') await openFinance();
   const t=document.getElementById('mt');
@@ -1483,6 +1494,7 @@ function hmRunMainMenuAction(action){
   case "openInventorySection('stock')": return openInventorySection('stock');
   case 'openPerformance()': return openPerformance();
   case 'hmOpenPerformanceReport()': return hmOpenPerformanceReport();
+  case 'hmOpenFacilitatorReportsInline()': return hmOpenFacilitatorReportsInline();
   case 'openCommission()': return openCommission();
   case 'openTeamCommission()': return openTeamCommission();
   case 'hmOpenLeadHandover()': return hmOpenLeadHandover();
@@ -1522,7 +1534,7 @@ function renderRoleHome(){
    add('👥','Lead & Handover','Koordinasi lead tim','hmOpenLeadHandover()');
    add('📦','Product & Stock','Stock & approval','openInventoryDashboard()');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
-   add('📊','Laporan Fasilitator','Laporan performa tim fasilitator','hmOpenPerformanceReport()');
+   add('📊','Laporan Fasilitator','Penjualan & Stock READY','hmOpenFacilitatorReportsInline()');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');

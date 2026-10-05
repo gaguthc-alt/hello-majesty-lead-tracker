@@ -3104,15 +3104,20 @@ async function askAI(leadId){
  finally{if(btn)btn.disabled=false}
 }
 window.openAI=openAI;window.askAI=askAI;
-// Login fallback binding — keeps LOGIN clickable even if other dashboard modules change.
-// login.js owns window.doLogin; keep this binding only for the final handler.
-window.addEventListener('load',function(){
+// Login fallback binding — only attach when the primary login handler is ready.
+window.addEventListener('DOMContentLoaded',function(){
  const b=document.getElementById('loginBtn');
- if(b)b.onclick=function(e){e.preventDefault();window.doLogin();};
+ if(b && !b.dataset.hmBound){
+   b.dataset.hmBound='1';
+   b.onclick=function(e){e.preventDefault();window.doLogin();};
+ }
  const email=document.getElementById('email'),password=document.getElementById('password');
- [email,password].forEach(function(el){if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')window.doLogin();});});
+ [email,password].forEach(function(el){
+   if(el && !el.dataset.hmEnterBound){
+     el.dataset.hmEnterBound='1';
+     el.addEventListener('keydown',function(e){if(e.key==='Enter')window.doLogin();});
+   }
+ });
 });
 
-</script><script defer src="performance.js?v=20261005-loginfix-5"></script><script defer src="inventory.js?v=20261005-inventory-global-3"></script><script defer src="brochures.js?v=20261005-loginfix-5"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";
-try{document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('loginBtn');if(b)b.onclick=e=>{e.preventDefault();window.doLogin();};});}catch(e){console.error('[HM] login binding',e)}
-</script></body></html>
+</script><script defer src="performance.js?v=20261005-loginfix-5"></script><script defer src="inventory.js?v=20261005-inventory-global-3"></script><script defer src="brochures.js?v=20261005-loginfix-5"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";</script></body></html>

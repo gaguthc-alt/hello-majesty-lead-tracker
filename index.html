@@ -1227,33 +1227,82 @@ function getActiveRoles(){
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),mg=!!profile?.is_management,has=r=>roles.includes(r);
- const facilitator=has('FASILITATOR'),sales=has('SALES'),cs=has('CS')||has('CUSTOMER SERVICE');
+ const facilitator=has('FASILITATOR'),sales=has('SALES'),cs=has('CS')||has('CUSTOMER SERVICE'),creator=has('CONTENT CREATOR');
  const title=mg?'Management':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty');
  const sub=mg?'Pusat kendali bisnis • seluruh outlet':(profile?.outlet||'Workspace sesuai peran aktif');
+
+ // MENU UTAMA = hanya fungsi yang memang diberikan kepada akun/role.
+ // Management melihat seluruh modul utama.
  const cards=[],add=(icon,title,desc,fn)=>{if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn])};
- if(mg){add('🎯','Target & Performa','Pencapaian seluruh outlet','openPerformance()');add('📦','Product & Stock','Kontrol inventory','openInventoryDashboard()');add('💰','Finance & Accounting','Kas, laba, neraca','openFinance()');add('🎬','Content Performance','Monitoring content','openPerformance()');}
- if(has('FASILITATOR')){add('🎯','Target Outlet','Target & progres outlet','openPerformance()');add('👥','Lead & Handover','Koordinasi lead tim','openLeadSearch()');add('📦','Product & Stock','Stock & approval','openInventoryDashboard()');add('🎬','Content Performance','Aktivitas content','openPerformance()');}
- if(has('SALES')){add('🎯','Target & Performa','Target & closing','openPerformance()');add('👥','Lead Tracker','Lead tanggung jawab','openLeadSearch()');add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');}
- if(has('CS')){add('🎯','Target & Performa','WA, handover & qualification','openPerformance()');add('👥','Lead Tracker','Follow-up customer','openLeadSearch()');add('📦','Product & Stock','Ketersediaan produk','openInventorySection(\'stock\')');add('💬','Tanya AI','Bantuan CS','openAI()');}
- if(has('CONTENT CREATOR')){add('🎬','Content Performance','Views, comments & DM','openPerformance()');add('🎯','Target & Performa','Kontribusi outlet','openPerformance()');add('📖','Brosur','Materi produk','openBrochures()');add('💬','Tanya AI','Ide content & DM','openAI()');}
- if(has('ADMIN FINANCE MAJESTY CELL')){add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');add('🤖','Tanya AI','Mekanisme Finance Cell','openAI()');}
- if(has('ADMIN FINANCE')){add('💰','Finance','Finance outlet','openFinance()');add('📊','Laporan Finance','Laporan keuangan','openFinance()');add('🤖','Tanya AI','Bantuan finance','openAI()');}
- // Pindahkan seluruh shortcut dashboard ke MENU UTAMA bawah agar area atas hanya untuk Refresh & Logout.
- const restrictedTop=has('ADMIN FINANCE')||has('ADMIN FINANCE MAJESTY CELL');
- if(!restrictedTop){
-   if(!has('CONTENT CREATOR')||sales||cs||facilitator) add('🔎','Search Lead','Cari dan kelola lead','openLeadSearch()');
+
+ if(mg){
+   add('🔎','Search Lead','Cari & kelola seluruh lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
-   if(mg||facilitator) add('📊','Accounting','Accounting & laporan','openAccounting()');
+   add('📖','Brosur','Materi produk & promosi','openBrochures()');
+   add('📊','Accounting','Accounting & laporan','openAccounting()');
+   add('💰','Finance','Kas, laba & neraca','openFinance()');
+   add('📦','Product & Stock','Kontrol seluruh inventory','openInventoryDashboard()');
+   add('🎯','Target & Performa','Target seluruh outlet','openPerformance()');
+   add('🎬','Content Performance','Monitoring seluruh content','openPerformance()');
+   add('📱','WA Masuk','Input lead baru','addLead()');
+   add('🔄','Tukar Tambah','Form tukar tambah','openTradeForm()');
+   add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\\'sales\\')');
+   add('💰','Komisi Tim','Komisi seluruh tim','openTeamCommission()');
+ }else if(has('FASILITATOR')){
+   add('🎯','Target Outlet','Target & progres outlet','openPerformance()');
+   add('👥','Lead & Handover','Koordinasi lead tim','openLeadSearch()');
+   add('📦','Product & Stock','Stock & approval','openInventoryDashboard()');
+   add('🎬','Content Performance','Aktivitas content','openPerformance()');
+   add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
+   add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
+   add('📊','Accounting','Accounting & laporan','openAccounting()');
    add('💰','Finance','Finance & kontrol keuangan','openFinance()');
    add('📊','Laporan Performa','Target & pencapaian','openPerformance()');
+   add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
+ }else if(sales){
+   add('🎯','Target & Performa','Target & closing','openPerformance()');
+   add('👥','Lead Tracker','Lead tanggung jawab','openLeadSearch()');
+   add('📦','Product & Stock','Produk siap dijual','openInventorySection(\\'stock\\')');
+   add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\\'sales\\')');
+   add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
+   add('🤖','Tanya AI','Bantuan sales','openAI()');
+   add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
+ }else if(cs){
+   add('🎯','Target & Performa','WA, handover & qualification','openPerformance()');
+   add('👥','Lead Tracker','Follow-up customer','openLeadSearch()');
+   add('📦','Product & Stock','Ketersediaan produk','openInventorySection(\\'stock\\')');
+   add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
+   add('🤖','Tanya AI','Bantuan CS','openAI()');
+   add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
+ }else if(creator){
+   add('🎬','Content Performance','Views, comments & DM','openPerformance()');
+   add('🎯','Target & Performa','Kontribusi outlet','openPerformance()');
+   add('📖','Brosur','Materi produk','openBrochures()');
+   add('🤖','Tanya AI','Ide content & DM','openAI()');
+   add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
+ }else if(has('ADMIN FINANCE MAJESTY CELL')){
+   add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
+   add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
+   add('🤖','Tanya AI','Mekanisme Finance Cell','openAI()');
+ }else if(has('ADMIN FINANCE')){
+   add('💰','Finance','Finance outlet','openFinance()');
+   add('📊','Laporan Finance','Laporan keuangan','openFinance()');
+   add('🤖','Tanya AI','Bantuan finance','openAI()');
+ }else{
+   add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
- if(mg) add('📊','Komisi Tim','Komisi seluruh tim','openTeamCommission()');
 
- if(!profile?.is_management && !has('ADMIN FINANCE MAJESTY CELL')) add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
- if(!cards.length){add('🎯','Target','Target outlet','openPerformance()');add('📦','Product & Stock','Kebutuhan operasional','openInventorySection(\'stock\')');add('🤖','Tanya AI','Minta bantuan','openAI()');}
  const roleCards=cards.map(x=>'<button type="button" onclick="'+x[3]+'"><b>'+x[0]+' '+esc(x[1])+'</b><span>'+esc(x[2])+'</span></button>').join('');
- const kpis=mg?'<div class="role-home-kpi"><div class="kpi"><strong>Semua Outlet</strong><span>Monitoring</span></div><div class="kpi"><strong>Target</strong><span>Performa</span></div><div class="kpi"><strong>Finance</strong><span>Kontrol</span></div></div>':has('ADMIN FINANCE MAJESTY CELL')?'<div class="role-home-kpi"><div class="kpi"><strong>Cell</strong><span>Partner</span></div><div class="kpi"><strong>Stock</strong><span>Monitoring</span></div><div class="kpi"><strong>Settlement</strong><span>Kewajiban</span></div></div>':has('SALES')?'<div class="role-home-kpi"><div class="kpi"><strong>Lead</strong><span>Follow-up</span></div><div class="kpi"><strong>Closing</strong><span>Target</span></div><div class="kpi"><strong>Stock</strong><span>Siap jual</span></div></div>':'<div class="role-home-kpi"><div class="kpi"><strong>Hari Ini</strong><span>Aktivitas</span></div><div class="kpi"><strong>Target</strong><span>Progress</span></div><div class="kpi"><strong>Team</strong><span>Workspace</span></div></div>';
- host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-status"><i></i> Workspace aktif</div>'+kpis+'</div><div class="role-home-section">MENU UTAMA</div><div class="role-home-menu"><div class="role-home-menu-grid">'+roleCards+'</div></div>';
+ const kpis=mg
+   ?'<div class="role-home-kpi"><div class="kpi"><strong>Semua Outlet</strong><span>Monitoring</span></div><div class="kpi"><strong>Target</strong><span>Performa</span></div><div class="kpi"><strong>Finance</strong><span>Kontrol</span></div></div>'
+   :has('ADMIN FINANCE MAJESTY CELL')
+   ?'<div class="role-home-kpi"><div class="kpi"><strong>Cell</strong><span>Partner</span></div><div class="kpi"><strong>Stock</strong><span>Monitoring</span></div><div class="kpi"><strong>Settlement</strong><span>Kewajiban</span></div></div>'
+   :has('SALES')
+   ?'<div class="role-home-kpi"><div class="kpi"><strong>Lead</strong><span>Follow-up</span></div><div class="kpi"><strong>Closing</strong><span>Target</span></div><div class="kpi"><strong>Stock</strong><span>Siap jual</span></div></div>'
+   :'<div class="role-home-kpi"><div class="kpi"><strong>Hari Ini</strong><span>Aktivitas</span></div><div class="kpi"><strong>Target</strong><span>Progress</span></div><div class="kpi"><strong>Team</strong><span>Workspace</span></div></div>';
+
+ const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
+ host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div>'+kpis+'</div><div class="role-home-section">MENU UTAMA</div><div class="role-home-menu"><div class="role-home-menu-grid">'+roleCards+'</div></div>';
 }
 function applyRoleVisibility(){
  const roles=getActiveRoles(),mg=!!profile?.is_management;

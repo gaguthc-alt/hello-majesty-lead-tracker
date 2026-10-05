@@ -1685,6 +1685,10 @@ function renderRoleHome(){
      // khusus agar tidak bergantung pada modal lama dan tidak tertutup oleh
      // hmCloseMainMenu()/sequence guard.
      if(action==="openInventorySection('stock')" || action==="openInventorySection('sales')" || action==='openTeamCommission()'){
+       if(hmActiveMainMenu===title){
+         hmCloseMainMenu();
+         return;
+       }
        void hmOpenCriticalMainMenu(title,action);
        return;
      }

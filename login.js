@@ -137,9 +137,10 @@
       const loginPage=document.getElementById('login');
       const appPage=document.getElementById('app');
       const workspacePage=document.getElementById('workspace');
+      const roleHome=document.getElementById('roleHome');
       if(loginPage)loginPage.classList.add('hidden');
       if(appPage)appPage.classList.remove('hidden');
-      if(workspacePage)workspacePage.classList.remove('hidden');
+      if(roleHome)roleHome.classList.remove('hidden');
       if(err)err.textContent='Workspace dibuka. Memuat data akun...';
 
       const starter=await waitForAppStarter();

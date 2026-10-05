@@ -1545,6 +1545,12 @@ async function hmOpenCriticalMainMenu(title,action){
    // Product & Stock dan Laporan Penjualan membutuhkan seluruh
    // inventorySection, bukan hanya inventoryPanel. openInventorySection()
    // sendiri mencari inventorySection dan mengubah visibilitasnya.
+   // Muat modul inventory terlebih dahulu. Modul ini mendaftarkan API global
+   // dan membaca struktur DOM inventorySection saat dibutuhkan.
+   await hmLoadModule('inventory');
+   const inventoryOpen=window.openInventorySection;
+   if(typeof inventoryOpen!=='function')throw new Error('inventory.js belum siap.');
+
    const section=document.getElementById('inventorySection');
    if(!section)throw new Error('Bagian Product & Stock tidak ditemukan.');
    const placeholder=document.createComment('HM_INLINE_inventorySection');
@@ -1555,7 +1561,7 @@ async function hmOpenCriticalMainMenu(title,action){
    section.classList.remove('hidden');
 
    const view=action==="openInventorySection('sales')"?'sales':'stock';
-   await hmLoadModule('inventory'); const inventoryOpen=window.openInventorySection; if(typeof inventoryOpen!=='function')throw new Error('inventory.js belum siap.'); await inventoryOpen(view);
+   await inventoryOpen(view);
    if(hmActiveMainMenu!==key)return;
 
    const node=document.getElementById('inventoryPanel');

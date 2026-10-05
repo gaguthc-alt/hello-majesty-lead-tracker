@@ -500,6 +500,53 @@ label{
     font-size:13px!important;
   }
 }
+
+/* === HM MOBILE WIDTH FIX — MANAGEMENT / FINANCE === */
+html,body{width:100%;max-width:100%;overflow-x:hidden!important}
+body{box-sizing:border-box}
+*,*:before,*:after{box-sizing:border-box}
+main{width:100%!important;max-width:1160px!important;margin-left:auto!important;margin-right:auto!important;padding-left:12px!important;padding-right:12px!important}
+#dashboard,#login,#tradePublic{width:100%!important;max-width:100%!important;min-width:0!important}
+.dashboard-actions.management-actions{width:100%!important;max-width:100%!important;box-sizing:border-box!important}
+.dashboard-actions.management-actions .row{width:100%!important;max-width:100%!important;min-width:0!important}
+.dashboard-actions.management-actions .row>span{min-width:0!important}
+.dashboard-actions.management-actions button{min-width:0!important;max-width:100%!important;overflow:hidden!important;word-break:break-word!important;white-space:normal!important}
+.box,.lead,.stat,.role-home,.role-home-menu{max-width:100%!important;min-width:0!important;overflow-wrap:anywhere}
+@media(max-width:600px){
+  html,body{width:100vw!important;overflow-x:hidden!important}
+  main{width:100vw!important;max-width:none!important;padding:10px!important;margin:0!important}
+  header{width:100vw!important;max-width:none!important;padding:15px 14px!important}
+  .dashboard-actions.management-actions{
+    width:100%!important;
+    margin:10px 0!important;
+    padding:10px!important;
+    border-radius:20px!important;
+  }
+  .dashboard-actions.management-actions .row{
+    width:100%!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+  }
+  .dashboard-actions.management-actions button{
+    width:100%!important;
+    min-height:70px!important;
+    padding:11px 10px!important;
+    font-size:13px!important;
+    line-height:1.2!important;
+    border-radius:15px!important;
+  }
+  .dashboard-actions.management-actions #refreshBtn{
+    min-height:54px!important;
+  }
+  .role-home{width:100%!important;margin-left:0!important;margin-right:0!important}
+  .role-home-grid,.role-home-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:360px){
+  main{padding:8px!important}
+  .dashboard-actions.management-actions{padding:8px!important}
+  .dashboard-actions.management-actions .row{gap:7px!important}
+  .dashboard-actions.management-actions button{min-height:66px!important;font-size:12px!important;padding:9px 8px!important}
+}
 </style></head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
 <div class="login-shell">
   <div class="login-brand">

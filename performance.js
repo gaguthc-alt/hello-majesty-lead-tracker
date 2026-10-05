@@ -119,7 +119,7 @@ async function perfBuild(mode){
      lines.push('');
    }
    if(role==='Fasilitator'){
-     const rc=mode==='today'?await perfGetTeamMetrics('today',profile?.outlet):(target.role_contribution?.facilitator||{}), o=(target.outlets||[]).find(x=>x.outlet===profile?.outlet)||{};
+     const rc=await perfGetTeamMetrics(mode,profile?.outlet), o=(target.outlets||[]).find(x=>x.outlet===profile?.outlet)||{};
      lines.push('🧭 *FASILITATOR PERFORMANCE*');
      lines.push('• WA Tim: '+perfFmt(rc.wa)+' / '+perfFmt(o.wa_target));
      lines.push('• Qualified Tim: '+perfFmt(rc.qualified)+' / '+perfFmt(o.qualified_target));

@@ -3109,11 +3109,11 @@ async function renderContentPerformance(){
   hmContentPerformanceRequest=(async()=>{
     if(!profile?.user_id)throw new Error('Session belum siap. Silakan coba lagi.');
     await ensureSupabase();
-    const sessionCheck=await sb.auth.getSession();
-    if(!sessionCheck.data?.session)throw new Error('Sesi login belum siap. Silakan coba lagi.');
-    if(sessionCheck.data.session.user.id!==profile.user_id)throw new Error('Sesi login berubah. Silakan coba lagi.');
-
- const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+    // Aplikasi memakai access-token provider, bukan Supabase auth session lokal.
+    if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap. Silakan coba lagi.');
+    const accessToken=await window.hmAccessToken();
+    if(!accessToken)throw new Error('Sesi login belum siap. Silakan coba lagi.');
+    const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const host=document.getElementById('contentPerformance')||document.createElement('div');
  host.id='contentPerformance'; host.className='box';
  await ensureSupabase();

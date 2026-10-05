@@ -164,6 +164,8 @@ function openInventoryDashboard(){
  const open=!panel.classList.contains('hidden');
  if(open && inventoryView==='dashboard'){panel.classList.add('hidden');if(btn)btn.textContent='📊 Dashboard Inventory';return;}
  panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Product & Stock';
+ const section=document.getElementById('inventorySection');if(section)section.classList.remove('hidden');
+ if(typeof renderManagementStockSummary==='function'&&profile?.is_management)await renderManagementStockSummary().catch(()=>{});
  if(open){setInventoryView('dashboard');return;}
  inventoryView='dashboard';renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));
 }
@@ -184,6 +186,7 @@ async function openInventorySection(view){
  const open=!panel.classList.contains('hidden');
  if(open && inventoryView===view){panel.classList.add('hidden');if(btn)btn.textContent='📊 Dashboard Inventory';return;}
  panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Product & Stock';
+ const section=document.getElementById('inventorySection');if(section)section.classList.remove('hidden');
  try{
    await renderInventory();
    if(view==='sales') await openSalesReport();

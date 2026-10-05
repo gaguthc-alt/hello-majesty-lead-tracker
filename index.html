@@ -1590,6 +1590,9 @@ function hmRunMainMenuAction(action){
  }
 }
 
+function hmLeadField(id){
+  return document.getElementById('hm_'+id)||document.getElementById(id);
+}
 async function hmOpenLeadNewInline(){
   // Jalur Lead Baru mandiri: render langsung ke panel Menu Utama.
   const panel=document.getElementById('hmMenuPanel');
@@ -1598,13 +1601,13 @@ async function hmOpenLeadNewInline(){
   const modal=document.getElementById('modal');
   if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
   if(title)title.textContent='📱 Lead Baru';
-  body.innerHTML='<label>Nama Customer</label><input id="fc" placeholder="Nama customer">'+
-    '<label>No WhatsApp</label><input id="fw" placeholder="08xxxxxxxxxx">'+
-    '<label>Kebutuhan</label><select id="fneedtype" onchange="renderInitialNeedFields()"><option value="">— Pilih Kebutuhan —</option><option>PEMBELIAN</option><option>SERVICE</option><option>TUKAR TAMBAH</option><option>KREDIT/CICILAN</option><option>INFORMASI</option></select>'+
-    '<div id="initialNeedFields"></div>'+
-    '<label>Catatan Awal</label><textarea id="fcatatan" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea>'+
-    '<button id="saveLeadBtn" class="success" type="button">Simpan Lead</button>';
-  document.getElementById('saveLeadBtn').onclick=saveLead;
+  body.innerHTML='<label>Nama Customer</label><input id="hm_fc" placeholder="Nama customer">'+
+    '<label>No WhatsApp</label><input id="hm_fw" placeholder="08xxxxxxxxxx">'+
+    '<label>Kebutuhan</label><select id="hm_fneedtype" onchange="renderInitialNeedFields()"><option value="">— Pilih Kebutuhan —</option><option>PEMBELIAN</option><option>SERVICE</option><option>TUKAR TAMBAH</option><option>KREDIT/CICILAN</option><option>INFORMASI</option></select>'+
+    '<div id="hm_initialNeedFields"></div>'+
+    '<label>Catatan Awal</label><textarea id="hm_fcatatan" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea>'+
+    '<button id="hm_saveLeadBtn" class="success" type="button">Simpan Lead</button>';
+  document.getElementById('hm_saveLeadBtn').onclick=saveLead;
   if(modal)modal.classList.add('hidden');
   panel.classList.remove('hidden');
   setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),20);
@@ -2489,7 +2492,7 @@ async function addLead(){
  $('saveLeadBtn').onclick=saveLead;$('modal').classList.remove('hidden');
 }
 function renderInitialNeedFields(){
- const t=$('fneedtype')?.value, h=$('initialNeedFields'); if(!h)return;
+ const t=hmLeadField('fneedtype')?.value, h=hmLeadField('initialNeedFields'); if(!h)return;
  const common='';
  if(t==='PEMBELIAN')h.innerHTML='<label>Produk yang Dicari</label><input id="i_product" placeholder="Contoh: iPhone 17 Pro Max">'+
  '<label>Budget</label><input id="i_budget" placeholder="Contoh: 20 juta">'+
@@ -2518,7 +2521,7 @@ function renderInitialNeedFields(){
 }
 function initialField(id){return $(id)?.value?.trim()||''}
 function buildInitialData(){
- const t=$('fneedtype')?.value, d={};
+ const t=hmLeadField('fneedtype')?.value, d={};
  if(t==='PEMBELIAN')Object.assign(d,{product:initialField('i_product'),budget:initialField('i_budget'),preference:initialField('i_preference'),special:initialField('i_special')});
  if(t==='SERVICE')Object.assign(d,{device:initialField('i_device'),model:initialField('i_model'),complaint:initialField('i_complaint'),condition:initialField('i_condition')});
  if(t==='TUKAR TAMBAH')Object.assign(d,{device:initialField('i_trade_device'),capacity:initialField('i_trade_capacity'),condition:initialField('i_trade_condition'),completeness:initialField('i_trade_completeness'),warranty:initialField('i_trade_warranty'),function_check:initialField('i_trade_function'),signal:initialField('i_trade_signal'),battery_health:initialField('i_trade_bh'),minus:initialField('i_trade_minus'),usage_duration:initialField('i_trade_usage'),wanted_product:initialField('i_wanted'),budget:initialField('i_trade_budget')});
@@ -2527,10 +2530,10 @@ function buildInitialData(){
  return d;
 }
 async function saveLead(){
- const type=$('fneedtype').value;if(!type)return alert('Kebutuhan wajib dipilih.');
+ const type=hmLeadField('fneedtype')?.value;if(!type)return alert('Kebutuhan wajib dipilih.');
  const d=buildInitialData();
  const summary=type==='PEMBELIAN'?(d.product||'') : type==='SERVICE'?(d.device+' '+d.model+' — '+d.complaint) : type==='TUKAR TAMBAH'?(d.device+' '+d.capacity+' → '+d.wanted_product) : type==='KREDIT/CICILAN'?(d.product||'') : (d.information||'');
- const x=await sb.rpc('create_lead',{p_customer:$('fc').value,p_whatsapp:$('fw').value,p_product:d.product||d.wanted_product||null,p_need:summary||type,p_budget:d.budget||d.dp_budget||d.price||null,p_timeline:null,p_preference:d.preference||null,p_catatan:$('fcatatan').value.trim()||null,p_content_creator:null,p_need_type:type,p_initial_data:d});
+ const x=await sb.rpc('create_lead',{p_customer:hmLeadField('fc')?.value||'',p_whatsapp:hmLeadField('fw')?.value||'',p_product:d.product||d.wanted_product||null,p_need:summary||type,p_budget:d.budget||d.dp_budget||d.price||null,p_timeline:null,p_preference:d.preference||null,p_catatan:hmLeadField('fcatatan')?.value.trim()||null,p_content_creator:null,p_need_type:type,p_initial_data:d});
  if(x.error)return alert(x.error.message);closeModal();await loadLeads();
 }
 function editNeedFields(t,d){

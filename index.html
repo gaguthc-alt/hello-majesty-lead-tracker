@@ -53,7 +53,7 @@ function renderCommissionActions(){
 
 async function openTeamCommission(){
  const monthStart=new Date().toISOString().slice(0,7)+'-01';
- const rp=v=>'Rp'+Number(v||0).toLocaleString('id-ID');
+ const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
  const r=await sb.rpc('management_team_commission_report',{p_month_start:monthStart});
  if(r.error)return alert('Komisi Tim error: '+r.error.message);
  const rows=r.data||[];
@@ -85,7 +85,7 @@ async function openCommission(){
   const r=await sb.rpc('my_commission_summary',{p_month_start:monthStart});
   if(r.error)return alert('Komisi error: '+r.error.message);
   const d=r.data||{}, t=d.targets||{}, tm=d.team||{};
-  const rp=v=>'Rp'+Number(v||0).toLocaleString('id-ID');
+  const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
   const pct=(a,b)=>Number(b)>0?((Number(a||0)/Number(b))*100).toFixed(1)+'%':'0%';
   const roleFormula={
     'Content Creator':'WA saya ÷ Target WA × Closing Tim ÷ Target Closing × 10% Laba',

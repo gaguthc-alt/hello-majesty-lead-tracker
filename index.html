@@ -1353,6 +1353,10 @@ function hmMoveViewsInline(key){
  hmInlineIdsForMenu(key).forEach(id=>{
   const node=document.getElementById(id);
   if(!node)return;
+  if(node.parentNode===body){
+    node.classList.remove('hidden');
+    return;
+  }
   const placeholder=document.createComment('HM_INLINE_'+id);
   node.parentNode?.insertBefore(placeholder,node);
   body.appendChild(node);

@@ -24,38 +24,42 @@ async function hmEnsureBrochureAccess(){
   if(profile?.is_management || String(profile?.role||'').toUpperCase()==='FASILITATOR')return true;
   if(window.hmCanFacilitator || (typeof inventoryCanFacilitator!=='undefined' && inventoryCanFacilitator))return true;
   try{
-    const p=await sb.from('team_permissions')
-      .select('can_facilitator')
-      .eq('name',profile?.name)
-      .eq('outlet',profile?.outlet)
-      .eq('active',true)
-      .maybeSingle();
+    const p=await sb.from('team_permissions').select('can_facilitator').eq('name',profile?.name).eq('outlet',profile?.outlet).eq('active',true).maybeSingle();
     if(!p.error && p.data?.can_facilitator){
       if(typeof inventoryCanFacilitator!=='undefined')inventoryCanFacilitator=true;
-      window.hmCanFacilitator=true;
-      return true;
+      window.hmCanFacilitator=true; return true;
     }
   }catch(e){}
   try{
     const r=await sb.rpc('has_facilitator_inventory_access');
     if(!r.error && r.data){
       if(typeof inventoryCanFacilitator!=='undefined')inventoryCanFacilitator=true;
-      window.hmCanFacilitator=true;
-      return true;
+      window.hmCanFacilitator=true; return true;
     }
   }catch(e){}
   return false;
 }
+function hmFocusBrochurePanel(){
+  requestAnimationFrame(()=>{
+    const modal=document.getElementById('modal');
+    const box=modal?.querySelector(':scope > .box');
+    if(modal)modal.scrollTop=0;
+    if(box){
+      box.scrollIntoView({behavior:'smooth',block:'start'});
+      box.focus?.({preventScroll:true});
+    }
+  });
+}
 async function openBrochures(){
   try{await loadBrochures();}catch(e){return alert('Brosur gagal dimuat: '+(e?.message||e));}
-
   const can=await hmEnsureBrochureAccess();
   $('mt').textContent='📖 BROSUR';
   $('mb').innerHTML=
     '<div class="small" style="margin-bottom:10px">Pilih merk untuk melihat brosur yang tersedia.</div>'+
-    '<div id="brochureBrandMenu" class="row">'+hmBrochureBrands().map(b=>'<button class="secondary" type="button" onclick="showBrochureBrand(\''+esc(b).replace(/'/g,"\\'")+'\')">📱 '+esc(b)+'</button>').join('')+'</div>'+
+    '<div id="brochureBrandMenu" class="row">'+hmBrochureBrands().map(b=>'<button class="secondary" type="button" onclick="showBrochureBrand(\\''+esc(b).replace(/'/g,"\\\\'")+'\\')">📱 '+esc(b)+'</button>').join('')+'</div>'+
     '<div id="brochureBrandBody" style="margin-top:14px"><div class="small">Pilih salah satu merk.</div></div>';
   $('modal').classList.remove('hidden');
+  hmFocusBrochurePanel();
 }
 let hmSelectedBrochureBrand='';
 function showBrochureBrand(brand){
@@ -68,6 +72,7 @@ function showBrochureBrand(brand){
     (can?'<button class="success" type="button" onclick="openBrochureUpload()">＋ Upload Brosur</button>':'')+
     '</div>'+
     (rows.length?rows.map(brochureCard).join(''):'<div class="box"><div class="small">Belum ada brosur untuk merk ini.</div>'+(can?'<button class="secondary" style="margin-top:8px" type="button" onclick="openBrochureUpload()">＋ Tambah Brosur</button>':'')+'</div>');
+  hmFocusBrochurePanel();
 }
 function brochureCard(b){
   const url=hmBrochureUrl(b.storage_path),can=hmBrochureCanManage();
@@ -76,8 +81,8 @@ function brochureCard(b){
     '<img src="'+esc(url)+'" alt="'+esc(b.title||'Brosur')+'" style="width:100%;max-height:520px;object-fit:contain;border:1px solid #ddd;border-radius:10px;margin-top:8px;background:#f8f8f8">'+
     '<div class="row" style="margin-top:8px">'+
       '<a class="secondary" style="display:inline-block;text-decoration:none;padding:10px;border-radius:8px;color:#111" href="'+esc(url+'?download='+encodeURIComponent((b.title||b.brand||'brosur').replace(/[^a-z0-9-_ ]/gi,'')+'.jpg'))+'" target="_blank" rel="noopener">⬇️ Download</a>'+
-      '<button class="success" type="button" onclick="shareBrochure(\''+esc(b.id).replace(/'/g,"\\'")+'\')">📲 Kirim ke WA</button>'+
-      (can?'<button class="danger" type="button" onclick="deleteBrochure(\''+esc(b.id).replace(/'/g,"\\'")+'\')">🗑️ Hapus</button>':'')+
+      '<button class="success" type="button" onclick="shareBrochure(\\''+esc(b.id).replace(/'/g,"\\\\'")+'\\')">📲 Kirim ke WA</button>'+
+      (can?'<button class="danger" type="button" onclick="deleteBrochure(\\''+esc(b.id).replace(/'/g,"\\\\'")+'\\')">🗑️ Hapus</button>':'')+
     '</div></div>';
 }
 function openBrochureUpload(defaultBrand){
@@ -91,6 +96,7 @@ function openBrochureUpload(defaultBrand){
     '<div class="small" style="margin-top:6px">Format JPG, PNG atau WebP • maksimal 8 MB.</div>'+
     '<button class="success" style="margin-top:12px" type="button" onclick="saveBrochure()">Upload Brosur</button>';
   $('modal').classList.remove('hidden');
+  hmFocusBrochurePanel();
 }
 async function saveBrochure(){
   if(!(await hmEnsureBrochureAccess()))return alert('Hanya Management atau Facilitator yang dapat upload brosur.');
@@ -118,19 +124,17 @@ async function saveBrochure(){
 async function shareBrochure(id){
   const b=hmBrochures.find(x=>x.id===id);if(!b)return;
   const url=hmBrochureUrl(b.storage_path);
-  const text='📖 Brosur '+(b.brand||'')+(b.title?' — '+b.title:'')+'\n\nHello Majesty';
+  const text='📖 Brosur '+(b.brand||'')+(b.title?' — '+b.title:'')+'\\n\\nHello Majesty';
   try{
     const r=await fetch(url);
     if(r.ok){
       const blob=await r.blob();
       const ext=blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':'jpg';
       const file=new File([blob],'brosur-'+hmBrochureSlug(b.brand)+'.'+ext,{type:blob.type||'image/jpeg'});
-      if(navigator.share&&navigator.canShare?.({files:[file]})){
-        await navigator.share({text,files:[file]});return;
-      }
+      if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({text,files:[file]});return;}
     }
   }catch(e){if(e?.name==='AbortError')return;}
-  const wa='https://wa.me/?text='+encodeURIComponent(text+'\n'+url);
+  const wa='https://wa.me/?text='+encodeURIComponent(text+'\\n'+url);
   window.open(wa,'_blank');
 }
 async function deleteBrochure(id){

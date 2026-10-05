@@ -1577,8 +1577,8 @@ async function hmOpenCriticalMainMenu(title,action){
  }
 }
 /* HM LAZY MODULE LOADER — heavy secondary modules load only when opened */
-const hmModulePromises={};
-const hmModuleSources={
+var hmModulePromises={};
+var hmModuleSources={
   performance:'performance.js?v=20261006-lazy-1',
   inventory:'inventory.js?v=20261006-lazy-1',
   brochures:'brochures.js?v=20261006-lazy-1'

@@ -1622,6 +1622,7 @@ async function hmOpenBrochuresInline(){
  panel.style.zIndex='1200';
  requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
 }
+window.hmOpenBrochuresInline=hmOpenBrochuresInline;
 function hmLoadModule(name){
   const key=String(name||'').trim();
   const src=hmModuleSources[key];
@@ -1897,7 +1898,7 @@ function renderRoleHome(){
        hmCloseMainMenu();
        hmActiveMainMenu=title;
        hmSetMainMenuButtonOpen(title);
-       const runner=typeof hmOpenBrochuresInline==='function'?hmOpenBrochuresInline:null;
+       const runner=typeof window.hmOpenBrochuresInline==='function'?window.hmOpenBrochuresInline:null;
        if(!runner){
          alert('Modul Brosur belum siap. Silakan refresh aplikasi.');
          return;

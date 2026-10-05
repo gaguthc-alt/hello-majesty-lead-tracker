@@ -1605,12 +1605,16 @@ async function hmOpenBrochuresInline(){
  const mb=document.getElementById('mb');
  if(!panel||!body||!modal||!mb)throw new Error('Panel Brosur belum siap.');
  if(title)title.textContent='📖 Brosur';
- // Pakai modul Brosur yang sudah terbukti untuk mengambil/render data.
+ if(typeof openBrochures!=='function'){
+   if(typeof hmLoadModule==='function')await hmLoadModule('brochures');
+ }
+ if(typeof openBrochures!=='function')throw new Error('Modul Brosur belum siap.');
  await openBrochures();
  body.innerHTML='';
  while(mb.firstChild)body.appendChild(mb.firstChild);
  modal.classList.add('hidden');
  panel.classList.remove('hidden');
+ panel.style.zIndex='1200';
  requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
 }
 function hmLoadModule(name){
@@ -1936,14 +1940,12 @@ function renderRoleHome(){
      const item=cards.find(x=>String(x[1]||'')===title);
      if(!item)return;
      const action=String(item[3]||'').trim();
-     if(title==='Brosur' || title==='Content Performance'){
-       // Jalur langsung: jangan lewat wrapper sequence/modal lama.
+     if(title==='Content Performance'){
+       // Content Performance tetap memakai jalur inline khusus.
        hmCloseMainMenu();
        hmActiveMainMenu=title;
        hmSetMainMenuButtonOpen(title);
-       const runner = title==='Brosur'
-         ? (typeof hmOpenBrochuresInline==='function' ? hmOpenBrochuresInline : null)
-         : (typeof hmOpenContentPerformance==='function' ? hmOpenContentPerformance : null);
+       const runner = typeof hmOpenContentPerformance==='function' ? hmOpenContentPerformance : null;
        if(!runner){
          alert(title+' belum siap. Silakan refresh aplikasi.');
          return;

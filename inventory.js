@@ -648,7 +648,7 @@ async function openSalesReport(){
  (leadRes.data||[]).forEach(l=>{const p=hmNormalizePhone(l.whatsapp);if(p&&!leadMap[p])leadMap[p]=l;});
  window.hmSalesReportRows=rows.map(r=>{
    const st=stockMap[r.stock_unit_id]||{},pm=productMap[st.product_id]||{},lead=leadMap[hmNormalizePhone(r.customer_phone)]||null;
-   return {...r,display_product:[pm.product||'Produk tidak ditemukan',pm.variant].filter(Boolean).join(' — '),display_cs:r.customer_source==='WALK-IN'?'Walk-In':(lead?.cs||lead?.cs_claimed_by||'-'),display_sales:salesMap[r.sales_user_id]||r.sales_user_id||'-'};
+   return {...r,display_product:[pm.product||'Produk tidak ditemukan',pm.variant].filter(Boolean).join(' — '),display_cs:r.customer_source==='WALK-IN'?'Walk-In':(lead?.cs||lead?.cs_claimed_by||'-'),display_sales:salesMap[r.sales_user_id]||'-'};
  });
  window.hmSalesReportOutlets=[...new Set(rows.map(r=>String(r.outlet||'').trim()).filter(Boolean))].sort();
  window.hmSalesReportOutlet=isAdminFinance&&profile?.outlet?profile.outlet:(window.hmSalesReportOutlet||'ALL');

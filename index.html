@@ -57,7 +57,9 @@ async function openTeamCommission(){
  const r=await sb.rpc('management_team_commission_report',{p_month_start:monthStart});
  if(r.error)return alert('Komisi Tim error: '+r.error.message);
  const rows=r.data||[];
- const total=k=>rows.reduce((s,x)=>s+Number(x[k]||0),0);
+ const commissionKeys=['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'];
+ const rowTotal=x=>commissionKeys.reduce((s,k)=>s+Math.round(Number(x[k]||0)),0);
+ const total=()=>rows.reduce((s,x)=>s+rowTotal(x),0);
  const labels=[
   ['cs_commission','CS • Komisi Performa'],
   ['cs_closing_commission','CS Closing • 5% Laba Closing'],
@@ -69,7 +71,7 @@ async function openTeamCommission(){
  $('mt').textContent='📊 Komisi Tim';
  $('mb').innerHTML=
    '<div class="box"><h3 style="margin-top:0">Periode '+new Date(monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</h3>'+
-   '<div class="stats">'+invStat('Tim',rows.length)+' '+invStat('Total Komisi',rp(total('total_commission')))+'</div></div>'+
+   '<div class="stats">'+invStat('Tim',rows.length)+' '+invStat('Total Komisi',rp(total()))+'</div></div>'+
    '<div class="box"><h3>Rincian Komisi Seluruh Tim</h3>'+
    (rows.length?rows.map(x=>{
      const parts=labels.filter(([k])=>Number(x[k]||0)!==0).map(([k,l])=>'<div class="small" style="margin-top:4px">'+esc(l)+': <b>'+rp(x[k])+'</b></div>').join('');

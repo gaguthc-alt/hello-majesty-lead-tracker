@@ -1207,6 +1207,7 @@ window.renderCommissionActions = renderCommissionActions;
 const KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW',SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
 let sb=null,profile=null,leads=[];
 let hmPermissionRoles=[];
+let hmDashboardOpened=false;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function ensureSupabase(){
@@ -1255,6 +1256,8 @@ async function start(u){
   if(x.error)throw new Error('Profile belum terdaftar: '+x.error.message);
   profile=x.data;
   window.profile=profile;
+  hmDashboardOpened=false;
+  hmSetDashboardModulesVisible(false);
   if(typeof window.refreshHunterLauncher==='function')window.refreshHunterLauncher();
   window.sb=sb;
   const perm=await sb.from('team_permissions').select('can_cs,can_sales,can_facilitator,can_content_creator,can_hunter').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();
@@ -1297,6 +1300,18 @@ function getActiveRoles(){
  const base=raw.split(/[,;|+]+/).map(x=>x.trim()).filter(Boolean);
  return [...new Set([...base,...hmPermissionRoles])];
 }
+function hmSetDashboardModulesVisible(show){
+ const ids=['contentPerformance','inventorySection','stats','leadTrackerBox'];
+ ids.forEach(id=>{const e=$(id);if(e)e.classList.toggle('hidden',!show);});
+ hmDashboardOpened=!!show;
+}
+function hmOpenDashboardModules(){
+ hmSetDashboardModulesVisible(true);
+ const d=document.getElementById('dashboard');
+ if(d)setTimeout(()=>d.scrollIntoView({behavior:'smooth',block:'start'}),20);
+}
+window.hmOpenDashboardModules=hmOpenDashboardModules;
+
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),mg=!!profile?.is_management,has=r=>roles.includes(r);
@@ -1306,7 +1321,7 @@ function renderRoleHome(){
 
  // MENU UTAMA = hanya fungsi yang memang diberikan kepada akun/role.
  // Management melihat seluruh modul utama.
- const cards=[],add=(icon,title,desc,fn)=>{if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn])};
+ const cards=[],add=(icon,title,desc,fn)=>{if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,'window.hmOpenDashboardModules();'+fn])};
 
  if(mg){
    add('🔎','Search Lead','Cari & kelola seluruh lead','openLeadSearch()');
@@ -1402,6 +1417,7 @@ function applyRoleVisibility(){
  toggle('waMasukBtn',false);
  toggle('tradeBtn',false);
  toggle('commissionActions',false);
+ hmSetDashboardModulesVisible(hmDashboardOpened);
  const actions=$('dashboardActions'); if(actions){actions.classList.remove('management-actions');actions.classList.remove('hidden');actions.classList.add('top-minimal-actions');} const finance=$('financeBtn');
  if(finance){finance.classList.add('hidden');if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
  toggle('cellFinanceReportBtn',false);

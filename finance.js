@@ -52,7 +52,7 @@ window.openPartnerSettlement=async function(){
   const card=(label,x,buttons)=>'<div class="box" style="margin-top:12px"><h3>'+label+'</h3><div class="fin-grid"><div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+hmRp(Number(x.capital_due||0))+'</div></div><div class="fin-card"><div class="small">Profit Sharing</div><div class="fin-big">'+hmRp(Number(x.profit_share_due||0))+'</div></div></div><div style="margin-top:10px"><b>Total Kewajiban: '+hmRp(Number(x.capital_due||0)+Number(x.profit_share_due||0))+'</b></div>'+buttons+'</div>';
   b.innerHTML='<div class="small">Kewajiban Majesty Cell dipisahkan berdasarkan outlet.</div>'+
     card('📱 Majesty Refill Phone',refill,'<div class="row" style="margin-top:12px"><button class="primary" onclick="window.loadPartnerSettlementDetail(\'Majesty Refill Phone\')">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement(\'Majesty Refill Phone\')">🤝 Setor Profit Sharing</button></div>')+
-    card('📱 Majesty Plaza iPhone',plaza,'<div class="row" style="margin-top:12px"><button class="primary" onclick="window.loadPartnerSettlementDetail(\'Majesty Plaza iPhone\')">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement(\'Majesty Plaza iPhone\')">🤝 Setor Profit Sharing</button></div>')+
+    card('📱 Majesty Plaza iPhone',plaza,'<div class="row" style="margin-top:12px"><button class="primary" onclick="window.loadPartnerSettlementDetail(\'Majesty Plaza iPhone\')">📋 Rincian & Setor Modal</button></div>')+
     '<div id="partnerSettlementDetail" style="margin-top:14px"></div>';
   m.style.display='flex';
 };

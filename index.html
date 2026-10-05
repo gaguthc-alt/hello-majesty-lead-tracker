@@ -2060,10 +2060,26 @@ function renderRoleHome(){
      const item=cards.find(x=>String(x[1]||'')===title);
      if(!item)return;
      const action=String(item[3]||'').trim();
-     if(title==='Brosur'){
-       void hmOpenBrochuresInline().catch(ex=>{
-         console.error('[HM] Brosur gagal dibuka:',ex);
-         alert('Brosur gagal dibuka: '+(ex?.message||ex));
+     if(title==='Brosur' || title==='Content Performance'){
+       // Jalur langsung: jangan lewat wrapper sequence/modal lama.
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       const runner = title==='Brosur'
+         ? (typeof hmOpenBrochuresInline==='function' ? hmOpenBrochuresInline : null)
+         : (typeof hmOpenContentPerformance==='function' ? hmOpenContentPerformance : null);
+       if(!runner){
+         alert(title+' belum siap. Silakan refresh aplikasi.');
+         return;
+       }
+       void Promise.resolve(runner()).catch(ex=>{
+         console.error('[HM] '+title+' gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel');
+         const body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){
+           body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka '+esc(title)+': '+esc(ex?.message||'Terjadi kesalahan')+'</div>';
+           panel.classList.remove('hidden');
+         }
        });
        return;
      }

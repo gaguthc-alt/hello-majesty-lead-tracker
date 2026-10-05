@@ -1877,8 +1877,10 @@ function applyRoleVisibility(){
  toggle('waMasukBtn',false);
  toggle('tradeBtn',false);
  toggle('commissionActions',false);
- hmSetDashboardModulesVisible(hmDashboardOpened);
- const actions=$('dashboardActions'); if(actions){actions.classList.remove('management-actions');actions.classList.remove('hidden');actions.classList.add('top-minimal-actions');} const finance=$('financeBtn');
+ hmSetDashboardModulesVisible(false);
+ // DashboardActions adalah legacy UI. Tetap ada sebagai mesin tombol lama,
+ // tetapi tidak boleh tampil sebagai beranda atau toolbar kedua.
+ const actions=$('dashboardActions'); if(actions){actions.classList.add('hidden');actions.classList.remove('management-actions');actions.classList.remove('top-minimal-actions');} const finance=$('financeBtn');
  if(finance){finance.classList.add('hidden');if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
  toggle('cellFinanceReportBtn',false);
  renderRoleHome();

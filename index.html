@@ -1658,9 +1658,19 @@ async function loadLeads(){
  const x=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false});
  if(x.error){alert(x.error.message);return}leads=x.data||[];await render();
 }
-function refreshAppTotal(btn){
- // Full reload tanpa sign-out. Session Supabase tetap dipakai saat bootstrap.
+async function refreshAppTotal(btn){
  if(btn){btn.textContent='⏳ Refreshing...';}
+ try{
+  const client=await ensureSupabase();
+  const x=await client.auth.getSession();
+  const session=x.data?.session;
+  if(session){
+    sessionStorage.setItem('hm_refresh_session',JSON.stringify({
+      access_token:session.access_token,
+      refresh_token:session.refresh_token
+    }));
+  }
+ }catch(e){console.warn('[HM] refresh session backup',e)}
  window.location.replace(window.location.href);
 }
 async function refreshLeads(btn){
@@ -2531,8 +2541,20 @@ window.openAccountingModule=openAccountingModule;
  try{
   await ensureSupabase();
   if(new URLSearchParams(location.search).get("trade")==="1"){initTradePublic();return}
-  const x=await sb.auth.getSession();
-  if(x.data.session)await start(x.data.session.user);
+  let session=(await sb.auth.getSession()).data.session;
+  // Backup session di sessionStorage agar Refresh Aplikasi tidak pernah memaksa login ulang.
+  if(!session){
+    try{
+      const raw=sessionStorage.getItem('hm_refresh_session');
+      if(raw){
+        const saved=JSON.parse(raw);
+        const restored=await sb.auth.setSession({access_token:saved.access_token,refresh_token:saved.refresh_token});
+        session=restored.data?.session||null;
+        if(session)sessionStorage.removeItem('hm_refresh_session');
+      }
+    }catch(e){console.warn('[HM] restore refresh session',e)}
+  }
+  if(session)await start(session.user);
  }catch(ex){
   console.error('[HM] Session bootstrap:',ex);
   if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.';

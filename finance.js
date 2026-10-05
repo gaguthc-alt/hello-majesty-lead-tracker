@@ -146,8 +146,8 @@ window.payPartnerCapitalBalance=async function(outlet,amount){
   window.openPartnerSettlement();
 };
 window.openFinanceInventoryApprovals=async function(){
-  const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
-  if(!p.is_management && role!=='ADMIN FINANCE MAJESTY CELL'){alert('Approval Barang Masuk hanya untuk Finance Majesty Cell.');return;}
+  const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' '),roles=typeof getActiveRoles==='function'?getActiveRoles():[role];
+  if(!p.is_management && !roles.includes('ADMIN FINANCE MAJESTY CELL'){alert('Approval Barang Masuk hanya untuk Finance Majesty Cell.');return;}
   const m=document.getElementById('modal'),t=document.getElementById('mt'),b=document.getElementById('mb');
   if(!m||!t||!b)return;
   t.textContent='🔔 Persetujuan Barang Masuk';

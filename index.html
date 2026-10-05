@@ -2020,30 +2020,34 @@ async function loadLeads(){
  if(x.error){alert(x.error.message);return}leads=x.data||[];await render();
 }
 async function refreshAppTotal(btn){
- // Refresh Aplikasi = refresh seluruh data/modul tanpa reload halaman.
- // Dengan cara ini session login tidak pernah terputus.
+ // Refresh Aplikasi = refresh data + kembali ke Role Home.
+ // TIDAK reload halaman, karena sesi login memakai memory browser.
  if(btn?.dataset?.refreshing==='1')return;
  if(btn)btn.dataset.refreshing='1';
  const oldText=btn?.textContent||'🔄 Refresh Aplikasi';
- if(btn)btn.textContent='⏳ Refreshing...';
+ if(btn){btn.disabled=true;btn.textContent='⏳ Memuat ulang...';}
  try{
   await ensureSupabase();
-  if(!profile){
-    const s=(await sb.auth.getSession()).data?.session;
-    if(s)await start(s.user);
-  }
-  await refreshLeads();
-  // Muat ulang Content Performance satu kali setelah data utama selesai.
-  // Jangan dijalankan bersamaan dengan refreshLeads agar tidak terjadi race condition.
-  if(typeof renderManagementStockSummary==='function'&&profile?.is_management&&hmActiveMainMenu==='Product & Stock')await renderManagementStockSummary().catch(()=>{});
-  if(typeof loadInventoryDashboard==='function'&&document.getElementById('inventorySection')&&!document.getElementById('inventorySection').classList.contains('hidden'))await loadInventoryDashboard().catch(()=>{});
-  if(typeof renderInventory==='function'&&document.getElementById('inventoryPanel')&&!document.getElementById('inventoryPanel').classList.contains('hidden'))await renderInventory().catch(()=>{});
-  if(typeof applyRoleVisibility==='function')applyRoleVisibility();
+  if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
+  await window.hmAccessToken();
+
+  // Tutup modul yang sedang terbuka agar refresh benar-benar dimulai dari Home.
+  if(typeof hmCloseMainMenu==='function')hmCloseMainMenu();
+  if(typeof hmSetDashboardModulesVisible==='function')hmSetDashboardModulesVisible(false);
+
+  // Ambil ulang data lead terbaru.
+  await loadLeads();
+
+  // Bangun ulang Role Home supaya menu/UI ikut di-refresh.
+  if(typeof renderRoleHome==='function')renderRoleHome();
+
+  // Pastikan kembali ke posisi paling atas dashboard.
+  window.scrollTo({top:0,behavior:'smooth'});
  }catch(e){
   console.error('[HM] Refresh Aplikasi:',e);
   alert('Refresh gagal: '+(e?.message||'Silakan coba lagi.'));
  }finally{
-  if(btn){btn.dataset.refreshing='';btn.textContent='🔄 Refresh Aplikasi';}
+  if(btn){btn.dataset.refreshing='';btn.disabled=false;btn.textContent=oldText;}
  }
 }
 async function refreshLeads(btn){

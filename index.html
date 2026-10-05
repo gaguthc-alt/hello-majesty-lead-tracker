@@ -1408,16 +1408,7 @@ function hmResetMainMenuButtonLabels(){
  });
 }
 function hmSetMainMenuButtonOpen(key){
- const host=document.getElementById('roleHome');
- if(!host)return;
- host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
-  const idx=Number(btn.getAttribute('data-hm-menu-index'));
-  const b=btn.querySelector('b');
-  const item=window.hmMainMenuItems?.[idx];
-  if(!b||!item)return;
-  const isOpen=String(item[1])===String(key);
-  b.innerHTML=isOpen?'✕ Tutup '+esc(item[1]):item[0]+' '+esc(item[1]);
- });
+ hmResetMainMenuButtonLabels();
 }
 function hmCloseMainMenu(){
  hmMenuActionSeq++;
@@ -1481,7 +1472,6 @@ async function hmMainMenuClick(title,fn,actionKey){
  const key=String(title||'');
  const route=String(actionKey||key);
  if(hmActiveMainMenu===key){
-  hmCloseMainMenu();
   return;
  }
  // Tutup menu lama terlebih dahulu. hmCloseMainMenu() menaikkan sequence,
@@ -1606,6 +1596,20 @@ function hmOpenLeadHandover(){
   b.innerHTML='<div class="small" style="margin-bottom:10px">Khusus proses serah-terima CS → Sales. Tampilkan lead yang sudah qualified atau sedang ditangani Sales.</div>'+
     (rows.map(l=>card(l)).join('')||'<div class="small">Belum ada lead yang siap untuk handover.</div>');
   $('modal').classList.remove('hidden');
+}
+async function hmOpenBrochuresInline(){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+ if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
+ if(typeof window.openBrochures!=='function')throw new Error('Modul Brosur belum siap.');
+ await window.openBrochures();
+ const modal=document.getElementById('modal'),mt=document.getElementById('mt'),mb=document.getElementById('mb');
+ if(!mb)throw new Error('Isi panel Brosur tidak ditemukan.');
+ if(title)title.textContent='📖 Brosur';
+ body.innerHTML='';
+ while(mb.firstChild)body.appendChild(mb.firstChild);
+ if(modal)modal.classList.add('hidden');
+ panel.classList.remove('hidden');
+ requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
 }
 async function hmOpenPerformanceInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
@@ -1732,7 +1736,7 @@ function hmRunMainMenuAction(action){
   case 'openLeadSearch()': return openLeadSearch();
   case 'hmOpenLeadTracker()': return hmOpenLeadTracker();
   case 'openAI()': return openAI();
-  case 'openBrochures()': return window.openBrochures();
+  case 'openBrochures()': return hmOpenBrochuresInline();
   case 'openAccounting()': return openAccounting();
   case 'openFinance()': return openFinance();
   case 'openInventoryDashboard()': return window.openInventorySection('stock');

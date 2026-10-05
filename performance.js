@@ -243,12 +243,15 @@ window.openPerformance=async function(){
  box.classList.remove('hidden');
  box.innerHTML='<h3>'+ (mg?'📊 Laporan Performa Tim':'📊 Performa Saya')+'</h3>'+
    (mg?'<div class="small" style="margin-bottom:10px">Performance seluruh karyawan • data langsung dari sistem.</div>':'<div class="small" style="margin-bottom:10px">Pilih periode lalu kirim laporan sesuai peran akun secara otomatis.</div>')+
-   '<div class="row" style="flex-wrap:wrap"><button class="secondary" id="perfToday">📅 Hari Ini</button><button class="secondary" id="perfMonth">📊 Bulan Ini</button><button class="secondary" id="perfLastMonth">↩️ Bulan Kemarin</button>'+(mg?'<button class="secondary" id="perfSalesReport">📋 Laporan Penjualan</button>':'')+'</div>'+
+   '<div class="row" style="flex-wrap:wrap"><button class="secondary" id="perfToday">📅 Hari Ini</button><button class="secondary" id="perfMonth">📊 Bulan Ini</button><button class="secondary" id="perfLastMonth">↩️ Bulan Kemarin</button><button class="secondary" id="perfSalesReport">📋 Laporan Penjualan</button></div>'+
    '<div id="perfBody" style="margin-top:10px"></div>';
  if(mg){box.querySelector('#perfToday').onclick=()=>perfShowManagement('today');box.querySelector('#perfMonth').onclick=()=>perfShowManagement('month');box.querySelector('#perfLastMonth').onclick=()=>perfShowManagement('last_month');box.querySelector('#perfSalesReport').onclick=()=>perfShowSalesReport(window.perfManagementMode||'today');window.perfManagementMode='today';await perfShowManagement('today');return}
- box.querySelector('#perfToday').onclick=()=>perfShow('today');
+ box.querySelector('#perfSalesReport').onclick=()=>perfShowSalesReport(window.perfMyMode||'today');
+ box.querySelector('#perfToday').onclick=()=>{window.perfMyMode='today';perfShow('today')};
+ box.querySelector('#perfMonth').onclick=()=>{window.perfMyMode='month';perfShow('month')};
  box.querySelector('#perfMonth').onclick=()=>perfShow('month');
- box.querySelector('#perfLastMonth').onclick=()=>perfShow('last_month');
+ box.querySelector('#perfLastMonth').onclick=()=>{window.perfMyMode='last_month';perfShow('last_month')};
+ window.perfMyMode='today';
  await perfShow('today');
 };
 async function perfShowSalesReport(mode){
@@ -257,7 +260,9 @@ async function perfShowSalesReport(mode){
  try{
    const p=perfPeriod(mode);
    const end=new Date(p.end.getTime()+86400000);
-   const x=await sb.from('sales_transactions').select('*').gte('sold_at',p.start.toISOString()).lt('sold_at',end.toISOString()).order('sold_at',{ascending:false});
+   let tx=sb.from('sales_transactions').select('id,stock_unit_id,outlet,sales_user_id,sold_at,sale_price,discount,gross_profit,customer_source,customer_phone');
+   if(!profile?.is_management && profile?.outlet) tx=tx.eq('outlet',profile.outlet);
+   const x=await tx.gte('sold_at',p.start.toISOString()).lt('sold_at',end.toISOString()).order('sold_at',{ascending:false});
    if(x.error)throw x.error;
    const rows=x.data||[];
    const stockIds=[...new Set(rows.map(r=>r.stock_unit_id).filter(Boolean))];

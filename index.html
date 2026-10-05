@@ -1520,35 +1520,11 @@ async function hmMainMenuClick(title,fn,actionKey){
    else if(rr.includes('showneedsattention()'))panelTitle.textContent='🔴 Perlu Perhatian';
   }
   if(key==='Tukar Tambah')hmOpenTradeInline();
-  // Panel selalu ditempatkan setelah seluruh grid Menu Utama.
-  const roleHost=document.getElementById('roleHome');
+  // Semua menu utama tetap menggunakan panel mengambang/modal.
+  // Jangan memindahkan panel ke bawah roleHome dan jangan menggeser layar.
   const openedPanel=document.getElementById('hmMenuPanel');
-  if(roleHost && openedPanel && openedPanel.parentNode!==roleHost){
-   roleHost.appendChild(openedPanel);
-  }
-  // Fokuskan layar ke panel yang baru dibuka.
-  // Gunakan scroll container yang benar agar stabil di browser HP.
   if(openedPanel){
-   const focusOpenedPanel=()=>{
-    if(hmActiveMainMenu!==key || openedPanel.classList.contains('hidden'))return;
-    const headerH=document.querySelector('header')?.getBoundingClientRect().height||0;
-    let scroller=document.scrollingElement||document.documentElement;
-    let parent=openedPanel.parentElement;
-    while(parent && parent!==document.body){
-     const st=getComputedStyle(parent);
-     if(/auto|scroll/.test(st.overflowY) && parent.scrollHeight>parent.clientHeight){
-      scroller=parent;
-      break;
-     }
-     parent=parent.parentElement;
-    }
-    const rect=openedPanel.getBoundingClientRect();
-    const offset=rect.top-(scroller===document.scrollingElement||scroller===document.documentElement?headerH+14:14);
-    if(Math.abs(offset)<8)return;
-    scroller.scrollBy({top:offset,behavior:'smooth'});
-   };
-   requestAnimationFrame(()=>requestAnimationFrame(focusOpenedPanel));
-   setTimeout(focusOpenedPanel,350);
+   openedPanel.classList.remove('hidden');
   }
  }catch(ex){
   console.error('[HM] Main menu action:',key,ex);

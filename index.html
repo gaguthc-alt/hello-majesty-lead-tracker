@@ -1422,11 +1422,25 @@ async function hmOpenTargetOutlet(){
   if(e)e.classList.remove('hidden');
 }
 async function hmOpenContentPerformance(){
-  const e=document.getElementById('contentPerformance');
-  if(e)e.classList.remove('hidden');
+  const panel=document.getElementById('hmMenuPanel');
+  const body=document.getElementById('hmMenuPanelBody');
+  const title=document.getElementById('hmMenuPanelTitle');
+  if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
+  const node=document.getElementById('contentPerformance');
+  if(!node)throw new Error('Panel Content Performance tidak ditemukan.');
+  if(title)title.textContent='🎬 Content Performance';
+  if(node.parentNode!==body){
+    const placeholder=document.createComment('HM_INLINE_contentPerformance');
+    node.parentNode?.insertBefore(placeholder,node);
+    body.appendChild(node);
+    hmInlineMoved.push({node,placeholder});
+  }
+  node.classList.remove('hidden');
+  panel.classList.remove('hidden');
+  const modal=document.getElementById('modal');
+  if(modal)modal.classList.add('hidden');
   if(typeof renderContentPerformance==='function') await renderContentPerformance();
-  const v=document.getElementById('contentPerformance');
-  if(v)v.classList.remove('hidden');
+  node.classList.remove('hidden');
 }
 function hmOpenLeadHandover(){
   if(typeof openLeadSearch==='function') openLeadSearch();
@@ -1641,9 +1655,9 @@ async function loadLeads(){
  if(x.error){alert(x.error.message);return}leads=x.data||[];await render();
 }
 function refreshAppTotal(btn){
- // Setiap klik selalu melakukan reload penuh. Tidak ada lock/disabled state.
+ // Full reload tanpa sign-out. Session Supabase tetap dipakai saat bootstrap.
  if(btn){btn.textContent='⏳ Refreshing...';}
- window.location.reload();
+ window.location.replace(window.location.href);
 }
 async function refreshLeads(btn){
  if(btn?.disabled)return;
@@ -2508,8 +2522,18 @@ window.submitCashTransfer=async function(){
 window.openAccounting=openAccounting;
 window.openAccountingModule=openAccountingModule;
 
-/* Refresh uses direct onclick binding. */
-(async()=>{try{await ensureSupabase();if(new URLSearchParams(location.search).get("trade")==="1"){initTradePublic();return}sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')location.reload()});const x=await sb.auth.getSession();if(x.data.session)await start(x.data.session.user)}catch(ex){if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.'}})();
+/* Session bootstrap: refresh tidak boleh memicu logout. */
+(async()=>{
+ try{
+  await ensureSupabase();
+  if(new URLSearchParams(location.search).get("trade")==="1"){initTradePublic();return}
+  const x=await sb.auth.getSession();
+  if(x.data.session)await start(x.data.session.user);
+ }catch(ex){
+  console.error('[HM] Session bootstrap:',ex);
+  if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.';
+ }
+})();
 let contentPerformanceOpen=true;
 function toggleContentPerformance(ev){
   if(ev){ev.preventDefault();ev.stopPropagation();}

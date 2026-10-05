@@ -792,6 +792,62 @@ main{
     border-radius:20px!important;
   }
 }
+
+/* === HM KOMISI SAYA — MOBILE CONTENT FIT === */
+.modal,
+.modal *{
+  box-sizing:border-box!important;
+}
+.modal{
+  overflow-x:hidden!important;
+}
+.modal>.box{
+  min-width:0!important;
+  overflow-x:hidden!important;
+}
+.modal .stats{
+  width:100%!important;
+  min-width:0!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+}
+.modal .row{
+  width:100%!important;
+  min-width:0!important;
+  flex-wrap:wrap!important;
+}
+.modal .row>*{
+  min-width:0!important;
+  max-width:100%!important;
+  overflow-wrap:anywhere!important;
+  word-break:break-word!important;
+}
+.modal .lead{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+@media(max-width:600px){
+  .modal .stats{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+  }
+  .modal .stats .stat{
+    min-width:0!important;
+    width:100%!important;
+  }
+  .modal .lead .row{
+    align-items:flex-start!important;
+  }
+  .modal .lead .row>b{
+    max-width:100%!important;
+  }
+}
+@media(max-width:380px){
+  .modal .stats{
+    grid-template-columns:1fr!important;
+  }
+}
 </style></head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
 <div class="login-shell">
   <div class="login-brand">

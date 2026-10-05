@@ -1382,6 +1382,10 @@ async function hmMainMenuClick(title,fn,actionKey){
  hmSetMainMenuButtonOpen(key);
  try{
   await Promise.resolve(typeof fn==='function'?fn():null);
+  // Content Performance perlu dirender setelah panel inline tersedia.
+  if(route.toLowerCase()==='hmopencontentperformance()' && typeof renderContentPerformance==='function'){
+    await renderContentPerformance();
+  }
   // Semua menu utama dibuka LANGSUNG DI BAWAH MENU UTAMA.
   const modal=document.getElementById('modal');
   const panel=document.getElementById('hmMenuPanel');

@@ -1359,11 +1359,13 @@ function hmCloseMainMenu(){
  hmResetMainMenuButtonLabels();
 }
 function hmInlineIdsForMenu(key){
- const k=String(key||'').toLowerCase();
- if(k.includes('target'))return ['targetBoard'];
- if(k.includes('content performance'))return ['contentPerformance'];
- if(k.includes('product & stock')||k.includes('laporan penjualan'))return ['inventoryPanel'];
- if(k.includes('target & performa')||k.includes('laporan performa'))return ['performance'];
+ const k=String(key||'').trim().toLowerCase();
+ // Tentukan panel berdasarkan TUJUAN aksi, bukan judul tombol.
+ // Ini mencegah "Tanya AI" / "Content Performance" tertukar dengan menu lain.
+ if(k==='hmopentargetoutlet()')return ['targetBoard'];
+ if(k==='hmopencontentperformance()')return ['contentPerformance'];
+ if(k==='openinventorydashboard()'||k==="openinventorysection('stock')"||k==="openinventorysection('sales')" )return ['inventoryPanel'];
+ if(k==='openperformance()'||k==='hmopenperformancereport()')return ['performance'];
  return [];
 }
 function hmMoveViewsInline(key){
@@ -1389,8 +1391,9 @@ function hmOpenTradeInline(){
  if(title)title.textContent='🔄 Tukar Tambah';
  body.innerHTML='<div class="box"><h3 style="margin-top:0">Form Tukar Tambah</h3><div class="small">Pesan WhatsApp siap dikirim. Data pesan tetap mengikuti sistem Tukar Tambah.</div><textarea id="hmTradeMsg" rows="12" style="margin-top:10px">'+esc(msg)+'</textarea><div class="row" style="margin-top:10px"><button class="success" type="button" onclick="navigator.clipboard?.writeText(document.getElementById(\'hmTradeMsg\').value).then(()=>alert(\'Pesan disalin.\'))">📋 Salin Pesan</button><button class="secondary" type="button" onclick="window.open(\'https://wa.me/?text=\'+encodeURIComponent(document.getElementById(\'hmTradeMsg\').value),\'_blank\')">📲 Buka WhatsApp</button></div></div>';
 }
-async function hmMainMenuClick(title,fn){
+async function hmMainMenuClick(title,fn,actionKey){
  const key=String(title||'');
+ const route=String(actionKey||key);
  if(hmActiveMainMenu===key){
   hmCloseMainMenu();
   return;
@@ -1416,7 +1419,7 @@ async function hmMainMenuClick(title,fn){
    modal.classList.add('hidden');
    panel.classList.remove('hidden');
   }
-  hmMoveViewsInline(key);
+  hmMoveViewsInline(route);
   if(key==='Tukar Tambah')hmOpenTradeInline();
   const d=document.getElementById('dashboard');
   if(d)setTimeout(()=>d.scrollIntoView({behavior:'smooth',block:'start'}),20);
@@ -1461,6 +1464,31 @@ async function hmOpenFinanceReport(){
   if(typeof openFinance==='function') await openFinance();
   const t=document.getElementById('mt');
   if(t)t.textContent='📊 Laporan Finance';
+}
+
+function hmRunMainMenuAction(action){
+ const a=String(action||'').trim();
+ switch(a){
+  case 'openLeadSearch()': return openLeadSearch();
+  case 'openAI()': return openAI();
+  case 'openBrochures()': return openBrochures();
+  case 'openAccounting()': return openAccounting();
+  case 'openFinance()': return openFinance();
+  case 'openInventoryDashboard()': return openInventoryDashboard();
+  case 'hmOpenTargetOutlet()': return hmOpenTargetOutlet();
+  case 'hmOpenContentPerformance()': return hmOpenContentPerformance();
+  case 'addLead()': return addLead();
+  case 'hmOpenTradeInline()': return hmOpenTradeInline();
+  case "openInventorySection('sales')": return openInventorySection('sales');
+  case "openInventorySection('stock')": return openInventorySection('stock');
+  case 'openPerformance()': return openPerformance();
+  case 'hmOpenPerformanceReport()': return hmOpenPerformanceReport();
+  case 'openCommission()': return openCommission();
+  case 'openTeamCommission()': return openTeamCommission();
+  case 'hmOpenLeadHandover()': return hmOpenLeadHandover();
+  default:
+   throw new Error('Tujuan menu tidak dikenali: '+a);
+ }
 }
 
 function renderRoleHome(){
@@ -1554,14 +1582,16 @@ function renderRoleHome(){
      const item=cards[idx];
      if(!item)return;
      const title=String(item[1]||'');
-     const action=String(item[3]||'');
+     const action=String(item[3]||'').trim();
      console.log('[HM MENU CLICK]',{idx,title,action});
      void hmMainMenuClick(title,function(){
-       try{return (new Function(action))();}catch(ex){
+       try{
+         return hmRunMainMenuAction(action);
+       }catch(ex){
          console.error('[HM] Menu utama gagal membuka:',title,ex);
          throw ex;
        }
-     });
+     },action);
    };
  });
 }

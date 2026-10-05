@@ -1933,12 +1933,14 @@ async function render(){
   ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  const resumeLeads=leads.filter(viewerLead);
- const isFacilitatorAccount=(String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='FASILITATOR')||hmPermissionRoles?.includes?.('FASILITATOR');
+ const roleName=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const isFacilitatorAccount=roleName==='FASILITATOR'||hmPermissionRoles?.includes?.('FASILITATOR');
+ const isManagementAccount=!!profile?.is_management||roleName==='MANAGEMENT';
  const ownLead=(l)=>{
-  if(!isFacilitatorAccount)return viewerLead(l);
+  if(!isFacilitatorAccount&&!isManagementAccount)return viewerLead(l);
   return l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
  };
- // Fasilitator: Resume melihat seluruh lead outlet, tetapi daftar LEAD AKTIF hanya lead milik sendiri.
+ // Fasilitator & Management: Resume melihat seluruh lead outlet, tetapi daftar LEAD AKTIF hanya lead milik sendiri.
  const active=resumeLeads.filter(l=>getActiveLeadBucket(l));
  const activeOwn=resumeLeads.filter(l=>ownLead(l)).filter(l=>getActiveLeadBucket(l));
  const visibleLeads=resumeLeads;

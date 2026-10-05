@@ -1544,19 +1544,25 @@ function renderRoleHome(){
  const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
  host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div>'+kpis+'</div><div class="role-home-section">MENU UTAMA</div><div class="role-home-menu"><div class="role-home-menu-grid">'+roleCards+'</div></div><div id="hmMenuPanel" class="box hidden" style="margin:12px 0 0;padding:16px"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800;margin-bottom:10px"></div><div id="hmMenuPanelBody"></div></div>';
  host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
-   btn.addEventListener('click',function(e){
+   // Satu tombol = satu tujuan. Gunakan onclick property agar tidak ada
+   // listener lama/duplikat yang dapat mengarahkan ke menu lain.
+   btn.onclick=function(e){
      e.preventDefault();
      e.stopPropagation();
+     e.stopImmediatePropagation();
      const idx=Number(this.getAttribute('data-hm-menu-index'));
      const item=cards[idx];
      if(!item)return;
-     void hmMainMenuClick(item[1],function(){
-       try{return (new Function(item[3]))();}catch(ex){
-         console.error('[HM] Menu utama gagal membuka:',item[1],ex);
+     const title=String(item[1]||'');
+     const action=String(item[3]||'');
+     console.log('[HM MENU CLICK]',{idx,title,action});
+     void hmMainMenuClick(title,function(){
+       try{return (new Function(action))();}catch(ex){
+         console.error('[HM] Menu utama gagal membuka:',title,ex);
          throw ex;
        }
      });
-   });
+   };
  });
 }
 function applyRoleVisibility(){

@@ -12,73 +12,7 @@
   function el(id){return document.getElementById(id);}
   function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
-  async function loadClient(){
-    if(window.supabase?.createClient){
-      return window.supabase.createClient(SUPABASE_URL,KEY,{
-        auth:{
-          persistSession:true,
-          autoRefreshToken:true,
-          detectSessionInUrl:false
-        }
-      });
-    }
-
-    const loadScript=(src)=>new Promise((resolve,reject)=>{
-      const s=document.createElement('script');
-      let done=false;
-      const timer=setTimeout(()=>{
-        if(done)return;
-        done=true;
-        reject(new Error('Library login timeout.'));
-      },7000);
-      s.src=src;
-      s.async=true;
-      s.onload=()=>{
-        if(done)return;
-        done=true;
-        clearTimeout(timer);
-        resolve();
-      };
-      s.onerror=()=>{
-        if(done)return;
-        done=true;
-        clearTimeout(timer);
-        reject(new Error('Gagal memuat library Supabase.'));
-      };
-      document.head.appendChild(s);
-    });
-
-    try{
-      await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js');
-    }catch(_e){
-      await loadScript('https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js');
-    }
-
-    if(!window.supabase?.createClient){
-      throw new Error('Library Supabase tidak tersedia.');
-    }
-
-    return window.supabase.createClient(SUPABASE_URL,KEY,{
-      auth:{
-        persistSession:true,
-        autoRefreshToken:true,
-        detectSessionInUrl:false
-      }
-    });
-  }
-
-  async function getClient(){
-    if(client)return client;
-    // Reuse the dashboard's existing Supabase client when it is already ready.
-    // This avoids two Supabase Auth clients competing over the same browser session/storage.
-    if(window.sb?.auth?.setSession){
-      client=window.sb;
-      return client;
-    }
-    client=await loadClient();
-    window.sb=client;
-    return client;
-  }
+  let activeSession=null;
 
   async function restPasswordLogin(email,password){
     const controller=new AbortController();
@@ -86,35 +20,74 @@
     try{
       const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
         method:'POST',
-        headers:{
-          apikey:KEY,
-          'Content-Type':'application/json'
-        },
+        headers:{apikey:KEY,'Content-Type':'application/json'},
         body:JSON.stringify({email,password}),
         signal:controller.signal
       });
-
       let data=null;
       try{data=await res.json();}catch(_e){}
-
       if(!res.ok){
         const msg=data?.msg||data?.message||data?.error_description||data?.error||'Login gagal. Periksa email dan password.';
         throw new Error(msg);
       }
-
       if(!data?.access_token||!data?.refresh_token||!data?.user){
         throw new Error('Server login tidak mengembalikan sesi yang valid.');
       }
-
       return data;
     }catch(ex){
-      if(ex?.name==='AbortError'){
-        throw new Error('Koneksi server login terlalu lama. Periksa internet lalu coba lagi.');
-      }
+      if(ex?.name==='AbortError')throw new Error('Koneksi server login terlalu lama. Periksa internet lalu coba lagi.');
       throw ex;
-    }finally{
-      clearTimeout(timer);
+    }finally{clearTimeout(timer);}
+  }
+
+  async function refreshAccessToken(){
+    if(!activeSession?.refresh_token)throw new Error('Sesi login sudah tidak tersedia. Silakan login kembali.');
+    const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{
+      method:'POST',
+      headers:{apikey:KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:activeSession.refresh_token})
+    });
+    let data=null; try{data=await res.json();}catch(_e){}
+    if(!res.ok||!data?.access_token){
+      activeSession=null;
+      throw new Error('Sesi login sudah berakhir. Silakan login kembali.');
     }
+    activeSession={
+      ...activeSession,
+      ...data,
+      expires_at:data.expires_at||Math.floor(Date.now()/1000)+(data.expires_in||3600)
+    };
+    return activeSession.access_token;
+  }
+
+  function buildAuthenticatedClient(session){
+    if(!window.supabase?.createClient)throw new Error('Library Supabase tidak tersedia.');
+    activeSession={
+      ...session,
+      expires_at:session.expires_at||Math.floor(Date.now()/1000)+(session.expires_in||3600)
+    };
+    // Gunakan accessToken callback, bukan Supabase Auth signInWithPassword/setSession.
+    // Ini menghindari deadlock Auth-JS pada browser mobile dan tetap membuat
+    // setiap query PostgREST membawa JWT user yang benar.
+    return window.supabase.createClient(SUPABASE_URL,KEY,{
+      accessToken:async()=>{
+        const now=Math.floor(Date.now()/1000);
+        if(!activeSession?.access_token)throw new Error('Sesi login tidak tersedia.');
+        if((activeSession.expires_at||0)-now<90)await refreshAccessToken();
+        return activeSession.access_token;
+      },
+      auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+    });
+  }
+
+  async function getClient(session){
+    if(session){
+      client=buildAuthenticatedClient(session);
+      window.sb=client;
+      return client;
+    }
+    if(client)return client;
+    throw new Error('Sesi login belum tersedia.');
   }
 
   async function waitForAppStarter(){
@@ -149,17 +122,13 @@
 
       if(err)err.textContent='Menghubungkan ke server...';
 
-      // Use ONE Supabase Auth client for both authentication and dashboard startup.
-      // Do not perform a separate REST login + setSession cycle.
-      const sb=await getClient();
-
       if(err)err.textContent='Memverifikasi akun...';
-      const {data,error}=await sb.auth.signInWithPassword({email,password});
-      if(error)throw new Error(error.message||'Login gagal.');
-      if(!data?.session||!data?.user)throw new Error('Server login tidak mengembalikan sesi yang valid.');
-
+      // Authenticate directly against Supabase Auth REST endpoint.
+      // Then create a database client with the returned JWT via accessToken.
+      // This avoids the browser Auth-JS lock path that can hang on mobile.
+      const session=await restPasswordLogin(email,password);
+      const sb=await getClient(session);
       window.sb=sb;
-
       if(err)err.textContent='Login berhasil. Membuka dashboard...';
 
       const starter=await waitForAppStarter();

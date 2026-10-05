@@ -135,18 +135,13 @@
 
       const starter=await waitForAppStarter();
 
-      // start() receives the SAME client that just authenticated the user.
-      const startPromise=Promise.resolve(starter(session.user,sb));
-      const timeout=new Promise((_,reject)=>setTimeout(
-        ()=>reject(new Error('Dashboard tidak selesai dibuka. Jika pesan ini muncul, masalah ada pada data profile/permission akun.')),
-        20000
-      ));
-
-      await Promise.race([startPromise,timeout]);
-
-      if(el('login')?.classList.contains('hidden') && err){
-        err.textContent='';
-      }
+      // start() mengurus perpindahan layar sendiri. Jangan menunggu loadLeads()
+      // karena modul data tidak boleh membuat layar login terlihat macet.
+      Promise.resolve(starter(session.user,sb)).catch(ex=>{
+        console.error('[HM] Dashboard start error:',ex);
+        if(err)err.textContent=ex?.message||'Dashboard gagal dibuka.';
+      });
+      return;
     }catch(ex){
       console.error('[HM] Login bootstrap error:',ex);
       if(err)err.textContent=ex?.message||'Login gagal. Coba lagi.';

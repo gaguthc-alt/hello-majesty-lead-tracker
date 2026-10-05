@@ -136,7 +136,7 @@
       const starter=await waitForAppStarter();
 
       // start() receives the SAME client that just authenticated the user.
-      const startPromise=Promise.resolve(starter(data.user,sb));
+      const startPromise=Promise.resolve(starter(session.user,sb));
       const timeout=new Promise((_,reject)=>setTimeout(
         ()=>reject(new Error('Dashboard tidak selesai dibuka. Jika pesan ini muncul, masalah ada pada data profile/permission akun.')),
         20000

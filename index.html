@@ -2433,11 +2433,19 @@ function localDateISO(){
 function followupItems(mode){
  const iso=localDateISO();
  return leads.filter(viewerLead).filter(l=>{
-  const potential=l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
+  const csResult=String(l.qualification_result||'').toUpperCase();
+  const salesResult=String(l.sales_result||'').toUpperCase();
+
+  // Follow-up hanya untuk lead yang masih aktif.
+  // Jika Sales sudah memberi hasil akhir CLOSING/GAGAL, lead tidak boleh
+  // kembali muncul sebagai follow-up hanya karena qualification_result masih POTENSIAL.
+  if(salesResult==='CLOSING'||salesResult==='GAGAL')return false;
+  if(!l.sales_claimed_by && (csResult==='CLOSING'||csResult==='GAGAL'))return false;
+
+  const potential=csResult==='POTENSIAL'||salesResult==='POTENSIAL';
   if(!potential)return false;
 
-  // Follow-up selalu mengikuti PIC yang sedang memegang lead:
-  // Sales jika sudah claim; jika belum, CS yang claim.
+  // PIC aktif = Sales jika sudah claim; jika belum = CS.
   let pic='';
   let date='';
   if(l.sales_claimed_by){
@@ -2450,10 +2458,7 @@ function followupItems(mode){
     return false;
   }
 
-  // Jangan tampilkan follow-up yang tidak punya PIC/tanggal yang valid.
   if(!pic||!date)return false;
-
-  // Follow-up hanya milik PIC terkait, kecuali Management yang memang melihat semua.
   if(!profile?.is_management && pic!==String(profile?.name||'').trim())return false;
 
   if(mode==='TODAY')return date===iso;
@@ -2462,9 +2467,16 @@ function followupItems(mode){
  });
 }
 function showFollowupToday(mode){
+ // Follow-up adalah halaman utama tersendiri. Bersihkan panel/menu sebelumnya
+ // agar tidak muncul panel lama seperti Quick Action di bawah menu.
+ const panel=document.getElementById('hmMenuPanel');
+ if(panel)panel.classList.add('hidden');
+ const modal=document.getElementById('modal');
+ if(modal)modal.classList.add('hidden');
+
  const items=followupItems(mode);
  const title=mode==='TODAY'?'🔔 Follow-up Hari Ini':mode==='OVERDUE'?'🔴 Follow-up Terlambat':'📋 Semua Follow-up';
- $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>'+title+'</h3><button class="secondary" onclick="render()">← Kembali</button></div><p class="small">Customer POTENSIAL sesuai PIC dan tanggal follow-up.</p></div>'+
+ $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>'+title+'</h3><button class="secondary" onclick="render()">← Kembali</button></div><p class="small">Customer POTENSIAL yang masih aktif, sesuai PIC dan tanggal follow-up.</p></div>'+
  (items.map(historyCard).join('')||'<p class="small">Tidak ada customer pada daftar ini.</p>');
 }
 function showCurrentStatus(type){

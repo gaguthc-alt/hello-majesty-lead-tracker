@@ -1888,7 +1888,6 @@ async function render(){
   if(leadBox){leadBox.classList.add('hidden');leadBox.style.display='none';}
   if(leadResume){leadResume.classList.add('hidden');leadResume.style.display='none';}
  }else{
-  if(leadBox){leadBox.classList.remove('hidden');leadBox.style.display='block';}
   if(leadResume){leadResume.classList.remove('hidden');leadResume.style.display='block';}
  }
  renderCommissionActions();
@@ -1965,7 +1964,15 @@ async function render(){
   stat('Selesai',activeResume.selesai,"showCurrentStatus('HASIL')")+
   '</div></div>';
  $('activeLeadResume').innerHTML=resume;
- $('leads').innerHTML=activeOwn.map(card).join('')||'<div class="small">Tidak ada lead aktif milik Anda.</div>';
+ const ownCards=activeOwn.map(card).join('');
+ $('leads').innerHTML=ownCards||'<div class="small">Tidak ada lead aktif milik Anda.</div>';
+ // Untuk Fasilitator/Management, tampilkan kotak LEAD AKTIF hanya jika memang ada lead milik sendiri.
+ const ownOnlyAccount=isFacilitatorAccount||isManagementAccount;
+ const ownLeadBox=$('leadTrackerBox');
+ if(ownLeadBox&&ownOnlyAccount){
+  ownLeadBox.classList.toggle('hidden',activeOwn.length===0);
+  ownLeadBox.style.display=activeOwn.length?'block':'none';
+ }
 }
 function shortNominal(n){if(!n)return '0';if(Math.abs(n)>=1000000000)return (n/1000000000).toFixed(1).replace('.0','')+'M';if(Math.abs(n)>=1000000)return (n/1000000).toFixed(1).replace('.0','')+'jt';if(Math.abs(n)>=1000)return (n/1000).toFixed(0)+'rb';return String(Math.round(n));}
 async function renderTargetBoard(){

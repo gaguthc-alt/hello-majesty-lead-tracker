@@ -60,6 +60,8 @@
     return activeSession.access_token;
   }
 
+  window.hmAccessToken=async()=>{if(!activeSession?.access_token)throw new Error('Sesi login tidak tersedia.'); if((activeSession.expires_at||0)-Math.floor(Date.now()/1000)<90)await refreshAccessToken(); return activeSession.access_token;};
+
   function buildAuthenticatedClient(session){
     if(!window.supabase?.createClient)throw new Error('Library Supabase tidak tersedia.');
     activeSession={

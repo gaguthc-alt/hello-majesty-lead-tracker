@@ -34,8 +34,12 @@
       const x=await sb.auth.signInWithPassword({email,password});
       if(x.error){if(err)err.textContent=x.error.message;return;}
       window.sb=sb;
-      const starter=typeof window.hmStartApp==='function'?window.hmStartApp:(typeof window.start==='function'?window.start:null);
-      if(typeof starter!=='function')throw new Error('Aplikasi belum siap. Silakan tunggu sebentar lalu tekan LOGIN lagi.');
+      let starter=null;
+      for(let i=0;i<80&&!starter;i++){
+        starter=typeof window.hmStartApp==='function'?window.hmStartApp:(typeof window.start==='function'?window.start:null);
+        if(!starter)await new Promise(r=>setTimeout(r,100));
+      }
+      if(typeof starter!=='function')throw new Error('Aplikasi belum siap. Silakan refresh halaman lalu LOGIN lagi.');
       await starter(x.data.user,sb);
     }catch(ex){
       console.error('[HM] isolated login:',ex);

@@ -1597,7 +1597,7 @@ function hmOpenLeadHandover(){
     (rows.map(l=>card(l)).join('')||'<div class="small">Belum ada lead yang siap untuk handover.</div>');
   $('modal').classList.remove('hidden');
 }
-async async function hmOpenBrochuresInline(){
+async function hmOpenBrochuresInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
  if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
  if(typeof window.openBrochures!=='function')throw new Error('Modul Brosur belum siap.');

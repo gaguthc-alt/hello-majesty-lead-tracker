@@ -62,12 +62,14 @@ async function openTeamCommission(){
  const total=()=>rows.reduce((s,x)=>s+rowTotal(x),0);
  const labels=[
   ['cs_commission','CS • Komisi Performa'],
-  ['cs_closing_commission','CS Closing • 5% Laba Closing'],
-  ['sales_commission','Sales Closing • 10% Laba Closing'],
-  ['hunter_commission','Hunter • 10% Laba Hunter'],
-  ['content_creator_commission','Content Creator • Rumus CC'],
-  ['facilitator_commission','Fasilitator • Rumus Fasilitator']
+  ['cs_closing_commission','CS Closing'],
+  ['sales_commission','Sales Closing'],
+  ['hunter_commission','Hunter'],
+  ['content_creator_commission','Content Creator'],
+  ['facilitator_commission','Fasilitator']
  ];
+ window._teamCommissionMonthStart=monthStart;
+ window._teamCommissionRows=rows;
  $('mt').textContent='📊 Komisi Tim';
  $('mb').innerHTML=
    '<div class="box"><h3 style="margin-top:0">Periode '+new Date(monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</h3>'+
@@ -75,12 +77,49 @@ async function openTeamCommission(){
    '<div class="box"><h3>Rincian Komisi Seluruh Tim</h3>'+
    (rows.length?rows.map(x=>{
      const parts=labels.filter(([k])=>Number(x[k]||0)!==0).map(([k,l])=>'<div class="small" style="margin-top:4px">'+esc(l)+': <b>'+rp(x[k])+'</b></div>').join('');
+     const btn='<button class="btn" style="margin-top:8px" onclick="openTeamCommissionDetails(\''+encodeURIComponent(x.name||'')+'\')">🔎 Lihat Rincian</button>';
      return '<div class="lead"><div class="row" style="justify-content:space-between"><div><b>'+esc(x.name)+'</b><div class="small">'+esc(x.outlet||'-')+'</div></div><b>'+rp(rowTotal(x))+'</b></div>'+
        (parts||'<div class="small" style="margin-top:6px">Belum ada komisi bulan ini.</div>')+
+       btn+
        '</div>';
    }).join(''):'<p>Belum ada data tim aktif.</p>')+
    '</div>';
  $('modal').classList.remove('hidden');
+}
+async function openTeamCommissionDetails(encodedName){
+ const name=decodeURIComponent(encodedName||'');
+ const monthStart=window._teamCommissionMonthStart||new Date().toISOString().slice(0,7)+'-01';
+ const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
+ const r=await sb.rpc('management_team_commission_details',{p_month_start:monthStart,p_team_name:name});
+ if(r.error)return alert('Rincian komisi error: '+r.error.message);
+ const rows=r.data||[];
+ const back='<button class="btn" onclick="openTeamCommission()">← Kembali ke Komisi Tim</button>';
+ const details=rows.map(x=>{
+   const fields=[
+     ['Produk',x.product_name],
+     ['Customer',x.customer_name],
+     ['CS',x.cs],
+     ['CS Closing',x.cs_closing],
+     ['Sales',x.sales],
+     ['Hunter',x.hunter],
+     ['Laba',rp(x.gross_profit)],
+     ['Komisi',rp(x.commission)]
+   ].filter(([,v])=>v!==null&&v!==undefined&&String(v).trim()!=='');
+   return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.commission_type)+'</b><b>'+rp(x.commission)+'</b></div>'+
+     '<div class="small" style="margin-top:5px">'+new Date(x.sold_at).toLocaleString('id-ID')+'</div>'+
+     fields.map(([k,v])=>'<div class="small" style="margin-top:4px"><b>'+esc(k)+':</b> '+esc(v)+'</div>').join('')+
+     '</div>';
+ }).join('');
+ $('mt').textContent='🔎 Rincian Komisi • '+name;
+ $('mb').innerHTML=
+   '<div class="box">'+
+   '<h3 style="margin-top:0">'+esc(name)+'</h3>'+
+   '<div class="small">Rincian transaksi komisi bulan '+new Date(monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</div>'+
+   '</div>'+
+   '<div class="box">'+
+   (details||'<div class="small">Tidak ada rincian transaksi komisi untuk anggota ini pada periode tersebut.</div>')+
+   '</div>'+
+   '<div class="box">'+back+'</div>';
 }
 async function openCommission(){
   const monthStart=new Date().toISOString().slice(0,7)+'-01';

@@ -356,6 +356,8 @@ label{
   }
 }
 
+.top-minimal-actions{padding:14px!important;border-radius:22px!important;background:#fff!important;border:1px solid #e4e7ec!important;box-shadow:0 8px 22px rgba(7,17,31,.07)!important}.top-minimal-actions:after{display:none!important}.top-minimal-actions .row{display:flex!important;gap:10px!important;align-items:center!important}.top-minimal-actions .row>button{min-height:52px!important;height:52px!important;padding:12px 18px!important;border-radius:15px!important;font-size:15px!important;flex:0 0 auto!important}.top-minimal-actions #refreshBtn{background:linear-gradient(135deg,#101c2e,#173b35)!important;color:#fff!important}.top-minimal-actions .row>button:last-child{margin-left:auto!important;background:#f1f3f5!important;color:#344054!important;border:1px solid #e4e7ec!important;box-shadow:none!important}@media(max-width:480px){.top-minimal-actions .row{justify-content:space-between!important}.top-minimal-actions .row>button{font-size:14px!important}.top-minimal-actions .row>button:last-child{margin-left:0!important}}
+
 /* === HM MAIN MENU — CLEAR PREMIUM TILES === */
 .dashboard-actions.management-actions{
   background:linear-gradient(145deg,#f7faf9,#eef4f2)!important;
@@ -1235,6 +1237,17 @@ function renderRoleHome(){
  if(has('CONTENT CREATOR')){add('🎬','Content Performance','Views, comments & DM','openPerformance()');add('🎯','Target & Performa','Kontribusi outlet','openPerformance()');add('📖','Brosur','Materi produk','openBrochures()');add('💬','Tanya AI','Ide content & DM','openAI()');}
  if(has('ADMIN FINANCE MAJESTY CELL')){add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');add('🤖','Tanya AI','Mekanisme Finance Cell','openAI()');add('🚪','Logout','Keluar dari akun','logout()');}
  if(has('ADMIN FINANCE')){add('💰','Finance','Finance outlet','openFinance()');add('📊','Laporan Finance','Laporan keuangan','openFinance()');add('🤖','Tanya AI','Bantuan finance','openAI()');}
+ // Pindahkan seluruh shortcut dashboard ke MENU UTAMA bawah agar area atas hanya untuk Refresh & Logout.
+ const restrictedTop=has('ADMIN FINANCE')||has('ADMIN FINANCE MAJESTY CELL');
+ if(!restrictedTop){
+   if(!creator||sales||cs||facilitator) add('🔎','Search Lead','Cari dan kelola lead','openLeadSearch()');
+   add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
+   if(mg||facilitator) add('📊','Accounting','Accounting & laporan','openAccounting()');
+   add('💰','Finance','Finance & kontrol keuangan','openFinance()');
+   add('📊','Laporan Performa','Target & pencapaian','openPerformance()');
+ }
+ if(mg) add('📊','Komisi Tim','Komisi seluruh tim','openTeamCommission()');
+
  if(!profile?.is_management && !has('ADMIN FINANCE MAJESTY CELL')) add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  if(!cards.length){add('🎯','Target','Target outlet','openPerformance()');add('📦','Product & Stock','Kebutuhan operasional','openInventorySection(\'stock\')');add('🤖','Tanya AI','Minta bantuan','openAI()');}
  const roleCards=cards.map(x=>'<button type="button" onclick="'+x[3]+'"><b>'+x[0]+' '+esc(x[1])+'</b><span>'+esc(x[2])+'</span></button>').join('');
@@ -1255,15 +1268,18 @@ function applyRoleVisibility(){
  toggle('inventorySection',!cellFinance);
  toggle('inventoryDashboardBtn',mg||facilitator||cs);
  toggle('inventorySalesBtn',mg||facilitator||sales);
- toggle('searchLeadBtn',!restrictedFinance&&(!creator||sales||cs||facilitator));
- toggle('aiBtn',true);
- toggle('brochureBtn',!restrictedFinance&&!facilitator||sales||cs||creator);
- toggle('accountingBtn',mg||facilitator);
- toggle('perfBtn',!restrictedFinance);
- toggle('waMasukBtn',cs);
- toggle('tradeBtn',!restrictedFinance&&!creator&&!facilitator);
- toggle('commissionActions',mg||sales||cs||facilitator);
- const actions=$('dashboardActions'); if(actions){actions.classList.toggle('management-actions',mg);actions.classList.toggle('hidden',cellFinance);} const finance=$('financeBtn');
+ // Shortcut utama dipindahkan ke MENU UTAMA di bawah.
+ toggle('searchLeadBtn',false);
+ toggle('aiBtn',false);
+ toggle('brochureBtn',false);
+ toggle('accountingBtn',false);
+ toggle('financeBtn',false);
+ toggle('cellFinanceReportBtn',false);
+ toggle('perfBtn',false);
+ toggle('waMasukBtn',false);
+ toggle('tradeBtn',false);
+ toggle('commissionActions',false);
+ const actions=$('dashboardActions'); if(actions){actions.classList.remove('management-actions');actions.classList.toggle('hidden',cellFinance);actions.classList.add('top-minimal-actions');} const finance=$('financeBtn');
  if(finance){finance.classList.toggle('hidden',cellFinance);if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
  toggle('cellFinanceReportBtn',cellFinance);
  renderRoleHome();

@@ -1522,6 +1522,7 @@ function renderRoleHome(){
    add('👥','Lead & Handover','Koordinasi lead tim','hmOpenLeadHandover()');
    add('📦','Product & Stock','Stock & approval','openInventoryDashboard()');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
+   add('📊','Laporan Fasilitator','Laporan performa tim fasilitator','hmOpenPerformanceReport()');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
@@ -1746,7 +1747,7 @@ async function renderTargetBoard(){
  const bar=(label,a,t,icon)=>'<div class="stat"><div class="small">'+icon+' '+label+'</div><div class="num">'+a+' / '+t+'</div><div class="small">'+pct(a,t)+'%</div></div>';
  const outletCards=outlets.map(o=>'<div class="box"><h3>🎯 TARGET '+esc(o.outlet)+'</h3><div class="stats">'+bar('WA',o.wa_actual,o.wa_target,'📲')+bar('Qualified',o.qualified_actual,o.qualified_target,'🔍')+bar('Closing',o.closing_actual,o.closing_target,'🏆')+'<div class="stat"><div class="small">💰 Nominal Target</div><div class="num">'+shortNominal(Number(o.nominal_target||0))+'</div></div></div><div style="margin-top:10px;font-weight:700">🎁 Bonus: '+esc(o.bonus_label)+' Rp'+Number(o.bonus_amount||0).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:6px">Sisa: WA '+Math.max(0,o.wa_target-o.wa_actual)+' • Qualified '+Math.max(0,o.qualified_target-o.qualified_actual)+' • Closing '+Math.max(0,o.closing_target-o.closing_actual)+'</div></div>').join('');
  const roleText=roles.length?roles.map(r=>'• '+esc(r)).join('<br>'):'• Belum ada peran operasional';
- const manageBtn=d.management?'<button class="secondary" onclick="openTargetSettings()">⚙️ Atur Target Outlet</button>':''; const facilitatorBtn=(!d.management&&(roles||[]).includes('Fasilitator'))?'<button class="success" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button>':'';
+ const manageBtn=d.management?'<button class="secondary" onclick="openTargetSettings()">⚙️ Atur Target Outlet</button>':''; const facilitatorBtn=(!d.management&&(roles||[]).some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='FASILITATOR'))?'<button class="success" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button>':'';
  const rc=d.role_contribution||{}; const firstTarget=outlets[0]||{}; const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':(facilitatorBtn||''); const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';if(!hmActiveMainMenu)box.classList.add('hidden');box.innerHTML=''+ownBox+outletCards; const dash=document.getElementById('dashboard'); const content=document.getElementById('contentPerformance'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(dash&&!dash.contains(box))dash.insertBefore(box,content||inventorySection||stats);
 
 async function openTargetSettings(){

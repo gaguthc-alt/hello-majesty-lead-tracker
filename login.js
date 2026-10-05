@@ -69,7 +69,14 @@
 
   async function getClient(){
     if(client)return client;
+    // Reuse the dashboard's existing Supabase client when it is already ready.
+    // This avoids two Supabase Auth clients competing over the same browser session/storage.
+    if(window.sb?.auth?.setSession){
+      client=window.sb;
+      return client;
+    }
     client=await loadClient();
+    window.sb=client;
     return client;
   }
 

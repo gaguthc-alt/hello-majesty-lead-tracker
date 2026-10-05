@@ -1911,13 +1911,14 @@ async function render(){
   ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  const active=leads.filter(viewerLead).filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL');
+ const active=leads.filter(viewerLead).filter(l=>getActiveLeadBucket(l));
  const activeResume={
   total:active.length,
-  available:active.filter(l=>l.status_lead==='AVAILABLE').length,
-  csLock:active.filter(l=>l.status_lead==='CS LOCK'&&!l.qualification_result).length,
-  potential:active.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length,
-  qualified:active.filter(l=>l.status_lead==='QUALIFIED'&&!l.sales_claimed_by).length,
-  handle:active.filter(l=>l.status_lead==='HANDLE'||l.sales_claimed_by).length
+  available:active.filter(l=>getActiveLeadBucket(l)==='AVAILABLE').length,
+  csLock:active.filter(l=>getActiveLeadBucket(l)==='CS LOCK').length,
+  potential:active.filter(l=>getActiveLeadBucket(l)==='POTENSIAL').length,
+  qualified:active.filter(l=>getActiveLeadBucket(l)==='QUALIFIED').length,
+  handle:active.filter(l=>getActiveLeadBucket(l)==='HANDLE').length
  };
  const resume='<div class="box" style="margin-top:12px;background:linear-gradient(145deg,#f8fafc,#f0fdf4)!important;border-color:rgba(25,181,107,.14)!important">'+
   '<div class="row" style="justify-content:space-between;align-items:center"><b>📌 RESUME LEAD AKTIF</b><span class="badge">'+activeResume.total+' Lead</span></div>'+
@@ -2576,13 +2577,25 @@ function showNeedsAttention(){
  (cards||'<p class="small">Tidak ada lead aktif yang perlu perhatian. 👍</p>');
 }
 
+function getActiveLeadBucket(l){
+ const status=String(l.status_lead||'').toUpperCase();
+ const cs=String(l.qualification_result||'').toUpperCase();
+ const sales=String(l.sales_result||'').toUpperCase();
+ const finalResult=(sales==='CLOSING'||sales==='GAGAL'||cs==='GAGAL'||cs==='CLOSING'||String(l.hasil||'').toUpperCase()==='GAGAL'||String(l.hasil||'').toUpperCase()==='LOST'||String(l.hasil||'').toUpperCase()==='CLOSING');
+ if(finalResult||status==='HASIL')return '';
+ // Kategori dibuat eksklusif: satu lead hanya masuk satu bucket.
+ if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
+ if(status==='HANDLE'||l.sales_claimed_by)return 'HANDLE';
+ if(status==='QUALIFIED'&&!l.sales_claimed_by)return 'QUALIFIED';
+ if(status==='CS LOCK'&&!cs)return 'CS LOCK';
+ if(status==='AVAILABLE')return 'AVAILABLE';
+ return '';
+}
 function showCurrentStatus(type){
  const items=leads.filter(viewerLead).filter(l=>{
   if(type==='ALL')return true;
   if(type==='HASIL')return l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL';
-  if(type==='POTENSIAL')return l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
-  if(type==='QUALIFIED')return l.status_lead==='QUALIFIED'&&!l.sales_claimed_by;
-  if(type==='HANDLE')return l.sales_claimed_by&&!((l.sales_result==='CLOSING'||l.sales_result==='GAGAL')||(l.qualification_result==='GAGAL'||l.qualification_result==='CLOSING')||(l.hasil==='GAGAL'||l.hasil==='LOST'||l.hasil==='CLOSING'));
+  if(type==='POTENSIAL'||type==='QUALIFIED'||type==='HANDLE'||type==='CS LOCK'||type==='AVAILABLE')return getActiveLeadBucket(l)===type;
   return l.status_lead===type;
  });
  $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>Status '+type+'</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Lead yang tampil berdasarkan status saat ini.</p></div>'+

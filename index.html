@@ -1206,6 +1206,7 @@ window.renderCommissionActions = renderCommissionActions;
 
 const KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW',SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
 let sb=null,profile=null,leads=[];
+let hmPermissionRoles=[];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function ensureSupabase(){
@@ -1256,9 +1257,17 @@ async function start(u){
   window.profile=profile;
   if(typeof window.refreshHunterLauncher==='function')window.refreshHunterLauncher();
   window.sb=sb;
-  const perm=await sb.from('team_permissions').select('can_sales').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();
-  window.hmCanSales=!!perm.data?.can_sales;
-  $('identity').textContent=profile.name+' • '+(profile.is_management?'Management':(profile.role||'')+' • '+profile.outlet);
+  const perm=await sb.from('team_permissions').select('can_cs,can_sales,can_facilitator,can_content_creator,can_hunter').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();
+  const p=perm.data||{};
+  window.hmCanSales=!!p.can_sales;
+  hmPermissionRoles=[];
+  if(p.can_facilitator)hmPermissionRoles.push('FASILITATOR');
+  if(p.can_cs)hmPermissionRoles.push('CS');
+  if(p.can_sales)hmPermissionRoles.push('SALES');
+  if(p.can_content_creator)hmPermissionRoles.push('CONTENT CREATOR');
+  if(p.can_hunter)hmPermissionRoles.push('HUNTER');
+  const displayRoles=getActiveRoles();
+  $('identity').textContent=profile.name+' • '+(profile.is_management?'Management':displayRoles.join(' + '))+' • '+profile.outlet;
   applyRoleVisibility();
   renderCommissionActions();
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}
@@ -1285,7 +1294,8 @@ async function changePassword(){
 }
 function getActiveRoles(){
  const raw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- return [...new Set(raw.split(/[,;|+]+/).map(x=>x.trim()).filter(Boolean))];
+ const base=raw.split(/[,;|+]+/).map(x=>x.trim()).filter(Boolean);
+ return [...new Set([...base,...hmPermissionRoles])];
 }
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;

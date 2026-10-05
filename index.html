@@ -1457,7 +1457,8 @@ function applyRoleVisibility(){
  const facilitator=has('FASILITATOR'),sales=has('SALES'),cs=has('CS')||has('CUSTOMER SERVICE'),creator=has('CONTENT CREATOR');
  const restrictedFinance=adminFinance||cellFinance;
  const toggle=(id,show)=>{const e=$(id);if(e)e.classList.toggle('hidden',!show)};
- toggle('targetBoard',!restrictedFinance);
+ // TARGET SELALU TAMPIL DI DASHBOARD UTAMA — bukan modul yang dibuka/tutup oleh menu utama.
+ toggle('targetBoard',true);
  toggle('leadTrackerBox',!restrictedFinance&&(!creator||sales||cs||facilitator));
  toggle('stats',!restrictedFinance);
  toggle('contentPerformance',!restrictedFinance&&(!sales&&!cs||creator||facilitator||mg));
@@ -1599,7 +1600,7 @@ async function renderTargetBoard(){
  const outletCards=outlets.map(o=>'<div class="box"><h3>🎯 TARGET '+esc(o.outlet)+'</h3><div class="stats">'+bar('WA',o.wa_actual,o.wa_target,'📲')+bar('Qualified',o.qualified_actual,o.qualified_target,'🔍')+bar('Closing',o.closing_actual,o.closing_target,'🏆')+'<div class="stat"><div class="small">💰 Nominal Target</div><div class="num">'+shortNominal(Number(o.nominal_target||0))+'</div></div></div><div style="margin-top:10px;font-weight:700">🎁 Bonus: '+esc(o.bonus_label)+' Rp'+Number(o.bonus_amount||0).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:6px">Sisa: WA '+Math.max(0,o.wa_target-o.wa_actual)+' • Qualified '+Math.max(0,o.qualified_target-o.qualified_actual)+' • Closing '+Math.max(0,o.closing_target-o.closing_actual)+'</div></div>').join('');
  const roleText=roles.length?roles.map(r=>'• '+esc(r)).join('<br>'):'• Belum ada peran operasional';
  const manageBtn=d.management?'<button class="secondary" onclick="openTargetSettings()">⚙️ Atur Target Outlet</button>':''; const facilitatorBtn=(!d.management&&(roles||[]).includes('Fasilitator'))?'<button class="success" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button>':'';
- const rc=d.role_contribution||{}; const firstTarget=outlets[0]||{}; const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':(facilitatorBtn||''); const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';box.innerHTML=''+ownBox+outletCards; const dash=document.getElementById('dashboard'); const content=document.getElementById('contentPerformance'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(dash&&!dash.contains(box))dash.insertBefore(box,content||inventorySection||stats);
+ const rc=d.role_contribution||{}; const firstTarget=outlets[0]||{}; const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':(facilitatorBtn||''); const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';box.classList.remove('hidden');box.innerHTML=''+ownBox+outletCards; const dash=document.getElementById('dashboard'); const content=document.getElementById('contentPerformance'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(dash&&!dash.contains(box))dash.insertBefore(box,content||inventorySection||stats);
 
 async function openTargetSettings(){
  const x=await sb.rpc('dashboard_target_summary');if(x.error)return alert(x.error.message);

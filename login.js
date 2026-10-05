@@ -131,7 +131,16 @@
       const session=await restPasswordLogin(email,password);
       const sb=await getClient(session);
       window.sb=sb;
-      if(err)err.textContent='Login berhasil. Membuka dashboard...';
+
+      // AUTH SUKSES = buka shell dashboard langsung.
+      // Jangan menggantungkan perpindahan layar pada finance.js/start().
+      const loginPage=document.getElementById('login');
+      const appPage=document.getElementById('app');
+      const dashboardPage=document.getElementById('dashboard');
+      if(loginPage)loginPage.classList.add('hidden');
+      if(appPage)appPage.classList.remove('hidden');
+      if(dashboardPage)dashboardPage.classList.remove('hidden');
+      if(err)err.textContent='Dashboard dibuka. Memuat data akun...';
 
       const starter=await waitForAppStarter();
 

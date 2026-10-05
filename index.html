@@ -1208,6 +1208,7 @@ const KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW',SUPABASE_URL='https:/
 let sb=null,profile=null,leads=[];
 let hmPermissionRoles=[];
 let hmDashboardOpened=false;
+var contentSelectedMonth=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';})();
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function ensureSupabase(){
@@ -1386,10 +1387,6 @@ async function hmMainMenuClick(title,fn,actionKey){
  hmSetMainMenuButtonOpen(key);
  try{
   await Promise.resolve(typeof fn==='function'?fn():null);
-  // Content Performance perlu dirender setelah panel inline tersedia.
-  if(route.toLowerCase()==='hmopencontentperformance()' && typeof renderContentPerformance==='function'){
-    await renderContentPerformance();
-  }
   // Semua menu utama dibuka LANGSUNG DI BAWAH MENU UTAMA.
   const modal=document.getElementById('modal');
   const panel=document.getElementById('hmMenuPanel');
@@ -2636,7 +2633,6 @@ async function renderContentPerformance(){
 }
 async function canContentCreator(){if(profile?.is_management)return true;const x=await sb.from('team_permissions').select('can_content_creator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();return !!x.data?.can_content_creator}
 async function loadContentPosts(){const x=await sb.from('content_posts').select('*').eq('active',true).order('posted_at',{ascending:false});if(x.error)throw x.error;return x.data||[]}
-let contentSelectedMonth=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';})();
 function contentMonthStart(){return contentSelectedMonth}
 function contentMonthOptions(){let a=[],d=new Date();d.setDate(1);for(let i=0;i<3;i++){const y=d.getFullYear(),m=d.getMonth()-i;const dt=new Date(y,m,1);const v=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-01';a.push('<option value="'+v+'" '+(v===contentSelectedMonth?'selected':'')+'>'+v.slice(0,7)+'</option>')}return a.join('')}
 async function addContentPost(){

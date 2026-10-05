@@ -1602,7 +1602,17 @@ async function hmOpenContentPerformance(){
   try{
     await ensureSupabase();
     if(!profile?.user_id)throw new Error('Session belum siap. Silakan coba lagi.');
-    if(typeof renderContentPerformance==='function') await renderContentPerformance();
+    if(typeof window.renderContentPerformance!=='function'){
+      await new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='content-performance-v3.js?v=20261006-1';
+        s.onload=resolve;
+        s.onerror=()=>reject(new Error('Modul Content Performance gagal dimuat.'));
+        document.head.appendChild(s);
+      });
+    }
+    if(typeof window.renderContentPerformance!=='function')throw new Error('Modul Content Performance belum siap.');
+    await window.renderContentPerformance();
     if(openSeq!==hmMenuActionSeq)return;
   }catch(ex){
     if(openSeq!==hmMenuActionSeq)return;

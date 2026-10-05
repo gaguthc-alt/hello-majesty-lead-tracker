@@ -2621,8 +2621,29 @@ async function renderContentPerformance(){
  host.id='contentPerformance'; host.className='box';
  await ensureSupabase();
  const x=await sb.rpc('content_dashboard_summary',{p_month_start:contentSelectedMonth});
- if(x.error){host.innerHTML='<h3>🎬 Content Performance</h3><p class="small">'+esc(x.error.message)+'</p>';return}
- const d=x.data||{}, fmt=n=>Number(n||0).toLocaleString('id-ID');
+ let data=x.data||null;
+ if(x.error){
+   console.warn('[HM] content_dashboard_summary gagal, gunakan fallback:',x.error.message);
+   const q=sb.from('content_posts').select('outlet,content_creator,views,comments,dms').eq('active',true).eq('month_start',contentSelectedMonth);
+   const qx=profile?.is_management?q:q.eq('outlet',profile?.outlet||'');
+   const fb=await qx;
+   if(fb.error){
+     host.innerHTML='<h3>🎬 Content Performance</h3><p class="small">Gagal memuat data: '+esc(x.error.message)+'</p>';
+     return;
+   }
+   const rows=fb.data||[];
+   if(profile?.is_management){
+     const map={};
+     rows.forEach(r=>{const o=r.outlet||'-';if(!map[o])map[o]={outlet:o,content_count:0,views:0,comments:0,dms:0};map[o].content_count++;map[o].views+=Number(r.views||0);map[o].comments+=Number(r.comments||0);map[o].dms+=Number(r.dms||0)});
+     data={management:true,month_start:contentSelectedMonth,outlets:Object.values(map)};
+   }else{
+     const team=rows.reduce((a,r)=>{a.content_count++;a.views+=Number(r.views||0);a.comments+=Number(r.comments||0);a.dms+=Number(r.dms||0);return a},{content_count:0,views:0,comments:0,dms:0});
+     const ownRows=rows.filter(r=>r.content_creator===profile?.name);
+     const own=ownRows.reduce((a,r)=>{a.content_count++;a.views+=Number(r.views||0);a.comments+=Number(r.comments||0);a.dms+=Number(r.dms||0);return a},{content_count:0,views:0,comments:0,dms:0});
+     data={management:false,month_start:contentSelectedMonth,outlet:profile?.outlet||'',locked:false,team,own};
+   }
+ }
+ const d=data||{}, fmt=n=>Number(n||0).toLocaleString('id-ID');
  if(d.management){
    host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">Monitoring proses • target utama tetap WA outlet</div></div><div class="row"><select onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select><button class="secondary" onclick="showContentManagementDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.content_count||0),0))+'</div></div><div class="stat"><div class="small">👁️ Views</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.views||0),0))+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.comments||0),0))+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.dms||0),0))+'</div></div></div>';
  }else{

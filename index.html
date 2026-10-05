@@ -1591,19 +1591,20 @@ function hmRunMainMenuAction(action){
 }
 
 async function hmOpenLeadNewInline(){
-  // Jalur khusus Lead Baru: gunakan form addLead yang sudah ada,
-  // lalu pastikan hasilnya dipindahkan ke panel Menu Utama.
-  await addLead();
+  // Jalur Lead Baru mandiri: render langsung ke panel Menu Utama.
   const panel=document.getElementById('hmMenuPanel');
   const body=document.getElementById('hmMenuPanelBody');
-  const modal=document.getElementById('modal');
-  const mb=document.getElementById('mb');
-  const mt=document.getElementById('mt');
-  if(!panel||!body||!mb)return;
   const title=document.getElementById('hmMenuPanelTitle');
-  if(title)title.textContent=mt?.textContent||'📱 Lead Baru';
-  body.innerHTML='';
-  while(mb.firstChild)body.appendChild(mb.firstChild);
+  const modal=document.getElementById('modal');
+  if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
+  if(title)title.textContent='📱 Lead Baru';
+  body.innerHTML='<label>Nama Customer</label><input id="fc" placeholder="Nama customer">'+
+    '<label>No WhatsApp</label><input id="fw" placeholder="08xxxxxxxxxx">'+
+    '<label>Kebutuhan</label><select id="fneedtype" onchange="renderInitialNeedFields()"><option value="">— Pilih Kebutuhan —</option><option>PEMBELIAN</option><option>SERVICE</option><option>TUKAR TAMBAH</option><option>KREDIT/CICILAN</option><option>INFORMASI</option></select>'+
+    '<div id="initialNeedFields"></div>'+
+    '<label>Catatan Awal</label><textarea id="fcatatan" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea>'+
+    '<button id="saveLeadBtn" class="success" type="button">Simpan Lead</button>';
+  document.getElementById('saveLeadBtn').onclick=saveLead;
   if(modal)modal.classList.add('hidden');
   panel.classList.remove('hidden');
   setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),20);
@@ -1799,6 +1800,26 @@ function renderRoleHome(){
          return;
        }
        void hmOpenCriticalMainMenu(title,action);
+       return;
+     }
+     // Form Lead Baru dibuka langsung; jangan lewat wrapper menu/sequence.
+     if(action==='hmOpenLeadNewInline()'){
+       if(hmActiveMainMenu===title){
+         hmCloseMainMenu();
+         return;
+       }
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       void hmOpenLeadNewInline().catch(ex=>{
+         console.error('[HM] WA Masuk gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel');
+         const body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){
+           body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Lead Baru: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';
+           panel.classList.remove('hidden');
+         }
+       });
        return;
      }
      void hmMainMenuClick(title,function(){

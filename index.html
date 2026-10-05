@@ -215,6 +215,11 @@ button:hover{filter:brightness(1.025)}
 }
 .role-home-kpi strong{font-size:19px!important}
 .role-home-kpi span{color:#aebccc!important}
+.role-home-tools{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px;position:relative;z-index:2}
+.role-home-tools button{min-height:48px;border-radius:14px!important;padding:11px 12px!important;font-size:13px!important;font-weight:800!important;background:rgba(255,255,255,.10)!important;color:#fff!important;border:1px solid rgba(255,255,255,.14)!important;box-shadow:none!important}
+.role-home-tools button:first-child{background:linear-gradient(135deg,#19b56b,#0f8f55)!important;border-color:transparent!important}
+.role-home-tools button.secondary{background:rgba(255,255,255,.08)!important;color:#dbe4ee!important}
+@media(max-width:380px){.role-home-tools{grid-template-columns:1fr}.role-home-tools button{min-height:46px}}
 .role-home-grid{gap:10px!important}
 .role-home-card{
   background:linear-gradient(145deg,#fff,#f7faf9)!important;
@@ -1293,11 +1298,12 @@ function getActiveRoles(){
  return [...new Set([...base,...hmPermissionRoles])];
 }
 function hmSetDashboardModulesVisible(show){
- // Lead Tracker tetap selalu terlihat di bagian paling bawah dashboard.
- // Menu utama boleh membuka/menutup modul lain tanpa menyembunyikan lead aktif.
- const ids=['inventorySection','stats'];
- ids.forEach(id=>{const e=$(id);if(e)e.classList.toggle('hidden',!show);});
- hmDashboardOpened=!!show;
+ // ROLE HOME adalah satu-satunya beranda dashboard.
+ // Modul lama tetap dipertahankan sebagai mesin/fungsi internal,
+ // tetapi tidak boleh tampil sebagai dashboard kedua.
+ const ids=['dashboardActions','inventorySection','stats','activeLeadResume','leadTrackerBox'];
+ ids.forEach(id=>{const e=$(id);if(e)e.classList.add('hidden');});
+ hmDashboardOpened=false;
 }
 let hmActiveMainMenu='';
 let hmInlineMoved=[];
@@ -1786,7 +1792,7 @@ function renderRoleHome(){
    :'<div class="role-home-kpi"><div class="kpi"><strong>Hari Ini</strong><span>Aktivitas</span></div><div class="kpi"><strong>Target</strong><span>Progress</span></div><div class="kpi"><strong>Team</strong><span>Workspace</span></div></div>';
 
  const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
- host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div>'+kpis+'</div><div class="role-home-section">MENU UTAMA</div>'+roleCards+'<div id="hmMenuPanel" class="box hidden" style="margin:12px 0 0;padding:16px"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800;margin-bottom:10px"></div><div id="hmMenuPanelBody"></div></div>';
+ host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div>'+kpis+'<div class="role-home-tools"><button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><div class="role-home-section">MENU UTAMA</div>'+roleCards+'<div id="hmMenuPanel" class="box hidden" style="margin:12px 0 0;padding:16px"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800;margin-bottom:10px"></div><div id="hmMenuPanelBody"></div></div>';
  host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
    // Satu tombol = satu tujuan. Gunakan onclick property agar tidak ada
    // listener lama/duplikat yang dapat mengarahkan ke menu lain.
@@ -1851,9 +1857,10 @@ function applyRoleVisibility(){
  const toggle=(id,show)=>{const e=$(id);if(e)e.classList.toggle('hidden',!show)};
  // TARGET HANYA MUNCUL SAAT MENU TARGET DIBUKA.
  toggle('targetBoard',false);
- // Lead aktif + resume wajib tampil di semua akun dashboard, termasuk Management/Finance.
- toggle('leadTrackerBox',true);
- toggle('stats',!restrictedFinance);
+ // Beranda lama tidak ditampilkan di dashboard utama.
+ // Lead/Stats tetap tersedia melalui menu masing-masing.
+ toggle('leadTrackerBox',false);
+ toggle('stats',false);
  toggle('contentPerformance',hmActiveMainMenu==='Content Performance');
  toggle('inventorySection',false);
  toggle('managementStockSummary',false);
@@ -2998,112 +3005,3 @@ async function renderContentPerformance(){
  }else{
    const t=d.team||{},o=d.own||{};
    const can=await canContentCreator();
-   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">'+esc(d.outlet||'')+' • '+(d.locked?'🔒 Laporan terkunci':'Monitoring bulan ini')+'</div></div><div class="row"><select onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select>'+(can?'<button class="success" onclick="addContentPost()">＋ Tambah Content</button>':'')+'<button class="secondary" onclick="showMyContentDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten Outlet</div><div class="num">'+fmt(t.content_count)+'</div></div><div class="stat"><div class="small">👁️ Views Outlet</div><div class="num">'+fmt(t.views)+'</div></div><div class="stat"><div class="small">💬 Comments Outlet</div><div class="num">'+fmt(t.comments)+'</div></div><div class="stat"><div class="small">📩 DM Outlet</div><div class="num">'+fmt(t.dms)+'</div></div></div>'+(can?'<div class="box" style="margin-bottom:0"><b>Kontribusi Saya</b><div class="small">🎬 '+fmt(o.content_count)+' konten • 👁️ '+fmt(o.views)+' views • 💬 '+fmt(o.comments)+' comments • 📩 '+fmt(o.dms)+' DM</div></div>':'')
- }
- decorateContentPerformance(); const dash=document.getElementById('dashboard'); const panelBody=document.getElementById('hmMenuPanelBody'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(!dash.contains(host) && !(panelBody&&panelBody.contains(host)))dash.insertBefore(host,inventorySection||stats);
-
-  })();
-  try{
-    return await hmContentPerformanceRequest;
-  }finally{
-    hmContentPerformanceRequest=null;
-  }
-}
-async function canContentCreator(){if(profile?.is_management)return true;const x=await sb.from('team_permissions').select('can_content_creator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();return !!x.data?.can_content_creator}
-async function loadContentPosts(){const x=await sb.from('content_posts').select('*').eq('active',true).order('posted_at',{ascending:false});if(x.error)throw x.error;return x.data||[]}
-function contentMonthStart(){return contentSelectedMonth}
-function contentMonthOptions(){let a=[],d=new Date();d.setDate(1);for(let i=0;i<3;i++){const y=d.getFullYear(),m=d.getMonth()-i;const dt=new Date(y,m,1);const v=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-01';a.push('<option value="'+v+'" '+(v===contentSelectedMonth?'selected':'')+'>'+v.slice(0,7)+'</option>')}return a.join('')}
-async function addContentPost(){
- const cc=profile?.is_management?await sb.from('team_profiles').select('name').eq('outlet',profile?.outlet||'').eq('active',true).order('name'):await sb.from('team_permissions').select('name').eq('outlet',profile.outlet).eq('active',true).eq('can_content_creator',true).order('name');
- const names=(cc.data||[]).map(x=>'<option>'+esc(x.name)+'</option>').join('');
- $('mt').textContent='🎬 Tambah Content';$('mb').innerHTML='<label>Content Creator</label><select id="cpcreator">'+names+'</select><label>Platform</label><select id="cpplatform"><option>TIKTOK</option><option>INSTAGRAM</option><option>FACEBOOK</option><option>YOUTUBE</option></select><label>Link Content</label><input id="cpurl" placeholder="https://vt.tiktok.com/..."><label>Judul / Deskripsi</label><input id="cptitle"><label>Tanggal Upload</label><input id="cpposted" type="datetime-local" value="'+new Date().toISOString().slice(0,16)+'"><div class="row"><div style="flex:1"><label>Views</label><input id="cpviews" type="number" value="0"></div><div style="flex:1"><label>Comments</label><input id="cpcomments" type="number" value="0"></div></div><div class="row"><div style="flex:1"><label>DM</label><input id="cpdms" type="number" value="0"></div><div style="flex:1"><label>Likes</label><input id="cplikes" type="number" value="0"></div></div><label>Shares</label><input id="cpshares" type="number" value="0"><button class="success" onclick="saveContentPost()">Simpan Content</button>';
- $('modal').classList.remove('hidden');
-}
-async function saveContentPost(){
- const url=$('cpurl').value.trim();if(!url)return alert('Link content wajib diisi.');
- const creator=$('cpcreator').value;
- const x=await sb.from('content_posts').insert({outlet:profile.outlet,content_creator:creator,platform:$('cpplatform').value,post_url:url,title:$('cptitle').value.trim()||null,posted_at:new Date($('cpposted').value).toISOString(),views:Number($('cpviews').value||0),comments:Number($('cpcomments').value||0),dms:Number($('cpdms').value||0),likes:Number($('cplikes').value||0),shares:Number($('cpshares').value||0)});
- if(x.error)return alert(x.error.message);closeModal();await renderContentPerformance();
-}
-async function showMyContentDetail(){
- const posts=await loadContentPosts(), month=contentMonthStart(), mine=posts.filter(p=>p.outlet===profile.outlet&&p.month_start===month&&p.content_creator===profile.name);
- $('mt').textContent='🎬 Content Saya — '+month.slice(0,7);$('mb').innerHTML=(mine.map(contentDetailCard).join('')||'<p class="small">Belum ada content bulan ini.</p>')+'<button class="secondary" onclick="closeModal()">Tutup</button>'; $('modal').classList.remove('hidden');
-}
-async function showContentManagementDetail(){
- const posts=await loadContentPosts(), month=contentMonthStart(), groups={};
- posts.filter(p=>p.month_start===month).forEach(p=>{const k=p.outlet+' • '+p.content_creator;(groups[k]??=[]).push(p)});
- const locks=await sb.from('content_monthly_locks').select('outlet').eq('month_start',month);
- const locked=new Set((locks.data||[]).map(x=>x.outlet));
- const outlets=[...new Set(posts.filter(p=>p.month_start===month).map(p=>p.outlet))];
- $('mt').textContent='🎬 Content Performance — '+month.slice(0,7);
- $('mb').innerHTML=outlets.sort().map(outlet=>{
-   const people=Object.entries(groups).filter(([k])=>k.startsWith(outlet+' • '));
-   const total=posts.filter(p=>p.month_start===month&&p.outlet===outlet);
-   return '<div class="box"><h3>'+esc(outlet)+' '+(locked.has(outlet)?'🔒':'')+'</h3><div class="small">🎬 '+total.length+' • 👁️ '+Number(total.reduce((a,p)=>a+p.views,0)).toLocaleString('id-ID')+' • 💬 '+Number(total.reduce((a,p)=>a+p.comments,0)).toLocaleString('id-ID')+' • 📩 '+Number(total.reduce((a,p)=>a+p.dms,0)).toLocaleString('id-ID')+'</div><div style="margin-top:8px">'+people.map(([k,arr])=>'<div class="row" style="justify-content:space-between;margin:6px 0"><span>'+esc(k.replace(outlet+' • ',''))+' — '+arr.length+' content / '+Number(arr.reduce((a,p)=>a+p.views,0)).toLocaleString('id-ID')+' views</span><button class="secondary" onclick="showContentListFor(\''+encodeURIComponent(k)+'\')">Detail</button></div>').join('')+'</div>'+(!locked.has(outlet)?'<button class="danger" style="margin-top:10px" onclick="lockContentMonth(\''+encodeURIComponent(outlet)+'\')">🔒 Kunci Laporan Bulan Ini</button>':'<div class="small" style="margin-top:10px">Laporan bulan ini sudah dibekukan.</div>')+'</div>';
- }).join('')||'<p class="small">Belum ada content bulan ini.</p>';
- $('modal').classList.remove('hidden');
-}
-async function lockContentMonth(encodedOutlet){
- const outlet=decodeURIComponent(encodedOutlet);
- if(!confirm('Kunci laporan content '+outlet+' untuk bulan ini? Setelah dikunci, angka laporan tidak berubah.'))return;
- const x=await sb.rpc('content_lock_month',{p_month_start:contentMonthStart(),p_outlet:outlet});
- if(x.error)return alert(x.error.message);
- await renderContentPerformance(); showContentManagementDetail();
-}
-async function showContentListFor(encoded){
- const key=decodeURIComponent(encoded), posts=await loadContentPosts(), month=contentMonthStart(), mine=posts.filter(p=>(p.outlet+' • '+p.content_creator)===key&&p.month_start===month);
- $('mt').textContent='🎬 '+key;$('mb').innerHTML=(mine.map(contentDetailCard).join('')||'<p class="small">Belum ada content.</p>')+'<button class="secondary" onclick="showContentManagementDetail()">← Kembali</button>'; 
-}
-function contentDetailCard(p){
- return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(p.title||'Content '+p.content_id.slice(0,8))+'</b><span class="badge">'+esc(p.platform)+'</span></div><div class="small">'+new Date(p.posted_at).toLocaleString('id-ID')+'</div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">👁️ Views</div><div class="num">'+Number(p.views||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+Number(p.comments||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+Number(p.dms||0).toLocaleString('id-ID')+'</div></div></div><a href="'+esc(p.post_url)+'" target="_blank">🔗 Buka Content</a></div>';
-}
-const oldRender=window.render;
-window.render=async function(){const r=await oldRender();applyRoleVisibility();return r};
-
-async function openAI(leadId){
- if(leadId && !leads.some(x=>x.lead_id===leadId))leadId=null;
- const l=leadId?leads.find(x=>x.lead_id===leadId):null;
- $('mt').textContent=l?'🤖 Tanya AI — '+l.lead_id:'🤖 Tanya AI — Partner Digital Sales';
- $('mb').innerHTML=(l?'<div class="notice"><b>Konteks Lead:</b> '+esc(l.customer||'-')+' • '+esc(l.need_type||l.need||'-')+' • Status: '+esc(l.status_lead||'-')+'</div>':'')+
- '<label>Pertanyaan</label><textarea id="aiQuestion" rows="4" placeholder="Contoh: Apa langkah follow-up yang sebaiknya saya lakukan?"></textarea><div class="small" style="margin-top:6px">AI menggunakan Master Prompt Hello Majesty dan konteks role/outlet. Jangan masukkan data sensitif yang tidak diperlukan.</div><button id="aiAskBtn" class="success" style="margin-top:10px" type="button" data-ai-lead="'+(l?esc(l.lead_id):'')+'" onclick="window.askAIFromButton(this)">🤖 Tanya AI</button><div id="aiAnswer" class="box hidden" style="white-space:pre-wrap;margin-top:12px"></div>';
- $('modal').classList.remove('hidden');setTimeout(()=>$('aiQuestion')?.focus(),50);
-}
-function askAIFromButton(btn){
- const leadId=btn?.dataset?.aiLead||null;
- const out=document.getElementById('aiAnswer');
- if(out){out.classList.remove('hidden');out.textContent='AI sedang menganalisis...';}
- return window.askAI(leadId);
-}
-async function askAI(leadId){
- const q=String($('aiQuestion')?.value||'').trim();if(!q)return alert('Pertanyaan wajib diisi.');
- const btn=$('aiAskBtn'),out=$('aiAnswer');if(btn)btn.disabled=true;if(out){out.classList.remove('hidden');out.textContent='AI sedang menganalisis...';}
- const l=leadId?leads.find(x=>x.lead_id===leadId):null;
- const payload={question:q,profile:{name:profile?.name||'',role:profile?.role||'',outlet:profile?.outlet||'',is_management:!!profile?.is_management},lead:l?{lead_id:l.lead_id,customer:l.customer,need_type:l.need_type,initial_data:l.initial_data,product:l.product,need:l.need,budget:l.budget,preference:l.preference,status_lead:l.status_lead,qualification_result:l.qualification_result,sales_claimed_by:l.sales_claimed_by,cs_claimed_by:l.cs_claimed_by}:null};
- try{
-  const x=await sb.functions.invoke('hello-majesty-ai-gemini',{body:payload});
- console.log('[HM AI]',{leadId,hasData:!!x.data,error:x.error||null});
-  if(x.error){
-   let detail=x.error?.message||String(x.error);
-   try{if(x.error?.context){const t=await x.error.context.text();detail=t||detail;}}catch(_e){}
-   throw new Error(detail);
-  }
-  const answer=x.data?.answer||'AI tidak memberikan jawaban.';
-  if(out)out.textContent=answer;
-  const input=$('aiQuestion');
-  if(input)input.value='';
- }catch(e){if(out)out.textContent='AI belum dapat digunakan. Pastikan layanan AI sudah dikonfigurasi oleh Management.\n\n'+(e?.message||e)}
- finally{if(btn)btn.disabled=false}
-}
-window.openAI=openAI;window.askAI=askAI;
-// Login fallback binding — keeps LOGIN clickable even if other dashboard modules change.
-// login.js owns window.doLogin; keep this binding only for the final handler.
-window.addEventListener('load',function(){
- const b=document.getElementById('loginBtn');
- if(b)b.onclick=function(e){e.preventDefault();window.doLogin();};
- const email=document.getElementById('email'),password=document.getElementById('password');
- [email,password].forEach(function(el){if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')window.doLogin();});});
-});
-
-</script><script src="performance.js?v=20261005-loginfix-5"></script><script src="inventory.js?v=20261005-inventory-global-3"></script><script src="brochures.js?v=20261005-loginfix-5"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";
-try{document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('loginBtn');if(b)b.onclick=e=>{e.preventDefault();window.doLogin();};});}catch(e){console.error('[HM] login binding',e)}
-</script></body></html>

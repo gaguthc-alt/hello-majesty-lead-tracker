@@ -1305,12 +1305,36 @@ function hmSetDashboardModulesVisible(show){
  ids.forEach(id=>{const e=$(id);if(e)e.classList.toggle('hidden',!show);});
  hmDashboardOpened=!!show;
 }
-function hmOpenDashboardModules(){
- hmSetDashboardModulesVisible(true);
- const d=document.getElementById('dashboard');
- if(d)setTimeout(()=>d.scrollIntoView({behavior:'smooth',block:'start'}),20);
+let hmActiveMainMenu='';
+function hmCloseMainMenu(){
+ hmSetDashboardModulesVisible(false);
+ ['performance','inventoryPanel'].forEach(id=>{
+  const e=document.getElementById(id);
+  if(e)e.classList.add('hidden');
+ });
+ const modal=document.getElementById('modal');
+ if(modal)modal.classList.add('hidden');
+ hmActiveMainMenu='';
+}
+function hmMainMenuClick(title,fn){
+ const key=String(title||'');
+ if(hmActiveMainMenu===key){
+  hmCloseMainMenu();
+  return;
+ }
+ hmCloseMainMenu();
+ hmActiveMainMenu=key;
+ try{
+  const r=typeof fn==='function'?fn():null;
+  const d=document.getElementById('dashboard');
+  if(d)setTimeout(()=>d.scrollIntoView({behavior:'smooth',block:'start'}),20);
+  return r;
+ }catch(ex){
+  console.error('[HM] Main menu action:',key,ex);
+ }
 }
 window.hmOpenDashboardModules=hmOpenDashboardModules;
+window.hmMainMenuClick=hmMainMenuClick;
 
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
@@ -1321,7 +1345,7 @@ function renderRoleHome(){
 
  // MENU UTAMA = hanya fungsi yang memang diberikan kepada akun/role.
  // Management melihat seluruh modul utama.
- const cards=[],add=(icon,title,desc,fn)=>{if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,'window.hmOpenDashboardModules();'+fn])};
+ const cards=[],add=(icon,title,desc,fn)=>{if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,'window.hmMainMenuClick('+JSON.stringify(title)+',function(){'+fn+'})'])};
 
  if(mg){
    add('🔎','Search Lead','Cari & kelola seluruh lead','openLeadSearch()');

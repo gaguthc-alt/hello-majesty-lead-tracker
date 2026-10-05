@@ -282,7 +282,7 @@ function applyRoleVisibility(){
  toggle('waMasukBtn',cs);
  toggle('tradeBtn',!restrictedFinance&&!creator&&!facilitator);
  toggle('commissionActions',mg||sales||cs||facilitator);
- const actions=$('dashboardActions'); if(actions) actions.classList.toggle('management-actions',mg);\n const finance=$('financeBtn');
+ const actions=$('dashboardActions'); if(actions) actions.classList.toggle('management-actions',mg); const finance=$('financeBtn');
  if(finance){finance.classList.toggle('hidden',cellFinance);if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
  toggle('cellFinanceReportBtn',cellFinance);
  renderRoleHome();

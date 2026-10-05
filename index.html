@@ -1968,7 +1968,36 @@ function renderRoleHome(){
          hmCloseMainMenu();
          return;
        }
-       void hmOpenCriticalMainMenu(title,action);
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       void Promise.resolve(hmRunMainMenuAction(action)).then(()=>{
+         const modal=document.getElementById('modal');
+         const panel=document.getElementById('hmMenuPanel');
+         const panelTitle=document.getElementById('hmMenuPanelTitle');
+         const panelBody=document.getElementById('hmMenuPanelBody');
+         const mt=document.getElementById('mt');
+         const mb=document.getElementById('mb');
+         if(panel && modal && mb && !modal.classList.contains('hidden')){
+           if(panelTitle)panelTitle.textContent=mt?.textContent||title;
+           if(panelBody){
+             panelBody.innerHTML='';
+             while(mb.firstChild)panelBody.appendChild(mb.firstChild);
+           }
+           modal.classList.add('hidden');
+           panel.classList.remove('hidden');
+         }
+         panel?.classList.remove('hidden');
+         requestAnimationFrame(()=>panel?.scrollIntoView({behavior:'smooth',block:'start'}));
+       }).catch(ex=>{
+         console.error('[HM] Critical menu gagal dibuka:',title,ex);
+         const panel=document.getElementById('hmMenuPanel');
+         const body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){
+           body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka '+esc(title)+': '+esc(ex?.message||'Terjadi kesalahan')+'</div>';
+           panel.classList.remove('hidden');
+         }
+       });
        return;
      }
      // Form Lead Baru dibuka langsung; jangan lewat wrapper menu/sequence.

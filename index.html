@@ -1281,7 +1281,7 @@ function getActiveRoles(){
  return [...new Set([...base,...hmPermissionRoles])];
 }
 function hmSetDashboardModulesVisible(show){
- const ids=['contentPerformance','inventorySection','stats','leadTrackerBox'];
+ const ids=['inventorySection','stats','leadTrackerBox'];
  ids.forEach(id=>{const e=$(id);if(e)e.classList.toggle('hidden',!show);});
  hmDashboardOpened=!!show;
 }
@@ -1634,7 +1634,7 @@ function applyRoleVisibility(){
  toggle('targetBoard',false);
  toggle('leadTrackerBox',!restrictedFinance&&(!creator||sales||cs||facilitator));
  toggle('stats',!restrictedFinance);
- toggle('contentPerformance',!restrictedFinance&&(!sales&&!cs||creator||facilitator||mg));
+ toggle('contentPerformance',true);
  toggle('inventorySection',!cellFinance);
  toggle('inventoryDashboardBtn',mg||facilitator||cs);
  toggle('inventorySalesBtn',mg||facilitator||sales);

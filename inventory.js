@@ -167,7 +167,17 @@ function openInventoryDashboard(){
  if(open){setInventoryView('dashboard');return;}
  inventoryView='dashboard';renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));
 }
-async function openInventorySection(view){
+async async window.refreshHunterLauncher=async function(){
+  const btn=document.getElementById('inventoryHunterBtn');
+  if(!btn)return;
+  btn.classList.add('hidden');
+  if(profile?.is_management){btn.classList.remove('hidden');return;}
+  try{
+    const r=await sb.rpc('has_hunter_inventory_access');
+    if(!r.error && r.data===true)btn.classList.remove('hidden');
+  }catch(e){console.warn('[HM] Hunter launcher access check',e);}
+};
+function openInventorySection(view){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  if(role==='ADMIN FINANCE MAJESTY CELL' && (view==='dashboard'||view==='sales')){alert('Bagian ini tidak termasuk akses Finance Majesty Cell.');return;}
  const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;

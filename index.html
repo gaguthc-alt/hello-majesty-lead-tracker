@@ -1972,6 +1972,15 @@ function renderRoleHome(){
        hmActiveMainMenu=title;
        hmSetMainMenuButtonOpen(title);
        void Promise.resolve(hmRunMainMenuAction(action)).then(()=>{
+         // Pindahkan panel Product & Stock yang sudah dirender ke floating menu.
+         const inventoryPanel=document.getElementById('inventoryPanel');
+         const menuPanel=document.getElementById('hmMenuPanel');
+         const menuBody=document.getElementById('hmMenuPanelBody');
+         if(inventoryPanel && menuPanel && menuBody && !inventoryPanel.classList.contains('hidden')){
+           menuBody.innerHTML='';
+           menuBody.appendChild(inventoryPanel);
+           inventoryPanel.classList.remove('hidden');
+         }
          const modal=document.getElementById('modal');
          const panel=document.getElementById('hmMenuPanel');
          const panelTitle=document.getElementById('hmMenuPanelTitle');

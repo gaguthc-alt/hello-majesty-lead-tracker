@@ -51,16 +51,10 @@ function hmFocusBrochurePanel(){
   });
 }
 async function openBrochures(){
-  let loadError='';
-  try{await loadBrochures();}catch(e){
-    console.error('[HM] Brosur data gagal dimuat:',e);
-    hmBrochures=[];
-    loadError=String(e?.message||e||'Data brosur belum tersedia');
-  }
+  try{await loadBrochures();}catch(e){return alert('Brosur gagal dimuat: '+(e?.message||e));}
   $('mt').textContent='📖 BROSUR';
   $('mb').innerHTML=
     '<div class="small" style="margin-bottom:10px">Pilih merk untuk melihat brosur yang tersedia.</div>'+
-    (loadError?'<div class="small" style="margin-bottom:10px">⚠️ Data brosur belum dapat dimuat. Menu merk tetap tersedia.</div>':'')+
     '<div id="brochureBrandMenu" class="row">'+hmBrochureBrands().map(b=>'<button class="secondary" type="button" onclick="showBrochureBrand(\\''+esc(b).replace(/'/g,"\\\\'")+'\\')">📱 '+esc(b)+'</button>').join('')+'</div>'+
     '<div id="brochureBrandBody" style="margin-top:14px"><div class="small">Pilih salah satu merk.</div></div>';
   $('modal').classList.remove('hidden');

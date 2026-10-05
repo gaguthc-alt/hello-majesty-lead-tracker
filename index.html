@@ -2025,6 +2025,13 @@ function renderRoleHome(){
      const item=cards.find(x=>String(x[1]||'')===title);
      if(!item)return;
      const action=String(item[3]||'').trim();
+     if(title==='Brosur'){
+       void hmOpenBrochuresInline().catch(ex=>{
+         console.error('[HM] Brosur gagal dibuka:',ex);
+         alert('Brosur gagal dibuka: '+(ex?.message||ex));
+       });
+       return;
+     }
      void hmMainMenuClick(title,function(){
        return hmRunMainMenuAction(action);
      },action);

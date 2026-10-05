@@ -34,8 +34,9 @@
       const x=await sb.auth.signInWithPassword({email,password});
       if(x.error){if(err)err.textContent=x.error.message;return;}
       window.sb=sb;
-      if(typeof window.hmStartApp!=='function')throw new Error('Aplikasi belum siap. Silakan tunggu sebentar lalu tekan LOGIN lagi.');
-      await window.hmStartApp(x.data.user,sb);
+      const starter=typeof window.hmStartApp==='function'?window.hmStartApp:(typeof window.start==='function'?window.start:null);
+      if(typeof starter!=='function')throw new Error('Aplikasi belum siap. Silakan tunggu sebentar lalu tekan LOGIN lagi.');
+      await starter(x.data.user,sb);
     }catch(ex){
       console.error('[HM] isolated login:',ex);
       if(err)err.textContent=ex?.message||'Login gagal. Coba lagi.';

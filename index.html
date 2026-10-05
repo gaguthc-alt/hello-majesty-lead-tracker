@@ -1573,11 +1573,27 @@ function hmRunMainMenuAction(action){
   case 'hmOpenLeadHandover()': return hmOpenLeadHandover();
   case 'window.openCellFinanceReport()': return window.openCellFinanceReport();
   case 'window.openPartnerSettlement()': return window.openPartnerSettlement();
+  case 'hmOpenQuickAction()': return hmOpenQuickAction();
+  case "showFollowupToday('TODAY')": return showFollowupToday('TODAY');
+  case "showFollowupToday('OVERDUE')": return showFollowupToday('OVERDUE');
   default:
    throw new Error('Tujuan menu tidak dikenali: '+a);
  }
 }
 
+function hmOpenQuickAction(){
+ const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
+ if(!mt||!mb||!modal)return;
+ mt.textContent='⚡ Quick Action';
+ mb.innerHTML='<div class="small" style="margin-bottom:10px">Akses cepat tanpa mengubah data atau alur kerja yang sudah ada.</div>'+
+ '<div class="role-home-grid" style="margin-top:0">'+
+ '<button class="role-home-card" type="button" onclick="addLead();"><b>📱 Lead Baru</b><span>Input lead customer</span></button>'+
+ '<button class="role-home-card" type="button" onclick="openLeadSearch();"><b>🔎 Search Lead</b><span>Cari dan kelola lead</span></button>'+
+ '<button class="role-home-card" type="button" onclick="hmOpenTradeInline();"><b>🔄 Tukar Tambah</b><span>Buka form trade-in</span></button>'+
+ '<button class="role-home-card" type="button" onclick="showFollowupToday(\'TODAY\');"><b>🔔 Follow Up</b><span>Kerjakan follow-up hari ini</span></button>'+
+ '</div><button class="secondary" style="width:100%;margin-top:10px" onclick="closeModal()">Tutup</button>';
+ modal.classList.remove('hidden');
+}
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),mg=!!profile?.is_management,has=r=>roles.includes(r);
@@ -1602,6 +1618,9 @@ function renderRoleHome(){
    add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
    add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')');
    add('💰','Komisi Tim','Komisi seluruh tim','openTeamCommission()');
+   add('🔔','Follow Up Hari Ini','Customer yang harus ditindaklanjuti',"showFollowupToday('TODAY')");
+   add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
+   add('🔴','Perlu Perhatian','Hal yang perlu segera ditindaklanjuti',"showFollowupToday('OVERDUE')");
  }else if(facilitator){
    add('🎯','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
    add('👥','Lead & Handover','Koordinasi lead tim','hmOpenLeadHandover()');

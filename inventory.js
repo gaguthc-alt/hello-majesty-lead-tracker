@@ -113,7 +113,7 @@ async function renderInventory(){
     return;
   }
   const ready=inventoryStock.filter(x=>x.status==='READY').length;
-  const sold=inventoryStock.filter(x=>x.status==='SOLD').length;
+  const sold=inventoryStock.filter(x=>x.status==='SOLD'&&x.sold_at).length;
   const reserved=inventoryStock.filter(x=>x.status==='RESERVED').length;
   const returned=inventoryStock.filter(x=>x.status==='RETURN').length;
   const canManage=!!profile?.is_management || inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR' || (Array.isArray(window.hmRoles) && window.hmRoles.some(r=>String(r).toUpperCase()==='FASILITATOR'));

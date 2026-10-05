@@ -2458,8 +2458,7 @@ function initTradePublic(){
  $('login')?.classList.add('hidden');$('app')?.classList.add('hidden');$('tradePublic')?.classList.remove('hidden');renderTradePublicForm();
 }
 async function addLead(){
- const cc=await sb.from('team_permissions').select('name').eq('outlet',profile?.outlet).eq('active',true).eq('can_content_creator',true).order('name');
- const ccList=cc.data||[]; const opts=ccList.map((x,i)=>'<option value="'+esc(x.name)+'"'+(ccList.length===1?' selected':'')+'>'+esc(x.name)+'</option>').join('');
+ // Buka form segera; jangan menunggu query permission yang tidak diperlukan untuk input Lead Baru.
  $('mt').textContent='＋ DATA LEAD AWAL';
  $('mb').innerHTML='<label>Nama Customer</label><input id="fc" placeholder="Nama customer">'+
  '<label>No WhatsApp</label><input id="fw" placeholder="08xxxxxxxxxx">'+

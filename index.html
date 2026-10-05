@@ -1499,6 +1499,46 @@ async function hmOpenFinanceReport(){
   if(t)t.textContent='📊 Laporan Finance';
 }
 
+async function hmOpenCriticalMainMenu(title,action){
+ const key=String(title||'');
+ hmCloseMainMenu();
+ hmActiveMainMenu=key;
+ hmSetMainMenuButtonOpen(key);
+ const panel=document.getElementById('hmMenuPanel');
+ const body=document.getElementById('hmMenuPanelBody');
+ const panelTitle=document.getElementById('hmMenuPanelTitle');
+ if(!panel||!body)throw new Error('Panel Menu Utama tidak tersedia.');
+ if(panelTitle)panelTitle.textContent=key;
+ body.innerHTML='<div class="box" style="text-align:center">⏳ Memuat  + "`" + `+esc(key)+` + "`" + </div>';
+ panel.classList.remove('hidden');
+ try{
+   if(action==="openTeamCommission()"){
+     await openTeamCommission();
+     if(hmActiveMainMenu===key){
+       const modal=document.getElementById('modal');
+       if(modal)modal.classList.add('hidden');
+       panel.classList.remove('hidden');
+     }
+     return;
+   }
+   const view=action==="openInventorySection('sales')"?'sales':'stock';
+   await openInventorySection(view);
+   if(hmActiveMainMenu!==key)return;
+   const node=document.getElementById('inventoryPanel');
+   if(!node)throw new Error('Panel Product & Stock tidak ditemukan.');
+   body.innerHTML='';
+   body.appendChild(node);
+   node.classList.remove('hidden');
+   panel.classList.remove('hidden');
+   const modal=document.getElementById('modal');
+   if(modal)modal.classList.add('hidden');
+   if(panelTitle)panelTitle.textContent=key;
+ }catch(ex){
+   console.error('[HM] Critical menu error:',key,ex);
+   body.innerHTML='<div class="box"><b>Menu gagal dibuka.</b><div class="small" style="margin-top:6px">'+esc(ex?.message||ex)+'</div></div>';
+ }
+}
+
 function hmRunMainMenuAction(action){
  const a=String(action||'').trim();
  switch(a){
@@ -1630,6 +1670,13 @@ function renderRoleHome(){
      const title=String(item[1]||'');
      const action=String(item[3]||'').trim();
      console.log('[HM MENU CLICK]',{idx,title,action});
+     // Product & Stock / Laporan Penjualan / Komisi Tim memakai jalur inline
+     // khusus agar tidak bergantung pada modal lama dan tidak tertutup oleh
+     // hmCloseMainMenu()/sequence guard.
+     if(action==="openInventorySection('stock')" || action==="openInventorySection('sales')" || action==='openTeamCommission()'){
+       void hmOpenCriticalMainMenu(title,action);
+       return;
+     }
      void hmMainMenuClick(title,function(){
        try{
          return hmRunMainMenuAction(action);

@@ -1227,6 +1227,7 @@ function getActiveRoles(){
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),mg=!!profile?.is_management,has=r=>roles.includes(r);
+ const facilitator=has('FASILITATOR'),sales=has('SALES'),cs=has('CS')||has('CUSTOMER SERVICE'),creator=has('CONTENT CREATOR');
  const title=mg?'Management':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty');
  const sub=mg?'Pusat kendali bisnis • seluruh outlet':(profile?.outlet||'Workspace sesuai peran aktif');
  const cards=[],add=(icon,title,desc,fn)=>{if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn])};

@@ -31,7 +31,9 @@
       const sb=await getClient();
       const email=(el('email')?.value||'').trim(),password=el('password')?.value||'';
       if(!email||!password){if(err)err.textContent='Email dan password wajib diisi.';return;}
-      const x=await sb.auth.signInWithPassword({email,password});
+      const loginTask=sb.auth.signInWithPassword({email,password});
+      const loginTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Koneksi login terlalu lama. Periksa internet lalu coba lagi.')),15000));
+      const x=await Promise.race([loginTask,loginTimeout]);
       if(x.error){if(err)err.textContent=x.error.message;return;}
       window.sb=sb;
       let starter=null;

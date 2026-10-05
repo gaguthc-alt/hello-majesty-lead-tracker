@@ -136,11 +136,11 @@
       // Jangan menggantungkan perpindahan layar pada finance.js/start().
       const loginPage=document.getElementById('login');
       const appPage=document.getElementById('app');
-      const dashboardPage=document.getElementById('dashboard');
+      const workspacePage=document.getElementById('workspace');
       if(loginPage)loginPage.classList.add('hidden');
       if(appPage)appPage.classList.remove('hidden');
-      if(dashboardPage)dashboardPage.classList.remove('hidden');
-      if(err)err.textContent='Dashboard dibuka. Memuat data akun...';
+      if(workspacePage)workspacePage.classList.remove('hidden');
+      if(err)err.textContent='Workspace dibuka. Memuat data akun...';
 
       const starter=await waitForAppStarter();
 

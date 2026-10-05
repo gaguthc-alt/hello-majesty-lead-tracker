@@ -1558,17 +1558,21 @@ function renderRoleHome(){
    add('🎬','Content Performance','Views, comments & DM','hmOpenContentPerformance()');
    add('🎯','Target & Performa','Kontribusi outlet','hmOpenPerformanceReport()');
    add('📖','Brosur','Materi produk','openBrochures()');
+   add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\\'stock\\')');
    add('🤖','Tanya AI','Ide content & DM','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
    add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
    add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
+   add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\\'stock\\')');
    add('🤖','Tanya AI','Mekanisme Finance Cell','openAI()');
  }else if(has('ADMIN FINANCE')){
    add('💰','Finance','Finance outlet','openFinance()');
    add('📊','Laporan Finance','Laporan keuangan','hmOpenFinanceReport()');
+   add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\\'stock\\')');
    add('🤖','Tanya AI','Bantuan finance','openAI()');
  }else{
+   add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\\'stock\\')');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
 

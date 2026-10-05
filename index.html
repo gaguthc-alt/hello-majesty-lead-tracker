@@ -1598,147 +1598,21 @@ function hmOpenLeadHandover(){
   $('modal').classList.remove('hidden');
 }
 async function hmOpenBrochuresInline(){
- const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
- if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
- if(typeof hmBrochureBrands!=='function')throw new Error('Modul Brosur belum siap.');
- if(title)title.textContent='📖 Brosur';
- body.innerHTML='<div class="small" style="margin-bottom:10px">Pilih merk untuk melihat brosur yang tersedia.</div>'+
-   '<div id="hmInlineBrochureBrands" class="row">'+hmBrochureBrands().map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+'</button>').join('')+'</div>'+
-   '<div id="hmInlineBrochureBody" style="margin-top:14px"><div class="small">Memuat data brosur...</div></div>';
- panel.classList.remove('hidden');
- document.getElementById('modal')?.classList.add('hidden');
- requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
- body.querySelectorAll('[data-hm-brochure-brand]').forEach(btn=>{
-   btn.onclick=function(e){
-     e.preventDefault();e.stopPropagation();
-     const brand=this.getAttribute('data-hm-brochure-brand')||'';
-     if(typeof showBrochureBrand==='function'){
-       const oldBody=document.getElementById('brochureBrandBody');
-       const inlineBody=document.getElementById('hmInlineBrochureBody');
-       if(inlineBody){
-         inlineBody.id='brochureBrandBody';
-         showBrochureBrand(brand);
-         inlineBody.id='hmInlineBrochureBody';
-       }
-     }
-   };
- });
- try{
-   await loadBrochures();
-   const brandWrap=document.getElementById('hmInlineBrochureBrands');
-   if(brandWrap){
-     brandWrap.innerHTML=hmBrochureBrands().map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+'</button>').join('');
-     brandWrap.querySelectorAll('[data-hm-brochure-brand]').forEach(btn=>btn.onclick=function(e){
-       e.preventDefault();e.stopPropagation();
-       const brand=this.getAttribute('data-hm-brochure-brand')||'';
-       const inlineBody=document.getElementById('hmInlineBrochureBody');
-       if(inlineBody){
-         inlineBody.id='brochureBrandBody';
-         try{showBrochureBrand(brand);}finally{inlineBody.id='hmInlineBrochureBody';}
-       }
-     });
-   }
-   const ib=document.getElementById('hmInlineBrochureBody');
-   if(ib)ib.innerHTML='<div class="small">Pilih salah satu merk.</div>';
- }catch(e){
-   console.error('[HM] Brosur data gagal dimuat:',e);
-   const ib=document.getElementById('hmInlineBrochureBody');
-   if(ib)ib.innerHTML='<div class="small">⚠️ Data brosur belum dapat dimuat. Coba pilih merk untuk melihat daftar.</div>';
- }
-}
-async function hmOpenPerformanceInline(){
- const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
- if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
- await hmLoadModule('performance');
- await window.openPerformance();
- const node=document.getElementById('performance');
- if(!node)throw new Error('Panel Target & Performa tidak ditemukan.');
- if(title)title.textContent='🎯 Target & Performa';
- if(node.parentNode!==body){
-   const placeholder=document.createComment('HM_INLINE_performance');
-   node.parentNode?.insertBefore(placeholder,node);
-   body.appendChild(node);
-   hmInlineMoved.push({node,placeholder});
- }
- node.classList.remove('hidden');
- panel.classList.remove('hidden');
- document.getElementById('modal')?.classList.add('hidden');
-}
-async function hmOpenPerformanceReport(){ await hmOpenPerformanceInline(); }
-async function hmOpenFacilitatorReportsInline(){
-  const panel=document.getElementById('hmMenuPanel'),title=document.getElementById('hmMenuPanelTitle'),body=document.getElementById('hmMenuPanelBody');
-  if(!panel||!title||!body)return;
-  // Render langsung ke panel inline agar tidak membawa isi menu sebelumnya.
-  title.textContent='📲 Laporan Fasilitator';
-  body.innerHTML='<div class="small" style="margin-bottom:12px">Pilih laporan untuk outlet Fasilitator. Laporan dibagikan langsung ke WhatsApp sebagai teks.</div><div class="row"><button class="success" type="button" onclick="shareFacilitatorReport(\'TODAY\',false)">📅 Penjualan Hari Ini</button><button class="success" type="button" onclick="shareFacilitatorReport(\'MONTH\',false)">📊 Penjualan Bulan Ini</button></div><div class="row" style="margin-top:8px"><button class="secondary" type="button" onclick="shareFacilitatorStock()">📦 Stock READY</button></div><div class="small" style="margin-top:12px">Data otomatis mengikuti outlet Fasilitator yang sedang login.</div>';
-  panel.classList.remove('hidden');
-  const modal=document.getElementById('modal');
-  if(modal)modal.classList.add('hidden');
-}
-async function hmOpenFinanceReport(){
-  if(typeof openFinance==='function') await openFinance();
-  const t=document.getElementById('mt');
-  if(t)t.textContent='📊 Laporan Finance';
-}
-
-async function hmOpenCriticalMainMenu(title,action){
- const key=String(title||'');
- hmCloseMainMenu();
- hmActiveMainMenu=key;
- hmSetMainMenuButtonOpen(key);
  const panel=document.getElementById('hmMenuPanel');
  const body=document.getElementById('hmMenuPanelBody');
- const panelTitle=document.getElementById('hmMenuPanelTitle');
- if(!panel||!body)throw new Error('Panel Menu Utama tidak tersedia.');
- if(panelTitle)panelTitle.textContent=key;
- body.innerHTML='<div class="box" style="text-align:center">⏳ Memuat '+esc(key)+'</div>';
+ const title=document.getElementById('hmMenuPanelTitle');
+ const modal=document.getElementById('modal');
+ const mb=document.getElementById('mb');
+ if(!panel||!body||!modal||!mb)throw new Error('Panel Brosur belum siap.');
+ if(title)title.textContent='📖 Brosur';
+ // Pakai modul Brosur yang sudah terbukti untuk mengambil/render data.
+ await openBrochures();
+ body.innerHTML='';
+ while(mb.firstChild)body.appendChild(mb.firstChild);
+ modal.classList.add('hidden');
  panel.classList.remove('hidden');
- try{
-   if(action==='openTeamCommission()'){
-     await openTeamCommission();
-     if(hmActiveMainMenu===key){
-       const modal=document.getElementById('modal');
-       if(modal)modal.classList.add('hidden');
-       panel.classList.remove('hidden');
-     }
-     return;
-   }
-
-   // Inventory dimuat stabil saat aplikasi dibuka. Jangan lazy-load modul ini
-   // karena inventory.js memiliki dependensi DOM dan state yang harus siap sejak awal.
-   const inventoryOpen=window.openInventorySection;
-   if(typeof inventoryOpen!=='function')throw new Error('inventory.js belum siap.');
-
-   const section=document.getElementById('inventorySection');
-   if(!section)throw new Error('Bagian Product & Stock tidak ditemukan.');
-   const placeholder=document.createComment('HM_INLINE_inventorySection');
-   section.parentNode?.insertBefore(placeholder,section);
-   body.innerHTML='';
-   body.appendChild(section);
-   hmInlineMoved.push({node:section,placeholder});
-   section.classList.remove('hidden');
-
-   const view=action==="openInventorySection('sales')"?'sales':'stock';
-   await inventoryOpen(view);
-   if(hmActiveMainMenu!==key)return;
-
-   const node=document.getElementById('inventoryPanel');
-   if(!node)throw new Error('Panel Product & Stock tidak ditemukan.');
-   node.classList.remove('hidden');
-   if(panelTitle)panelTitle.textContent=key;
-   panel.classList.remove('hidden');
-   const modal=document.getElementById('modal');
-   if(modal)modal.classList.add('hidden');
- }catch(ex){
-   console.error('[HM] Critical menu error:',key,ex);
-   body.innerHTML='<div class="box"><b>Menu gagal dibuka.</b><div class="small" style="margin-top:6px">'+esc(ex?.message||ex)+'</div></div>';
- }
+ requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
 }
-/* HM LAZY MODULE LOADER — heavy secondary modules load only when opened */
-var hmModulePromises={};
-var hmModuleSources={
-  performance:'performance.js?v=20261006-lazy-1',
-};
 function hmLoadModule(name){
   const key=String(name||'').trim();
   const src=hmModuleSources[key];

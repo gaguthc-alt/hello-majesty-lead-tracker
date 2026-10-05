@@ -1431,7 +1431,7 @@ async function hmMainMenuClick(title,fn,actionKey){
   }
   hmMoveViewsInline(route);
   if(key==='Tukar Tambah')hmOpenTradeInline();
-  const d=document.getElementById('workspace');
+  const d=document.getElementById('roleHome');
   if(d)setTimeout(()=>d.scrollIntoView({behavior:'smooth',block:'start'}),20);
  }catch(ex){
   console.error('[HM] Main menu action:',key,ex);

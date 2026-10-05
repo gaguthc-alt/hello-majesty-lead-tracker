@@ -188,7 +188,7 @@ async function perfManagement(mode){
  }
  const salesRows=await sb.from('sales_transactions').select('sales_user_id,customer_source').gte('sold_at',p.start.toISOString()).lt('sold_at',new Date(p.end.getTime()+86400000).toISOString());
  if(salesRows.error)throw salesRows.error;
- const salesMap={};for(const s of (salesRows.data||[])){if(s.sales_user_id)salesMap[s.sales_user_id]=(salesMap[s.sales_user_id]||0)+1;}
+ const salesMap={};const salesDetails={};for(const s of (salesRows.data||[])){if(s.sales_user_id){salesMap[s.sales_user_id]=(salesMap[s.sales_user_id]||0)+1;(salesDetails[s.sales_user_id]||(salesDetails[s.sales_user_id]=[])).push(s);}}
  const hunterRows=await sb.from('sales_transactions').select('hunter_user_id').not('hunter_user_id','is',null).gte('sold_at',p.start.toISOString()).lt('sold_at',new Date(p.end.getTime()+86400000).toISOString());
  if(hunterRows.error)throw hunterRows.error;
  const hunterMap={};for(const h of (hunterRows.data||[]))hunterMap[h.hunter_user_id]=(hunterMap[h.hunter_user_id]||0)+1;
@@ -212,7 +212,7 @@ async function perfManagement(mode){
    const cs={...r,cs_claim:teamClaim,cs_qualification_rate:teamClaim>0?Math.round((Number(r.cs_qualified||0)/teamClaim)*1000)/10:0};
    const actualClosing=Number(salesMap[pr.user_id]||0);
    const sales={...r,sales_claim:Math.max(Number(r.sales_claim||0),actualClosing),sales_closing:actualClosing,sales_closing_rate:Math.max(Number(r.sales_claim||0),actualClosing)>0?Math.round(actualClosing/Math.max(Number(r.sales_claim||0),actualClosing)*1000)/10:0};
-   return {name:pr.name,outlet:pr.outlet,roles,cs,sales,content:cm,facilitator,hunter:hunterMap[pr.user_id]||0,target:o};
+   return {name:pr.name,outlet:pr.outlet,roles,cs,sales,salesDetails:salesDetails[pr.user_id]||[],content:cm,facilitator,hunter:hunterMap[pr.user_id]||0,target:o};
  });
 }
 function perfManagementCard(row,mode){
@@ -221,7 +221,7 @@ function perfManagementCard(row,mode){
  for(const role of roles){
    if(role==='Content Creator') h+='<div style="margin-top:10px"><b>🎬 Content Creator</b><div class="small">Content '+perfFmt(row.content.content_count)+' • WA Dihasilkan '+perfFmt(row.facilitator.wa||0)+' • Views '+perfFmt(row.content.views)+' • Comments '+perfFmt(row.content.comments)+' • DM '+perfFmt(row.content.dms)+'</div></div>';
    if(role==='CS') h+='<div style="margin-top:10px"><b>💬 CS</b><div class="small">Claim '+perfFmt(r.cs_claim)+' • Qualified '+perfFmt(r.cs_qualified)+' • Potensial '+perfFmt(r.cs_potensial)+' • Gagal '+perfFmt(r.cs_gagal)+' • Rate '+perfFmt(r.cs_qualification_rate)+'%</div></div>';
-   if(role==='Sales') h+='<div style="margin-top:10px"><b>🏆 Sales</b><div class="small">Claim '+perfFmt(r.sales_claim)+' • Closing '+perfFmt(r.sales_closing)+' • Potensial '+perfFmt(r.sales_potensial)+' • Gagal '+perfFmt(r.sales_gagal)+' • Rate '+perfFmt(r.sales_closing_rate)+'%</div></div>';
+   if(role==='Sales'){const ds=row.salesDetails||[];h+='<div style="margin-top:10px"><b>🏆 Sales</b><div class="small">Claim '+perfFmt(r.sales_claim)+' • Closing '+perfFmt(r.sales_closing)+' • Potensial '+perfFmt(r.sales_potensial)+' • Gagal '+perfFmt(r.sales_gagal)+' • Rate '+perfFmt(r.sales_closing_rate)+'%</div>'+(ds.length?'<div class="small" style="margin-top:6px"><b>Rincian Penjualan:</b><br>'+ds.map(s=>esc((s.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+' • Rp'+Number(s.sale_price||0).toLocaleString('id-ID')+' • '+new Date(s.sold_at).toLocaleDateString('id-ID'))).join('<br>')+'</div>':'')+'</div>';}
    if(role==='Fasilitator') h+='<div style="margin-top:10px"><b>🧭 Fasilitator</b><div class="small">WA Tim '+perfFmt(row.facilitator.wa)+' / '+perfFmt(row.target.wa_target)+' • Qualified '+perfFmt(row.facilitator.qualified)+' / '+perfFmt(row.target.qualified_target)+' • Closing '+perfFmt(row.facilitator.closing)+' / '+perfFmt(row.target.closing_target)+'</div></div>';
    if(role==='Hunter') h+='<div style="margin-top:10px"><b>🏹 Hunter</b><div class="small">Unit Hunter SOLD '+perfFmt(row.hunter)+'</div></div>';
  }

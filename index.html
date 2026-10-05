@@ -1509,7 +1509,7 @@ async function hmOpenCriticalMainMenu(title,action){
  const panelTitle=document.getElementById('hmMenuPanelTitle');
  if(!panel||!body)throw new Error('Panel Menu Utama tidak tersedia.');
  if(panelTitle)panelTitle.textContent=key;
- body.innerHTML='<div class="box" style="text-align:center">⏳ Memuat  + "`" + `+esc(key)+` + "`" + </div>';
+ body.innerHTML='<div class="box" style="text-align:center">⏳ Memuat '+esc(key)+'</div>';
  panel.classList.remove('hidden');
  try{
    if(action==="openTeamCommission()"){

@@ -1517,7 +1517,6 @@ async function hmMainMenuClick(title,fn,actionKey){
   }
   // Fokuskan layar ke panel yang baru dibuka.
   // Gunakan scroll container yang benar agar stabil di browser HP.
-  const openedPanel=document.getElementById('hmMenuPanel');
   if(openedPanel){
    const focusOpenedPanel=()=>{
     if(hmActiveMainMenu!==key || openedPanel.classList.contains('hidden'))return;

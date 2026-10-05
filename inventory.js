@@ -23,7 +23,7 @@ async function loadInventoryData(){
     if(!perm.error) inventoryCanFacilitator=!!perm.data;
   }
   if(!profile?.is_management && !inventoryCanContentCreator){const cc=await sb.from('team_permissions').select('can_content_creator').eq('name',profile?.name).eq('outlet',profile?.outlet).eq('active',true).maybeSingle();if(!cc.error)inventoryCanContentCreator=!!cc.data?.can_content_creator;}
-  if(!profile?.is_management){const hp=await sb.from('team_permissions').select('can_hunter').eq('name',profile?.name).eq('outlet',profile?.outlet).eq('active',true).maybeSingle();if(!hp.error)inventoryCanHunter=!!hp.data?.can_hunter;}
+  if(!profile?.is_management){const hp=await sb.rpc('has_hunter_inventory_access');if(!hp.error)inventoryCanHunter=!!hp.data;}
   window.hmCanFacilitator=inventoryCanFacilitator; window.hmCanContentCreator=inventoryCanContentCreator;
   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
   const isPartnerFinance=role==='ADMIN FINANCE MAJESTY CELL';

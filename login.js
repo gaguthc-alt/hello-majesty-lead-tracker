@@ -9,7 +9,7 @@
   function el(id){return document.getElementById(id);}
 
   async function loadClient(){
-    if(window.supabase?.createClient)return window.supabase.createClient(SUPABASE_URL,KEY);
+    if(window.supabase?.createClient)return window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
     const loadScript=(src)=>new Promise((resolve,reject)=>{
       const s=document.createElement('script');
       let done=false;
@@ -22,7 +22,7 @@
     try{await loadScript('https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js');}
     catch(_e){await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js');}
     if(!window.supabase?.createClient)throw new Error('Library dashboard tidak tersedia.');
-    return window.supabase.createClient(SUPABASE_URL,KEY);
+    return window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
   }
 
   async function getClient(){
@@ -67,12 +67,14 @@
       if(err)err.textContent='Memverifikasi akun...';
       const auth=await restPasswordLogin(email,password);
 
-      if(err)err.textContent='Login berhasil. Menyiapkan dashboard...';
+      if(err)err.textContent='Login berhasil. Menyiapkan sesi dashboard...';
       const sb=await getClient();
-      const session=await sb.auth.setSession({
+      const sessionTask=sb.auth.setSession({
         access_token:auth.access_token,
         refresh_token:auth.refresh_token
       });
+      const sessionTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Sesi dashboard terlalu lama disiapkan. Ada konflik sesi/login lama di browser.')),8000));
+      const session=await Promise.race([sessionTask,sessionTimeout]);
       if(session.error)throw new Error(session.error.message||'Sesi login gagal disiapkan.');
       window.sb=sb;
 

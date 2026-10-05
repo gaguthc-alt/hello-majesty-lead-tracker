@@ -1903,6 +1903,10 @@ function renderRoleHome(){
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
    add('🔴','Perlu Perhatian','Lead aktif yang perlu segera ditindaklanjuti','showNeedsAttention()');
  }
+ // Brosur adalah menu standar untuk Management dan fungsi CS,
+ // termasuk ketika CS hanya merupakan role tambahan.
+ if(mg || cs)add('📖','Brosur','Materi produk & promosi','openBrochures()');
+
  window.hmMainMenuItems=cards;
  const menuGroups=[
    ['🎯','LEAD TRACKER',[

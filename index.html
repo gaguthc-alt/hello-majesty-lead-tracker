@@ -1181,7 +1181,7 @@ async function openTeamCommission(){
  const monthStart=new Date().toISOString().slice(0,7)+'-01';
  const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
  const r=await sb.rpc('management_team_commission_report',{p_month_start:monthStart});
- if(r.error)return alert('Komisi Tim error: '+r.error.message);
+ if(r.error)throw new Error('Komisi Tim: '+r.error.message);
  const rows=r.data||[];
  const commissionKeys=['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'];
  const rowTotal=x=>commissionKeys.reduce((s,k)=>s+Math.round(Number(x[k]||0)),0);
@@ -1213,7 +1213,15 @@ async function openTeamCommission(){
  $('modal').classList.remove('hidden');
  if(hmActiveMainMenu==='Komisi Tim'){
    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
-   if(panel&&body){if(title)title.textContent='📊 Komisi Tim';body.innerHTML='';const mb=document.getElementById('mb');while(mb&&mb.firstChild)body.appendChild(mb.firstChild);$('modal').classList.add('hidden');panel.classList.remove('hidden');}
+   if(panel&&body){
+     if(title)title.textContent='📊 Komisi Tim';
+     body.innerHTML='';
+     const mb=document.getElementById('mb');
+     while(mb&&mb.firstChild)body.appendChild(mb.firstChild);
+     $('modal').classList.add('hidden');
+     panel.classList.remove('hidden');
+     requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+   }
  }
 }
 async function openTeamCommissionDetails(encodedName){

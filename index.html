@@ -1252,7 +1252,7 @@ function applyRoleVisibility(){
  toggle('leadTrackerBox',!restrictedFinance&&(!creator||sales||cs||facilitator));
  toggle('stats',!restrictedFinance);
  toggle('contentPerformance',!restrictedFinance&&(!sales&&!cs||creator||facilitator||mg));
- toggle('inventorySection',!adminFinance||cellFinance);
+ toggle('inventorySection',!cellFinance);
  toggle('inventoryDashboardBtn',mg||facilitator||cs);
  toggle('inventorySalesBtn',mg||facilitator||sales);
  toggle('searchLeadBtn',!restrictedFinance&&(!creator||sales||cs||facilitator));

@@ -1607,10 +1607,25 @@ function hmOpenLeadHandover(){
     (rows.map(l=>card(l)).join('')||'<div class="small">Belum ada lead yang siap untuk handover.</div>');
   $('modal').classList.remove('hidden');
 }
-async function hmOpenPerformanceReport(){
-  await hmLoadModule('performance');
-  await window.openPerformance();
+async function hmOpenPerformanceInline(){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+ if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
+ await hmLoadModule('performance');
+ await window.openPerformance();
+ const node=document.getElementById('performance');
+ if(!node)throw new Error('Panel Target & Performa tidak ditemukan.');
+ if(title)title.textContent='🎯 Target & Performa';
+ if(node.parentNode!==body){
+   const placeholder=document.createComment('HM_INLINE_performance');
+   node.parentNode?.insertBefore(placeholder,node);
+   body.appendChild(node);
+   hmInlineMoved.push({node,placeholder});
+ }
+ node.classList.remove('hidden');
+ panel.classList.remove('hidden');
+ document.getElementById('modal')?.classList.add('hidden');
 }
+async function hmOpenPerformanceReport(){ await hmOpenPerformanceInline(); }
 async function hmOpenFacilitatorReportsInline(){
   const panel=document.getElementById('hmMenuPanel'),title=document.getElementById('hmMenuPanelTitle'),body=document.getElementById('hmMenuPanelBody');
   if(!panel||!title||!body)return;
@@ -1727,7 +1742,7 @@ function hmRunMainMenuAction(action){
   case 'hmOpenTradeInline()': return hmOpenTradeInline();
   case "openInventorySection('sales')": return window.openInventorySection('sales');
   case "openInventorySection('stock')": return window.openInventorySection('stock');
-  case 'openPerformance()': return hmLoadModule('performance').then(()=>window.openPerformance());
+  case 'openPerformance()': return hmOpenPerformanceInline();
   case 'hmOpenPerformanceReport()': return hmOpenPerformanceReport();
   case 'hmOpenFacilitatorReportsInline()': return hmOpenFacilitatorReportsInline();
   case 'openCommission()': return openCommission();

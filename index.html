@@ -1659,19 +1659,30 @@ async function loadLeads(){
  if(x.error){alert(x.error.message);return}leads=x.data||[];await render();
 }
 async function refreshAppTotal(btn){
- if(btn){btn.textContent='⏳ Refreshing...';}
+ // Refresh Aplikasi = refresh seluruh data/modul tanpa reload halaman.
+ // Dengan cara ini session login tidak pernah terputus.
+ if(btn?.dataset?.refreshing==='1')return;
+ if(btn)btn.dataset.refreshing='1';
+ const oldText=btn?.textContent||'🔄 Refresh Aplikasi';
+ if(btn)btn.textContent='⏳ Refreshing...';
  try{
-  const client=await ensureSupabase();
-  const x=await client.auth.getSession();
-  const session=x.data?.session;
-  if(session){
-    sessionStorage.setItem('hm_refresh_session',JSON.stringify({
-      access_token:session.access_token,
-      refresh_token:session.refresh_token
-    }));
+  await ensureSupabase();
+  if(!profile){
+    const s=(await sb.auth.getSession()).data?.session;
+    if(s)await start(s.user);
   }
- }catch(e){console.warn('[HM] refresh session backup',e)}
- window.location.replace(window.location.href);
+  await refreshLeads();
+  if(typeof renderManagementStockSummary==='function'&&profile?.is_management)await renderManagementStockSummary().catch(()=>{});
+  if(typeof renderContentPerformance==='function'&&document.getElementById('contentPerformance')&&!document.getElementById('contentPerformance').classList.contains('hidden'))await renderContentPerformance().catch(()=>{});
+  if(typeof loadInventoryDashboard==='function'&&document.getElementById('inventorySection')&&!document.getElementById('inventorySection').classList.contains('hidden'))await loadInventoryDashboard().catch(()=>{});
+  if(typeof renderInventory==='function'&&document.getElementById('inventoryPanel')&&!document.getElementById('inventoryPanel').classList.contains('hidden'))await renderInventory().catch(()=>{});
+  if(typeof applyRoleVisibility==='function')applyRoleVisibility();
+ }catch(e){
+  console.error('[HM] Refresh Aplikasi:',e);
+  alert('Refresh gagal: '+(e?.message||'Silakan coba lagi.'));
+ }finally{
+  if(btn){btn.dataset.refreshing='';btn.textContent=oldText;}
+ }
 }
 async function refreshLeads(btn){
  if(btn?.disabled)return;

@@ -1444,7 +1444,7 @@ async function hmOpenFacilitatorReportsInline(){
   if(!panel||!title||!body)return;
   // Render langsung ke panel inline agar tidak membawa isi menu sebelumnya.
   title.textContent='📲 Laporan Fasilitator';
-  body.innerHTML='<div class="small" style="margin-bottom:12px">Pilih laporan untuk outlet Fasilitator. Laporan dibagikan langsung ke WhatsApp sebagai teks.</div><div class="row"><button class="success" type="button" onclick="shareFacilitatorReport(\\'TODAY\\',false)">📅 Penjualan Hari Ini</button><button class="success" type="button" onclick="shareFacilitatorReport(\\'MONTH\\',false)">📊 Penjualan Bulan Ini</button></div><div class="row" style="margin-top:8px"><button class="secondary" type="button" onclick="shareFacilitatorStock()">📦 Stock READY</button></div><div class="small" style="margin-top:12px">Data otomatis mengikuti outlet Fasilitator yang sedang login.</div>';
+  body.innerHTML='<div class="small" style="margin-bottom:12px">Pilih laporan untuk outlet Fasilitator. Laporan dibagikan langsung ke WhatsApp sebagai teks.</div><div class="row"><button class="success" type="button" onclick="shareFacilitatorReport(\'TODAY\',false)">📅 Penjualan Hari Ini</button><button class="success" type="button" onclick="shareFacilitatorReport(\'MONTH\',false)">📊 Penjualan Bulan Ini</button></div><div class="row" style="margin-top:8px"><button class="secondary" type="button" onclick="shareFacilitatorStock()">📦 Stock READY</button></div><div class="small" style="margin-top:12px">Data otomatis mengikuti outlet Fasilitator yang sedang login.</div>';
   panel.classList.remove('hidden');
   const modal=document.getElementById('modal');
   if(modal)modal.classList.add('hidden');

@@ -1560,9 +1560,24 @@ window.hmMainMenuClick=hmMainMenuClick;
 
 /* HM MAIN MENU — exact destination helpers */
 async function hmOpenTargetOutlet(){
-  if(typeof renderTargetBoard==='function') await renderTargetBoard();
+  const panel=document.getElementById('hmMenuPanel');
+  const body=document.getElementById('hmMenuPanelBody');
+  const title=document.getElementById('hmMenuPanelTitle');
+  const modal=document.getElementById('modal');
+  if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
   const e=document.getElementById('targetBoard');
-  if(e)e.classList.remove('hidden');
+  if(!e)throw new Error('Panel Target & Performa belum ditemukan.');
+  if(title)title.textContent='🎯 Target & Performa';
+  if(e.parentNode!==body){
+    const placeholder=document.createComment('HM_INLINE_targetBoard');
+    e.parentNode?.insertBefore(placeholder,e);
+    body.appendChild(e);
+    hmInlineMoved.push({node:e,placeholder});
+  }
+  e.classList.remove('hidden');
+  panel.classList.remove('hidden');
+  if(modal)modal.classList.add('hidden');
+  if(typeof renderTargetBoard==='function') await renderTargetBoard();
 }
 async function hmOpenContentPerformance(){
   const openSeq=hmMenuActionSeq;

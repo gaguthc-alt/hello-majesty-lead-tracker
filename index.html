@@ -1535,7 +1535,7 @@ async function hmOpenCriticalMainMenu(title,action){
    section.classList.remove('hidden');
 
    const view=action==="openInventorySection('sales')"?'sales':'stock';
-   await openInventorySection(view);
+   const inventoryOpen=window.openInventorySection;if(typeof inventoryOpen!=='function')throw new Error('inventory.js belum termuat. Silakan buka ulang aplikasi.');await inventoryOpen(view);
    if(hmActiveMainMenu!==key)return;
 
    const node=document.getElementById('inventoryPanel');
@@ -1558,13 +1558,13 @@ function hmRunMainMenuAction(action){
   case 'openBrochures()': return openBrochures();
   case 'openAccounting()': return openAccounting();
   case 'openFinance()': return openFinance();
-  case 'openInventoryDashboard()': return openInventorySection('stock');
+  case 'openInventoryDashboard()': return typeof window.openInventorySection==='function'?window.openInventorySection('stock'):Promise.reject(new Error('inventory.js belum termuat.'));
   case 'hmOpenTargetOutlet()': return hmOpenTargetOutlet();
   case 'hmOpenContentPerformance()': return hmOpenContentPerformance();
   case 'addLead()': return addLead();
   case 'hmOpenTradeInline()': return hmOpenTradeInline();
-  case "openInventorySection('sales')": return openInventorySection('sales');
-  case "openInventorySection('stock')": return openInventorySection('stock');
+  case "openInventorySection('sales')": return typeof window.openInventorySection==='function'?window.openInventorySection('sales'):Promise.reject(new Error('inventory.js belum termuat.'));
+  case "openInventorySection('stock')": return typeof window.openInventorySection==='function'?window.openInventorySection('stock'):Promise.reject(new Error('inventory.js belum termuat.'));
   case 'openPerformance()': return openPerformance();
   case 'hmOpenPerformanceReport()': return hmOpenPerformanceReport();
   case 'hmOpenFacilitatorReportsInline()': return hmOpenFacilitatorReportsInline();
@@ -2811,6 +2811,6 @@ window.addEventListener('load',function(){
  [email,password].forEach(function(el){if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')window.doLogin();});});
 });
 
-</script><script src="performance.js?v=20261005-loginfix-5"></script><script src="inventory.js?v=20261005-inventory-global-2"></script><script src="brochures.js?v=20261005-loginfix-5"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";
+</script><script src="performance.js?v=20261005-loginfix-5"></script><script src="inventory.js?v=20261005-inventory-global-3"></script><script src="brochures.js?v=20261005-loginfix-5"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";
 try{document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('loginBtn');if(b)b.onclick=e=>{e.preventDefault();window.doLogin();};});}catch(e){console.error('[HM] login binding',e)}
 </script></body></html>

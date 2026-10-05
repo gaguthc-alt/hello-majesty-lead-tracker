@@ -1240,16 +1240,22 @@ async function ensureSupabase(){
 async function start(u,authClient){
  if(authClient)sb=authClient;
  try{
-  $('login').classList.add('hidden');$('app').classList.remove('hidden');
-  const x=await sb.from('team_profiles').select('*').eq('user_id',u.id).single();
+  // Jangan sembunyikan halaman login sebelum profile berhasil dibaca.
+  // Ini mencegah layar login terlihat "menggantung" jika query profile macet.
+  const profileTask=sb.from('team_profiles').select('*').eq('user_id',u.id).single();
+  const profileTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Profile akun terlalu lama dimuat. Koneksi ke database Supabase bermasalah atau akses profile belum tersedia.')),10000));
+  const x=await Promise.race([profileTask,profileTimeout]);
   if(x.error)throw new Error('Profile belum terdaftar: '+x.error.message);
   profile=x.data;
+  $('login').classList.add('hidden');$('app').classList.remove('hidden');
   window.profile=profile;
   hmDashboardOpened=false;
   hmSetDashboardModulesVisible(false);
   if(typeof window.refreshHunterLauncher==='function')window.refreshHunterLauncher();
   window.sb=sb;
-  const perm=await sb.from('team_permissions').select('can_cs,can_sales,can_facilitator,can_content_creator,can_hunter').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();
+  const permTask=sb.from('team_permissions').select('can_cs,can_sales,can_facilitator,can_content_creator,can_hunter').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();
+  const permTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Permission akun terlalu lama dimuat. Koneksi database bermasalah.')),8000));
+  const perm=await Promise.race([permTask,permTimeout]);
   const p=perm.data||{};
   window.hmCanSales=!!p.can_sales;
   hmPermissionRoles=[];

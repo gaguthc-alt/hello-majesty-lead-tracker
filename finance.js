@@ -152,6 +152,15 @@ window.openHunterCommissionReport=async function(){
     '<div id="hunterCommissionBody" style="margin-top:12px">Memuat...</div>';
   m.classList.remove('hidden');m.style.display='flex';await window.loadHunterCommissionReport();
 };
+window.payHunterCommission=async function(id){
+  const account=document.getElementById('hunterPayAccount-'+id)?.value||null;
+  const note=document.getElementById('hunterPayNote-'+id)?.value?.trim()||null;
+  if(!confirm('Bayar komisi Hunter untuk transaksi ini sekarang?'))return;
+  const r=await window.sb.rpc('pay_hunter_commission',{p_sale_id:id,p_payment_account_code:account,p_note:note});
+  if(r.error){alert('Pembayaran komisi gagal: '+String(r.error.message||r.error));return;}
+  alert('Komisi Hunter berhasil dibayar '+hmRp(r.data?.commission||0)+'.\nJurnal: '+String(r.data?.journal_no||'-'));
+  await window.loadHunterCommissionReport();
+};
 window.loadHunterCommissionReport=async function(){
   const box=document.getElementById('hunterCommissionBody'),sb=window.sb;if(!box||!sb)return;
   const start=document.getElementById('hunterReportStart')?.value,end=document.getElementById('hunterReportEnd')?.value,outlet=document.getElementById('hunterReportOutlet')?.value||'ALL';
@@ -160,7 +169,11 @@ window.loadHunterCommissionReport=async function(){
   if(r.error){box.innerHTML='<div class="danger box">Gagal memuat komisi Hunter: '+esc(String(r.error.message||r.error))+'</div>';return;}
   const d=r.data||{},rows=d.rows||[],money=v=>hmRp(v),name=v=>esc(String(v??'-'));
   const cards=[['Total Komisi',d.total],['Sudah Dibayar',d.paid],['Belum Dibayar',d.unpaid]];
-  const list=rows.length?rows.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+name(x.hunter_name)+'</b><span>'+ (x.paid?'✅ SUDAH DIBAYAR':'⏳ BELUM DIBAYAR') +'</span></div><div>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+(x.color?' • '+name(x.color):'')+'</div><div class="small">'+new Date(x.sold_at).toLocaleString('id-ID')+' • '+name(x.outlet)+'</div><div>Profit: '+money(x.gross_profit)+' • <b>Komisi Hunter: '+money(x.commission)+'</b></div>'+(x.paid_at?'<div class="small">Dibayar: '+new Date(x.paid_at).toLocaleString('id-ID')+'</div>':'')+'</div>').join(''):'<div class="small">Belum ada transaksi Hunter pada periode ini.</div>';
+  const list=rows.length?rows.map(x=>{
+    const payOptions='<option value="">Kas outlet (default)</option><option value="1101">1101 — Kas Majesty Plaza iPhone</option><option value="1102">1102 — Kas Majesty Refill Phone</option><option value="1103">1103 — Kas MNG Majesty Refill</option><option value="1104">1104 — Kas MNG Majesty Plaza</option><option value="1110">1110 — Bank BCA</option>';
+    const payBox=x.paid?'':'<div style="margin-top:10px"><label>Akun pembayaran</label><select id="hunterPayAccount-'+x.id+'">'+payOptions+'</select><label>Catatan pembayaran</label><input id="hunterPayNote-'+x.id+'" placeholder="Opsional"><button class="success" onclick="window.payHunterCommission(\''+x.id+'\')">💸 Bayar Komisi Hunter</button></div>';
+    return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+name(x.hunter_name)+'</b><span>'+ (x.paid?'✅ SUDAH DIBAYAR':'⏳ BELUM DIBAYAR') +'</span></div><div>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+(x.color?' • '+name(x.color):'')+'</div><div class="small">'+new Date(x.sold_at).toLocaleString('id-ID')+' • '+name(x.outlet)+'</div><div>Profit: '+money(x.gross_profit)+' • <b>Komisi Hunter: '+money(x.commission)+'</b></div>'+(x.paid_at?'<div class="small">Dibayar: '+new Date(x.paid_at).toLocaleString('id-ID')+'</div>':'')+payBox+'</div>';
+  }).join(''):'<div class="small">Belum ada transaksi Hunter pada periode ini.</div>';
   box.innerHTML='<div class="small">Periode '+name(start)+' s/d '+name(end)+' • Outlet: '+name(outlet)+'</div>'+
     '<div class="stats" style="grid-template-columns:1fr;gap:8px;margin-top:10px">'+cards.map(c=>'<div class="stat" style="min-width:0"><div class="small">'+c[0]+'</div><div class="num" style="'+hmFinNum(c[1])+'">'+money(c[1])+'</div></div>').join('')+'</div>'+
     '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🧾 Rincian Komisi Hunter</h3>'+list+'</div>';

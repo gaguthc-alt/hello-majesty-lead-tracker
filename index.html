@@ -1512,7 +1512,7 @@ async function hmOpenCriticalMainMenu(title,action){
  body.innerHTML='<div class="box" style="text-align:center">⏳ Memuat '+esc(key)+'</div>';
  panel.classList.remove('hidden');
  try{
-   if(action==="openTeamCommission()"){
+   if(action==='openTeamCommission()'){
      await openTeamCommission();
      if(hmActiveMainMenu===key){
        const modal=document.getElementById('modal');
@@ -1521,24 +1521,35 @@ async function hmOpenCriticalMainMenu(title,action){
      }
      return;
    }
+
+   // Product & Stock dan Laporan Penjualan membutuhkan seluruh
+   // inventorySection, bukan hanya inventoryPanel. openInventorySection()
+   // sendiri mencari inventorySection dan mengubah visibilitasnya.
+   const section=document.getElementById('inventorySection');
+   if(!section)throw new Error('Bagian Product & Stock tidak ditemukan.');
+   const placeholder=document.createComment('HM_INLINE_inventorySection');
+   section.parentNode?.insertBefore(placeholder,section);
+   body.innerHTML='';
+   body.appendChild(section);
+   hmInlineMoved.push({node:section,placeholder});
+   section.classList.remove('hidden');
+
    const view=action==="openInventorySection('sales')"?'sales':'stock';
    await openInventorySection(view);
    if(hmActiveMainMenu!==key)return;
+
    const node=document.getElementById('inventoryPanel');
    if(!node)throw new Error('Panel Product & Stock tidak ditemukan.');
-   body.innerHTML='';
-   body.appendChild(node);
    node.classList.remove('hidden');
+   if(panelTitle)panelTitle.textContent=key;
    panel.classList.remove('hidden');
    const modal=document.getElementById('modal');
    if(modal)modal.classList.add('hidden');
-   if(panelTitle)panelTitle.textContent=key;
  }catch(ex){
    console.error('[HM] Critical menu error:',key,ex);
    body.innerHTML='<div class="box"><b>Menu gagal dibuka.</b><div class="small" style="margin-top:6px">'+esc(ex?.message||ex)+'</div></div>';
  }
 }
-
 function hmRunMainMenuAction(action){
  const a=String(action||'').trim();
  switch(a){

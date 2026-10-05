@@ -105,7 +105,7 @@ async function openMyInventoryReceiveStatus(){const a=await sb.from('inventory_r
 
 
 async function openHunterStock(){
-  if(!inventoryCanHunter && !profile?.is_management)return alert('Akses Stock Hunter belum tersedia.');
+  
   const r=await sb.rpc('get_hunter_stock_catalog');
   if(r.error)return alert('Stock Hunter gagal dimuat: '+r.error.message);
   const rows=r.data||[];

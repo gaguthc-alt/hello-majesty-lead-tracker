@@ -1601,7 +1601,8 @@ const HM_INLINE_BROCHURE_BRANDS=['Samsung','Infinix','Apple','Xiaomi','OPPO','vi
 function hmShowBrochureBrandInline(brand){
  const body=document.getElementById('hmInlineBrochureBody');
  if(!body)return;
- const rows=(Array.isArray(window.hmBrochures)?window.hmBrochures:[]).filter(x=>String(x.brand||'').trim().toLowerCase()===String(brand||'').trim().toLowerCase());
+ const allRows=(typeof hmBrochures!=='undefined'&&Array.isArray(hmBrochures))?hmBrochures:[];
+ const rows=allRows.filter(x=>String(x.brand||'').trim().toLowerCase()===String(brand||'').trim().toLowerCase());
  const can=typeof hmBrochureCanManage==='function' && hmBrochureCanManage();
  body.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">📱 '+esc(brand)+'</h3><div class="small">'+rows.length+' brosur</div></div>'+
    (can&&typeof openBrochureUpload==='function'?'<button class="success" type="button" onclick="openBrochureUpload()">＋ Upload Brosur</button>':'')+

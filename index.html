@@ -2434,8 +2434,28 @@ function followupItems(mode){
  const iso=localDateISO();
  return leads.filter(viewerLead).filter(l=>{
   const potential=l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL';
-  const date=String(l.sales_claimed_by?l.sales_follow_up_date:l.cs_follow_up_date||'').slice(0,10);
-  if(!potential||!date)return false;
+  if(!potential)return false;
+
+  // Follow-up selalu mengikuti PIC yang sedang memegang lead:
+  // Sales jika sudah claim; jika belum, CS yang claim.
+  let pic='';
+  let date='';
+  if(l.sales_claimed_by){
+    pic=String(l.sales_claimed_by||'').trim();
+    date=String(l.sales_follow_up_date||'').slice(0,10);
+  }else if(l.cs_claimed_by){
+    pic=String(l.cs_claimed_by||'').trim();
+    date=String(l.cs_follow_up_date||'').slice(0,10);
+  }else{
+    return false;
+  }
+
+  // Jangan tampilkan follow-up yang tidak punya PIC/tanggal yang valid.
+  if(!pic||!date)return false;
+
+  // Follow-up hanya milik PIC terkait, kecuali Management yang memang melihat semua.
+  if(!profile?.is_management && pic!==String(profile?.name||'').trim())return false;
+
   if(mode==='TODAY')return date===iso;
   if(mode==='OVERDUE')return date<iso;
   return true;

@@ -1569,7 +1569,7 @@ function hmRunMainMenuAction(action){
   case 'openInventoryDashboard()': return typeof window.openInventorySection==='function'?window.openInventorySection('stock'):Promise.reject(new Error('inventory.js belum termuat.'));
   case 'hmOpenTargetOutlet()': return hmOpenTargetOutlet();
   case 'hmOpenContentPerformance()': return hmOpenContentPerformance();
-  case 'addLead()': return addLead();
+  case 'hmOpenLeadNewInline()': return hmOpenLeadNewInline();
   case 'hmOpenTradeInline()': return hmOpenTradeInline();
   case "openInventorySection('sales')": return typeof window.openInventorySection==='function'?window.openInventorySection('sales'):Promise.reject(new Error('inventory.js belum termuat.'));
   case "openInventorySection('stock')": return typeof window.openInventorySection==='function'?window.openInventorySection('stock'):Promise.reject(new Error('inventory.js belum termuat.'));
@@ -1590,6 +1590,24 @@ function hmRunMainMenuAction(action){
  }
 }
 
+async function hmOpenLeadNewInline(){
+  // Jalur khusus Lead Baru: gunakan form addLead yang sudah ada,
+  // lalu pastikan hasilnya dipindahkan ke panel Menu Utama.
+  await addLead();
+  const panel=document.getElementById('hmMenuPanel');
+  const body=document.getElementById('hmMenuPanelBody');
+  const modal=document.getElementById('modal');
+  const mb=document.getElementById('mb');
+  const mt=document.getElementById('mt');
+  if(!panel||!body||!mb)return;
+  const title=document.getElementById('hmMenuPanelTitle');
+  if(title)title.textContent=mt?.textContent||'📱 Lead Baru';
+  body.innerHTML='';
+  while(mb.firstChild)body.appendChild(mb.firstChild);
+  if(modal)modal.classList.add('hidden');
+  panel.classList.remove('hidden');
+  setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),20);
+}
 function hmOpenQuickAction(){
  const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
  if(!mt||!mb||!modal)return;
@@ -1627,7 +1645,7 @@ function renderRoleHome(){
    add('📦','Product & Stock','Kontrol seluruh inventory',"openInventorySection('stock')");
    add('🎯','Target & Performa','Target seluruh outlet','hmOpenTargetOutlet()');
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
-   add('📱','WA Masuk','Input lead baru','addLead()');
+   add('📱','WA Masuk','Input lead baru','hmOpenLeadNewInline()');
    add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
    add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')');
    add('💰','Komisi Tim','Komisi seluruh tim','openTeamCommission()');
@@ -1695,7 +1713,7 @@ function renderRoleHome(){
  if(!mg && (cs || sales)){
    add('🎯','Target & Performa','Target, closing & qualification','openPerformance()');
    add('👥','Lead Tracker','Lead & follow-up customer','hmOpenLeadTracker()');
-   add('📱','Lead Baru','Input lead customer','addLead()');
+   add('📱','Lead Baru','Input lead customer','hmOpenLeadNewInline()');
    add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');

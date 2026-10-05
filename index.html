@@ -1330,7 +1330,7 @@ async function start(u,authClient){
 async function changePassword(){
  const np=$('newpass'),np2=$('newpass2'),pe=$('passErr');
  if(np.value.length<8||np.value!==np2.value){pe.textContent='Password minimal 8 karakter dan harus sama.';return}
- let x=await sb.auth.updateUser({password:np.value});if(x.error){pe.textContent=x.error.message;return}
+ let x=await fetch(SUPABASE_URL+'/auth/v1/user',{method:'PUT',headers:{apikey:KEY,Authorization:'Bearer '+(window.hmAccessToken?.()||''),'Content-Type':'application/json'},body:JSON.stringify({password:np.value})});let xd=null;try{xd=await x.json()}catch(e){};if(!x.ok){pe.textContent=xd?.message||xd?.msg||'Gagal mengubah password.';return}
  x=await sb.from('team_profiles').update({must_change_password:false}).eq('user_id',profile.user_id);
  if(x.error){pe.textContent=x.error.message;return}
  $('passwordBox').classList.add('hidden');$('dashboard').classList.remove('hidden');await loadLeads();openUrl();
@@ -1880,7 +1880,7 @@ function applyRoleVisibility(){
  renderRoleHome();
 }
 window.hmStartApp=start;
-async function logout(){await sb.auth.signOut();location.reload()}
+async function logout(){try{localStorage.removeItem('hm_auth_session')}catch(e){} location.reload()}
 async function loadLeads(){
  await sb.rpc('archive_completed_leads');
  const x=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false});

@@ -52,11 +52,22 @@ function renderCommissionActions(){
 }
 
 async function openTeamCommission(){
- const x=await sb.from('hunter_commission_report').select('*').order('total_commission',{ascending:false});
- if(x.error)return alert('Komisi Tim error: '+x.error.message);
- const rows=x.data||[];
+ const renderTab=(tab)=>{
+   if(tab==='hunter'){
+     sb.from('hunter_commission_report').select('*').order('total_commission',{ascending:false}).then(x=>{
+       if(x.error)return alert('Komisi Hunter error: '+x.error.message);
+       const rows=x.data||[];
+       $('mcBody').innerHTML='<div class="small" style="margin-bottom:10px">Rincian komisi Hunter.</div>'+(rows.length?rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.hunter_name||'-')+'</b><b>Rp'+Number(r.total_commission||0).toLocaleString('id-ID')+'</b></div><div class="small">Sold: '+Number(r.sold_units||0)+' • Profit: Rp'+Number(r.total_profit||0).toLocaleString('id-ID')+' • Unpaid: Rp'+Number(r.unpaid_commission||0).toLocaleString('id-ID')+'</div></div>').join(''):'<p>Belum ada data komisi Hunter.</p>');
+     });
+   }else{
+     const label=tab==='cs'?'CS':'Sales';
+     $('mcBody').innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">🚧</div><h3>Komisi '+label+'</h3><div class="small">Menu sudah disiapkan. Perhitungan komisi '+label+' akan mengikuti aturan Management.</div></div>';
+   }
+ };
  $('mt').textContent='📊 Komisi Tim';
- $('mb').innerHTML='<div class="small" style="margin-bottom:10px">Rincian komisi seluruh anggota yang memiliki komisi hunter.</div>'+(rows.length?rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.hunter_name||'-')+'</b><b>Rp'+Number(r.total_commission||0).toLocaleString('id-ID')+'</b></div><div class="small">Sold: '+Number(r.sold_units||0)+' • Profit: Rp'+Number(r.total_profit||0).toLocaleString('id-ID')+' • Unpaid: Rp'+Number(r.unpaid_commission||0).toLocaleString('id-ID')+'</div></div>').join(''):'<p>Belum ada data komisi.</p>');
+ $('mb').innerHTML='<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="secondary" id="mcHunter" onclick="renderTeamCommissionTab(\'hunter\')">🎯 Hunter</button><button class="secondary" id="mcCs" onclick="renderTeamCommissionTab(\'cs\')">👤 CS</button><button class="secondary" id="mcSales" onclick="renderTeamCommissionTab(\'sales\')">💼 Sales</button></div><div id="mcBody"></div>';
+ window.renderTeamCommissionTab=renderTab;
+ renderTab('hunter');
  $('modal').classList.remove('hidden');
 }
 

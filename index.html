@@ -1431,8 +1431,18 @@ async function hmMainMenuClick(title,fn,actionKey){
   }
   hmMoveViewsInline(route);
   if(key==='Tukar Tambah')hmOpenTradeInline();
-  const d=document.getElementById('roleHome');
-  if(d)setTimeout(()=>d.scrollIntoView({behavior:'smooth',block:'start'}),20);
+  // Setelah panel inline dibuka, fokuskan layar ke panel tersebut.
+  // Jangan kembali ke Role Home; pengguna harus langsung melihat area yang dibuka.
+  const openedPanel=document.getElementById('hmMenuPanel');
+  if(openedPanel){
+   setTimeout(()=>{
+    if(hmActiveMainMenu!==key)return;
+    const header=document.querySelector('header');
+    const offset=(header?.getBoundingClientRect().height||0)+10;
+    const top=openedPanel.getBoundingClientRect().top+window.scrollY-offset;
+    window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+   },60);
+  }
  }catch(ex){
   console.error('[HM] Main menu action:',key,ex);
   const err=document.getElementById('loginErr');

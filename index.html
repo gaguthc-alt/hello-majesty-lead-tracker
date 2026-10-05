@@ -1678,6 +1678,13 @@ async function refreshAppTotal(btn){
     if(s)await start(s.user);
   }
   await refreshLeads();
+  // Muat ulang Content Performance satu kali setelah data utama selesai.
+  // Jangan dijalankan bersamaan dengan refreshLeads agar tidak terjadi race condition.
+  if(typeof renderContentPerformance==='function'&&document.getElementById('contentPerformance')&&!document.getElementById('contentPerformance').classList.contains('hidden')){
+    const cp=document.getElementById('contentPerformance');
+    cp.innerHTML='<div class="small">⏳ Memuat ulang Content Performance...</div>';
+    await renderContentPerformance();
+  }
   if(typeof renderManagementStockSummary==='function'&&profile?.is_management&&hmActiveMainMenu==='Product & Stock')await renderManagementStockSummary().catch(()=>{});
   if(typeof loadInventoryDashboard==='function'&&document.getElementById('inventorySection')&&!document.getElementById('inventorySection').classList.contains('hidden'))await loadInventoryDashboard().catch(()=>{});
   if(typeof renderInventory==='function'&&document.getElementById('inventoryPanel')&&!document.getElementById('inventoryPanel').classList.contains('hidden'))await renderInventory().catch(()=>{});

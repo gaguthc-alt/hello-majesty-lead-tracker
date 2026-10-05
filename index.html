@@ -2577,44 +2577,15 @@ window.openAccountingModule=openAccountingModule;
   if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.';
  }
 })();
-var contentPerformanceOpen=true;
 function toggleContentPerformance(ev){
   if(ev){ev.preventDefault();ev.stopPropagation();}
-  const body=document.getElementById('contentPerformanceBody');
-  const btn=document.getElementById('contentPerformanceToggle');
-  if(!body)return;
-  contentPerformanceOpen=!contentPerformanceOpen;
-  body.classList.toggle('hidden',!contentPerformanceOpen);
-  if(btn){
-    btn.type='button';
-  btn.setAttribute('aria-expanded',contentPerformanceOpen?'true':'false');
-  btn.textContent=contentPerformanceOpen?'✖ Tutup':'📂 Buka';
-    btn.setAttribute('aria-expanded',contentPerformanceOpen?'true':'false');
-  }
+  return false;
 }
 window.toggleContentPerformance=toggleContentPerformance;
 function decorateContentPerformance(){
-  const host=document.getElementById('contentPerformance');if(!host)return;
-  const header=host.querySelector('.row');if(!header)return;
-  let btn=document.getElementById('contentPerformanceToggle');
-  if(!btn){
-    btn=document.createElement('button');
-    btn.id='contentPerformanceToggle';
-    btn.className='secondary';
-    btn.type='button';
-    btn.setAttribute('aria-expanded','true');
-    btn.addEventListener('click',toggleContentPerformance,{passive:false});
-    header.appendChild(btn);
-  }
-  btn.textContent=contentPerformanceOpen?'✖ Tutup':'📂 Buka';
-  let body=document.getElementById('contentPerformanceBody');
-  if(!body){
-    body=document.createElement('div');
-    body.id='contentPerformanceBody';
-    while(header.nextSibling)body.appendChild(header.nextSibling);
-    host.appendChild(body);
-  }
-  body.classList.toggle('hidden',!contentPerformanceOpen);
+  // Content Performance ditampilkan langsung tanpa state toggle.
+  // Sengaja dibuat sederhana agar tidak bergantung pada inisialisasi UI tambahan.
+  return;
 }
 var hmContentPerformanceRequest=null;
 async function renderContentPerformance(){

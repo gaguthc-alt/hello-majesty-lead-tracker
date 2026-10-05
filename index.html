@@ -1233,7 +1233,7 @@ function renderRoleHome(){
  if(has('SALES')){add('🎯','Target & Performa','Target & closing','openPerformance()');add('👥','Lead Tracker','Lead tanggung jawab','openLeadSearch()');add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');}
  if(has('CS')){add('🎯','Target & Performa','WA, handover & qualification','openPerformance()');add('👥','Lead Tracker','Follow-up customer','openLeadSearch()');add('📦','Product & Stock','Ketersediaan produk','openInventorySection(\'stock\')');add('💬','Tanya AI','Bantuan CS','openAI()');}
  if(has('CONTENT CREATOR')){add('🎬','Content Performance','Views, comments & DM','openPerformance()');add('🎯','Target & Performa','Kontribusi outlet','openPerformance()');add('📖','Brosur','Materi produk','openBrochures()');add('💬','Tanya AI','Ide content & DM','openAI()');}
- if(has('ADMIN FINANCE MAJESTY CELL')){add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');add('🤖','Tanya AI','Mekanisme Finance Cell','openAI()');}
+ if(has('ADMIN FINANCE MAJESTY CELL')){add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');add('🤖','Tanya AI','Mekanisme Finance Cell','openAI()');add('🚪','Logout','Keluar dari akun','logout()');}
  if(has('ADMIN FINANCE')){add('💰','Finance','Finance outlet','openFinance()');add('📊','Laporan Finance','Laporan keuangan','openFinance()');add('🤖','Tanya AI','Bantuan finance','openAI()');}
  if(!profile?.is_management && !has('ADMIN FINANCE MAJESTY CELL')) add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  if(!cards.length){add('🎯','Target','Target outlet','openPerformance()');add('📦','Product & Stock','Kebutuhan operasional','openInventorySection(\'stock\')');add('🤖','Tanya AI','Minta bantuan','openAI()');}
@@ -1263,7 +1263,7 @@ function applyRoleVisibility(){
  toggle('waMasukBtn',cs);
  toggle('tradeBtn',!restrictedFinance&&!creator&&!facilitator);
  toggle('commissionActions',mg||sales||cs||facilitator);
- const actions=$('dashboardActions'); if(actions) actions.classList.toggle('management-actions',mg); const finance=$('financeBtn');
+ const actions=$('dashboardActions'); if(actions){actions.classList.toggle('management-actions',mg);actions.classList.toggle('hidden',cellFinance);} const finance=$('financeBtn');
  if(finance){finance.classList.toggle('hidden',cellFinance);if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
  toggle('cellFinanceReportBtn',cellFinance);
  renderRoleHome();

@@ -21,7 +21,7 @@
       <label for="password">Password</label>
       <div class="login-input-wrap"><span>🔒</span><input id="password" type="password" autocomplete="current-password" placeholder="Masukkan password"></div>
     </div>
-    <button id="loginBtn" class="login-submit" type="button" onclick="doLogin()"><span>LOGIN</span><b>→</b></button>
+    <button id="loginBtn" class="login-submit" type="button" onclick="window.doLogin()"><span>LOGIN</span><b>→</b></button>
     <p id="loginErr" class="login-error"></p>
     <div class="login-trust"><span>●</span> Secure access &nbsp;•&nbsp; Built on Trust</div>
   </div>
@@ -167,7 +167,10 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function ensureSupabase(){if(sb)return sb;if(!window.supabase?.createClient)throw new Error('Library Supabase belum termuat. Silakan refresh halaman.');sb=window.supabase.createClient(SUPABASE_URL,KEY);return sb}
 async function doLogin(){
- const err=$('loginErr');err.textContent='Memproses login...';
+ const err=$('loginErr'),btn=$('loginBtn');
+ if(btn?.disabled)return;
+ if(btn)btn.disabled=true;
+ err.textContent='Memproses login...';
  try{
   await ensureSupabase();
   const email=$('email').value.trim(),password=$('password').value;
@@ -175,7 +178,12 @@ async function doLogin(){
   const x=await sb.auth.signInWithPassword({email,password});
   if(x.error){err.textContent=x.error.message;return}
   await start(x.data.user);
- }catch(ex){err.textContent=ex?.message||'Login gagal.'}
+ }catch(ex){
+  console.error('[HM] login:',ex);
+  err.textContent=ex?.message||'Login gagal. Coba lagi.';
+ }finally{
+  if(btn){btn.disabled=false;btn.style.pointerEvents='auto';}
+ }
 }
 async function start(u){
  try{
@@ -1286,11 +1294,11 @@ window.openAI=openAI;window.askAI=askAI;
 window.doLogin=doLogin;
 window.addEventListener('load',function(){
  const b=document.getElementById('loginBtn');
- if(b){
-   b.onclick=function(e){e.preventDefault();if(typeof window.doLogin==='function')window.doLogin();};
- }
+ if(b)b.onclick=function(e){e.preventDefault();window.doLogin();};
+ const email=document.getElementById('email'),password=document.getElementById('password');
+ [email,password].forEach(function(el){if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')window.doLogin();});});
 });
 
 </script><script src="performance.js?v=20261005-26"></script><script src="inventory.js?v=20261005-46"></script><script src="brochures.js?v=20261002-3"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";
-try{document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('loginBtn');if(b)b.addEventListener('click',e=>{e.preventDefault();doLogin();});});}catch(e){console.error('[HM] login binding',e)}
+try{document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('loginBtn');if(b)b.onclick=e=>{e.preventDefault();window.doLogin();};});}catch(e){console.error('[HM] login binding',e)}
 </script></body></html>

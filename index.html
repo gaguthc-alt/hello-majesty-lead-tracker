@@ -1614,7 +1614,11 @@ function renderRoleHome(){
 
  // MENU UTAMA = hanya fungsi yang memang diberikan kepada akun/role.
  // Management melihat seluruh modul utama.
- const cards=[],add=(icon,title,desc,fn)=>{if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn])};
+ const isAtmadita=String(profile?.name||'').trim().toLowerCase()==='atmadita';
+ const cards=[],add=(icon,title,desc,fn)=>{
+  if(isAtmadita&&['Lead Tracker','Lead & Handover','Lead Baru','Search Lead','Product & Stock','Content Performance','Laporan Penjualan','Target & Performa'].includes(String(title)))return;
+  if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
+ };
 
  if(mg){
    add('🔎','Search Lead','Cari & kelola seluruh lead','openLeadSearch()');
@@ -1867,8 +1871,16 @@ function viewerLead(l){if(profile?.is_management)return true;if(l.outlet!==profi
 async function render(){
  // LEAD AKTIF + RESUME selalu tampil untuk semua akun yang memiliki dashboard.
  // Tidak dibatasi role: CS, Sales, Fasilitator, dan Management tetap melihat resume sesuai data yang boleh mereka akses.
+ const isAtmadita=String(profile?.name||'').trim().toLowerCase()==='atmadita';
  const leadBox=$('leadTrackerBox');
- if(leadBox){leadBox.classList.remove('hidden');leadBox.style.display='block';}
+ const leadResume=$('activeLeadResume');
+ if(isAtmadita){
+  if(leadBox){leadBox.classList.add('hidden');leadBox.style.display='none';}
+  if(leadResume){leadResume.classList.add('hidden');leadResume.style.display='none';}
+ }else{
+  if(leadBox){leadBox.classList.remove('hidden');leadBox.style.display='block';}
+  if(leadResume){leadResume.classList.remove('hidden');leadResume.style.display='block';}
+ }
  renderCommissionActions();
  
  renderTargetBoard().catch(e=>console.error('[HM] Target board error',e));

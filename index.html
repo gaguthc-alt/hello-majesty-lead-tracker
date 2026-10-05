@@ -1637,8 +1637,8 @@ async function loadLeads(){
  if(x.error){alert(x.error.message);return}leads=x.data||[];await render();
 }
 function refreshAppTotal(btn){
- if(btn?.disabled)return;
- if(btn){btn.disabled=true;btn.textContent='⏳ Refreshing...';}
+ // Setiap klik selalu melakukan reload penuh. Tidak ada lock/disabled state.
+ if(btn){btn.textContent='⏳ Refreshing...';}
  window.location.reload();
 }
 async function refreshLeads(btn){

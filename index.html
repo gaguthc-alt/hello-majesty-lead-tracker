@@ -1893,6 +1893,26 @@ function renderRoleHome(){
      const title=String(item[1]||'');
      const action=String(item[3]||'').trim();
      console.log('[HM MENU CLICK]',{idx,title,action});
+     if(title==='Brosur'){
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       const runner=typeof hmOpenBrochuresInline==='function'?hmOpenBrochuresInline:null;
+       if(!runner){
+         alert('Modul Brosur belum siap. Silakan refresh aplikasi.');
+         return;
+       }
+       void Promise.resolve(runner()).catch(ex=>{
+         console.error('[HM] Brosur gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel');
+         const body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){
+           body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Brosur: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';
+           panel.classList.remove('hidden');
+         }
+       });
+       return;
+     }
      // Product & Stock / Laporan Penjualan / Komisi Tim memakai jalur inline
      // khusus agar tidak bergantung pada modal lama dan tidak tertutup oleh
      // hmCloseMainMenu()/sequence guard.

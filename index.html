@@ -1597,54 +1597,54 @@ function hmOpenLeadHandover(){
     (rows.map(l=>card(l)).join('')||'<div class="small">Belum ada lead yang siap untuk handover.</div>');
   $('modal').classList.remove('hidden');
 }
-function hmShowBrochureBrandInline(brand){
- const body=document.getElementById('hmInlineBrochureBody');
- if(!body)return;
- const allRows=Array.isArray(window.hmBrochuresInlineData)?window.hmBrochuresInlineData:[];
- const rows=allRows.filter(x=>String(x.brand||'').trim().toLowerCase()===String(brand||'').trim().toLowerCase());
- const can=typeof hmBrochureCanManage==='function' && hmBrochureCanManage();
- body.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">📱 '+esc(brand)+'</h3><div class="small">'+rows.length+' brosur</div></div>'+
-   (can&&typeof openBrochureUpload==='function'?'<button class="success" type="button" onclick="openBrochureUpload()">＋ Upload Brosur</button>':'')+
-   '</div>'+
-   (rows.length?(typeof brochureCard==='function'?rows.map(brochureCard).join(''):'<div class="small">Modul brosur belum siap.</div>'):'<div class="box"><div class="small">Belum ada brosur untuk merk ini.</div>'+(can&&typeof openBrochureUpload==='function'?'<button class="secondary" style="margin-top:8px" type="button" onclick="openBrochureUpload()">＋ Tambah Brosur</button>':'')+'</div>');
- requestAnimationFrame(()=>document.getElementById('hmMenuPanel')?.scrollIntoView({behavior:'smooth',block:'start'}));
-}
 async function hmOpenBrochuresInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
  if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
+ if(typeof hmBrochureBrands!=='function')throw new Error('Modul Brosur belum siap.');
  if(title)title.textContent='📖 Brosur';
  body.innerHTML='<div class="small" style="margin-bottom:10px">Pilih merk untuk melihat brosur yang tersedia.</div>'+
-   '<div id="hmInlineBrochureBrands" class="row"><div class="small">Memuat daftar merk...</div></div>'+
+   '<div id="hmInlineBrochureBrands" class="row">'+hmBrochureBrands().map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+'</button>').join('')+'</div>'+
    '<div id="hmInlineBrochureBody" style="margin-top:14px"><div class="small">Memuat data brosur...</div></div>';
  panel.classList.remove('hidden');
  document.getElementById('modal')?.classList.add('hidden');
- try{
-   if(typeof ensureSupabase==='function')await ensureSupabase();
-   if(!window.sb)throw new Error('Sesi Supabase belum siap.');
-   const r=await window.sb.from('brochures').select('*').eq('active',true).order('brand').order('created_at',{ascending:false});
-   if(r.error)throw r.error;
-   window.hmBrochuresInlineData=Array.isArray(r.data)?r.data:[];
-   const counts={};
-   window.hmBrochuresInlineData.forEach(x=>{const k=String(x.brand||'').trim();if(k)counts[k]=(counts[k]||0)+1;});
-   const base=['Samsung','Infinix','Apple','Xiaomi','OPPO','vivo','realme','TECNO','itel','HONOR','Huawei','ASUS','Lenovo','Nokia','POCO','Redmi'];
-   const brands=[...new Set([...base,...Object.keys(counts)])];
-   const brandWrap=document.getElementById('hmInlineBrochureBrands');
-   if(!brandWrap)return;
-   brandWrap.innerHTML=brands.map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+(counts[b]?' ('+counts[b]+')':'')+'</button>').join('');
-   brandWrap.querySelectorAll('[data-hm-brochure-brand]').forEach(btn=>btn.onclick=function(e){
-     e.preventDefault();e.stopPropagation();
-     hmShowBrochureBrandInline(this.getAttribute('data-hm-brochure-brand')||'');
-   });
-   const first=brands.find(b=>counts[b]>0);
-   const ib=document.getElementById('hmInlineBrochureBody');
-   if(first)hmShowBrochureBrandInline(first);
-   else if(ib)ib.innerHTML='<div class="small">Belum ada data brosur.</div>';
- }catch(e){
-   console.error('[HM] Brosur inline:',e);
-   const ib=document.getElementById('hmInlineBrochureBody');
-   if(ib)ib.innerHTML='<div style="color:#b42318">⚠️ Gagal memuat brosur: '+esc(e?.message||'Terjadi kesalahan')+'</div>';
- }
  requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+ body.querySelectorAll('[data-hm-brochure-brand]').forEach(btn=>{
+   btn.onclick=function(e){
+     e.preventDefault();e.stopPropagation();
+     const brand=this.getAttribute('data-hm-brochure-brand')||'';
+     if(typeof showBrochureBrand==='function'){
+       const oldBody=document.getElementById('brochureBrandBody');
+       const inlineBody=document.getElementById('hmInlineBrochureBody');
+       if(inlineBody){
+         inlineBody.id='brochureBrandBody';
+         showBrochureBrand(brand);
+         inlineBody.id='hmInlineBrochureBody';
+       }
+     }
+   };
+ });
+ try{
+   await loadBrochures();
+   const brandWrap=document.getElementById('hmInlineBrochureBrands');
+   if(brandWrap){
+     brandWrap.innerHTML=hmBrochureBrands().map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+'</button>').join('');
+     brandWrap.querySelectorAll('[data-hm-brochure-brand]').forEach(btn=>btn.onclick=function(e){
+       e.preventDefault();e.stopPropagation();
+       const brand=this.getAttribute('data-hm-brochure-brand')||'';
+       const inlineBody=document.getElementById('hmInlineBrochureBody');
+       if(inlineBody){
+         inlineBody.id='brochureBrandBody';
+         try{showBrochureBrand(brand);}finally{inlineBody.id='hmInlineBrochureBody';}
+       }
+     });
+   }
+   const ib=document.getElementById('hmInlineBrochureBody');
+   if(ib)ib.innerHTML='<div class="small">Pilih salah satu merk.</div>';
+ }catch(e){
+   console.error('[HM] Brosur data gagal dimuat:',e);
+   const ib=document.getElementById('hmInlineBrochureBody');
+   if(ib)ib.innerHTML='<div class="small">⚠️ Data brosur belum dapat dimuat. Coba pilih merk untuk melihat daftar.</div>';
+ }
 }
 async function hmOpenPerformanceInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
@@ -3231,11 +3231,9 @@ async function renderContentPerformance(){
   hmContentPerformanceRequest=(async()=>{
     if(!profile?.user_id)throw new Error('Session belum siap. Silakan coba lagi.');
     await ensureSupabase();
-    // Client Supabase aplikasi memakai accessToken provider.
-    // Jangan memanggil sb.auth.getSession() di modul ini karena client
-    // dengan accessToken provider memang tidak mengizinkan akses session langsung.
-    if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap. Silakan coba lagi.');
-    await window.hmAccessToken();
+    const sessionCheck=await sb.auth.getSession();
+    if(!sessionCheck.data?.session)throw new Error('Sesi login belum siap. Silakan coba lagi.');
+    if(sessionCheck.data.session.user.id!==profile.user_id)throw new Error('Sesi login berubah. Silakan coba lagi.');
 
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const host=document.getElementById('contentPerformance')||document.createElement('div');

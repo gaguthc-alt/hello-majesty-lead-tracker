@@ -12,18 +12,10 @@ function hmBrochureUrl(path){
   return sb.storage.from('brochures').getPublicUrl(path).data.publicUrl;
 }
 async function loadBrochures(){
-  // Gunakan REST + token login yang sama dengan dashboard.
-  // Ini menghindari ketergantungan pada state Auth-JS client di browser mobile.
-  const token=typeof window.hmAccessToken==='function'?await window.hmAccessToken():'';
-  if(!token)throw new Error('Sesi login belum siap.');
-  const url='https://ksowzhhmzrumyciehuyv.supabase.co/rest/v1/brochures?select=*&active=eq.true&order=brand.asc,created_at.desc';
-  const res=await fetch(url,{headers:{
-    apikey:'sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW',
-    Authorization:'Bearer '+token
-  }});
-  let data=null;try{data=await res.json()}catch(_e){}
-  if(!res.ok)throw new Error(data?.message||data?.hint||data?.details||'Data brosur tidak dapat dimuat.');
-  hmBrochures=Array.isArray(data)?data:[];
+  if(!window.sb)throw new Error('Sesi aplikasi belum siap.');
+  const r=await window.sb.from('brochures').select('*').eq('active',true).order('brand').order('created_at',{ascending:false});
+  if(r.error)throw r.error;
+  hmBrochures=Array.isArray(r.data)?r.data:[];
 }
 function hmBrochureBrands(){
   const all=[...HM_BROCHURE_BRANDS,...hmBrochures.map(x=>x.brand||'')].filter(Boolean);

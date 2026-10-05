@@ -158,7 +158,7 @@ async function renderInventory(){
   bindTop('🔴 Terjual',()=>openInventorySoldDetail(), 'Klik untuk melihat rincian barang terjual');
   bindTop('↩️ Retur',()=>openInventoryReturnDetail(), 'Klik untuk melihat rincian retur');
 }
-function openInventoryDashboard(){
+async function openInventoryDashboard(){
  if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management dan Admin Finance.');return;}
  const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;
  const open=!panel.classList.contains('hidden');

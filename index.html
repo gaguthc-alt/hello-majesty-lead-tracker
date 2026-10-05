@@ -1266,10 +1266,18 @@ async function start(u,authClient){
   $('dashboard').classList.remove('hidden');
   // Re-apply role visibility after dashboard is rendered; some modules render asynchronously.
   applyRoleVisibility();
-  try{await loadLeads();openUrl();}
+  try{
+   // Jangan biarkan proses pemuatan data menahan LOGIN selamanya.
+   // Dashboard sudah boleh dibuka setelah profile + permission berhasil.
+   const loadTask=loadLeads();
+   const loadTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Pemuatan data dashboard terlalu lama.')),10000));
+   await Promise.race([loadTask,loadTimeout]);
+   openUrl();
+  }
   catch(ex){
    console.error('[HM] Dashboard load error',ex);
-   $('loginErr').textContent='Login berhasil, tetapi dashboard gagal dimuat: '+(ex?.message||ex);
+   // Login tetap dianggap berhasil; dashboard tetap terbuka agar user tidak terjebak di "Memproses login...".
+   try{openUrl();}catch(_){ }
   }
  }catch(ex){
   console.error('[HM] Start error',ex);

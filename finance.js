@@ -10,7 +10,7 @@ window.openCellFinanceReport=async function(){
   const d=new Date(),start=new Date(d.getFullYear(),d.getMonth(),1),end=d;
   const iso=x=>{const y=x.getFullYear(),m=String(x.getMonth()+1).padStart(2,'0'),day=String(x.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};
   b.innerHTML='<div class="cell-report-actions"><button class="secondary" type="button" onclick="window.openPartnerSettlement()">← Kembali</button><button class="primary" type="button" onclick="window.loadCellFinanceReport()">🔄 Refresh</button></div>'+
-    '<div class="cell-report-filters"><label>Dari<input id="cellReportStart" type="date" value="'+iso(start)+'"></label><label>Sampai<input id="cellReportEnd" type="date" value="'+iso(end)+'"></label><label class="cell-report-outlet">Outlet yang Dipantau<select id="cellReportOutlet"><option value="ALL">Semua Outlet Cell</option><option value="Majesty Refill Phone">Majesty Refill Phone</option><option value="Majesty Plaza iPhone">Majesty Plaza iPhone</option></select></label></div>'+
+    '<div class="cell-report-filters"><label>Dari<input id="cellReportStart" type="date" value="'+iso(start)+'"></label><label>Sampai<input id="cellReportEnd" type="date" value="'+iso(end)+'"></label><label class="cell-report-outlet">Outlet yang Dipantau<select id="cellReportOutlet" onchange="window.loadCellFinanceReport()"><option value="ALL">Semua Outlet Cell</option><option value="Majesty Refill Phone">Majesty Refill Phone</option><option value="Majesty Plaza iPhone">Majesty Plaza iPhone</option></select></label></div>'+
     '<div id="cellFinanceReportBody" class="cell-report-body">Memuat...</div>';
   m.classList.remove('hidden');m.style.display='flex';await window.loadCellFinanceReport();
 };

@@ -1833,27 +1833,6 @@ function hmOpenQuickAction(){
  '</div><button class="secondary" style="width:100%;margin-top:10px" onclick="closeModal()">Tutup</button>';
  modal.classList.remove('hidden');
 }
-function hmDirectRoleSubmenu(title,action){
-  const key=String(title||'').trim();
-  const act=String(action||'').trim();
-  if(!key)return;
-  if(key==='Brosur'){
-    if(typeof hmOpenBrochuresInline!=='function'){ alert('Modul Brosur belum siap. Silakan refresh aplikasi.'); return; }
-    hmCloseMainMenu(); hmActiveMainMenu=key; hmSetMainMenuButtonOpen(key);
-    Promise.resolve(hmOpenBrochuresInline()).catch(ex=>console.error('[HM] Brosur:',ex));
-    return;
-  }
-  if(key==='Content Performance'){
-    if(typeof hmOpenContentPerformance!=='function'){ alert('Content Performance belum siap. Silakan refresh aplikasi.'); return; }
-    hmCloseMainMenu(); hmActiveMainMenu=key; hmSetMainMenuButtonOpen(key);
-    Promise.resolve(hmOpenContentPerformance()).catch(ex=>console.error('[HM] Content Performance:',ex));
-    return;
-  }
-  if(typeof hmMainMenuClick==='function'){
-    void hmMainMenuClick(key,function(){return hmRunMainMenuAction(act);},act);
-  }
-}
-
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT'),has=r=>roles.includes(r);
@@ -2000,7 +1979,7 @@ function renderRoleHome(){
    if(!allowed.length)return '';
    return '<div class="role-home-menu"><button type="button" class="role-home-function" data-hm-group="'+esc(g[1])+'"><span>'+g[0]+' '+esc(g[1])+'</span><span class="role-home-function-arrow">›</span></button><div class="role-home-submenu hidden">'+allowed.map(item=>{
      const card=cards.find(x=>x[1]===item[1]);
-     return '<button type="button" class="role-home-submenu-item" data-hm-menu-title="'+esc(card[1])+'" onclick="hmDirectRoleSubmenu(\\''+esc(card[1]).replace(/'/g,"\\\\'")+ '\\',\\''+esc(card[3]||'').replace(/'/g,"\\\\'")+ '\\')"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
+     return '<button type="button" class="role-home-submenu-item" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
    }).join('')+'</div></div>';
  }).join('');
  const roleCards=cards.map((item,idx)=>

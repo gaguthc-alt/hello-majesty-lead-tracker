@@ -1287,6 +1287,7 @@ function hmSetDashboardModulesVisible(show){
 }
 let hmActiveMainMenu='';
 let hmInlineMoved=[];
+let hmMenuActionSeq=0;
 function hmRestoreInlineViews(){
  hmInlineMoved.forEach(x=>{
   try{
@@ -1321,6 +1322,7 @@ function hmSetMainMenuButtonOpen(key){
  });
 }
 function hmCloseMainMenu(){
+ hmMenuActionSeq++;
  hmRestoreInlineViews();
  hmSetDashboardModulesVisible(false);
  ['performance','inventoryPanel','targetBoard','contentPerformance'].forEach(id=>{
@@ -1377,6 +1379,7 @@ function hmOpenTradeInline(){
 }
 async function hmMainMenuClick(title,fn,actionKey){
  const key=String(title||'');
+ const menuSeq=++hmMenuActionSeq;
  const route=String(actionKey||key);
  if(hmActiveMainMenu===key){
   hmCloseMainMenu();
@@ -1387,6 +1390,7 @@ async function hmMainMenuClick(title,fn,actionKey){
  hmSetMainMenuButtonOpen(key);
  try{
   await Promise.resolve(typeof fn==='function'?fn():null);
+  if(menuSeq!==hmMenuActionSeq || hmActiveMainMenu!==key)return;
   // Semua menu utama dibuka LANGSUNG DI BAWAH MENU UTAMA.
   const modal=document.getElementById('modal');
   const panel=document.getElementById('hmMenuPanel');
@@ -1423,6 +1427,7 @@ async function hmOpenTargetOutlet(){
   if(e)e.classList.remove('hidden');
 }
 async function hmOpenContentPerformance(){
+  const openSeq=hmMenuActionSeq;
   const panel=document.getElementById('hmMenuPanel');
   const body=document.getElementById('hmMenuPanelBody');
   const title=document.getElementById('hmMenuPanelTitle');
@@ -1445,7 +1450,9 @@ async function hmOpenContentPerformance(){
     await ensureSupabase();
     if(!profile?.user_id)throw new Error('Session belum siap. Silakan coba lagi.');
     if(typeof renderContentPerformance==='function') await renderContentPerformance();
+    if(openSeq!==hmMenuActionSeq)return;
   }catch(ex){
+    if(openSeq!==hmMenuActionSeq)return;
     console.error('[HM] Content Performance:',ex);
     node.innerHTML='<h3 style="margin-top:0">🎬 CONTENT PERFORMANCE</h3><div class="small" style="color:#b91c1c">Gagal memuat data: '+esc(ex?.message||'Terjadi kesalahan')+'</div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="hmOpenContentPerformance()">↻ Coba Lagi</button><button class="secondary" type="button" onclick="hmCloseMainMenu()">✖ Tutup</button></div>';
   }

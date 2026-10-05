@@ -1746,6 +1746,9 @@ function renderRoleHome(){
      return '<button type="button" class="role-home-submenu-item" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
    }).join('')+'</div></div>';
  }).join('');
+ const roleCards=cards.map((item,idx)=>
+   '<button type="button" class="role-home-card" data-hm-menu-index="'+idx+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>'
+ ).join('');
  const kpis=mg
    ?'<div class="role-home-kpi"><div class="kpi"><strong>Semua Outlet</strong><span>Monitoring</span></div><div class="kpi"><strong>Target</strong><span>Performa</span></div><div class="kpi"><strong>Finance</strong><span>Kontrol</span></div></div>'
    :has('ADMIN FINANCE MAJESTY CELL')

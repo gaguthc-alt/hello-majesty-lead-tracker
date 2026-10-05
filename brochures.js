@@ -62,7 +62,7 @@ async function openBrochures(){
   $('mb').innerHTML=
     '<div class="small" style="margin-bottom:10px">Pilih merk untuk melihat brosur yang tersedia.</div>'+
     (loadError?'<div class="small" style="margin-bottom:10px">⚠️ Data brosur belum dapat dimuat. Daftar merk tetap tersedia.</div>':'')+
-    '<div id="brochureBrandMenu" class="row">'+hmBrochureBrands().map(b=>'<button class="secondary" type="button" onclick="showBrochureBrand(\\''+esc(b).replace(/'/g,"\\\\'")+'\\')">📱 '+esc(b)+'</button>').join('')+'</div>'+
+    '<div id="brochureBrandMenu" class="row">'+hmBrochureBrands().map(b=>'<button class="secondary" type="button" onclick="showBrochureBrand('+JSON.stringify(b).replace(/"/g,"&quot;")+')">📱 '+esc(b)+'</button>').join('')+'</div>'+
     '<div id="brochureBrandBody" style="margin-top:14px"><div class="small">Pilih salah satu merk.</div></div>';
   $('modal').classList.remove('hidden');
   hmFocusBrochurePanel();
@@ -87,8 +87,8 @@ function brochureCard(b){
     '<img src="'+esc(url)+'" alt="'+esc(b.title||'Brosur')+'" style="width:100%;max-height:520px;object-fit:contain;border:1px solid #ddd;border-radius:10px;margin-top:8px;background:#f8f8f8">'+
     '<div class="row" style="margin-top:8px">'+
       '<a class="secondary" style="display:inline-block;text-decoration:none;padding:10px;border-radius:8px;color:#111" href="'+esc(url+'?download='+encodeURIComponent((b.title||b.brand||'brosur').replace(/[^a-z0-9-_ ]/gi,'')+'.jpg'))+'" target="_blank" rel="noopener">⬇️ Download</a>'+
-      '<button class="success" type="button" onclick="shareBrochure(\\''+esc(b.id).replace(/'/g,"\\\\'")+'\\')">📲 Kirim ke WA</button>'+
-      (can?'<button class="danger" type="button" onclick="deleteBrochure(\\''+esc(b.id).replace(/'/g,"\\\\'")+'\\')">🗑️ Hapus</button>':'')+
+      '<button class="success" type="button" onclick="shareBrochure('+JSON.stringify(b.id).replace(/"/g,"&quot;")+')">📲 Kirim ke WA</button>'+
+      (can?'<button class="danger" type="button" onclick="deleteBrochure('+JSON.stringify(b.id).replace(/"/g,"&quot;")+')">🗑️ Hapus</button>':'')+
     '</div></div>';
 }
 function openBrochureUpload(defaultBrand){

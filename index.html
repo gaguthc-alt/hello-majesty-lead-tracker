@@ -1217,6 +1217,12 @@ async function start(u,authClient){
   // oleh state/Auth-JS pada browser mobile. JWT tetap berasal dari login REST.
   if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
   const token=await window.hmAccessToken();
+  // Pindahkan layar ke dashboard SEGERA setelah Auth sukses.
+  // Jangan menunggu query profile/permission/database sebelum UI berpindah.
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('dashboard').classList.remove('hidden');
+  $('identity').textContent='Memuat profil akun...';
   const apiHeaders={apikey:KEY,Authorization:'Bearer '+token};
   const fetchJson=async(url,label)=>{
    const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);
@@ -1263,7 +1269,8 @@ async function start(u,authClient){
   }
  }catch(ex){
   console.error('[HM] Start error',ex);
-  $('login').classList.remove('hidden');$('app').classList.add('hidden');$('loginErr').textContent=ex?.message||'Gagal membuka dashboard.';
+  $('login').classList.add('hidden');$('app').classList.remove('hidden');$('dashboard').classList.remove('hidden');
+  $('identity').textContent='Dashboard gagal memuat profil: '+(ex?.message||ex);
  }
 }
 async function changePassword(){

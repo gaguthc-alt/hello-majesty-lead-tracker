@@ -1994,8 +1994,9 @@ function renderRoleHome(){
          const menuBody=document.getElementById('hmMenuPanelBody');
          // Semua panel inline wajib melalui satu jalur agar tercatat
          // placeholder-nya dan dapat dikembalikan saat menu berikutnya dibuka.
-         if(menuBody)menuBody.innerHTML='';
+         const isTeamCommission=action==='openTeamCommission()';
          const isSalesReport=action==="openInventorySection('sales')";
+         if(!isTeamCommission && menuBody)menuBody.innerHTML='';
          if(isSalesReport){
            const inventoryBody=document.getElementById('inventoryBody');
            const inventoryPanel=document.getElementById('inventoryPanel');
@@ -2004,7 +2005,7 @@ function renderRoleHome(){
              menuBody.appendChild(inventoryBody);
            }
            if(inventoryPanel)inventoryPanel.classList.add('hidden');
-         }else{
+         }else if(!isTeamCommission){
            hmMoveViewsInline(action);
          }
          const modal=document.getElementById('modal');
@@ -2013,7 +2014,7 @@ function renderRoleHome(){
          const panelBody=document.getElementById('hmMenuPanelBody');
          const mt=document.getElementById('mt');
          const mb=document.getElementById('mb');
-         if(panel && modal && mb && !modal.classList.contains('hidden')){
+         if(!isTeamCommission && panel && modal && mb && !modal.classList.contains('hidden')){
            if(panelTitle)panelTitle.textContent=mt?.textContent||title;
            if(panelBody){
              panelBody.innerHTML='';

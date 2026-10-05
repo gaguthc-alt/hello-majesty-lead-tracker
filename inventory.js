@@ -815,3 +815,7 @@ window.refreshInventory=refreshInventory;
     body.appendChild(box);
   };
 })();
+/* HM GLOBAL INVENTORY API */
+window.openInventorySection=openInventorySection;
+window.renderInventory=renderInventory;
+window.openSalesReport=openSalesReport;

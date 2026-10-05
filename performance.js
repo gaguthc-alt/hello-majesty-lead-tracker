@@ -239,7 +239,7 @@ function perfManagementCard(row,mode){
 window.openPerformance=async function(){
  const mg=!!profile?.is_management;
  let box=document.getElementById('performance');
- if(!box){box=document.createElement('div');box.id='performance';box.className='box';document.getElementById('dashboard').prepend(box)}
+ if(!box){box=document.createElement('div');box.id='performance';box.className='box';document.getElementById('workspace').prepend(box)}
  box.classList.remove('hidden');
  box.innerHTML='<h3>'+ (mg?'📊 Laporan Performa Tim':'📊 Performa Saya')+'</h3>'+
    (mg?'<div class="small" style="margin-bottom:10px">Performance seluruh karyawan • data langsung dari sistem.</div>':'<div class="small" style="margin-bottom:10px">Pilih periode lalu kirim laporan sesuai peran akun secara otomatis.</div>')+

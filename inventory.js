@@ -167,7 +167,7 @@ function openInventoryDashboard(){
  if(open){setInventoryView('dashboard');return;}
  inventoryView='dashboard';renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));
 }
-async async window.refreshHunterLauncher=async function(){
+window.refreshHunterLauncher=async function(){
   const btn=document.getElementById('inventoryHunterBtn');
   if(!btn)return;
   btn.classList.add('hidden');

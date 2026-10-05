@@ -1600,7 +1600,7 @@ function hmOpenLeadHandover(){
 function hmShowBrochureBrandInline(brand){
  const body=document.getElementById('hmInlineBrochureBody');
  if(!body)return;
- const allRows=(typeof hmBrochures!=='undefined'&&Array.isArray(hmBrochures))?hmBrochures:[];
+ const allRows=Array.isArray(window.hmBrochuresInlineData)?window.hmBrochuresInlineData:[];
  const rows=allRows.filter(x=>String(x.brand||'').trim().toLowerCase()===String(brand||'').trim().toLowerCase());
  const can=typeof hmBrochureCanManage==='function' && hmBrochureCanManage();
  body.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">📱 '+esc(brand)+'</h3><div class="small">'+rows.length+' brosur</div></div>'+
@@ -1620,21 +1620,29 @@ async function hmOpenBrochuresInline(){
  document.getElementById('modal')?.classList.add('hidden');
  try{
    if(typeof ensureSupabase==='function')await ensureSupabase();
-   if(typeof loadBrochures==='function')await loadBrochures();
+   if(!window.sb)throw new Error('Sesi Supabase belum siap.');
+   const r=await window.sb.from('brochures').select('*').eq('active',true).order('brand').order('created_at',{ascending:false});
+   if(r.error)throw r.error;
+   window.hmBrochuresInlineData=Array.isArray(r.data)?r.data:[];
+   const counts={};
+   window.hmBrochuresInlineData.forEach(x=>{const k=String(x.brand||'').trim();if(k)counts[k]=(counts[k]||0)+1;});
+   const base=['Samsung','Infinix','Apple','Xiaomi','OPPO','vivo','realme','TECNO','itel','HONOR','Huawei','ASUS','Lenovo','Nokia','POCO','Redmi'];
+   const brands=[...new Set([...base,...Object.keys(counts)])];
    const brandWrap=document.getElementById('hmInlineBrochureBrands');
    if(!brandWrap)return;
-   const brands=(typeof hmBrochureBrands==='function' ? hmBrochureBrands() : ['Samsung','Infinix','Apple','Xiaomi','OPPO','vivo','realme','TECNO','itel','HONOR','Huawei','ASUS','Lenovo','Nokia','POCO','Redmi']);
-   brandWrap.innerHTML=brands.map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+'</button>').join('');
+   brandWrap.innerHTML=brands.map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+(counts[b]?' ('+counts[b]+')':'')+'</button>').join('');
    brandWrap.querySelectorAll('[data-hm-brochure-brand]').forEach(btn=>btn.onclick=function(e){
      e.preventDefault();e.stopPropagation();
      hmShowBrochureBrandInline(this.getAttribute('data-hm-brochure-brand')||'');
    });
+   const first=brands.find(b=>counts[b]>0);
    const ib=document.getElementById('hmInlineBrochureBody');
-   if(ib)ib.innerHTML='<div class="small">Pilih salah satu merk.</div>';
+   if(first)hmShowBrochureBrandInline(first);
+   else if(ib)ib.innerHTML='<div class="small">Belum ada data brosur.</div>';
  }catch(e){
-   console.error('[HM] Brosur data gagal dimuat:',e);
+   console.error('[HM] Brosur inline:',e);
    const ib=document.getElementById('hmInlineBrochureBody');
-   if(ib)ib.innerHTML='<div class="small" style="color:#b42318">⚠️ Data brosur belum dapat dimuat: '+esc(e?.message||'Terjadi kesalahan')+'</div>';
+   if(ib)ib.innerHTML='<div style="color:#b42318">⚠️ Gagal memuat brosur: '+esc(e?.message||'Terjadi kesalahan')+'</div>';
  }
  requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
 }

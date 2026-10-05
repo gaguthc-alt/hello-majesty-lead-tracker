@@ -1522,6 +1522,7 @@ function renderRoleHome(){
    add('🎯','Target & Performa','Target & closing','openPerformance()');
    add('👥','Lead Tracker','Lead tanggung jawab','openLeadSearch()');
    add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');
+   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan sales','openAI()');
@@ -1529,6 +1530,7 @@ function renderRoleHome(){
  }else if(cs){
    add('🎯','Target & Performa','WA, handover & qualification','openPerformance()');
    add('👥','Lead Tracker','Follow-up customer','openLeadSearch()');
+   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('📦','Product & Stock','Ketersediaan produk','openInventorySection(\'stock\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan CS','openAI()');
@@ -1538,20 +1540,24 @@ function renderRoleHome(){
    add('🎯','Target & Performa','Kontribusi outlet','hmOpenPerformanceReport()');
    add('📖','Brosur','Materi produk','openBrochures()');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
+   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Ide content & DM','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
    add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
    add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
+   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Mekanisme Finance Cell','openAI()');
  }else if(has('ADMIN FINANCE')){
    add('💰','Finance','Finance outlet','openFinance()');
    add('📊','Laporan Finance','Laporan keuangan','hmOpenFinanceReport()');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
+   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Bantuan finance','openAI()');
  }else{
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
+   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
 
@@ -2536,12 +2542,6 @@ function decorateContentPerformance(){
 }
 async function renderContentPerformance(){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- // Finance Cell must not render Content Performance at all; hiding only the container is not enough because this function can recreate it.
- if(role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL'){
-   const existing=document.getElementById('contentPerformance');
-   if(existing)existing.remove();
-   return;
- }
  const host=document.getElementById('contentPerformance')||document.createElement('div');
  host.id='contentPerformance'; host.className='box';
  const x=await sb.rpc('content_dashboard_summary',{p_month_start:contentSelectedMonth});

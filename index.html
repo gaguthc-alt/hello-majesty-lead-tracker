@@ -1438,7 +1438,7 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
 
- const roleCards=cards.map(x=>'<button type="button" onclick="'+x[3]+'"><b>'+x[0]+' '+esc(x[1])+'</b><span>'+esc(x[2])+'</span></button>').join('');
+ const roleCards=cards.map((x,i)=>'<button type="button" data-hm-menu-index="'+i+'"><b>'+x[0]+' '+esc(x[1])+'</b><span>'+esc(x[2])+'</span></button>').join('');
  const kpis=mg
    ?'<div class="role-home-kpi"><div class="kpi"><strong>Semua Outlet</strong><span>Monitoring</span></div><div class="kpi"><strong>Target</strong><span>Performa</span></div><div class="kpi"><strong>Finance</strong><span>Kontrol</span></div></div>'
    :has('ADMIN FINANCE MAJESTY CELL')
@@ -1449,6 +1449,22 @@ function renderRoleHome(){
 
  const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
  host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div>'+kpis+'</div><div class="role-home-section">MENU UTAMA</div><div class="role-home-menu"><div class="role-home-menu-grid">'+roleCards+'</div></div>';
+ host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
+   btn.addEventListener('click',function(e){
+     e.preventDefault();
+     e.stopPropagation();
+     const idx=Number(this.getAttribute('data-hm-menu-index'));
+     const item=cards[idx];
+     if(!item)return;
+     hmMainMenuClick(item[1],function(){
+       try{return (new Function(item[3]))();}catch(ex){
+         console.error('[HM] Menu utama gagal membuka:',item[1],ex);
+         const err=document.getElementById('loginErr');
+         if(err)err.textContent='Menu '+item[1]+' gagal dibuka: '+(ex?.message||'cek fungsi tujuan');
+       }
+     });
+   });
+ });
 }
 function applyRoleVisibility(){
  const roles=getActiveRoles(),mg=!!profile?.is_management;

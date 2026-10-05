@@ -1907,7 +1907,24 @@ async function render(){
   ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  const active=leads.filter(viewerLead).filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL');
- $('leads').innerHTML=active.map(card).join('')||'<p class="small">Tidak ada lead aktif yang menjadi tanggung jawab atau tersedia untuk outlet ini.</p><button class="secondary" onclick="showCurrentStatus(&quot;HASIL&quot;)">📋 Lihat Lead Selesai</button>';
+ const activeResume={
+  total:active.length,
+  available:active.filter(l=>l.status_lead==='AVAILABLE').length,
+  csLock:active.filter(l=>l.status_lead==='CS LOCK'&&!l.qualification_result).length,
+  potential:active.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length,
+  qualified:active.filter(l=>l.status_lead==='QUALIFIED'&&!l.sales_claimed_by).length,
+  handle:active.filter(l=>l.status_lead==='HANDLE'||l.sales_claimed_by).length
+ };
+ const resume='<div class="box" style="margin-top:12px;background:linear-gradient(145deg,#f8fafc,#f0fdf4)!important;border-color:rgba(25,181,107,.14)!important">'+
+  '<div class="row" style="justify-content:space-between;align-items:center"><b>📌 RESUME LEAD AKTIF</b><span class="badge">'+activeResume.total+' Lead</span></div>'+
+  '<div class="stats" style="margin-top:8px">'+
+  stat('Available',activeResume.available,"showCurrentStatus('AVAILABLE')")+
+  stat('CS Lock',activeResume.csLock,"showCurrentStatus('CS LOCK')")+
+  stat('Potensial',activeResume.potential,"showHistory('POTENSIAL')")+
+  stat('Qualified',activeResume.qualified,"showCurrentStatus('QUALIFIED')")+
+  stat('Handle',activeResume.handle,"showCurrentStatus('HANDLE')")+
+  '</div></div>';
+ $('leads').innerHTML=active.map(card).join('')+resume+'<div style="margin-top:10px"><button class="secondary" onclick="showCurrentStatus(&quot;HASIL&quot;)">📋 Lihat Lead Selesai</button></div>';
 }
 function shortNominal(n){if(!n)return '0';if(Math.abs(n)>=1000000000)return (n/1000000000).toFixed(1).replace('.0','')+'M';if(Math.abs(n)>=1000000)return (n/1000000).toFixed(1).replace('.0','')+'jt';if(Math.abs(n)>=1000)return (n/1000).toFixed(0)+'rb';return String(Math.round(n));}
 async function renderTargetBoard(){

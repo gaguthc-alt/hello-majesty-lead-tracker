@@ -545,7 +545,7 @@ html,body{width:100%;max-width:100%;overflow-x:hidden!important}
 body{box-sizing:border-box}
 *,*:before,*:after{box-sizing:border-box}
 main{width:100%!important;max-width:1160px!important;margin-left:auto!important;margin-right:auto!important;padding-left:12px!important;padding-right:12px!important}
-#dashboard,#login,#tradePublic{width:100%!important;max-width:100%!important;min-width:0!important}
+#workspace,#login,#tradePublic{width:100%!important;max-width:100%!important;min-width:0!important}
 .dashboard-actions.management-actions{width:100%!important;max-width:100%!important;box-sizing:border-box!important}
 .dashboard-actions.management-actions .row{width:100%!important;max-width:100%!important;min-width:0!important}
 .dashboard-actions.management-actions .row>span{min-width:0!important}
@@ -770,7 +770,7 @@ main{
   padding-right:var(--hm-page-pad)!important;
   box-sizing:border-box!important;
 }
-#dashboard,#login,#tradePublic,
+#workspace,#login,#tradePublic,
 .role-home,.role-home-menu,.dashboard-actions.management-actions{
   width:100%!important;
   max-width:100%!important;
@@ -792,7 +792,7 @@ main{
     padding-left:var(--hm-page-pad)!important;
     padding-right:var(--hm-page-pad)!important;
   }
-  #dashboard,#login,#tradePublic{
+  #workspace,#login,#tradePublic{
     width:100%!important;
     max-width:100%!important;
     margin-left:0!important;
@@ -1049,7 +1049,7 @@ main{
 </div>
 </section>
 <!-- HM LOGIN: single source of truth is login.js -->
-</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="dashboard" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Finance Cell</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="roleHome"></div><div id="contentPerformance" class="hidden"></div><div id="inventorySection"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Pilih bagian yang ingin dibuka. Klik kembali untuk menutup.</div></div><div class="row" style="margin-top:10px"><button class="secondary" id="inventoryDashboardBtn" type="button" onclick="openInventoryDashboard()">📊 Dashboard Inventory</button><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" id="inventoryHunterBtn" onclick="openHunterStock()">🧑‍💼 Stock Hunter</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button><button class="secondary" type="button" id="inventorySalesBtn" type="button" onclick="openInventorySection('sales')">📊 Laporan Penjualan</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTrackerBox" class="box"><h3>📋 LEAD AKTIF</h3><div class="small" style="margin-bottom:10px">Lead yang masih aktif dan belum selesai.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
+</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="workspace" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Finance Cell</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="roleHome"></div><div id="contentPerformance" class="hidden"></div><div id="inventorySection"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Pilih bagian yang ingin dibuka. Klik kembali untuk menutup.</div></div><div class="row" style="margin-top:10px"><button class="secondary" id="inventoryDashboardBtn" type="button" onclick="openInventoryDashboard()">📊 Dashboard Inventory</button><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" id="inventoryHunterBtn" onclick="openHunterStock()">🧑‍💼 Stock Hunter</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button><button class="secondary" type="button" id="inventorySalesBtn" type="button" onclick="openInventorySection('sales')">📊 Laporan Penjualan</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTrackerBox" class="box"><h3>📋 LEAD AKTIF</h3><div class="small" style="margin-bottom:10px">Lead yang masih aktif dan belum selesai.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
 
 async function renderManagementStockSummary(){
  if(!profile?.is_management)return;
@@ -1063,7 +1063,7 @@ async function renderManagementStockSummary(){
  const cards=outlets.map(o=>{const a=rows.filter(x=>x.outlet===o);return '<div class="box"><b>'+esc(o)+'</b><div class="small" style="margin-top:6px">🟢 Ready '+a.filter(x=>x.status==='READY').length+' • 🔴 Sold '+a.filter(x=>x.status==='SOLD').length+' • 🟡 Reserved '+a.filter(x=>x.status==='RESERVED').length+' • 🔧 Service '+a.filter(x=>x.status==='SERVICE').length+'</div></div>'}).join('');
  const host=document.getElementById('managementStockSummary')||document.createElement('div');host.id='managementStockSummary';host.className='box';
  host.innerHTML='<h2>📦 PRODUCT & STOCK</h2><div class="small">Ringkasan inventory seluruh outlet untuk Management.</div><div class="stats" style="margin-top:10px">'+invStat('🟢 Ready',countStatus('READY'))+invStat('🔴 Terjual',countStatus('SOLD'))+invStat('🟡 Reserved',countStatus('RESERVED'))+invStat('🔧 Service',countStatus('SERVICE'))+invStat('📦 Total',rows.length)+invStat('🧾 Master Produk',p.count||0)+'</div><div style="margin-top:10px">'+cards+'</div><button class="secondary" style="margin-top:6px" onclick="renderInventory()">📦 Buka Detail Product & Stock</button>';
- const dash=document.getElementById('dashboard'),target=document.getElementById('targetBoard'),stats=document.getElementById('stats');
+ const dash=document.getElementById('workspace'),target=document.getElementById('targetBoard'),stats=document.getElementById('stats');
  if(!dash.contains(host))dash.insertBefore(host,target||stats);
 }
 
@@ -1226,7 +1226,7 @@ async function start(u,authClient){
   // Jangan menunggu query profile/permission/database sebelum UI berpindah.
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
-  $('dashboard').classList.remove('hidden');
+  $('workspace').classList.remove('hidden');
   $('identity').textContent='Memuat profil akun...';
   const apiHeaders={apikey:KEY,Authorization:'Bearer '+token};
   const fetchJson=async(url,label)=>{
@@ -1270,7 +1270,7 @@ async function start(u,authClient){
   applyRoleVisibility();
   renderCommissionActions();
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}
-  $('dashboard').classList.remove('hidden');
+  $('workspace').classList.remove('hidden');
   // Re-apply role visibility after dashboard is rendered; some modules render asynchronously.
   applyRoleVisibility();
   try{await loadLeads();openUrl();}
@@ -1280,7 +1280,7 @@ async function start(u,authClient){
   }
  }catch(ex){
   console.error('[HM] Start error',ex);
-  $('login').classList.add('hidden');$('app').classList.remove('hidden');$('dashboard').classList.remove('hidden');
+  $('login').classList.add('hidden');$('app').classList.remove('hidden');$('workspace').classList.remove('hidden');
   $('identity').textContent='Dashboard gagal memuat profil: '+(ex?.message||ex);
  }
 }
@@ -1290,7 +1290,7 @@ async function changePassword(){
  let token='';try{token=await window.hmAccessToken()}catch(e){pe.textContent=e?.message||'Sesi login tidak tersedia.';return} let x=await fetch(SUPABASE_URL+'/auth/v1/user',{method:'PUT',headers:{apikey:KEY,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({password:np.value})});let xd=null;try{xd=await x.json()}catch(e){};if(!x.ok){pe.textContent=xd?.message||xd?.msg||'Gagal mengubah password.';return}
  x=await sb.from('team_profiles').update({must_change_password:false}).eq('user_id',profile.user_id);
  if(x.error){pe.textContent=x.error.message;return}
- $('passwordBox').classList.add('hidden');$('dashboard').classList.remove('hidden');await loadLeads();openUrl();
+ $('passwordBox').classList.add('hidden');$('workspace').classList.remove('hidden');await loadLeads();openUrl();
 }
 function getActiveRoles(){
  const raw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
@@ -1431,7 +1431,7 @@ async function hmMainMenuClick(title,fn,actionKey){
   }
   hmMoveViewsInline(route);
   if(key==='Tukar Tambah')hmOpenTradeInline();
-  const d=document.getElementById('dashboard');
+  const d=document.getElementById('workspace');
   if(d)setTimeout(()=>d.scrollIntoView({behavior:'smooth',block:'start'}),20);
  }catch(ex){
   console.error('[HM] Main menu action:',key,ex);
@@ -2090,7 +2090,7 @@ async function renderTargetBoard(){
  const outletCards=outlets.map(o=>'<div class="box"><h3>🎯 TARGET '+esc(o.outlet)+'</h3><div class="stats">'+bar('WA',o.wa_actual,o.wa_target,'📲')+bar('Qualified',o.qualified_actual,o.qualified_target,'🔍')+bar('Closing',o.closing_actual,o.closing_target,'🏆')+'<div class="stat"><div class="small">💰 Nominal Target</div><div class="num">'+shortNominal(Number(o.nominal_target||0))+'</div></div></div><div style="margin-top:10px;font-weight:700">🎁 Bonus: '+esc(o.bonus_label)+' Rp'+Number(o.bonus_amount||0).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:6px">Sisa: WA '+Math.max(0,o.wa_target-o.wa_actual)+' • Qualified '+Math.max(0,o.qualified_target-o.qualified_actual)+' • Closing '+Math.max(0,o.closing_target-o.closing_actual)+'</div></div>').join('');
  const roleText=roles.length?roles.map(r=>'• '+esc(r)).join('<br>'):'• Belum ada peran operasional';
  const manageBtn=d.management?'<button class="secondary" onclick="openTargetSettings()">⚙️ Atur Target Outlet</button>':''; const facilitatorBtn=(!d.management&&(roles||[]).some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='FASILITATOR'))?'<button class="success" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button>':'';
- const rc=d.role_contribution||{}; const firstTarget=outlets[0]||{}; const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':(facilitatorBtn||''); const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';if(!hmActiveMainMenu)box.classList.add('hidden');box.innerHTML=''+ownBox+outletCards; const dash=document.getElementById('dashboard'); const content=document.getElementById('contentPerformance'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(dash&&!dash.contains(box))dash.insertBefore(box,content||inventorySection||stats);
+ const rc=d.role_contribution||{}; const firstTarget=outlets[0]||{}; const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':(facilitatorBtn||''); const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';if(!hmActiveMainMenu)box.classList.add('hidden');box.innerHTML=''+ownBox+outletCards; const dash=document.getElementById('workspace'); const content=document.getElementById('contentPerformance'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(dash&&!dash.contains(box))dash.insertBefore(box,content||inventorySection||stats);
 
 async function openTargetSettings(){
  const x=await sb.rpc('dashboard_target_summary');if(x.error)return alert(x.error.message);
@@ -3009,7 +3009,7 @@ async function renderContentPerformance(){
    const can=await canContentCreator();
    host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">'+esc(d.outlet||'')+' • '+(d.locked?'🔒 Laporan terkunci':'Monitoring bulan ini')+'</div></div><div class="row"><select onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select>'+(can?'<button class="success" onclick="addContentPost()">＋ Tambah Content</button>':'')+'<button class="secondary" onclick="showMyContentDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten Outlet</div><div class="num">'+fmt(t.content_count)+'</div></div><div class="stat"><div class="small">👁️ Views Outlet</div><div class="num">'+fmt(t.views)+'</div></div><div class="stat"><div class="small">💬 Comments Outlet</div><div class="num">'+fmt(t.comments)+'</div></div><div class="stat"><div class="small">📩 DM Outlet</div><div class="num">'+fmt(t.dms)+'</div></div></div>'+(can?'<div class="box" style="margin-bottom:0"><b>Kontribusi Saya</b><div class="small">🎬 '+fmt(o.content_count)+' konten • 👁️ '+fmt(o.views)+' views • 💬 '+fmt(o.comments)+' comments • 📩 '+fmt(o.dms)+' DM</div></div>':'')
  }
- decorateContentPerformance(); const dash=document.getElementById('dashboard'); const panelBody=document.getElementById('hmMenuPanelBody'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(!dash.contains(host) && !(panelBody&&panelBody.contains(host)))dash.insertBefore(host,inventorySection||stats);
+ decorateContentPerformance(); const dash=document.getElementById('workspace'); const panelBody=document.getElementById('hmMenuPanelBody'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(!dash.contains(host) && !(panelBody&&panelBody.contains(host)))dash.insertBefore(host,inventorySection||stats);
 
   })();
   try{

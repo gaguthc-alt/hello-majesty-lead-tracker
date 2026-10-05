@@ -1387,13 +1387,15 @@ function hmOpenTradeInline(){
 }
 async function hmMainMenuClick(title,fn,actionKey){
  const key=String(title||'');
- const menuSeq=++hmMenuActionSeq;
  const route=String(actionKey||key);
  if(hmActiveMainMenu===key){
   hmCloseMainMenu();
   return;
  }
+ // Tutup menu lama terlebih dahulu. hmCloseMainMenu() menaikkan sequence,
+ // jadi sequence baru HARUS dibuat setelahnya agar aksi menu tidak dianggap stale.
  hmCloseMainMenu();
+ const menuSeq=++hmMenuActionSeq;
  hmActiveMainMenu=key;
  hmSetMainMenuButtonOpen(key);
  try{

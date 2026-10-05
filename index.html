@@ -1318,6 +1318,28 @@ function hmRestoreInlineViews(){
  });
  hmInlineMoved=[];
 }
+function hmResetMainMenuButtonLabels(){
+ const host=document.getElementById('roleHome');
+ if(!host)return;
+ host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
+  const idx=Number(btn.getAttribute('data-hm-menu-index'));
+  const b=btn.querySelector('b');
+  const item=window.hmMainMenuItems?.[idx];
+  if(b&&item)b.innerHTML=item[0]+' '+esc(item[1]);
+ });
+}
+function hmSetMainMenuButtonOpen(key){
+ const host=document.getElementById('roleHome');
+ if(!host)return;
+ host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
+  const idx=Number(btn.getAttribute('data-hm-menu-index'));
+  const b=btn.querySelector('b');
+  const item=window.hmMainMenuItems?.[idx];
+  if(!b||!item)return;
+  const isOpen=String(item[1])===String(key);
+  b.innerHTML=isOpen?'✕ Tutup '+esc(item[1]):item[0]+' '+esc(item[1]);
+ });
+}
 function hmCloseMainMenu(){
  hmRestoreInlineViews();
  hmSetDashboardModulesVisible(false);
@@ -1334,6 +1356,7 @@ function hmCloseMainMenu(){
  const modal=document.getElementById('modal');
  if(modal)modal.classList.add('hidden');
  hmActiveMainMenu='';
+ hmResetMainMenuButtonLabels();
 }
 function hmInlineIdsForMenu(key){
  const k=String(key||'').toLowerCase();
@@ -1374,6 +1397,7 @@ async function hmMainMenuClick(title,fn){
  }
  hmCloseMainMenu();
  hmActiveMainMenu=key;
+ hmSetMainMenuButtonOpen(key);
  try{
   await Promise.resolve(typeof fn==='function'?fn():null);
   // Semua menu utama dibuka LANGSUNG DI BAWAH MENU UTAMA.
@@ -1507,6 +1531,7 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
 
+ window.hmMainMenuItems=cards;
  const roleCards=cards.map((x,i)=>'<button type="button" data-hm-menu-index="'+i+'"><b>'+x[0]+' '+esc(x[1])+'</b><span>'+esc(x[2])+'</span></button>').join('');
  const kpis=mg
    ?'<div class="role-home-kpi"><div class="kpi"><strong>Semua Outlet</strong><span>Monitoring</span></div><div class="kpi"><strong>Target</strong><span>Performa</span></div><div class="kpi"><strong>Finance</strong><span>Kontrol</span></div></div>'

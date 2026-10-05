@@ -1932,8 +1932,16 @@ async function render(){
   ['Gagal',v.gagal,"showTodayActivity('GAGAL')"],
   ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
- const active=leads.filter(viewerLead).filter(l=>getActiveLeadBucket(l));
- const visibleLeads=leads.filter(viewerLead);
+ const resumeLeads=leads.filter(viewerLead);
+ const isFacilitatorAccount=(String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='FASILITATOR')||hmPermissionRoles?.includes?.('FASILITATOR');
+ const ownLead=(l)=>{
+  if(!isFacilitatorAccount)return viewerLead(l);
+  return l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
+ };
+ // Fasilitator: Resume melihat seluruh lead outlet, tetapi daftar LEAD AKTIF hanya lead milik sendiri.
+ const active=resumeLeads.filter(l=>getActiveLeadBucket(l));
+ const activeOwn=resumeLeads.filter(l=>ownLead(l)).filter(l=>getActiveLeadBucket(l));
+ const visibleLeads=resumeLeads;
  const selesai=visibleLeads.filter(l=>l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL').length;
  const activeResume={
   total:active.length,
@@ -1955,7 +1963,7 @@ async function render(){
   stat('Selesai',activeResume.selesai,"showCurrentStatus('HASIL')")+
   '</div></div>';
  $('activeLeadResume').innerHTML=resume;
- $('leads').innerHTML=active.map(card).join('');
+ $('leads').innerHTML=activeOwn.map(card).join('')||'<div class="small">Tidak ada lead aktif milik Anda.</div>';
 }
 function shortNominal(n){if(!n)return '0';if(Math.abs(n)>=1000000000)return (n/1000000000).toFixed(1).replace('.0','')+'M';if(Math.abs(n)>=1000000)return (n/1000000).toFixed(1).replace('.0','')+'jt';if(Math.abs(n)>=1000)return (n/1000).toFixed(0)+'rb';return String(Math.round(n));}
 async function renderTargetBoard(){

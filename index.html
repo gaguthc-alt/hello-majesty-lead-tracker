@@ -1354,7 +1354,7 @@ function hmInlineIdsForMenu(key){
  // Ini mencegah "Tanya AI" / "Content Performance" tertukar dengan menu lain.
  if(k==='hmopentargetoutlet()')return ['targetBoard'];
  if(k==='hmopencontentperformance()')return ['contentPerformance'];
- if(k==='openinventorydashboard()'||k==="openinventorysection('stock')"||k==="openinventorysection('sales')"||k==='opensalesreport()')return ['inventoryPanel'];
+ if(k==='openinventorydashboard()'||k==="openinventorysection('stock')"||k==="openinventorysection('sales')"
  if(k==='openperformance()'||k==='hmopenperformancereport()')return ['performance'];
  return [];
 }
@@ -1510,7 +1510,7 @@ function hmRunMainMenuAction(action){
   case 'hmOpenContentPerformance()': return hmOpenContentPerformance();
   case 'addLead()': return addLead();
   case 'hmOpenTradeInline()': return hmOpenTradeInline();
-  case "openInventorySection('sales')": return openSalesReport();
+  case "openInventorySection('sales')": return openInventorySection('sales');
   case "openInventorySection('stock')": return openInventorySection('stock');
   case 'openPerformance()': return openPerformance();
   case 'hmOpenPerformanceReport()': return hmOpenPerformanceReport();
@@ -1547,7 +1547,7 @@ function renderRoleHome(){
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📱','WA Masuk','Input lead baru','addLead()');
    add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
-   add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openSalesReport()');
+   add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')');
    add('💰','Komisi Tim','Komisi seluruh tim','openTeamCommission()');
  }else if(facilitator){
    add('🎯','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
@@ -1565,7 +1565,7 @@ function renderRoleHome(){
    add('👥','Lead Tracker','Lead tanggung jawab','openLeadSearch()');
    add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
-   add('📊','Laporan Penjualan','Hasil penjualan','openSalesReport()');
+   add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan sales','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');

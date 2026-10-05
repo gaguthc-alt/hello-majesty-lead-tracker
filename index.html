@@ -75,7 +75,7 @@ async function openTeamCommission(){
    '<div class="box"><h3>Rincian Komisi Seluruh Tim</h3>'+
    (rows.length?rows.map(x=>{
      const parts=labels.filter(([k])=>Number(x[k]||0)!==0).map(([k,l])=>'<div class="small" style="margin-top:4px">'+esc(l)+': <b>'+rp(x[k])+'</b></div>').join('');
-     return '<div class="lead"><div class="row" style="justify-content:space-between"><div><b>'+esc(x.name)+'</b><div class="small">'+esc(x.outlet||'-')+'</div></div><b>'+rp(x.total_commission)+'</b></div>'+
+     return '<div class="lead"><div class="row" style="justify-content:space-between"><div><b>'+esc(x.name)+'</b><div class="small">'+esc(x.outlet||'-')+'</div></div><b>'+rp(rowTotal(x))+'</b></div>'+
        (parts||'<div class="small" style="margin-top:6px">Belum ada komisi bulan ini.</div>')+
        '</div>';
    }).join(''):'<p>Belum ada data tim aktif.</p>')+

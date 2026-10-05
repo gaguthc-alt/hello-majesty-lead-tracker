@@ -1049,7 +1049,7 @@ main{
 </div>
 </section>
 <!-- HM LOGIN: single source of truth is login.js -->
-</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="workspace" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Finance Cell</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="roleHome"></div><div id="contentPerformance" class="hidden"></div><div id="inventorySection"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Pilih bagian yang ingin dibuka. Klik kembali untuk menutup.</div></div><div class="row" style="margin-top:10px"><button class="secondary" id="inventoryDashboardBtn" type="button" onclick="openInventoryDashboard()">📊 Dashboard Inventory</button><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" id="inventoryHunterBtn" onclick="openHunterStock()">🧑‍💼 Stock Hunter</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button><button class="secondary" type="button" id="inventorySalesBtn" type="button" onclick="openInventorySection('sales')">📊 Laporan Penjualan</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTrackerBox" class="box"><h3>📋 LEAD AKTIF</h3><div class="small" style="margin-bottom:10px">Lead yang masih aktif dan belum selesai.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
+</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="roleHome"></div><div id="workspace" class="hidden"><div id="dashboardActions class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Finance Cell</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="contentPerformance" class="hidden"></div><div id="inventorySection"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Pilih bagian yang ingin dibuka. Klik kembali untuk menutup.</div></div><div class="row" style="margin-top:10px"><button class="secondary" id="inventoryDashboardBtn" type="button" onclick="openInventoryDashboard()">📊 Dashboard Inventory</button><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" id="inventoryHunterBtn" onclick="openHunterStock()">🧑‍💼 Stock Hunter</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button><button class="secondary" type="button" id="inventorySalesBtn" type="button" onclick="openInventorySection('sales')">📊 Laporan Penjualan</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTrackerBox" class="box"><h3>📋 LEAD AKTIF</h3><div class="small" style="margin-bottom:10px">Lead yang masih aktif dan belum selesai.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
 
 async function renderManagementStockSummary(){
  if(!profile?.is_management)return;
@@ -1226,7 +1226,7 @@ async function start(u,authClient){
   // Jangan menunggu query profile/permission/database sebelum UI berpindah.
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
-  $('workspace').classList.remove('hidden');
+  $('roleHome').classList.remove('hidden');
   $('identity').textContent='Memuat profil akun...';
   const apiHeaders={apikey:KEY,Authorization:'Bearer '+token};
   const fetchJson=async(url,label)=>{
@@ -1270,7 +1270,7 @@ async function start(u,authClient){
   applyRoleVisibility();
   renderCommissionActions();
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}
-  $('workspace').classList.remove('hidden');
+  $('roleHome').classList.remove('hidden');
   // Re-apply role visibility after dashboard is rendered; some modules render asynchronously.
   applyRoleVisibility();
   try{await loadLeads();openUrl();}
@@ -1280,8 +1280,8 @@ async function start(u,authClient){
   }
  }catch(ex){
   console.error('[HM] Start error',ex);
-  $('login').classList.add('hidden');$('app').classList.remove('hidden');$('workspace').classList.remove('hidden');
-  $('identity').textContent='Dashboard gagal memuat profil: '+(ex?.message||ex);
+  $('login').classList.add('hidden');$('app').classList.remove('hidden');$('roleHome').classList.remove('hidden');
+  $('identity').textContent='RoleHome gagal memuat profil: '+(ex?.message||ex);
  }
 }
 async function changePassword(){
@@ -1290,7 +1290,7 @@ async function changePassword(){
  let token='';try{token=await window.hmAccessToken()}catch(e){pe.textContent=e?.message||'Sesi login tidak tersedia.';return} let x=await fetch(SUPABASE_URL+'/auth/v1/user',{method:'PUT',headers:{apikey:KEY,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({password:np.value})});let xd=null;try{xd=await x.json()}catch(e){};if(!x.ok){pe.textContent=xd?.message||xd?.msg||'Gagal mengubah password.';return}
  x=await sb.from('team_profiles').update({must_change_password:false}).eq('user_id',profile.user_id);
  if(x.error){pe.textContent=x.error.message;return}
- $('passwordBox').classList.add('hidden');$('workspace').classList.remove('hidden');await loadLeads();openUrl();
+ $('passwordBox').classList.add('hidden');$('roleHome').classList.remove('hidden');await loadLeads();openUrl();
 }
 function getActiveRoles(){
  const raw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');

@@ -1215,6 +1215,9 @@ async function doLogin(){
   if(btn){btn.disabled=false;btn.style.pointerEvents='auto';}
  }
 }
+// Expose LOGIN immediately after its definition so later dashboard code cannot break the login button.
+// This is intentionally placed before start()/dashboard initialization.
+window.doLogin=doLogin;
 async function start(u){
  try{
   $('login').classList.add('hidden');$('app').classList.remove('hidden');

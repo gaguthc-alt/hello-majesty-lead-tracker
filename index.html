@@ -1446,6 +1446,7 @@ function hmInlineIdsForMenu(key){
  if(k==='hmopencontentperformance()')return ['contentPerformance'];
  if(k==='openinventorydashboard()'||k==="openinventorysection('stock')"||k==="openinventorysection('sales')")return ['inventoryPanel'];
  if(k==='openperformance()'||k==='hmopenperformancereport()')return ['performance'];
+ if(k==="showfollowuptoday('today')"||k==="showfollowuptoday('overdue')"||k==="showfollowuptoday('all')"||k==='showneedsattention()')return ['leads'];
  return [];
 }
 function hmMoveViewsInline(key){
@@ -1508,6 +1509,15 @@ async function hmMainMenuClick(title,fn,actionKey){
    panel.classList.remove('hidden');
   }
   hmMoveViewsInline(route);
+  // Follow-up dan Perlu Perhatian juga wajib memakai panel Menu Utama.
+  // Fungsi lama merender ke #leads dan menutup panel; mapping di atas
+  // memindahkan #leads kembali ke panel agar semua menu konsisten.
+  if(panel && panelTitle){
+   const rr=route.toLowerCase();
+   if(rr.includes("showfollowuptoday('today')"))panelTitle.textContent='🔔 Follow-up Hari Ini';
+   else if(rr.includes("showfollowuptoday('overdue')"))panelTitle.textContent='🔴 Follow-up Terlambat';
+   else if(rr.includes('showneedsattention()'))panelTitle.textContent='🔴 Perlu Perhatian';
+  }
   if(key==='Tukar Tambah')hmOpenTradeInline();
   // Panel selalu ditempatkan setelah seluruh grid Menu Utama.
   const roleHost=document.getElementById('roleHome');

@@ -1989,6 +1989,38 @@ function renderRoleHome(){
      },action);
    };
  });
+ // Submenu utama juga harus benar-benar terhubung ke tujuan aksinya.
+ // Sebelumnya tombol seperti Brosur hanya memiliki data-hm-menu-title
+ // tanpa handler klik, sehingga terlihat tetapi tidak membuka apa pun.
+ host.querySelectorAll('[data-hm-menu-title]').forEach(btn=>{
+   btn.onclick=function(e){
+     e.preventDefault();
+     e.stopPropagation();
+     const title=String(this.getAttribute('data-hm-menu-title')||'').trim();
+     const item=cards.find(x=>String(x[1]||'')===title);
+     if(!item)return;
+     const action=String(item[3]||'').trim();
+     void hmMainMenuClick(title,function(){
+       return hmRunMainMenuAction(action);
+     },action);
+   };
+ });
+ // Group menu hanya membuka/menutup daftar submenu; tidak menutup panel utama.
+ host.querySelectorAll('[data-hm-group]').forEach(btn=>{
+   btn.onclick=function(e){
+     e.preventDefault();
+     e.stopPropagation();
+     const wrap=this.closest('.role-home-menu');
+     const sub=wrap?.querySelector('.role-home-submenu');
+     if(!wrap||!sub)return;
+     const open=!sub.classList.contains('hidden');
+     host.querySelectorAll('.role-home-menu').forEach(x=>{
+       x.classList.remove('open');
+       x.querySelector('.role-home-submenu')?.classList.add('hidden');
+     });
+     if(!open){wrap.classList.add('open');sub.classList.remove('hidden');}
+   };
+ });
 }
 function applyRoleVisibility(){
  const roles=getActiveRoles(),mg=!!profile?.is_management;

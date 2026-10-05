@@ -1245,8 +1245,14 @@ async function start(u,authClient){
   hmSetDashboardModulesVisible(false);
   if(typeof window.refreshHunterLauncher==='function')window.refreshHunterLauncher();
   window.sb=sb;
-  const permRows=await fetchJson(SUPABASE_URL+'/rest/v1/team_permissions?name=eq.'+encodeURIComponent(profile.name)+'&outlet=eq.'+encodeURIComponent(profile.outlet)+'&active=eq.true&select=can_cs,can_sales,can_facilitator,can_content_creator,can_hunter&limit=1','Permission akun');
-  const p=Array.isArray(permRows)?(permRows[0]||{}):{};
+  // Permission tambahan tidak boleh menggagalkan dashboard Management.
+  let p={};
+  try{
+   const permRows=await fetchJson(SUPABASE_URL+'/rest/v1/team_permissions?name=eq.'+encodeURIComponent(profile.name)+'&outlet=eq.'+encodeURIComponent(profile.outlet)+'&active=eq.true&select=can_cs,can_sales,can_facilitator,can_content_creator,can_hunter&limit=1','Permission akun');
+   p=Array.isArray(permRows)?(permRows[0]||{}):{};
+  }catch(permErr){
+   console.warn('[HM] Permission tambahan gagal dimuat; dashboard tetap dilanjutkan.',permErr);
+  }
   window.hmCanSales=!!p.can_sales;
   hmPermissionRoles=[];
   if(p.can_facilitator)hmPermissionRoles.push('FASILITATOR');

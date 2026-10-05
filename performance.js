@@ -269,7 +269,7 @@ async function perfShowSalesReport(mode){
    const salesIds=[...new Set(rows.map(r=>r.sales_user_id).filter(Boolean))];
    const [sr,ur]=await Promise.all([
      stockIds.length?sb.from('stock_units').select('id,product_id').in('id',stockIds):Promise.resolve({data:[]}),
-     salesIds.length?sb.from('team_profiles').select('user_id,name').in('user_id',salesIds):Promise.resolve({data:[]})
+     salesIds.length?sb.rpc('get_team_sales_names',{p_user_ids:salesIds}):Promise.resolve({data:[]})
    ]);
    if(sr.error)throw sr.error;if(ur.error)throw ur.error;
    const stocks=sr.data||[],pids=[...new Set(stocks.map(r=>r.product_id).filter(Boolean))];

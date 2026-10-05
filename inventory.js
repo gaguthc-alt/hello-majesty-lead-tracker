@@ -633,22 +633,22 @@ async function openSalesReport(){
  const stockIds=[...new Set(rows.map(r=>r.stock_unit_id).filter(Boolean))];
  const salesIds=[...new Set(rows.map(r=>r.sales_user_id).filter(Boolean))];
  const phones=[...new Set(rows.map(r=>hmNormalizePhone(r.customer_phone)).filter(Boolean))];
- const [stockRes,userRes]=await Promise.all([
+ const [stockRes,peopleRes]=await Promise.all([
    stockIds.length?sb.from('stock_units').select('id,product_id,color,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
-   salesIds.length?sb.from('team_profiles').select('user_id,name').in('user_id',salesIds):Promise.resolve({data:[]})
+   rows.length?sb.rpc('get_sales_report_people',{p_transaction_ids:rows.map(r=>r.id).filter(Boolean)}):Promise.resolve({data:[]})
  ]);
  if(stockRes.error)return alert('Data produk penjualan gagal dimuat: '+stockRes.error.message);
- if(userRes.error)return alert('Data Sales gagal dimuat: '+userRes.error.message);
- const stocks=stockRes.data||[],productIds=[...new Set(stocks.map(s=>s.product_id).filter(Boolean))];
+ if(peopleRes.error)return alert('Data Sales gagal dimuat: '+peopleRes.error.message);
+ const stocks=stockRes.data||[],peopleMap=Object.fromEntries((peopleRes.data||[]).map(p=>[p.transaction_id,p])),productIds=[...new Set(stocks.map(s=>s.product_id).filter(Boolean))];
  const productRes=productIds.length?await sb.from('product_master').select('id,product,variant').in('id',productIds):{data:[]};
  if(productRes.error)return alert('Master produk gagal dimuat: '+productRes.error.message);
  const leadRes=phones.length?await sb.from('leads').select('whatsapp,cs,cs_claimed_by,customer,updated_at').in('whatsapp',rows.map(r=>r.customer_phone).filter(Boolean)).order('updated_at',{ascending:false}):{data:[]};
- const stockMap=Object.fromEntries(stocks.map(s=>[s.id,s])),productMap=Object.fromEntries((productRes.data||[]).map(p=>[p.id,p])),salesMap=Object.fromEntries((userRes.data||[]).map(u=>[u.user_id,u.name]));
+ const stockMap=Object.fromEntries(stocks.map(s=>[s.id,s])),productMap=Object.fromEntries((productRes.data||[]).map(p=>[p.id,p]));
  const leadMap={};
  (leadRes.data||[]).forEach(l=>{const p=hmNormalizePhone(l.whatsapp);if(p&&!leadMap[p])leadMap[p]=l;});
  window.hmSalesReportRows=rows.map(r=>{
    const st=stockMap[r.stock_unit_id]||{},pm=productMap[st.product_id]||{},lead=leadMap[hmNormalizePhone(r.customer_phone)]||null;
-   return {...r,display_product:[pm.product||'Produk tidak ditemukan',pm.variant].filter(Boolean).join(' — '),display_cs:r.customer_source==='WALK-IN'?'Walk-In':(lead?.cs||lead?.cs_claimed_by||'-'),display_sales:salesMap[r.sales_user_id]||'-'};
+   return {...r,display_product:[pm.product||'Produk tidak ditemukan',pm.variant].filter(Boolean).join(' — '),display_cs:r.customer_source==='WALK-IN'?'Walk-In':(peopleMap[r.id]?.cs_name||lead?.cs||lead?.cs_claimed_by||'-'),display_sales:peopleMap[r.id]?.sales_name||'-'};
  });
  window.hmSalesReportOutlets=[...new Set(rows.map(r=>String(r.outlet||'').trim()).filter(Boolean))].sort();
  window.hmSalesReportOutlet=isAdminFinance&&profile?.outlet?profile.outlet:(window.hmSalesReportOutlet||'ALL');

@@ -1760,8 +1760,8 @@ function applyRoleVisibility(){
  const toggle=(id,show)=>{const e=$(id);if(e)e.classList.toggle('hidden',!show)};
  // TARGET HANYA MUNCUL SAAT MENU TARGET DIBUKA.
  toggle('targetBoard',false);
- // Lead aktif selalu tampil di bagian paling bawah dashboard utama.
- toggle('leadTrackerBox',!restrictedFinance);
+ // Lead aktif + resume wajib tampil di semua akun dashboard, termasuk Management/Finance.
+ toggle('leadTrackerBox',true);
  toggle('stats',!restrictedFinance);
  toggle('contentPerformance',hmActiveMainMenu==='Content Performance');
  toggle('inventorySection',false);

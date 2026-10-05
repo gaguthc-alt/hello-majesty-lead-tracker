@@ -1486,6 +1486,8 @@ function hmRunMainMenuAction(action){
   case 'openCommission()': return openCommission();
   case 'openTeamCommission()': return openTeamCommission();
   case 'hmOpenLeadHandover()': return hmOpenLeadHandover();
+  case 'window.openCellFinanceReport()': return window.openCellFinanceReport();
+  case 'window.openPartnerSettlement()': return window.openPartnerSettlement();
   default:
    throw new Error('Tujuan menu tidak dikenali: '+a);
  }

@@ -86,7 +86,6 @@ async function openCommission(){
   if(r.error)return alert('Komisi error: '+r.error.message);
   const d=r.data||{}, t=d.targets||{}, tm=d.team||{};
   const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
-  const pct=(a,b)=>Number(b)>0?((Number(a||0)/Number(b))*100).toFixed(1)+'%':'0%';
   const roleFormula={
     'Content Creator':'WA saya ÷ Target WA × Closing Tim ÷ Target Closing × 10% Laba',
     'CS':'Handover saya ÷ Target Handover × Closing Tim ÷ Target Closing × 10% Laba',
@@ -104,8 +103,8 @@ async function openCommission(){
     '<div class="small" style="margin-top:8px">Laba Penjualan Tim: <b>'+rp(tm.profit)+'</b></div></div>'+
     '<div class="box"><h3>Rincian Komisi per Peran</h3>'+
     (d.roles||[]).map(x=>{
-      const detail=x.role==='Content Creator'?(x.actual+' / '+t.wa+' WA • '+pct(tm.closing,t.closing)+' closing tim'):
-        x.role==='CS'?(x.actual+' / '+t.handover+' handover • '+pct(tm.closing,t.closing)+' closing tim'):
+      const detail=x.role==='Content Creator'?(x.actual+' / '+t.wa+' WA • '+tm.closing+' / '+t.closing+' closing tim'):
+        x.role==='CS'?(x.actual+' / '+t.handover+' handover • '+tm.closing+' / '+t.closing+' closing tim'):
         x.role==='Sales'?(rp(x.actual)+' laba closing') :
         x.role==='Hunter'?'Profit unit Hunter yang SOLD':
         'WA '+tm.wa+'/'+t.wa+' • Handover '+tm.handover+'/'+t.handover+' • Closing '+tm.closing+'/'+t.closing;

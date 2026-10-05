@@ -1597,7 +1597,6 @@ function hmOpenLeadHandover(){
     (rows.map(l=>card(l)).join('')||'<div class="small">Belum ada lead yang siap untuk handover.</div>');
   $('modal').classList.remove('hidden');
 }
-const HM_INLINE_BROCHURE_BRANDS=['Samsung','Infinix','Apple','Xiaomi','OPPO','vivo','realme','TECNO','itel','HONOR','Huawei','ASUS','Lenovo','Nokia','POCO','Redmi'];
 function hmShowBrochureBrandInline(brand){
  const body=document.getElementById('hmInlineBrochureBody');
  if(!body)return;
@@ -1624,7 +1623,7 @@ async function hmOpenBrochuresInline(){
    if(typeof loadBrochures==='function')await loadBrochures();
    const brandWrap=document.getElementById('hmInlineBrochureBrands');
    if(!brandWrap)return;
-   const brands=(typeof hmBrochureBrands==='function' ? hmBrochureBrands() : HM_INLINE_BROCHURE_BRANDS);
+   const brands=(typeof hmBrochureBrands==='function' ? hmBrochureBrands() : ['Samsung','Infinix','Apple','Xiaomi','OPPO','vivo','realme','TECNO','itel','HONOR','Huawei','ASUS','Lenovo','Nokia','POCO','Redmi']);
    brandWrap.innerHTML=brands.map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+'</button>').join('');
    brandWrap.querySelectorAll('[data-hm-brochure-brand]').forEach(btn=>btn.onclick=function(e){
      e.preventDefault();e.stopPropagation();

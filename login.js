@@ -9,15 +9,22 @@
   async function getClient(){
     if(client)return client;
     if(!window.supabase?.createClient){
-      await new Promise((resolve,reject)=>{
-        const started=Date.now();
-        const tick=()=>{
-          if(window.supabase?.createClient){resolve();return;}
-          if(Date.now()-started>12000){reject(new Error('Library login tidak termuat. Coba refresh halaman sekali lagi.'));return;}
-          setTimeout(tick,100);
-        };
-        tick();
+      const loadScript=(src)=>new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        let done=false;
+        const timer=setTimeout(()=>{if(done)return;done=true;reject(new Error('Library login tidak termuat. Periksa koneksi internet.'));},7000);
+        s.src=src;
+        s.async=true;
+        s.onload=()=>{if(done)return;done=true;clearTimeout(timer);resolve();};
+        s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);reject(new Error('Gagal memuat library login.'));};
+        document.head.appendChild(s);
       });
+      try{
+        await loadScript('https://unpkg.com/@supabase/supabase-js@2');
+      }catch(_e){
+        await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+      }
+      if(!window.supabase?.createClient)throw new Error('Library login tidak tersedia. Periksa koneksi internet lalu coba lagi.');
     }
     client=window.supabase.createClient(SUPABASE_URL,KEY);
     return client;

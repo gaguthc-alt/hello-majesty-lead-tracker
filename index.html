@@ -1508,23 +1508,30 @@ async function hmMainMenuClick(title,fn,actionKey){
   }
   hmMoveViewsInline(route);
   if(key==='Tukar Tambah')hmOpenTradeInline();
-  // Setelah panel inline dibuka, fokuskan layar ke panel tersebut.
-  // Jangan kembali ke Role Home; pengguna harus langsung melihat area yang dibuka.
+  // Fokuskan layar ke panel yang baru dibuka.
+  // Gunakan scroll container yang benar agar stabil di browser HP.
   const openedPanel=document.getElementById('hmMenuPanel');
   if(openedPanel){
-   // Panel baru saja dipindahkan/ditampilkan. Tunggu layout selesai,
-   // lalu paksa browser menuju posisi panel, bukan menghitung posisi dari viewport.
    const focusOpenedPanel=()=>{
     if(hmActiveMainMenu!==key || openedPanel.classList.contains('hidden'))return;
-    openedPanel.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
-    setTimeout(()=>{
-     if(hmActiveMainMenu!==key)return;
-     const header=document.querySelector('header');
-     const headerH=header?.getBoundingClientRect().height||0;
-     if(headerH>0)window.scrollBy({top:-(headerH+10),behavior:'smooth'});
-    },250);
+    const headerH=document.querySelector('header')?.getBoundingClientRect().height||0;
+    let scroller=document.scrollingElement||document.documentElement;
+    let parent=openedPanel.parentElement;
+    while(parent && parent!==document.body){
+     const st=getComputedStyle(parent);
+     if(/auto|scroll/.test(st.overflowY) && parent.scrollHeight>parent.clientHeight){
+      scroller=parent;
+      break;
+     }
+     parent=parent.parentElement;
+    }
+    const rect=openedPanel.getBoundingClientRect();
+    const offset=rect.top-(scroller===document.scrollingElement||scroller===document.documentElement?headerH+14:14);
+    if(Math.abs(offset)<8)return;
+    scroller.scrollBy({top:offset,behavior:'smooth'});
    };
    requestAnimationFrame(()=>requestAnimationFrame(focusOpenedPanel));
+   setTimeout(focusOpenedPanel,350);
   }
  }catch(ex){
   console.error('[HM] Main menu action:',key,ex);

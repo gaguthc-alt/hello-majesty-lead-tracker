@@ -1738,6 +1738,7 @@ function hmRunMainMenuAction(action){
   case 'window.openCellFinanceReport()': return window.openCellFinanceReport();
   case 'window.openPartnerSettlement()': return window.openPartnerSettlement();
   case 'hmOpenQuickAction()': return hmOpenQuickAction();
+  case "hmOpenFollowupInline('TODAY')": return hmOpenFollowupInline('TODAY');
   case "showFollowupToday('TODAY')": return showFollowupToday('TODAY');
   case "showFollowupToday('OVERDUE')": return showFollowupToday('OVERDUE');
   case 'showNeedsAttention()': return showNeedsAttention();
@@ -1768,6 +1769,23 @@ async function hmOpenLeadNewInline(){
   panel.classList.remove('hidden');
   setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),20);
 }
+function hmOpenFollowupInline(mode){
+ const panel=document.getElementById('hmMenuPanel');
+ const body=document.getElementById('hmMenuPanelBody');
+ const title=document.getElementById('hmMenuPanelTitle');
+ const modal=document.getElementById('modal');
+ if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
+ const m=String(mode||'TODAY').toUpperCase();
+ const items=followupItems(m);
+ const heading=m==='OVERDUE'?'🔴 Follow-up Terlambat':m==='ALL'?'📋 Semua Follow-up':'🔔 Follow-up Hari Ini';
+ if(title)title.textContent=heading;
+ const cards=items.map(historyCard).join('');
+ body.innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">'+heading+'</h3><div class="small" style="margin-top:4px">Customer POTENSIAL yang masih aktif, sesuai PIC dan jadwal follow-up.</div></div><button class="secondary" type="button" onclick="hmCloseMainMenu()">← Kembali</button></div></div>'+
+ (cards||'<div class="small">Tidak ada customer pada daftar ini. 👍</div>');
+ if(modal)modal.classList.add('hidden');
+ panel.classList.remove('hidden');
+ requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+}
 function hmOpenQuickAction(){
  const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
  if(!mt||!mb||!modal)return;
@@ -1777,7 +1795,7 @@ function hmOpenQuickAction(){
  '<button class="role-home-card" type="button" onclick="addLead();"><b>📱 Lead Baru</b><span>Input lead customer</span></button>'+
  '<button class="role-home-card" type="button" onclick="openLeadSearch();"><b>🔎 Search Lead</b><span>Cari dan kelola lead</span></button>'+
  '<button class="role-home-card" type="button" onclick="hmOpenTradeInline();"><b>🔄 Tukar Tambah</b><span>Buka form trade-in</span></button>'+
- '<button class="role-home-card" type="button" onclick="showFollowupToday(\'TODAY\');"><b>🔔 Follow Up</b><span>Kerjakan follow-up hari ini</span></button>'+
+ '<button class="role-home-card" type="button" onclick="hmOpenFollowupInline(\'TODAY\');"><b>🔔 Follow Up</b><span>Kerjakan follow-up hari ini</span></button>'+
  '</div><button class="secondary" style="width:100%;margin-top:10px" onclick="closeModal()">Tutup</button>';
  modal.classList.remove('hidden');
 }

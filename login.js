@@ -83,7 +83,9 @@
       }
       if(typeof starter!=='function')throw new Error('Aplikasi belum siap. Silakan refresh halaman lalu LOGIN lagi.');
       if(err)err.textContent='Membuka dashboard...';
-      await starter(auth.user,sb);
+      const startTask=Promise.resolve().then(()=>starter(auth.user,sb));
+      const startTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Dashboard tidak selesai dibuka dalam 15 detik. Cek pesan error koneksi/database.')),15000));
+      await Promise.race([startTask,startTimeout]);
     }catch(ex){
       console.error('[HM] isolated login:',ex);
       if(err)err.textContent=ex?.message||'Login gagal. Coba lagi.';

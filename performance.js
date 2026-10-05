@@ -186,6 +186,9 @@ async function perfManagement(mode){
      (contentMap[mk]??={content_count:0,views:0,comments:0,dms:0,wa_generated:0}).wa_generated++;
    }
  }
+ const salesRows=await sb.from('sales_transactions').select('sales_user_id,customer_source').gte('sold_at',p.start.toISOString()).lt('sold_at',new Date(p.end.getTime()+86400000).toISOString());
+ if(salesRows.error)throw salesRows.error;
+ const salesMap={};for(const s of (salesRows.data||[])){if(s.sales_user_id)salesMap[s.sales_user_id]=(salesMap[s.sales_user_id]||0)+1;}
  const hunterRows=await sb.from('sales_transactions').select('hunter_user_id').not('hunter_user_id','is',null).gte('sold_at',p.start.toISOString()).lt('sold_at',new Date(p.end.getTime()+86400000).toISOString());
  if(hunterRows.error)throw hunterRows.error;
  const hunterMap={};for(const h of (hunterRows.data||[]))hunterMap[h.hunter_user_id]=(hunterMap[h.hunter_user_id]||0)+1;
@@ -207,7 +210,9 @@ async function perfManagement(mode){
    const o=outletMap[pr.outlet]||{}, facilitator=teamMetrics[pr.outlet]||{};
    const teamClaim=claimMap[pr.outlet+'|'+pr.name]||0;
    const cs={...r,cs_claim:teamClaim,cs_qualification_rate:teamClaim>0?Math.round((Number(r.cs_qualified||0)/teamClaim)*1000)/10:0};
-   return {name:pr.name,outlet:pr.outlet,roles,cs,sales:r,content:cm,facilitator,hunter:hunterMap[pr.user_id]||0,target:o};
+   const actualClosing=Number(salesMap[pr.user_id]||0);
+   const sales={...r,sales_claim:Math.max(Number(r.sales_claim||0),actualClosing),sales_closing:actualClosing,sales_closing_rate:Math.max(Number(r.sales_claim||0),actualClosing)>0?Math.round(actualClosing/Math.max(Number(r.sales_claim||0),actualClosing)*1000)/10:0};
+   return {name:pr.name,outlet:pr.outlet,roles,cs,sales,content:cm,facilitator,hunter:hunterMap[pr.user_id]||0,target:o};
  });
 }
 function perfManagementCard(row,mode){

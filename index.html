@@ -1865,6 +1865,10 @@ window.openLeadSearch=openLeadSearch;
 window.doLeadSearch=doLeadSearch;
 function viewerLead(l){if(profile?.is_management)return true;if(l.outlet!==profile?.outlet)return false;if(l.sales_claimed_by)return l.sales_claimed_by===profile?.name;if(l.cs_claimed_by)return l.cs_claimed_by===profile?.name;return true}
 async function render(){
+ // LEAD AKTIF + RESUME selalu tampil untuk semua akun yang memiliki dashboard.
+ // Tidak dibatasi role: CS, Sales, Fasilitator, dan Management tetap melihat resume sesuai data yang boleh mereka akses.
+ const leadBox=$('leadTrackerBox');
+ if(leadBox){leadBox.classList.remove('hidden');leadBox.style.display='block';}
  renderCommissionActions();
  
  renderTargetBoard().catch(e=>console.error('[HM] Target board error',e));

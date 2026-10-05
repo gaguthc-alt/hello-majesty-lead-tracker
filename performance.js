@@ -186,9 +186,18 @@ async function perfManagement(mode){
      (contentMap[mk]??={content_count:0,views:0,comments:0,dms:0,wa_generated:0}).wa_generated++;
    }
  }
- const salesRows=await sb.from('sales_transactions').select('sales_user_id,customer_source').gte('sold_at',p.start.toISOString()).lt('sold_at',new Date(p.end.getTime()+86400000).toISOString());
+ const salesRows=await sb.from('sales_transactions').select('sales_user_id,customer_source,stock_unit_id,sale_price,sold_at').gte('sold_at',p.start.toISOString()).lt('sold_at',new Date(p.end.getTime()+86400000).toISOString());
  if(salesRows.error)throw salesRows.error;
  const salesMap={};const salesDetails={};for(const s of (salesRows.data||[])){if(s.sales_user_id){salesMap[s.sales_user_id]=(salesMap[s.sales_user_id]||0)+1;(salesDetails[s.sales_user_id]||(salesDetails[s.sales_user_id]=[])).push(s);}}
+ const soldStockIds=[...new Set((salesRows.data||[]).map(s=>s.stock_unit_id).filter(Boolean))];
+ const soldStock= soldStockIds.length ? await sb.from('stock_units').select('id,product_id').in('id',soldStockIds) : {data:[]};
+ if(soldStock.error)throw soldStock.error;
+ const soldProductIds=[...new Set((soldStock.data||[]).map(s=>s.product_id).filter(Boolean))];
+ const soldProducts=soldProductIds.length ? await sb.from('product_master').select('id,product,variant').in('id',soldProductIds) : {data:[]};
+ if(soldProducts.error)throw soldProducts.error;
+ const soldStockMap=Object.fromEntries((soldStock.data||[]).map(s=>[s.id,s]));
+ const soldProductMap=Object.fromEntries((soldProducts.data||[]).map(s=>[s.id,s]));
+ for(const list of Object.values(salesDetails)) for(const s of list){const st=soldStockMap[s.stock_unit_id]||{},pm=soldProductMap[st.product_id]||{};s.product_name=[pm.product,pm.variant].filter(Boolean).join(' — ')||'Produk tidak ditemukan';}
  const hunterRows=await sb.from('sales_transactions').select('hunter_user_id').not('hunter_user_id','is',null).gte('sold_at',p.start.toISOString()).lt('sold_at',new Date(p.end.getTime()+86400000).toISOString());
  if(hunterRows.error)throw hunterRows.error;
  const hunterMap={};for(const h of (hunterRows.data||[]))hunterMap[h.hunter_user_id]=(hunterMap[h.hunter_user_id]||0)+1;
@@ -221,7 +230,7 @@ function perfManagementCard(row,mode){
  for(const role of roles){
    if(role==='Content Creator') h+='<div style="margin-top:10px"><b>🎬 Content Creator</b><div class="small">Content '+perfFmt(row.content.content_count)+' • WA Dihasilkan '+perfFmt(row.facilitator.wa||0)+' • Views '+perfFmt(row.content.views)+' • Comments '+perfFmt(row.content.comments)+' • DM '+perfFmt(row.content.dms)+'</div></div>';
    if(role==='CS') h+='<div style="margin-top:10px"><b>💬 CS</b><div class="small">Claim '+perfFmt(r.cs_claim)+' • Qualified '+perfFmt(r.cs_qualified)+' • Potensial '+perfFmt(r.cs_potensial)+' • Gagal '+perfFmt(r.cs_gagal)+' • Rate '+perfFmt(r.cs_qualification_rate)+'%</div></div>';
-   if(role==='Sales'){const ds=row.salesDetails||[];h+='<div style="margin-top:10px"><b>🏆 Sales</b><div class="small">Claim '+perfFmt(r.sales_claim)+' • Closing '+perfFmt(r.sales_closing)+' • Potensial '+perfFmt(r.sales_potensial)+' • Gagal '+perfFmt(r.sales_gagal)+' • Rate '+perfFmt(r.sales_closing_rate)+'%</div>'+(ds.length?'<div class="small" style="margin-top:6px"><b>Rincian Penjualan:</b><br>'+ds.map(s=>esc((s.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+' • Rp'+Number(s.sale_price||0).toLocaleString('id-ID')+' • '+new Date(s.sold_at).toLocaleDateString('id-ID'))).join('<br>')+'</div>':'')+'</div>';}
+   if(role==='Sales'){const ds=row.salesDetails||[];h+='<div style="margin-top:10px"><b>🏆 Sales</b><div class="small">Claim '+perfFmt(r.sales_claim)+' • Closing '+perfFmt(r.sales_closing)+' • Potensial '+perfFmt(r.sales_potensial)+' • Gagal '+perfFmt(r.sales_gagal)+' • Rate '+perfFmt(r.sales_closing_rate)+'%</div>'+(ds.length?'<div class="small" style="margin-top:6px"><b>Rincian Penjualan:</b><br>'+ds.map(s=>esc((s.product_name||'Produk tidak ditemukan')+' • '+(s.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+' • Rp'+Number(s.sale_price||0).toLocaleString('id-ID')+' • '+new Date(s.sold_at).toLocaleDateString('id-ID'))).join('<br>')+'</div>':'')+'</div>';}
    if(role==='Fasilitator') h+='<div style="margin-top:10px"><b>🧭 Fasilitator</b><div class="small">WA Tim '+perfFmt(row.facilitator.wa)+' / '+perfFmt(row.target.wa_target)+' • Qualified '+perfFmt(row.facilitator.qualified)+' / '+perfFmt(row.target.qualified_target)+' • Closing '+perfFmt(row.facilitator.closing)+' / '+perfFmt(row.target.closing_target)+'</div></div>';
    if(role==='Hunter') h+='<div style="margin-top:10px"><b>🏹 Hunter</b><div class="small">Unit Hunter SOLD '+perfFmt(row.hunter)+'</div></div>';
  }

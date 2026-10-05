@@ -1336,6 +1336,40 @@ function hmMainMenuClick(title,fn){
 window.hmOpenDashboardModules=hmOpenDashboardModules;
 window.hmMainMenuClick=hmMainMenuClick;
 
+/* HM MAIN MENU — exact destination helpers */
+async function hmOpenTargetOutlet(){
+  if(typeof renderTargetBoard==='function') await renderTargetBoard();
+  const e=document.getElementById('targetBoard');
+  if(e)e.classList.remove('hidden');
+}
+async function hmOpenContentPerformance(){
+  const e=document.getElementById('contentPerformance');
+  if(e)e.classList.remove('hidden');
+  if(typeof renderContentPerformance==='function') await renderContentPerformance();
+  const v=document.getElementById('contentPerformance');
+  if(v)v.classList.remove('hidden');
+}
+function hmOpenLeadHandover(){
+  if(typeof openLeadSearch==='function') openLeadSearch();
+  const t=document.getElementById('mt'),b=document.getElementById('mb');
+  if(t)t.textContent='👥 Lead & Handover';
+  if(b){
+    const hint=document.createElement('div');
+    hint.className='small';
+    hint.style.marginTop='8px';
+    hint.textContent='Cari dan kelola lead untuk proses handover CS → Sales.';
+    b.insertBefore(hint,b.firstChild);
+  }
+}
+async function hmOpenPerformanceReport(){
+  if(typeof openPerformance==='function') await openPerformance();
+}
+async function hmOpenFinanceReport(){
+  if(typeof openFinance==='function') await openFinance();
+  const t=document.getElementById('mt');
+  if(t)t.textContent='📊 Laporan Finance';
+}
+
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),mg=!!profile?.is_management,has=r=>roles.includes(r);
@@ -1354,17 +1388,17 @@ function renderRoleHome(){
    add('📊','Accounting','Accounting & laporan','openAccounting()');
    add('💰','Finance','Kas, laba & neraca','openFinance()');
    add('📦','Product & Stock','Kontrol seluruh inventory','openInventoryDashboard()');
-   add('🎯','Target & Performa','Target seluruh outlet','openPerformance()');
-   add('🎬','Content Performance','Monitoring seluruh content','openPerformance()');
+   add('🎯','Target & Performa','Target seluruh outlet','hmOpenPerformanceReport()');
+   add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📱','WA Masuk','Input lead baru','addLead()');
    add('🔄','Tukar Tambah','Form tukar tambah','openTradeForm()');
    add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')');
    add('💰','Komisi Tim','Komisi seluruh tim','openTeamCommission()');
  }else if(has('FASILITATOR')){
-   add('🎯','Target Outlet','Target & progres outlet','openPerformance()');
-   add('👥','Lead & Handover','Koordinasi lead tim','openLeadSearch()');
+   add('🎯','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
+   add('👥','Lead & Handover','Koordinasi lead tim','hmOpenLeadHandover()');
    add('📦','Product & Stock','Stock & approval','openInventoryDashboard()');
-   add('🎬','Content Performance','Aktivitas content','openPerformance()');
+   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
@@ -1387,8 +1421,8 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Bantuan CS','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(creator){
-   add('🎬','Content Performance','Views, comments & DM','openPerformance()');
-   add('🎯','Target & Performa','Kontribusi outlet','openPerformance()');
+   add('🎬','Content Performance','Views, comments & DM','hmOpenContentPerformance()');
+   add('🎯','Target & Performa','Kontribusi outlet','hmOpenPerformanceReport()');
    add('📖','Brosur','Materi produk','openBrochures()');
    add('🤖','Tanya AI','Ide content & DM','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');

@@ -355,6 +355,151 @@ label{
     animation:none!important;
   }
 }
+
+/* === HM MAIN MENU — CLEAR PREMIUM TILES === */
+.dashboard-actions.management-actions{
+  background:linear-gradient(145deg,#f7faf9,#eef4f2)!important;
+  padding:18px!important;
+  border-radius:26px!important;
+  border:1px solid rgba(7,17,31,.10)!important;
+}
+.dashboard-actions.management-actions:before{display:none!important}
+.dashboard-actions.management-actions:after{
+  content:"MENU UTAMA";
+  display:block;
+  color:#536174;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:1.2px;
+  margin:0 0 12px 3px;
+}
+.dashboard-actions.management-actions .row{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:12px!important;
+}
+.dashboard-actions.management-actions .row>span{display:contents!important}
+.dashboard-actions.management-actions button{
+  position:relative!important;
+  min-height:92px!important;
+  padding:16px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  gap:6px!important;
+  border-radius:20px!important;
+  font-size:15px!important;
+  font-weight:800!important;
+  line-height:1.2!important;
+  text-align:left!important;
+  border:1px solid rgba(15,23,42,.10)!important;
+  box-shadow:0 8px 20px rgba(7,17,31,.075)!important;
+}
+.dashboard-actions.management-actions button:before{
+  content:"";
+  width:34px;height:34px;
+  border-radius:11px;
+  display:block;
+  background:rgba(7,17,31,.07);
+  box-shadow:inset 0 0 0 1px rgba(7,17,31,.04);
+}
+.dashboard-actions.management-actions button:after{
+  content:"›";
+  position:absolute;
+  right:14px;bottom:12px;
+  width:24px;height:24px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(7,17,31,.07);
+  color:#526174;
+  font-size:18px;
+}
+.dashboard-actions.management-actions button:hover{
+  transform:translateY(-3px)!important;
+  box-shadow:0 14px 28px rgba(7,17,31,.12)!important;
+}
+.dashboard-actions.management-actions #refreshBtn{
+  grid-column:1/-1!important;
+  min-height:58px!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:linear-gradient(135deg,#07111f,#16304a)!important;
+  color:#fff!important;
+}
+.dashboard-actions.management-actions #refreshBtn:before{
+  width:28px;height:28px;
+  background:rgba(255,255,255,.10);
+}
+.dashboard-actions.management-actions #refreshBtn:after{display:none!important}
+
+/* menu color identities */
+.dashboard-actions.management-actions button:nth-child(2){
+  background:linear-gradient(145deg,#eafcff,#f7ffff)!important;
+  color:#075985!important;
+  border-color:#bae6fd!important;
+}
+.dashboard-actions.management-actions button:nth-child(2):before{background:#d8f3ff!important}
+
+.dashboard-actions.management-actions button:nth-child(3){
+  background:linear-gradient(145deg,#eefbf5,#fbfffd)!important;
+  color:#087a49!important;
+  border-color:#b9efd4!important;
+}
+.dashboard-actions.management-actions button:nth-child(3):before{background:#d7f7e6!important}
+
+.dashboard-actions.management-actions button:nth-child(4){
+  background:linear-gradient(145deg,#fff8e9,#fffdf7)!important;
+  color:#9a6a10!important;
+  border-color:#f1db9f!important;
+}
+.dashboard-actions.management-actions button:nth-child(4):before{background:#fff0c9!important}
+
+.dashboard-actions.management-actions button:nth-child(5){
+  background:linear-gradient(145deg,#f3efff,#fbfaff)!important;
+  color:#6241b5!important;
+  border-color:#d9ccff!important;
+}
+.dashboard-actions.management-actions button:nth-child(5):before{background:#e8ddff!important}
+
+.dashboard-actions.management-actions button:nth-child(6){
+  background:linear-gradient(145deg,#edf5ff,#fbfdff)!important;
+  color:#1855a5!important;
+  border-color:#c7dcff!important;
+}
+.dashboard-actions.management-actions button:nth-child(6):before{background:#dceaff!important}
+
+.dashboard-actions.management-actions button:nth-child(7){
+  background:linear-gradient(145deg,#fff2ed,#fffaf8)!important;
+  color:#b54708!important;
+  border-color:#ffd4c2!important;
+}
+.dashboard-actions.management-actions button:nth-child(7):before{background:#ffe1d4!important}
+
+.dashboard-actions.management-actions button:nth-child(8){
+  background:linear-gradient(145deg,#f0fdf8,#fbfffd)!important;
+  color:#087a49!important;
+  border-color:#b9efd4!important;
+}
+.dashboard-actions.management-actions button:nth-child(8):before{background:#d7f7e6!important}
+
+.dashboard-actions.management-actions button:nth-child(9){
+  background:linear-gradient(145deg,#f5f6ff,#fcfcff)!important;
+  color:#4338a8!important;
+  border-color:#d9dcff!important;
+}
+.dashboard-actions.management-actions button:nth-child(9):before{background:#e4e6ff!important}
+
+@media(max-width:420px){
+  .dashboard-actions.management-actions{padding:14px!important}
+  .dashboard-actions.management-actions .row{gap:9px!important}
+  .dashboard-actions.management-actions button{
+    min-height:86px!important;
+    padding:13px!important;
+    font-size:13px!important;
+  }
+}
 </style></head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
 <div class="login-shell">
   <div class="login-brand">

@@ -1435,13 +1435,19 @@ async function hmMainMenuClick(title,fn,actionKey){
   // Jangan kembali ke Role Home; pengguna harus langsung melihat area yang dibuka.
   const openedPanel=document.getElementById('hmMenuPanel');
   if(openedPanel){
-   setTimeout(()=>{
-    if(hmActiveMainMenu!==key)return;
-    const header=document.querySelector('header');
-    const offset=(header?.getBoundingClientRect().height||0)+10;
-    const top=openedPanel.getBoundingClientRect().top+window.scrollY-offset;
-    window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
-   },60);
+   // Panel baru saja dipindahkan/ditampilkan. Tunggu layout selesai,
+   // lalu paksa browser menuju posisi panel, bukan menghitung posisi dari viewport.
+   const focusOpenedPanel=()=>{
+    if(hmActiveMainMenu!==key || openedPanel.classList.contains('hidden'))return;
+    openedPanel.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+    setTimeout(()=>{
+     if(hmActiveMainMenu!==key)return;
+     const header=document.querySelector('header');
+     const headerH=header?.getBoundingClientRect().height||0;
+     if(headerH>0)window.scrollBy({top:-(headerH+10),behavior:'smooth'});
+    },250);
+   };
+   requestAnimationFrame(()=>requestAnimationFrame(focusOpenedPanel));
   }
  }catch(ex){
   console.error('[HM] Main menu action:',key,ex);

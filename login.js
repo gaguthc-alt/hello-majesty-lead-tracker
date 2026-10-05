@@ -145,47 +145,36 @@
     try{
       const email=(el('email')?.value||'').trim();
       const password=el('password')?.value||'';
+      if(!email||!password)throw new Error('Email dan password wajib diisi.');
 
-      if(!email||!password){
-        throw new Error('Email dan password wajib diisi.');
-      }
+      if(err)err.textContent='Menghubungkan ke server...';
+
+      // Use ONE Supabase Auth client for both authentication and dashboard startup.
+      // Do not perform a separate REST login + setSession cycle.
+      const sb=await getClient();
 
       if(err)err.textContent='Memverifikasi akun...';
-
-      // 1. Verify credentials independently from the dashboard code.
-      const auth=await restPasswordLogin(email,password);
-
-      if(err)err.textContent='Login berhasil. Menyiapkan dashboard...';
-
-      // 2. Build one persistent Supabase client and install the exact session.
-      const sb=await getClient();
-      const {data:sessionData,error:sessionError}=await sb.auth.setSession({
-        access_token:auth.access_token,
-        refresh_token:auth.refresh_token
-      });
-
-      if(sessionError)throw new Error(sessionError.message||'Sesi dashboard gagal disiapkan.');
-      if(!sessionData?.session)throw new Error('Sesi dashboard tidak terbentuk.');
+      const {data,error}=await sb.auth.signInWithPassword({email,password});
+      if(error)throw new Error(error.message||'Login gagal.');
+      if(!data?.session||!data?.user)throw new Error('Server login tidak mengembalikan sesi yang valid.');
 
       window.sb=sb;
 
-      // 3. Start the existing dashboard flow.
+      if(err)err.textContent='Login berhasil. Membuka dashboard...';
+
       const starter=await waitForAppStarter();
 
-      if(err)err.textContent='Membuka dashboard...';
-
-      const startPromise=Promise.resolve(starter(auth.user,sb));
+      // start() receives the SAME client that just authenticated the user.
+      const startPromise=Promise.resolve(starter(data.user,sb));
       const timeout=new Promise((_,reject)=>setTimeout(
-        ()=>reject(new Error('Dashboard tidak selesai dibuka. Periksa koneksi database atau data profile akun.')),
+        ()=>reject(new Error('Dashboard tidak selesai dibuka. Jika pesan ini muncul, masalah ada pada data profile/permission akun.')),
         20000
       ));
 
       await Promise.race([startPromise,timeout]);
 
-      // start() owns the dashboard transition. If it returned successfully,
-      // do not leave a stale success message on the login screen.
-      if(el('login')?.classList.contains('hidden')){
-        if(err)err.textContent='';
+      if(el('login')?.classList.contains('hidden') && err){
+        err.textContent='';
       }
     }catch(ex){
       console.error('[HM] Login bootstrap error:',ex);

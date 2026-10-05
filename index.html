@@ -1500,7 +1500,8 @@ function hmOpenLeadHandover(){
   $('modal').classList.remove('hidden');
 }
 async function hmOpenPerformanceReport(){
-  if(typeof openPerformance==='function') await openPerformance();
+  await hmLoadModule('performance');
+  await window.openPerformance();
 }
 async function hmOpenFacilitatorReportsInline(){
   const panel=document.getElementById('hmMenuPanel'),title=document.getElementById('hmMenuPanelTitle'),body=document.getElementById('hmMenuPanelBody');
@@ -1554,7 +1555,7 @@ async function hmOpenCriticalMainMenu(title,action){
    section.classList.remove('hidden');
 
    const view=action==="openInventorySection('sales')"?'sales':'stock';
-   const inventoryOpen=window.openInventorySection;if(typeof inventoryOpen!=='function')throw new Error('inventory.js belum termuat. Silakan buka ulang aplikasi.');await inventoryOpen(view);
+   await hmLoadModule('inventory'); const inventoryOpen=window.openInventorySection; if(typeof inventoryOpen!=='function')throw new Error('inventory.js belum siap.'); await inventoryOpen(view);
    if(hmActiveMainMenu!==key)return;
 
    const node=document.getElementById('inventoryPanel');
@@ -1569,23 +1570,56 @@ async function hmOpenCriticalMainMenu(title,action){
    body.innerHTML='<div class="box"><b>Menu gagal dibuka.</b><div class="small" style="margin-top:6px">'+esc(ex?.message||ex)+'</div></div>';
  }
 }
+/* HM LAZY MODULE LOADER — heavy secondary modules load only when opened */
+const hmModulePromises={};
+const hmModuleSources={
+  performance:'performance.js?v=20261006-lazy-1',
+  inventory:'inventory.js?v=20261006-lazy-1',
+  brochures:'brochures.js?v=20261006-lazy-1'
+};
+function hmLoadModule(name){
+  const key=String(name||'').trim();
+  const src=hmModuleSources[key];
+  if(!src)return Promise.reject(new Error('Modul '+key+' tidak dikenali.'));
+  if(hmModulePromises[key])return hmModulePromises[key];
+  const ready={
+    performance:()=>typeof window.openPerformance==='function',
+    inventory:()=>typeof window.openInventorySection==='function',
+    brochures:()=>typeof window.openBrochures==='function'
+  };
+  if(ready[key]())return Promise.resolve();
+  hmModulePromises[key]=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src=src;
+    script.async=true;
+    script.onload=()=>{
+      if(ready[key]())resolve();
+      else reject(new Error('Modul '+key+' termuat tetapi fungsi utamanya belum tersedia.'));
+    };
+    script.onerror=()=>reject(new Error('Modul '+key+' gagal dimuat. Periksa koneksi lalu coba lagi.'));
+    document.head.appendChild(script);
+  }).catch(ex=>{delete hmModulePromises[key];throw ex;});
+  return hmModulePromises[key];
+}
+window.hmLoadModule=hmLoadModule;
+
 function hmRunMainMenuAction(action){
  const a=String(action||'').trim();
  switch(a){
   case 'openLeadSearch()': return openLeadSearch();
   case 'hmOpenLeadTracker()': return hmOpenLeadTracker();
   case 'openAI()': return openAI();
-  case 'openBrochures()': return openBrochures();
+  case 'openBrochures()': return hmLoadModule('brochures').then(()=>window.openBrochures());
   case 'openAccounting()': return openAccounting();
   case 'openFinance()': return openFinance();
-  case 'openInventoryDashboard()': return typeof window.openInventorySection==='function'?window.openInventorySection('stock'):Promise.reject(new Error('inventory.js belum termuat.'));
+  case 'openInventoryDashboard()': return hmLoadModule('inventory').then(()=>window.openInventorySection('stock'));
   case 'hmOpenTargetOutlet()': return hmOpenTargetOutlet();
   case 'hmOpenContentPerformance()': return hmOpenContentPerformance();
   case 'hmOpenLeadNewInline()': return hmOpenLeadNewInline();
   case 'hmOpenTradeInline()': return hmOpenTradeInline();
-  case "openInventorySection('sales')": return typeof window.openInventorySection==='function'?window.openInventorySection('sales'):Promise.reject(new Error('inventory.js belum termuat.'));
-  case "openInventorySection('stock')": return typeof window.openInventorySection==='function'?window.openInventorySection('stock'):Promise.reject(new Error('inventory.js belum termuat.'));
-  case 'openPerformance()': return openPerformance();
+  case "openInventorySection('sales')": return hmLoadModule('inventory').then(()=>window.openInventorySection('sales'));
+  case "openInventorySection('stock')": return hmLoadModule('inventory').then(()=>window.openInventorySection('stock'));
+  case 'openPerformance()': return hmLoadModule('performance').then(()=>window.openPerformance());
   case 'hmOpenPerformanceReport()': return hmOpenPerformanceReport();
   case 'hmOpenFacilitatorReportsInline()': return hmOpenFacilitatorReportsInline();
   case 'openCommission()': return openCommission();
@@ -3120,4 +3154,4 @@ window.addEventListener('DOMContentLoaded',function(){
  });
 });
 
-</script><script defer src="performance.js?v=20261005-loginfix-5"></script><script defer src="inventory.js?v=20261005-inventory-global-3"></script><script defer src="brochures.js?v=20261005-loginfix-5"></script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";</script></body></html>
+</script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";</script></body></html>

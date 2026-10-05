@@ -2001,7 +2001,47 @@ function renderRoleHome(){
      },action);
    };
  });
- // Submenu utama juga harus benar-benar terhubung ke tujuan aksinya.
+ /* HM CRITICAL MAIN MENU — single safe opener for inventory/sales/team commission */
+async function hmOpenCriticalMainMenu(title,action){
+  const key=String(title||'');
+  const a=String(action||'').trim();
+  hmCloseMainMenu();
+  hmActiveMainMenu=key;
+  hmSetMainMenuButtonOpen(key);
+  try{
+    await Promise.resolve(hmRunMainMenuAction(a));
+    const modal=document.getElementById('modal');
+    const panel=document.getElementById('hmMenuPanel');
+    const panelTitle=document.getElementById('hmMenuPanelTitle');
+    const panelBody=document.getElementById('hmMenuPanelBody');
+    const mt=document.getElementById('mt');
+    const mb=document.getElementById('mb');
+    if(panel && modal && mb && !modal.classList.contains('hidden')){
+      if(panelTitle)panelTitle.textContent=mt?.textContent||key;
+      if(panelBody){
+        panelBody.innerHTML='';
+        while(mb.firstChild)panelBody.appendChild(mb.firstChild);
+      }
+      modal.classList.add('hidden');
+      panel.classList.remove('hidden');
+    }
+    if(panel)panel.classList.remove('hidden');
+    requestAnimationFrame(()=>panel?.scrollIntoView({behavior:'smooth',block:'start'}));
+  }catch(ex){
+    console.error('[HM] Critical menu gagal dibuka:',key,ex);
+    const panel=document.getElementById('hmMenuPanel');
+    const body=document.getElementById('hmMenuPanelBody');
+    if(panel&&body){
+      body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka '+esc(key)+': '+esc(ex?.message||'Terjadi kesalahan')+'</div>';
+      panel.classList.remove('hidden');
+    }else{
+      throw ex;
+    }
+  }
+}
+window.hmOpenCriticalMainMenu=hmOpenCriticalMainMenu;
+
+// Submenu utama juga harus benar-benar terhubung ke tujuan aksinya.
  // Sebelumnya tombol seperti Brosur hanya memiliki data-hm-menu-title
  // tanpa handler klik, sehingga terlihat tetapi tidak membuka apa pun.
  host.querySelectorAll('[data-hm-menu-title]').forEach(btn=>{

@@ -1472,7 +1472,7 @@ function renderRoleHome(){
 
  // MENU UTAMA = hanya fungsi yang memang diberikan kepada akun/role.
  // Management melihat seluruh modul utama.
- const cards=[],add=(icon,title,desc,fn)=>{if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,'window.hmMainMenuClick('+JSON.stringify(title)+',function(){'+fn+'})'])};
+ const cards=[],add=(icon,title,desc,fn)=>{if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn])};
 
  if(mg){
    add('🔎','Search Lead','Cari & kelola seluruh lead','openLeadSearch()');

@@ -1680,19 +1680,6 @@ async function refreshAppTotal(btn){
   await refreshLeads();
   // Muat ulang Content Performance satu kali setelah data utama selesai.
   // Jangan dijalankan bersamaan dengan refreshLeads agar tidak terjadi race condition.
-  if(typeof renderContentPerformance==='function'&&document.getElementById('contentPerformance')&&!document.getElementById('contentPerformance').classList.contains('hidden')){
-    const cp=document.getElementById('contentPerformance');
-    cp.innerHTML='<div class="small">⏳ Memuat ulang Content Performance...</div>';
-    try{
-      await Promise.race([
-        renderContentPerformance(),
-        new Promise((_,reject)=>setTimeout(()=>reject(new Error('Content Performance timeout 8 detik.')),8000))
-      ]);
-    }catch(cpErr){
-      console.warn('[HM] Content Performance refresh:',cpErr);
-      cp.innerHTML='<div class="small">⚠️ Content Performance belum berhasil diperbarui. Data sebelumnya tetap aman.</div><button class="secondary" type="button" style="margin-top:8px" onclick="hmOpenContentPerformance()">↻ Coba Lagi</button>';
-    }
-  }
   if(typeof renderManagementStockSummary==='function'&&profile?.is_management&&hmActiveMainMenu==='Product & Stock')await renderManagementStockSummary().catch(()=>{});
   if(typeof loadInventoryDashboard==='function'&&document.getElementById('inventorySection')&&!document.getElementById('inventorySection').classList.contains('hidden'))await loadInventoryDashboard().catch(()=>{});
   if(typeof renderInventory==='function'&&document.getElementById('inventoryPanel')&&!document.getElementById('inventoryPanel').classList.contains('hidden'))await renderInventory().catch(()=>{});
@@ -2590,7 +2577,7 @@ window.openAccountingModule=openAccountingModule;
   if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.';
  }
 })();
-let contentPerformanceOpen=true;
+var contentPerformanceOpen=true;
 function toggleContentPerformance(ev){
   if(ev){ev.preventDefault();ev.stopPropagation();}
   const body=document.getElementById('contentPerformanceBody');

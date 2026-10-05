@@ -1306,17 +1306,65 @@ function hmSetDashboardModulesVisible(show){
  hmDashboardOpened=!!show;
 }
 let hmActiveMainMenu='';
+let hmInlineMoved=[];
+function hmRestoreInlineViews(){
+ hmInlineMoved.forEach(x=>{
+  try{
+   if(x.node && x.placeholder && x.placeholder.parentNode){
+    x.placeholder.parentNode.insertBefore(x.node,x.placeholder);
+    x.placeholder.remove();
+   }
+  }catch(e){}
+ });
+ hmInlineMoved=[];
+}
 function hmCloseMainMenu(){
+ hmRestoreInlineViews();
  hmSetDashboardModulesVisible(false);
  ['performance','inventoryPanel','targetBoard'].forEach(id=>{
   const e=document.getElementById(id);
   if(e)e.classList.add('hidden');
  });
  const panel=document.getElementById('hmMenuPanel');
- if(panel)panel.classList.add('hidden');
+ if(panel){
+  panel.classList.add('hidden');
+  const body=document.getElementById('hmMenuPanelBody');
+  if(body)body.innerHTML='';
+ }
  const modal=document.getElementById('modal');
  if(modal)modal.classList.add('hidden');
  hmActiveMainMenu='';
+}
+function hmInlineIdsForMenu(key){
+ const k=String(key||'').toLowerCase();
+ if(k.includes('target'))return ['targetBoard'];
+ if(k.includes('content performance'))return ['contentPerformance'];
+ if(k.includes('product & stock')||k.includes('laporan penjualan'))return ['inventoryPanel'];
+ if(k.includes('target & performa')||k.includes('laporan performa'))return ['performance'];
+ return [];
+}
+function hmMoveViewsInline(key){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+ if(!panel||!body)return;
+ hmInlineIdsForMenu(key).forEach(id=>{
+  const node=document.getElementById(id);
+  if(!node)return;
+  const placeholder=document.createComment('HM_INLINE_'+id);
+  node.parentNode?.insertBefore(placeholder,node);
+  body.appendChild(node);
+  node.classList.remove('hidden');
+  hmInlineMoved.push({node,placeholder});
+ });
+ panel.classList.remove('hidden');
+}
+function hmOpenTradeInline(){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+ if(!panel||!body)return;
+ const msg=typeof tradeWaMessage==='function'?tradeWaMessage():'';
+ panel.classList.remove('hidden');
+ const title=document.getElementById('hmMenuPanelTitle');
+ if(title)title.textContent='🔄 Tukar Tambah';
+ body.innerHTML='<div class="box"><h3 style="margin-top:0">Form Tukar Tambah</h3><div class="small">Pesan WhatsApp siap dikirim. Data pesan tetap mengikuti sistem Tukar Tambah.</div><textarea id="hmTradeMsg" rows="12" style="margin-top:10px">'+esc(msg)+'</textarea><div class="row" style="margin-top:10px"><button class="success" type="button" onclick="navigator.clipboard?.writeText(document.getElementById(\'hmTradeMsg\').value).then(()=>alert(\'Pesan disalin.\'))">📋 Salin Pesan</button><button class="secondary" type="button" onclick="window.open(\'https://wa.me/?text=\'+encodeURIComponent(document.getElementById(\'hmTradeMsg\').value),\'_blank\')">📲 Buka WhatsApp</button></div></div>';
 }
 async function hmMainMenuClick(title,fn){
  const key=String(title||'');
@@ -1329,7 +1377,6 @@ async function hmMainMenuClick(title,fn){
  try{
   await Promise.resolve(typeof fn==='function'?fn():null);
   // Semua menu utama dibuka LANGSUNG DI BAWAH MENU UTAMA.
-  // Fungsi lama tetap dipakai; jika fungsi membuka modal, isinya dipindahkan ke panel inline.
   const modal=document.getElementById('modal');
   const panel=document.getElementById('hmMenuPanel');
   const panelTitle=document.getElementById('hmMenuPanelTitle');
@@ -1345,6 +1392,8 @@ async function hmMainMenuClick(title,fn){
    modal.classList.add('hidden');
    panel.classList.remove('hidden');
   }
+  hmMoveViewsInline(key);
+  if(key==='Tukar Tambah')hmOpenTradeInline();
   const d=document.getElementById('dashboard');
   if(d)setTimeout(()=>d.scrollIntoView({behavior:'smooth',block:'start'}),20);
  }catch(ex){
@@ -1411,7 +1460,7 @@ function renderRoleHome(){
    add('🎯','Target & Performa','Target seluruh outlet','hmOpenTargetOutlet()');
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📱','WA Masuk','Input lead baru','addLead()');
-   add('🔄','Tukar Tambah','Form tukar tambah','openTradeForm()');
+   add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
    add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')');
    add('💰','Komisi Tim','Komisi seluruh tim','openTeamCommission()');
  }else if(has('FASILITATOR')){

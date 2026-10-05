@@ -1095,6 +1095,7 @@ main{
     min-height:58px!important;
   }
 }
+.hm-menu-panel-bottom{width:100%;box-sizing:border-box;clear:both;scroll-margin-top:82px}.role-home-grid{margin-bottom:0!important}
 </style><script defer src="stability.js?v=20261005-stability-1"></script></head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
 <div class="login-shell">
   <div class="login-brand">
@@ -1508,6 +1509,12 @@ async function hmMainMenuClick(title,fn,actionKey){
   }
   hmMoveViewsInline(route);
   if(key==='Tukar Tambah')hmOpenTradeInline();
+  // Panel selalu ditempatkan setelah seluruh grid Menu Utama.
+  const roleHost=document.getElementById('roleHome');
+  const openedPanel=document.getElementById('hmMenuPanel');
+  if(roleHost && openedPanel && openedPanel.parentNode!==roleHost){
+   roleHost.appendChild(openedPanel);
+  }
   // Fokuskan layar ke panel yang baru dibuka.
   // Gunakan scroll container yang benar agar stabil di browser HP.
   const openedPanel=document.getElementById('hmMenuPanel');
@@ -1926,7 +1933,7 @@ function renderRoleHome(){
    :'<div class="role-home-kpi"><div class="kpi"><strong>Hari Ini</strong><span>Aktivitas</span></div><div class="kpi"><strong>Target</strong><span>Progress</span></div><div class="kpi"><strong>Team</strong><span>Workspace</span></div></div>';
 
  const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
- host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div>'+kpis+'<div class="role-home-tools"><button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><div class="role-home-section">MENU UTAMA</div><div class="role-home-grid">'+roleCards+'</div><div id="hmMenuPanel" class="box hidden" style="margin:12px 0 0;padding:16px"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800;margin-bottom:10px"></div><div id="hmMenuPanelBody"></div></div>';
+ host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div>'+kpis+'<div class="role-home-tools"><button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><div class="role-home-section">MENU UTAMA</div><div class="role-home-grid">'+roleCards+'</div><div id="hmMenuPanel" class="box hidden hm-menu-panel-bottom" style="margin:12px 0 0;padding:16px"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800;margin-bottom:10px"></div><div id="hmMenuPanelBody"></div></div>';
  host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
    // Satu tombol = satu tujuan. Gunakan onclick property agar tidak ada
    // listener lama/duplikat yang dapat mengarahkan ke menu lain.

@@ -52,7 +52,6 @@ function hmFocusBrochurePanel(){
 }
 async function openBrochures(){
   try{await loadBrochures();}catch(e){return alert('Brosur gagal dimuat: '+(e?.message||e));}
-  const can=await hmEnsureBrochureAccess();
   $('mt').textContent='📖 BROSUR';
   $('mb').innerHTML=
     '<div class="small" style="margin-bottom:10px">Pilih merk untuk melihat brosur yang tersedia.</div>'+

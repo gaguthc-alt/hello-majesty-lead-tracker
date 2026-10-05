@@ -2621,7 +2621,7 @@ function decorateContentPerformance(){
   }
   body.classList.toggle('hidden',!contentPerformanceOpen);
 }
-let hmContentPerformanceRequest=null;
+var hmContentPerformanceRequest=null;
 async function renderContentPerformance(){
   if(hmContentPerformanceRequest)return hmContentPerformanceRequest;
   hmContentPerformanceRequest=(async()=>{

@@ -1683,7 +1683,15 @@ async function refreshAppTotal(btn){
   if(typeof renderContentPerformance==='function'&&document.getElementById('contentPerformance')&&!document.getElementById('contentPerformance').classList.contains('hidden')){
     const cp=document.getElementById('contentPerformance');
     cp.innerHTML='<div class="small">⏳ Memuat ulang Content Performance...</div>';
-    await renderContentPerformance();
+    try{
+      await Promise.race([
+        renderContentPerformance(),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error('Content Performance timeout 8 detik.')),8000))
+      ]);
+    }catch(cpErr){
+      console.warn('[HM] Content Performance refresh:',cpErr);
+      cp.innerHTML='<div class="small">⚠️ Content Performance belum berhasil diperbarui. Data sebelumnya tetap aman.</div><button class="secondary" type="button" style="margin-top:8px" onclick="hmOpenContentPerformance()">↻ Coba Lagi</button>';
+    }
   }
   if(typeof renderManagementStockSummary==='function'&&profile?.is_management&&hmActiveMainMenu==='Product & Stock')await renderManagementStockSummary().catch(()=>{});
   if(typeof loadInventoryDashboard==='function'&&document.getElementById('inventorySection')&&!document.getElementById('inventorySection').classList.contains('hidden'))await loadInventoryDashboard().catch(()=>{});
@@ -1693,7 +1701,7 @@ async function refreshAppTotal(btn){
   console.error('[HM] Refresh Aplikasi:',e);
   alert('Refresh gagal: '+(e?.message||'Silakan coba lagi.'));
  }finally{
-  if(btn){btn.dataset.refreshing='';btn.textContent=oldText;}
+  if(btn){btn.dataset.refreshing='';btn.textContent='🔄 Refresh Aplikasi';}
  }
 }
 async function refreshLeads(btn){

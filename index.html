@@ -1280,7 +1280,7 @@ function applyRoleVisibility(){
  toggle('tradeBtn',false);
  toggle('commissionActions',false);
  const actions=$('dashboardActions'); if(actions){actions.classList.remove('management-actions');actions.classList.toggle('hidden',cellFinance);actions.classList.add('top-minimal-actions');} const finance=$('financeBtn');
- if(finance){finance.classList.toggle('hidden',cellFinance);if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
+ if(finance){finance.classList.add('hidden');if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
  toggle('cellFinanceReportBtn',cellFinance);
  renderRoleHome();
 }

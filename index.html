@@ -1403,7 +1403,7 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
    add('💰','Finance','Finance & kontrol keuangan','openFinance()');
-   add('📊','Laporan Performa','Target & pencapaian','openPerformance()');
+   add('📊','Laporan Performa','Target & pencapaian','hmOpenPerformanceReport()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(sales){
    add('🎯','Target & Performa','Target & closing','openPerformance()');
@@ -1432,7 +1432,7 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Mekanisme Finance Cell','openAI()');
  }else if(has('ADMIN FINANCE')){
    add('💰','Finance','Finance outlet','openFinance()');
-   add('📊','Laporan Finance','Laporan keuangan','openFinance()');
+   add('📊','Laporan Finance','Laporan keuangan','hmOpenFinanceReport()');
    add('🤖','Tanya AI','Bantuan finance','openAI()');
  }else{
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');

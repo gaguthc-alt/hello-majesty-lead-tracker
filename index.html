@@ -1280,7 +1280,7 @@ function renderRoleHome(){
    add('🎬','Content Performance','Monitoring seluruh content','openPerformance()');
    add('📱','WA Masuk','Input lead baru','addLead()');
    add('🔄','Tukar Tambah','Form tukar tambah','openTradeForm()');
-   add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\\'sales\\')');
+   add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')');
    add('💰','Komisi Tim','Komisi seluruh tim','openTeamCommission()');
  }else if(has('FASILITATOR')){
    add('🎯','Target Outlet','Target & progres outlet','openPerformance()');
@@ -1296,15 +1296,15 @@ function renderRoleHome(){
  }else if(sales){
    add('🎯','Target & Performa','Target & closing','openPerformance()');
    add('👥','Lead Tracker','Lead tanggung jawab','openLeadSearch()');
-   add('📦','Product & Stock','Produk siap dijual','openInventorySection(\\'stock\\')');
-   add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\\'sales\\')');
+   add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');
+   add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan sales','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(cs){
    add('🎯','Target & Performa','WA, handover & qualification','openPerformance()');
    add('👥','Lead Tracker','Follow-up customer','openLeadSearch()');
-   add('📦','Product & Stock','Ketersediaan produk','openInventorySection(\\'stock\\')');
+   add('📦','Product & Stock','Ketersediaan produk','openInventorySection(\'stock\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan CS','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');

@@ -1910,7 +1910,6 @@ async function render(){
   ['Gagal',v.gagal,"showTodayActivity('GAGAL')"],
   ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
- const active=leads.filter(viewerLead).filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL');
  const active=leads.filter(viewerLead).filter(l=>getActiveLeadBucket(l));
  const activeResume={
   total:active.length,
@@ -1925,7 +1924,7 @@ async function render(){
   '<div class="stats" style="margin-top:8px">'+
   stat('Available',activeResume.available,"showCurrentStatus('AVAILABLE')")+
   stat('CS Lock',activeResume.csLock,"showCurrentStatus('CS LOCK')")+
-  stat('Potensial',activeResume.potential,"showHistory('POTENSIAL')")+
+  stat('Potensial',activeResume.potential,"showCurrentStatus('POTENSIAL')")+
   stat('Qualified',activeResume.qualified,"showCurrentStatus('QUALIFIED')")+
   stat('Handle',activeResume.handle,"showCurrentStatus('HANDLE')")+
   '</div></div>';

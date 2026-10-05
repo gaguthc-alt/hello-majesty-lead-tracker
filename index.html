@@ -1987,7 +1987,18 @@ function renderRoleHome(){
          // Semua panel inline wajib melalui satu jalur agar tercatat
          // placeholder-nya dan dapat dikembalikan saat menu berikutnya dibuka.
          if(menuBody)menuBody.innerHTML='';
-         hmMoveViewsInline(action);
+         const isSalesReport=action==="openInventorySection('sales')";
+         if(isSalesReport){
+           const inventoryBody=document.getElementById('inventoryBody');
+           const inventoryPanel=document.getElementById('inventoryPanel');
+           if(inventoryBody && menuBody){
+             menuBody.innerHTML='';
+             menuBody.appendChild(inventoryBody);
+           }
+           if(inventoryPanel)inventoryPanel.classList.add('hidden');
+         }else{
+           hmMoveViewsInline(action);
+         }
          const modal=document.getElementById('modal');
          const panel=document.getElementById('hmMenuPanel');
          const panelTitle=document.getElementById('hmMenuPanelTitle');
@@ -2003,6 +2014,7 @@ function renderRoleHome(){
            modal.classList.add('hidden');
            panel.classList.remove('hidden');
          }
+         if(isSalesReport && panelTitle)panelTitle.textContent='📊 Laporan Penjualan';
          panel?.classList.remove('hidden');
          requestAnimationFrame(()=>panel?.scrollIntoView({behavior:'smooth',block:'start'}));
        }).catch(ex=>{

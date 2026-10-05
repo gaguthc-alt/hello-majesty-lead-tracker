@@ -1999,6 +1999,26 @@ function renderRoleHome(){
      const wrap=this.closest('.role-home-menu');
      const sub=wrap?.querySelector('.role-home-submenu');
      if(!wrap||!sub)return;
+     const group=String(this.getAttribute('data-hm-group')||'').trim();
+     if(group==='BROSUR'){
+       hmCloseMainMenu();
+       hmActiveMainMenu='Brosur';
+       hmSetMainMenuButtonOpen('Brosur');
+       if(typeof hmOpenBrochuresInline==='function'){
+         void Promise.resolve(hmOpenBrochuresInline()).catch(ex=>{
+           console.error('[HM] Brosur gagal dibuka:',ex);
+           const panel=document.getElementById('hmMenuPanel');
+           const body=document.getElementById('hmMenuPanelBody');
+           if(panel&&body){
+             body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Brosur: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';
+             panel.classList.remove('hidden');
+           }
+         });
+       }else{
+         alert('Modul Brosur belum siap. Silakan refresh aplikasi.');
+       }
+       return;
+     }
      const open=!sub.classList.contains('hidden');
      host.querySelectorAll('.role-home-menu').forEach(x=>{
        x.classList.remove('open');

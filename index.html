@@ -1443,7 +1443,14 @@ async function hmOpenContentPerformance(){
   panel.classList.remove('hidden');
   const modal=document.getElementById('modal');
   if(modal)modal.classList.add('hidden');
-  if(typeof renderContentPerformance==='function') await renderContentPerformance();
+  node.innerHTML='<div class="small">⏳ Memuat Content Performance...</div>';
+  try{
+    await ensureSupabase();
+    if(typeof renderContentPerformance==='function') await renderContentPerformance();
+  }catch(ex){
+    console.error('[HM] Content Performance:',ex);
+    node.innerHTML='<h3 style="margin-top:0">🎬 CONTENT PERFORMANCE</h3><div class="small" style="color:#b91c1c">Gagal memuat data: '+esc(ex?.message||'Terjadi kesalahan')+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="hmOpenContentPerformance()">↻ Coba Lagi</button>';
+  }
   node.classList.remove('hidden');
 }
 function hmOpenLeadHandover(){
@@ -2614,6 +2621,7 @@ async function renderContentPerformance(){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const host=document.getElementById('contentPerformance')||document.createElement('div');
  host.id='contentPerformance'; host.className='box';
+ await ensureSupabase();
  const x=await sb.rpc('content_dashboard_summary',{p_month_start:contentSelectedMonth});
  if(x.error){host.innerHTML='<h3>🎬 Content Performance</h3><p class="small">'+esc(x.error.message)+'</p>';return}
  const d=x.data||{}, fmt=n=>Number(n||0).toLocaleString('id-ID');

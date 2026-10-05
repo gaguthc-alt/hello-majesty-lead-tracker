@@ -2,7 +2,7 @@ function hasContentCreatorAccess(){const r=String(profile?.role||'').trim().toUp
 /* HM_INVENTORY_STABLE_20260930_ANDROID_SECOND_3 */
 /* Hello Majesty Inventory & Hunter */
 let inventoryProducts=[], inventoryStock=[], inventoryView='stock';
-let hunterDashboard=[]; let inventoryCanFacilitator=false; let inventoryCanContentCreator=false;
+let hunterDashboard=[]; let inventoryCanFacilitator=false; let inventoryCanContentCreator=false; let inventoryCanHunter=false;
 function canViewFullImei(){
  return !!profile?.is_management || inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR' || (Array.isArray(window.hmRoles) && window.hmRoles.some(r=>String(r).toUpperCase()==='FASILITATOR'));
 }
@@ -16,12 +16,14 @@ function maskImei(v){
 
 async function loadInventoryData(){
   inventoryCanFacilitator=false;
+  inventoryCanHunter=false;
   inventoryCanContentCreator=!!profile?.is_management || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR';
   if(!profile?.is_management){
     const perm=await sb.rpc('has_facilitator_inventory_access');
     if(!perm.error) inventoryCanFacilitator=!!perm.data;
   }
   if(!profile?.is_management && !inventoryCanContentCreator){const cc=await sb.from('team_permissions').select('can_content_creator').eq('name',profile?.name).eq('outlet',profile?.outlet).eq('active',true).maybeSingle();if(!cc.error)inventoryCanContentCreator=!!cc.data?.can_content_creator;}
+  if(!profile?.is_management){const hp=await sb.from('team_permissions').select('can_hunter').eq('name',profile?.name).eq('outlet',profile?.outlet).eq('active',true).maybeSingle();if(!hp.error)inventoryCanHunter=!!hp.data?.can_hunter;}
   window.hmCanFacilitator=inventoryCanFacilitator; window.hmCanContentCreator=inventoryCanContentCreator;
   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
   const isPartnerFinance=role==='ADMIN FINANCE MAJESTY CELL';
@@ -100,6 +102,29 @@ async function openInventoryApprovals(){const me=inventoryReviewerRole();const c
 async function reviewInventoryReceive(stockId,action){const label=action==='APPROVE'?'Setujui':action==='REJECT'?'Tolak':'Minta koreksi';let note='';if(action!=='APPROVE'){note=prompt(label+' Barang Masuk. Catatan wajib diisi:')||'';if(!note.trim())return alert('Catatan wajib diisi.');}const r=await sb.rpc('review_inventory_receive',{p_stock_unit_id:stockId,p_action:action,p_note:note||null});if(r.error)return alert(r.error.message);alert(action==='APPROVE'?'Barang Masuk disetujui dan menjadi Stock READY.':action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');closeModal();await renderInventory();}
 function sendInventoryApprovalWA(stockId){const msg='🔔 *PERMOHONAN PERSETUJUAN BARANG MASUK*\\n\\nAda Barang Masuk *Majesty Cell* yang menunggu persetujuan Management/Facilitator.\\n\\nMohon cek aplikasi Hello Majesty → Product & Stock → Persetujuan Barang Masuk.\\n\\nStatus: *MENUNGGU PERSETUJUAN*';window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');}
 async function openMyInventoryReceiveStatus(){const a=await sb.from('inventory_receive_approvals').select('stock_unit_id,requested_at,status,reviewed_at,review_note').eq('requested_by',profile.user_id).order('requested_at',{ascending:false}).limit(20);if(a.error)return alert(a.error.message);const ids=(a.data||[]).map(x=>x.stock_unit_id);const s=ids.length?await sb.from('stock_units').select('id,product_id,status,imei_1').in('id',ids):{data:[]};const pids=[...new Set((s.data||[]).map(x=>x.product_id).filter(Boolean))];const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};const pm=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));$('mt').textContent='📦 Status Barang Masuk Saya';$('mb').innerHTML=(a.data||[]).map(x=>{const st=(s.data||[]).find(y=>y.id===x.stock_unit_id)||{},p=pm[st.product_id]||{};return '<div class="lead"><b>'+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">'+new Date(x.requested_at).toLocaleString('id-ID')+' • '+esc(x.status)+'</div>'+(x.review_note?'<div>Catatan: '+esc(x.review_note)+'</div>':'')+'</div>';}).join('')||'<div class="small">Belum ada pengajuan.</div>';$('modal').classList.remove('hidden');}
+
+
+async function openHunterStock(){
+  if(!inventoryCanHunter && !profile?.is_management)return alert('Akses Stock Hunter belum tersedia.');
+  const r=await sb.rpc('get_hunter_stock_catalog');
+  if(r.error)return alert('Stock Hunter gagal dimuat: '+r.error.message);
+  const rows=r.data||[];
+  $('mt').textContent='🧑‍💼 STOCK HUNTER — BELUM LAKU';
+  $('mb').innerHTML='<div class="small" style="margin-bottom:10px">Menampilkan barang Hunter yang masih READY dan belum laku. Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
+    (rows.length?rows.map((x,i)=>{
+      const photos=[x.photo_1,x.photo_2,x.photo_3,x.photo_4,x.photo_5].filter(Boolean);
+      const img=photos[0]?'<img src="'+esc(photos[0])+'" alt="Foto '+esc(x.product||'Produk')+'" style="width:100%;max-height:190px;object-fit:contain;border-radius:10px;background:#f3f4f6;margin-bottom:8px">':'';
+      const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;
+      return '<div class="lead" style="margin-bottom:12px">'+img+
+        '<b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b>'+
+        '<div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div>'+
+        '<div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div>'+
+        '<div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div>'+
+        '<div class="small" style="margin-top:5px">🟢 READY — belum laku</div>'+
+      '</div>';
+    }).join(''):'<div class="box" style="text-align:center"><b>Belum ada stock Hunter yang menunggu closing.</b><div class="small" style="margin-top:5px">Saat barang Hunter terjual, unit ini otomatis tidak muncul lagi di daftar ini.</div></div>');
+  $('modal').classList.remove('hidden');
+}
 
 async function renderInventory(){
   const host=document.getElementById('inventoryPanel')||document.createElement('div');

@@ -234,15 +234,46 @@ window.openPerformance=async function(){
  box.classList.remove('hidden');
  box.innerHTML='<h3>'+ (mg?'📊 Laporan Performa Tim':'📊 Performa Saya')+'</h3>'+
    (mg?'<div class="small" style="margin-bottom:10px">Performance seluruh karyawan • data langsung dari sistem.</div>':'<div class="small" style="margin-bottom:10px">Pilih periode lalu kirim laporan sesuai peran akun secara otomatis.</div>')+
-   '<div class="row"><button class="secondary" id="perfToday">📅 Hari Ini</button><button class="secondary" id="perfMonth">📊 Bulan Ini</button><button class="secondary" id="perfLastMonth">↩️ Bulan Kemarin</button></div>'+
+   '<div class="row" style="flex-wrap:wrap"><button class="secondary" id="perfToday">📅 Hari Ini</button><button class="secondary" id="perfMonth">📊 Bulan Ini</button><button class="secondary" id="perfLastMonth">↩️ Bulan Kemarin</button>'+(mg?'<button class="secondary" id="perfSalesReport">📋 Laporan Penjualan</button>':'')+'</div>'+
    '<div id="perfBody" style="margin-top:10px"></div>';
- if(mg){box.querySelector('#perfToday').onclick=()=>perfShowManagement('today');box.querySelector('#perfMonth').onclick=()=>perfShowManagement('month');box.querySelector('#perfLastMonth').onclick=()=>perfShowManagement('last_month');await perfShowManagement('today');return}
+ if(mg){box.querySelector('#perfToday').onclick=()=>perfShowManagement('today');box.querySelector('#perfMonth').onclick=()=>perfShowManagement('month');box.querySelector('#perfLastMonth').onclick=()=>perfShowManagement('last_month');box.querySelector('#perfSalesReport').onclick=()=>perfShowSalesReport(window.perfManagementMode||'today');window.perfManagementMode='today';await perfShowManagement('today');return}
  box.querySelector('#perfToday').onclick=()=>perfShow('today');
  box.querySelector('#perfMonth').onclick=()=>perfShow('month');
  box.querySelector('#perfLastMonth').onclick=()=>perfShow('last_month');
  await perfShow('today');
 };
+async function perfShowSalesReport(mode){
+ const body=document.getElementById('perfBody');if(!body)return;
+ body.innerHTML='<p class="small">Memuat laporan penjualan...</p>';
+ try{
+   const p=perfPeriod(mode);
+   const end=new Date(p.end.getTime()+86400000);
+   const x=await sb.from('sales_transactions').select('*').gte('sold_at',p.start.toISOString()).lt('sold_at',end.toISOString()).order('sold_at',{ascending:false});
+   if(x.error)throw x.error;
+   const rows=x.data||[];
+   const stockIds=[...new Set(rows.map(r=>r.stock_unit_id).filter(Boolean))];
+   const salesIds=[...new Set(rows.map(r=>r.sales_user_id).filter(Boolean))];
+   const [sr,ur]=await Promise.all([
+     stockIds.length?sb.from('stock_units').select('id,product_id').in('id',stockIds):Promise.resolve({data:[]}),
+     salesIds.length?sb.from('team_profiles').select('user_id,name').in('user_id',salesIds):Promise.resolve({data:[]})
+   ]);
+   if(sr.error)throw sr.error;if(ur.error)throw ur.error;
+   const stocks=sr.data||[],pids=[...new Set(stocks.map(r=>r.product_id).filter(Boolean))];
+   const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};
+   if(pr.error)throw pr.error;
+   const phones=[...new Set(rows.map(r=>String(r.customer_phone||'').replace(/\\D/g,'').replace(/^0/,'' )).filter(Boolean))];
+   const lr=phones.length?await sb.from('leads').select('whatsapp,cs,cs_claimed_by,updated_at').order('updated_at',{ascending:false}):{data:[]};
+   if(lr.error)throw lr.error;
+   const sm=Object.fromEntries(stocks.map(r=>[r.id,r])),pm=Object.fromEntries((pr.data||[]).map(r=>[r.id,r])),um=Object.fromEntries((ur.data||[]).map(r=>[r.user_id,r.name]));
+   const lm={};(lr.data||[]).forEach(l=>{const k=String(l.whatsapp||'').replace(/\\D/g,'').replace(/^0/,'');if(k&&!lm[k])lm[k]=l});
+   const norm=v=>String(v||'').replace(/\\D/g,'').replace(/^0/,'');
+   const total=rows.reduce((a,r)=>a+Number(r.sale_price||0)-Number(r.discount||0),0),profit=rows.reduce((a,r)=>a+Number(r.gross_profit||0),0);
+   body.innerHTML='<div class="box"><h3 style="margin-top:0">📋 LAPORAN PENJUALAN TIM</h3><div class="small">'+esc(mode==='today'?'Hari Ini':mode==='month'?'Bulan Ini':'Bulan Kemarin')+' • '+rows.length+' transaksi</div><div class="stats" style="margin-top:10px">'+invStat('Omzet',total)+invStat('Laba',profit)+'</div>'+
+   (rows.length?rows.map(r=>{const st=sm[r.stock_unit_id]||{},p=pm[st.product_id]||{},lead=lm[norm(r.customer_phone)],cs=r.customer_source==='WALK-IN'?'Walk-In':(lead?.cs||lead?.cs_claimed_by||'-');return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc([p.product,p.variant].filter(Boolean).join(' — ')||'Produk tidak ditemukan')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div><div class="small"><b>Outlet:</b> '+esc(r.outlet||'-')+' • <b>CS:</b> '+esc(cs)+' • <b>Sales:</b> '+esc(um[r.sales_user_id]||r.sales_user_id||'-')+'</div><div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div>'}).join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
+ }catch(e){body.innerHTML='<p class="small">Laporan penjualan error: '+esc(e?.message||e)+'</p>'}
+}
 async function perfShowManagement(mode){
+ window.perfManagementMode=mode;
  const body=document.getElementById('perfBody');if(!body)return;
  body.innerHTML='<p class="small">Memuat performance seluruh karyawan...</p>';
  try{

@@ -48,6 +48,26 @@
       if(btn){btn.disabled=false;btn.style.pointerEvents='auto';}
     }
   }
+  async function restoreSession(){
+    try{
+      const sb=await getClient();
+      const s=await sb.auth.getSession();
+      const user=s?.data?.session?.user;
+      if(!user)return;
+      window.sb=sb;
+      let starter=null;
+      for(let i=0;i<100&&!starter;i++){
+        starter=typeof window.hmStartApp==='function'?window.hmStartApp:(typeof window.start==='function'?window.start:null);
+        if(!starter)await new Promise(r=>setTimeout(r,100));
+      }
+      if(typeof starter!=='function')return;
+      await starter(user,sb);
+    }catch(ex){
+      console.warn('[HM] Session restore:',ex);
+    }
+  }
   window.doLogin=doLogin;
   window.hmLoginClient=()=>getClient();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',restoreSession,{once:true});
+  else restoreSession();
 })();

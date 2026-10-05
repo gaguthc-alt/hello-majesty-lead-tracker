@@ -1911,13 +1911,16 @@ async function render(){
   ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  const active=leads.filter(viewerLead).filter(l=>getActiveLeadBucket(l));
+ const visibleLeads=leads.filter(viewerLead);
+ const selesai=visibleLeads.filter(l=>l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL').length;
  const activeResume={
   total:active.length,
   available:active.filter(l=>getActiveLeadBucket(l)==='AVAILABLE').length,
   csLock:active.filter(l=>getActiveLeadBucket(l)==='CS LOCK').length,
   potential:active.filter(l=>getActiveLeadBucket(l)==='POTENSIAL').length,
   qualified:active.filter(l=>getActiveLeadBucket(l)==='QUALIFIED').length,
-  handle:active.filter(l=>getActiveLeadBucket(l)==='HANDLE').length
+  handle:active.filter(l=>getActiveLeadBucket(l)==='HANDLE').length,
+  selesai:selesai
  };
  const resume='<div class="box" style="margin-top:12px;background:linear-gradient(145deg,#f8fafc,#f0fdf4)!important;border-color:rgba(25,181,107,.14)!important">'+
   '<div class="row" style="justify-content:space-between;align-items:center"><b>📌 RESUME LEAD AKTIF</b><span class="badge">'+activeResume.total+' Lead</span></div>'+
@@ -1927,9 +1930,10 @@ async function render(){
   stat('Potensial',activeResume.potential,"showCurrentStatus('POTENSIAL')")+
   stat('Qualified',activeResume.qualified,"showCurrentStatus('QUALIFIED')")+
   stat('Handle',activeResume.handle,"showCurrentStatus('HANDLE')")+
+  stat('Selesai',activeResume.selesai,"showCurrentStatus('HASIL')")+
   '</div></div>';
  $('activeLeadResume').innerHTML=resume;
- $('leads').innerHTML=active.map(card).join('')+'<div style="margin-top:10px"><button class="secondary" onclick="showCurrentStatus(&quot;HASIL&quot;)">📋 Lihat Lead Selesai</button></div>';
+ $('leads').innerHTML=active.map(card).join('');
 }
 function shortNominal(n){if(!n)return '0';if(Math.abs(n)>=1000000000)return (n/1000000000).toFixed(1).replace('.0','')+'M';if(Math.abs(n)>=1000000)return (n/1000000).toFixed(1).replace('.0','')+'jt';if(Math.abs(n)>=1000)return (n/1000).toFixed(0)+'rb';return String(Math.round(n));}
 async function renderTargetBoard(){

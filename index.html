@@ -1597,10 +1597,11 @@ function hmOpenLeadHandover(){
     (rows.map(l=>card(l)).join('')||'<div class="small">Belum ada lead yang siap untuk handover.</div>');
   $('modal').classList.remove('hidden');
 }
+const HM_INLINE_BROCHURE_BRANDS=['Samsung','Infinix','Apple','Xiaomi','OPPO','vivo','realme','TECNO','itel','HONOR','Huawei','ASUS','Lenovo','Nokia','POCO','Redmi'];
 function hmShowBrochureBrandInline(brand){
  const body=document.getElementById('hmInlineBrochureBody');
  if(!body)return;
- const rows=(Array.isArray(hmBrochures)?hmBrochures:[]).filter(x=>String(x.brand||'').trim().toLowerCase()===String(brand||'').trim().toLowerCase());
+ const rows=(Array.isArray(window.hmBrochures)?window.hmBrochures:[]).filter(x=>String(x.brand||'').trim().toLowerCase()===String(brand||'').trim().toLowerCase());
  const can=typeof hmBrochureCanManage==='function' && hmBrochureCanManage();
  body.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">📱 '+esc(brand)+'</h3><div class="small">'+rows.length+' brosur</div></div>'+
    (can&&typeof openBrochureUpload==='function'?'<button class="success" type="button" onclick="openBrochureUpload()">＋ Upload Brosur</button>':'')+
@@ -1611,7 +1612,6 @@ function hmShowBrochureBrandInline(brand){
 async function hmOpenBrochuresInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
  if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
- if(typeof hmBrochureBrands!=='function'||typeof loadBrochures!=='function')throw new Error('Modul Brosur belum siap.');
  if(title)title.textContent='📖 Brosur';
  body.innerHTML='<div class="small" style="margin-bottom:10px">Pilih merk untuk melihat brosur yang tersedia.</div>'+
    '<div id="hmInlineBrochureBrands" class="row"><div class="small">Memuat daftar merk...</div></div>'+
@@ -1620,10 +1620,11 @@ async function hmOpenBrochuresInline(){
  document.getElementById('modal')?.classList.add('hidden');
  try{
    if(typeof ensureSupabase==='function')await ensureSupabase();
-   await loadBrochures();
+   if(typeof loadBrochures==='function')await loadBrochures();
    const brandWrap=document.getElementById('hmInlineBrochureBrands');
    if(!brandWrap)return;
-   brandWrap.innerHTML=hmBrochureBrands().map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+'</button>').join('');
+   const brands=(typeof hmBrochureBrands==='function' ? hmBrochureBrands() : HM_INLINE_BROCHURE_BRANDS);
+   brandWrap.innerHTML=brands.map(b=>'<button class="secondary" type="button" data-hm-brochure-brand="'+esc(b)+'">📱 '+esc(b)+'</button>').join('');
    brandWrap.querySelectorAll('[data-hm-brochure-brand]').forEach(btn=>btn.onclick=function(e){
      e.preventDefault();e.stopPropagation();
      hmShowBrochureBrandInline(this.getAttribute('data-hm-brochure-brand')||'');

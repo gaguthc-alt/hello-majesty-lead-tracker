@@ -1635,7 +1635,8 @@ function applyRoleVisibility(){
  toggle('leadTrackerBox',!restrictedFinance&&(!creator||sales||cs||facilitator));
  toggle('stats',!restrictedFinance);
  toggle('contentPerformance',true);
- toggle('inventorySection',!cellFinance);
+ toggle('inventorySection',false);
+ toggle('managementStockSummary',false);
  toggle('inventoryDashboardBtn',mg||facilitator||cs);
  toggle('inventorySalesBtn',mg||facilitator||sales);
  // Shortcut utama dipindahkan ke MENU UTAMA di bawah.
@@ -1676,7 +1677,7 @@ async function refreshAppTotal(btn){
     if(s)await start(s.user);
   }
   await refreshLeads();
-  if(typeof renderManagementStockSummary==='function'&&profile?.is_management)await renderManagementStockSummary().catch(()=>{});
+  if(typeof renderManagementStockSummary==='function'&&profile?.is_management&&hmActiveMainMenu==='Product & Stock')await renderManagementStockSummary().catch(()=>{});
   if(typeof renderContentPerformance==='function'&&document.getElementById('contentPerformance')&&!document.getElementById('contentPerformance').classList.contains('hidden'))await renderContentPerformance().catch(()=>{});
   if(typeof loadInventoryDashboard==='function'&&document.getElementById('inventorySection')&&!document.getElementById('inventorySection').classList.contains('hidden'))await loadInventoryDashboard().catch(()=>{});
   if(typeof renderInventory==='function'&&document.getElementById('inventoryPanel')&&!document.getElementById('inventoryPanel').classList.contains('hidden'))await renderInventory().catch(()=>{});
@@ -1694,7 +1695,7 @@ async function refreshLeads(btn){
   if(btn){btn.disabled=true;btn.textContent='⏳ Refreshing...';}
   const jobs=[loadLeads()];
   // Refresh modul yang sedang tersedia tanpa membuka ulang halaman/login.
-  if(typeof renderManagementStockSummary==='function' && profile?.is_management) jobs.push(renderManagementStockSummary());
+  if(typeof renderManagementStockSummary==='function' && profile?.is_management && hmActiveMainMenu==='Product & Stock') jobs.push(renderManagementStockSummary());
   if(typeof renderContentPerformance==='function' && !document.getElementById('contentPerformance')?.classList.contains('hidden')) jobs.push(renderContentPerformance());
   if(typeof loadInventoryDashboard==='function' && !document.getElementById('inventorySection')?.classList.contains('hidden')) jobs.push(loadInventoryDashboard().catch(()=>{}));
   // Re-apply role/permission visibility setelah data terbaru masuk.

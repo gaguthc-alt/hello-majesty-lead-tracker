@@ -1443,10 +1443,11 @@ async function hmOpenContentPerformance(){
   node.innerHTML='<div class="small">⏳ Memuat Content Performance...</div>';
   try{
     await ensureSupabase();
+    if(!profile?.user_id)throw new Error('Session belum siap. Silakan coba lagi.');
     if(typeof renderContentPerformance==='function') await renderContentPerformance();
   }catch(ex){
     console.error('[HM] Content Performance:',ex);
-    node.innerHTML='<h3 style="margin-top:0">🎬 CONTENT PERFORMANCE</h3><div class="small" style="color:#b91c1c">Gagal memuat data: '+esc(ex?.message||'Terjadi kesalahan')+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="hmOpenContentPerformance()">↻ Coba Lagi</button>';
+    node.innerHTML='<h3 style="margin-top:0">🎬 CONTENT PERFORMANCE</h3><div class="small" style="color:#b91c1c">Gagal memuat data: '+esc(ex?.message||'Terjadi kesalahan')+'</div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="hmOpenContentPerformance()">↻ Coba Lagi</button><button class="secondary" type="button" onclick="hmCloseMainMenu()">✖ Tutup</button></div>';
   }
   node.classList.remove('hidden');
 }
@@ -1678,7 +1679,6 @@ async function refreshAppTotal(btn){
   }
   await refreshLeads();
   if(typeof renderManagementStockSummary==='function'&&profile?.is_management&&hmActiveMainMenu==='Product & Stock')await renderManagementStockSummary().catch(()=>{});
-  if(typeof renderContentPerformance==='function'&&document.getElementById('contentPerformance')&&!document.getElementById('contentPerformance').classList.contains('hidden'))await renderContentPerformance().catch(()=>{});
   if(typeof loadInventoryDashboard==='function'&&document.getElementById('inventorySection')&&!document.getElementById('inventorySection').classList.contains('hidden'))await loadInventoryDashboard().catch(()=>{});
   if(typeof renderInventory==='function'&&document.getElementById('inventoryPanel')&&!document.getElementById('inventoryPanel').classList.contains('hidden'))await renderInventory().catch(()=>{});
   if(typeof applyRoleVisibility==='function')applyRoleVisibility();
@@ -1696,7 +1696,6 @@ async function refreshLeads(btn){
   const jobs=[loadLeads()];
   // Refresh modul yang sedang tersedia tanpa membuka ulang halaman/login.
   if(typeof renderManagementStockSummary==='function' && profile?.is_management && hmActiveMainMenu==='Product & Stock') jobs.push(renderManagementStockSummary());
-  if(typeof renderContentPerformance==='function' && !document.getElementById('contentPerformance')?.classList.contains('hidden')) jobs.push(renderContentPerformance());
   if(typeof loadInventoryDashboard==='function' && !document.getElementById('inventorySection')?.classList.contains('hidden')) jobs.push(loadInventoryDashboard().catch(()=>{}));
   // Re-apply role/permission visibility setelah data terbaru masuk.
   if(typeof applyRoleVisibility==='function') applyRoleVisibility();
@@ -2615,7 +2614,16 @@ function decorateContentPerformance(){
   }
   body.classList.toggle('hidden',!contentPerformanceOpen);
 }
+let hmContentPerformanceRequest=null;
 async function renderContentPerformance(){
+  if(hmContentPerformanceRequest)return hmContentPerformanceRequest;
+  hmContentPerformanceRequest=(async()=>{
+    if(!profile?.user_id)throw new Error('Session belum siap. Silakan coba lagi.');
+    await ensureSupabase();
+    const sessionCheck=await sb.auth.getSession();
+    if(!sessionCheck.data?.session)throw new Error('Sesi login belum siap. Silakan coba lagi.');
+    if(sessionCheck.data.session.user.id!==profile.user_id)throw new Error('Sesi login berubah. Silakan coba lagi.');
+
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const host=document.getElementById('contentPerformance')||document.createElement('div');
  host.id='contentPerformance'; host.className='box';
@@ -2652,6 +2660,13 @@ async function renderContentPerformance(){
    host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">'+esc(d.outlet||'')+' • '+(d.locked?'🔒 Laporan terkunci':'Monitoring bulan ini')+'</div></div><div class="row"><select onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select>'+(can?'<button class="success" onclick="addContentPost()">＋ Tambah Content</button>':'')+'<button class="secondary" onclick="showMyContentDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten Outlet</div><div class="num">'+fmt(t.content_count)+'</div></div><div class="stat"><div class="small">👁️ Views Outlet</div><div class="num">'+fmt(t.views)+'</div></div><div class="stat"><div class="small">💬 Comments Outlet</div><div class="num">'+fmt(t.comments)+'</div></div><div class="stat"><div class="small">📩 DM Outlet</div><div class="num">'+fmt(t.dms)+'</div></div></div>'+(can?'<div class="box" style="margin-bottom:0"><b>Kontribusi Saya</b><div class="small">🎬 '+fmt(o.content_count)+' konten • 👁️ '+fmt(o.views)+' views • 💬 '+fmt(o.comments)+' comments • 📩 '+fmt(o.dms)+' DM</div></div>':'')
  }
  decorateContentPerformance(); const dash=document.getElementById('dashboard'); const panelBody=document.getElementById('hmMenuPanelBody'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(!dash.contains(host) && !(panelBody&&panelBody.contains(host)))dash.insertBefore(host,inventorySection||stats);
+
+  })();
+  try{
+    return await hmContentPerformanceRequest;
+  }finally{
+    hmContentPerformanceRequest=null;
+  }
 }
 async function canContentCreator(){if(profile?.is_management)return true;const x=await sb.from('team_permissions').select('can_content_creator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();return !!x.data?.can_content_creator}
 async function loadContentPosts(){const x=await sb.from('content_posts').select('*').eq('active',true).order('posted_at',{ascending:false});if(x.error)throw x.error;return x.data||[]}

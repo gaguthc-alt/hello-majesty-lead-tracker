@@ -1505,7 +1505,7 @@ function hmRunMainMenuAction(action){
   case 'openBrochures()': return openBrochures();
   case 'openAccounting()': return openAccounting();
   case 'openFinance()': return openFinance();
-  case 'openInventoryDashboard()': return openInventoryDashboard();
+  case 'openInventoryDashboard()': return openInventorySection('stock');
   case 'hmOpenTargetOutlet()': return hmOpenTargetOutlet();
   case 'hmOpenContentPerformance()': return hmOpenContentPerformance();
   case 'addLead()': return addLead();
@@ -1542,7 +1542,7 @@ function renderRoleHome(){
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
    add('💰','Finance','Kas, laba & neraca','openFinance()');
-   add('📦','Product & Stock','Kontrol seluruh inventory','openInventoryDashboard()');
+   add('📦','Product & Stock','Kontrol seluruh inventory',"openInventorySection('stock')");
    add('🎯','Target & Performa','Target seluruh outlet','hmOpenTargetOutlet()');
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📱','WA Masuk','Input lead baru','addLead()');
@@ -1650,7 +1650,7 @@ function applyRoleVisibility(){
  toggle('targetBoard',false);
  toggle('leadTrackerBox',!restrictedFinance&&(!creator||sales||cs||facilitator));
  toggle('stats',!restrictedFinance);
- toggle('contentPerformance',true);
+ toggle('contentPerformance',hmActiveMainMenu==='Content Performance');
  toggle('inventorySection',false);
  toggle('managementStockSummary',false);
  toggle('inventoryDashboardBtn',mg||facilitator||cs);
@@ -2705,7 +2705,7 @@ function contentDetailCard(p){
  return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(p.title||'Content '+p.content_id.slice(0,8))+'</b><span class="badge">'+esc(p.platform)+'</span></div><div class="small">'+new Date(p.posted_at).toLocaleString('id-ID')+'</div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">👁️ Views</div><div class="num">'+Number(p.views||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+Number(p.comments||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+Number(p.dms||0).toLocaleString('id-ID')+'</div></div></div><a href="'+esc(p.post_url)+'" target="_blank">🔗 Buka Content</a></div>';
 }
 const oldRender=window.render;
-window.render=async function(){const r=await oldRender();await renderContentPerformance();applyRoleVisibility();return r};
+window.render=async function(){const r=await oldRender();applyRoleVisibility();return r};
 
 async function openAI(leadId){
  if(leadId && !leads.some(x=>x.lead_id===leadId))leadId=null;

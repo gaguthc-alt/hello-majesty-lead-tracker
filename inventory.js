@@ -56,7 +56,7 @@ async function loadInventoryData(){
   }
 }
 
-function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');if(role==='ADMIN FINANCE MAJESTY CELL')return false;return !!profile?.is_management||role==='ADMIN FINANCE';}
+function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');if(role==='ADMIN FINANCE MAJESTY CELL')return false;const developer=role==='DEVELOPER APLIKASI'||role==='DEVELOPER';const facilitator=role==='FASILITATOR'||role==='DIVISI'||inventoryCanFacilitator;return !!profile?.is_management||role==='ADMIN FINANCE'||developer||facilitator;}
 
 async function loadWalkinApprovalCount(){
  const role=inventoryReviewerRole(), isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI', can=!!profile?.is_management||isDeveloper||role==='FASILITATOR';
@@ -370,7 +370,7 @@ function renderInventoryDashboardBody(){
  if(!canViewInventoryDashboard()){inventoryView='stock';renderInventoryBody();return;}
  const isManagement=!!profile?.is_management;
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),isAdminFinance=role==='ADMIN FINANCE';
- const canViewCost=isManagement||isAdminFinance;
+ const roleCost=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const canViewCost=roleCost==='FASILITATOR'||roleCost==='DIVISI'||inventoryCanFacilitator;
  const outletSel=isAdminFinance?(profile?.outlet||''):($('invDashOutlet')?.value||''),catSel=$('invDashCat')?.value||'';
  const rows=inventoryStock.filter(s=>(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
  const ready=rows.filter(s=>s.status==='READY'),sold=rows.filter(s=>s.status==='SOLD'),reserved=rows.filter(s=>s.status==='RESERVED'),returned=rows.filter(s=>s.status==='RETURN'),missing=rows.filter(s=>s.status==='MISSING');

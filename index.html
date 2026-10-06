@@ -2499,6 +2499,9 @@ function renderRoleHome(){
  // Permission tetap mengikuti "cards", sehingga Management dapat melihat seluruh
  // fungsi dan role tim hanya melihat tombol yang memang diberikan.
  const visibleGroups=menuGroups.map((g,gi)=>{
+   // Atmadita/Admin Finance tidak melihat Content maupun Komisi & Reward.
+   const hideAtmaditaGroups = String(profile?.name||'').trim().toLowerCase()==='atmadita' || String(profile?.role||'').toUpperCase().replace(/_/g,' ').includes('ADMIN FINANCE');
+   if(hideAtmaditaGroups && (g[1]==='CONTENT & PROMOTION' || g[1]==='KOMISI & REWARD'))return '';
    // CONTENT & PROMOTION adalah menu standar untuk SEMUA akun.
    // Tetap render sebagai HTML section — jangan return array mentah,
    // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.

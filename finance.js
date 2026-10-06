@@ -419,7 +419,7 @@ if(title)title.textContent='💰 Finance';
 panel.classList.remove('hidden');
 body.innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">💰 FINANCE MANAGEMENT</h3><div class="small" style="margin-top:4px">Kontrol keuangan Hello Majesty</div></div><button class="primary" type="button" onclick="window.hmFinanceLoad(\'month\')">🔄 Refresh</button></div>'+
 '<div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="secondary" type="button" onclick="window.hmFinanceLoad(\'today\')">📅 Hari Ini</button><button class="secondary" type="button" onclick="window.hmFinanceLoad(\'month\')">📆 Bulan Ini</button><button class="secondary" type="button" onclick="window.hmFinanceLoad(\'year\')">📊 Tahun Ini</button></div>'+
-'<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="secondary" type="button" onclick="openAccountingModule(\'balance\')">⚖️ Neraca</button><button class="secondary" type="button" onclick="openAccountingModule(\'profit\')">📈 Laba Rugi</button><button class="secondary" type="button" onclick="openAccountingModule(\'ledger\')">📖 Buku Besar</button></div>'+
+
 '<div id="hmFinBox" style="margin-top:12px">Memuat data Finance...</div></div>';
 await window.hmFinanceLoad('month');
 panel.scrollIntoView({behavior:'smooth',block:'start'});

@@ -4278,24 +4278,18 @@ window.submitCashTransfer=async function(){
 window.openAccounting=openAccounting;
 window.openAccountingModule=openAccountingModule;
 
-/* Session bootstrap: refresh tidak boleh memicu logout. */
+/* Session bootstrap: login-v9 adalah satu-satunya pemilik restore session. */
 (async()=>{
  try{
-  if(new URLSearchParams(location.search).get("trade")==="1"){initTradePublic();return}
-  // Login-v9 adalah sumber sesi utama. Jangan memanggil sb.auth.getSession()
-  // karena client utama memakai persistSession:false.
-  // Saat browser di-refresh, pulihkan sesi tersimpan melalui refresh token.
-  if(typeof window.hmRestoreLogin==='function'){
-    const restored=await window.hmRestoreLogin();
-    if(restored)return;
+  if(new URLSearchParams(location.search).get("trade")==="1"){
+    initTradePublic();
+    return;
   }
-  // Fallback hanya bila login-v9 belum siap.
-  await ensureSupabase();
-  const session=(await sb.auth.getSession()).data?.session;
-  if(session)await start(session.user);
+  // Jangan memanggil hmRestoreLogin() dari sini.
+  // login-v9.js sudah menjalankannya sendiri. Pemanggilan ganda dapat
+  // membuat dua proses start() berjalan bersamaan dan meninggalkan shell kosong.
  }catch(ex){
   console.error('[HM] Session bootstrap:',ex);
-  if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.';
  }
 })();
 window.hmOpenInventoryFeature=function(feature){

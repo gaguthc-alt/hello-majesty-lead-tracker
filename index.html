@@ -2010,6 +2010,8 @@ function hmRunMainMenuAction(action){
   case 'openReceiveStock()': return openReceiveStock();
   case 'openWalkinApprovals()':
    return (typeof window.openWalkinApprovals==='function' ? window.openWalkinApprovals() : hmLoadModule('inventory').then(()=>window.openWalkinApprovals()));
+  case 'openStockSaleApprovals()':
+   return (typeof window.openStockSaleApprovals==='function' ? window.openStockSaleApprovals() : hmLoadModule('finance').then(()=>window.openStockSaleApprovals()));
   case "hmOpenInventoryFeature('mutasi')": return window.hmOpenInventoryFeature('mutasi');
   case "hmOpenInventoryFeature('riwayat')": return window.hmOpenInventoryFeature('riwayat');
   case "hmOpenInventoryFeature('penyesuaian')": return window.hmOpenInventoryFeature('penyesuaian');

@@ -2868,7 +2868,7 @@ async function salesResult(id){
  const salesRpc=await sb.rpc('get_outlet_sales_members',{p_outlet:profile.outlet});
  const salesTeam=(salesRpc.error?[]:(salesRpc.data||[])).filter(x=>x.user_id!==profile?.user_id);
  const opts=rows.map(s=>'<option value="'+esc(s.id)+'">'+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+' • List Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</option>').join('');
- const salesOpts=salesTeam.map(x=>'<label style="display:flex;align-items:center;gap:8px;margin:7px 0"><input type="checkbox" class="closingSalesMember" value="'+esc(x.user_id)+'"> <span>'+esc(x.name||'-')+'</span></label>').join('');
+ const salesOpts=salesTeam.map(x=>'<label style="display:flex!important;align-items:center;justify-content:flex-start;width:100%;gap:10px;margin:7px 0;box-sizing:border-box"><input type="checkbox" class="closingSalesMember" value="'+esc(x.user_id)+'" style="width:22px!important;min-width:22px!important;max-width:22px!important;height:22px;flex:0 0 22px;padding:0;margin:0"> <span style="display:block!important;flex:1;min-width:0;white-space:normal;word-break:normal;overflow-wrap:break-word">'+esc(x.name||'-')+'</span></label>').join('');
  const pm=await sb.from('payment_methods').select('id,code,name').eq('active',true).order('name');
  const fa=await sb.from('financial_accounts').select('id,code,name,account_type,outlet').eq('active',true).order('code');
  const accountRows=(fa.data||[]).filter(x=>x.code!=='1101'&&x.code!=='1102');

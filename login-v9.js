@@ -131,6 +131,7 @@
       const session=await restPasswordLogin(email,password);
       const sb=await getClient(session);
       window.sb=sb;
+      try{localStorage.setItem('hm_auth_session',JSON.stringify(session));}catch(e){console.warn('[HM] save auth session',e);}
 
       // AUTH SUKSES = buka shell dashboard langsung.
       // Jangan menggantungkan perpindahan layar pada finance.js/start().
@@ -165,8 +166,47 @@
     }
   }
 
+  async function restorePersistedSession(){
+    try{
+      const raw=localStorage.getItem('hm_auth_session');
+      if(!raw)return false;
+      let saved=null;
+      try{saved=JSON.parse(raw);}catch(e){localStorage.removeItem('hm_auth_session');return false;}
+      if(!saved?.refresh_token)return false;
+      // Restore using the refresh token so the user does not need to login on every page load.
+      const session=await refreshAccessTokenFromSaved(saved);
+      const sb=await getClient(session);
+      window.sb=sb;
+      const starter=await waitForAppStarter();
+      const loginPage=document.getElementById('login');
+      const appPage=document.getElementById('app');
+      const roleHome=document.getElementById('roleHome');
+      if(loginPage)loginPage.classList.add('hidden');
+      if(appPage)appPage.classList.remove('hidden');
+      if(roleHome)roleHome.classList.remove('hidden');
+      Promise.resolve(starter(session.user,sb)).catch(ex=>console.error('[HM] Auto restore dashboard error:',ex));
+      return true;
+    }catch(ex){
+      console.warn('[HM] Auto restore session failed:',ex);
+      try{localStorage.removeItem('hm_auth_session');}catch(e){}
+      return false;
+    }
+  }
+
+  async function refreshAccessTokenFromSaved(saved){
+    const old=activeSession;
+    activeSession={...saved};
+    try{
+      return {...activeSession,...(await refreshAccessToken())};
+    }catch(ex){
+      activeSession=old;
+      throw ex;
+    }
+  }
+
   window.doLogin=doLogin;
   window.hmLoginClient=()=>getClient();
+  window.hmRestoreLogin=restorePersistedSession;
 
   // Enter key should use the same protected login handler.
   document.addEventListener('keydown',function(e){

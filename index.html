@@ -2752,7 +2752,7 @@ function card(l){
  (canClaimCS?'<button class="success" onclick="claimCS(\''+esc(l.lead_id)+'\')">Claim CS</button>':'')+
  (q?'<button type="button" class="success" onclick="window.qualify(\''+esc(l.lead_id)+'\')">✓ Qualification</button>':'')+
  (sh?'<button class="success" onclick="handoverSales(\''+esc(l.lead_id)+'\')">🤝 Handover ke Sales</button><button class="secondary" onclick="share(\''+esc(l.lead_id)+'\')">📢 Share ke Group WA</button>':'')+
- (sr?'<button class="success" onclick="salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button><button class="secondary" onclick="shareSalesClaim(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+
+ (sr?'<button type="button" class="success" onclick="window.salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button><button class="secondary" onclick="shareSalesClaim(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+
  (own?'<button class="secondary" onclick="editLead(\''+esc(l.lead_id)+'\')">Buka / Update</button>':'')+
  (canAI?'<button class="secondary" type="button" data-lead-ai="'+esc(l.lead_id)+'" onclick="window.openAI(this.dataset.leadAi)">🤖 Tanya AI</button>':'')+
  (mg?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button><button class="danger" onclick="deleteLead(\''+esc(l.lead_id)+'\')">🗑 Delete</button>':'')+
@@ -2840,7 +2840,13 @@ async function claimFromLink(id){
  const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'});if(x.error)return alert(x.error.message); const claimed=leads.find(x=>x.lead_id===id); history.replaceState({},'',location.pathname);closeModal();await loadLeads(); const fresh=leads.find(x=>x.lead_id===id)||claimed; if(fresh)shareSalesClaim(fresh); editLead(id);
 }
 async function salesResult(id){
- const l=leads.find(x=>x.lead_id===id); if(!l)return alert('Lead tidak ditemukan.');
+ const leadId=String(id||'').trim();
+ const l=leads.find(x=>String(x.lead_id)===leadId);
+ if(!l)return alert('Lead tidak ditemukan. Silakan refresh Lead Tracker.');
+ const mt=$('mt'),mb=$('mb'),modal=$('modal');
+ if(!mt||!mb||!modal)return alert('Panel Hasil Sales belum siap. Silakan buka Lead Aktif kembali.');
+ if(!sb)return alert('Koneksi database belum siap. Silakan refresh aplikasi.');
+
  const st=await sb.from('stock_catalog').select('id,product,variant,color,asking_price,status,outlet').eq('outlet',profile.outlet).eq('status','READY').order('product').order('variant').order('color');
  if(st.error)return alert('Stock gagal dimuat: '+st.error.message);
  const rows=st.data||[];
@@ -2856,16 +2862,18 @@ async function salesResult(id){
  const centerCashCode=profile?.outlet==='Majesty Refill Phone'?'1103':profile?.outlet==='Majesty Plaza iPhone'?'1104':null; const cashAccount=(fa.data||[]).find(x=>x.code===centerCashCode&&x.account_type==='CASH');
  const accountOpts=(fa.data||[]).filter(x=>x.code!=='1101'&&x.code!=='1102').map(x=>'<option value="'+esc(x.id)+'" '+(cashAccount?.id===x.id?'selected':'')+'>'+esc(x.name)+(x.outlet?' — '+esc(x.outlet):'')+'</option>').join('');
  const paymentOpts='<option value="PIUTANG">Belum Bayar / Piutang Customer</option>'+(pm.data||[]).map(x=>'<option value="'+esc(x.id)+'" data-code="'+esc(x.code)+'">'+esc(x.name)+'</option>').join('');
- $('mt').textContent='Hasil Sales';
- $('mb').innerHTML='<label>Hasil</label><select id="sr"><option value="CLOSING">CLOSING</option><option value="POTENSIAL">POTENSIAL</option><option value="GAGAL">GAGAL</option></select><div id="stockBox"><label>📦 Produk / Stock yang Laku <span style="color:#b91c1c">*wajib untuk CLOSING</span></label><select id="ss"><option value="">— Pilih Stock READY —</option>'+opts+'</select><div class="small">Harga List hanya sebagai referensi. Harga Jual Aktual diisi sesuai harga transaksi customer.</div><label>💰 Harga Jual Aktual <span style="color:#b91c1c">*wajib untuk CLOSING</span></label><input id="sap" type="number" min="1" step="1000" placeholder="Contoh: 2100000"><div id="salePriceHint" class="small"></div><label>💳 Pembayaran</label><select id="salePayment">'+paymentOpts+'</select><label>🏦 Kas / Bank Penerima</label><select id="saleAccount">'+accountOpts+'</select><div class="small">Default: kas outlet. Jika pembayaran masuk ke bank Pusat, pilih rekening bank Pusat.</div><div style="margin-top:14px;padding-top:12px;border-top:1px solid #eee"><b>👥 SALES TERLIBAT</b><div class="small" style="margin:5px 0 8px">Apakah kamu akan menyertakan Sales lain?</div><div class="row"><button type="button" id="closingSalesNo" class="secondary">Tidak</button><button type="button" id="closingSalesYes" class="secondary">Ya, pilih Sales</button></div><div id="closingSalesPicker" class="hidden" style="margin-top:10px;padding:10px;border:1px solid #ddd;border-radius:10px">'+(salesOpts||'<div class="small">Belum ada Sales lain yang tersedia di outlet ini.</div>')+'</div></div></div><div id="sdb" class="hidden"><label>Follow-up</label><input id="sd" type="date"></div><div id="sob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="sreason" placeholder="Contoh: budget tidak cocok, customer memilih produk lain..."></textarea></div><button id="saveSBtn" class="success">Simpan</button>';
+ mt.textContent='Hasil Sales';
+ mb.innerHTML='<label>Hasil</label><select id="sr"><option value="CLOSING">CLOSING</option><option value="POTENSIAL">POTENSIAL</option><option value="GAGAL">GAGAL</option></select><div id="stockBox"><label>📦 Produk / Stock yang Laku <span style="color:#b91c1c">*wajib untuk CLOSING</span></label><select id="ss"><option value="">— Pilih Stock READY —</option>'+opts+'</select><div class="small">Harga List hanya sebagai referensi. Harga Jual Aktual diisi sesuai harga transaksi customer.</div><label>💰 Harga Jual Aktual <span style="color:#b91c1c">*wajib untuk CLOSING</span></label><input id="sap" type="number" min="1" step="1000" placeholder="Contoh: 2100000"><div id="salePriceHint" class="small"></div><label>💳 Pembayaran</label><select id="salePayment">'+paymentOpts+'</select><label>🏦 Kas / Bank Penerima</label><select id="saleAccount">'+accountOpts+'</select><div class="small">Default: kas outlet. Jika pembayaran masuk ke bank Pusat, pilih rekening bank Pusat.</div><div style="margin-top:14px;padding-top:12px;border-top:1px solid #eee"><b>👥 SALES TERLIBAT</b><div class="small" style="margin:5px 0 8px">Apakah kamu akan menyertakan Sales lain?</div><div class="row"><button type="button" id="closingSalesNo" class="secondary">Tidak</button><button type="button" id="closingSalesYes" class="secondary">Ya, pilih Sales</button></div><div id="closingSalesPicker" class="hidden" style="margin-top:10px;padding:10px;border:1px solid #ddd;border-radius:10px">'+(salesOpts||'<div class="small">Belum ada Sales lain yang tersedia di outlet ini.</div>')+'</div></div></div><div id="sdb" class="hidden"><label>Follow-up</label><input id="sd" type="date"></div><div id="sob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="sreason" placeholder="Contoh: budget tidak cocok, customer memilih produk lain..."></textarea></div><button id="saveSBtn" class="success">Simpan</button>';
  const updatePriceHint=()=>{const s=rows.find(x=>x.id===$('ss')?.value);if($('salePriceHint'))$('salePriceHint').textContent=s?'Harga List: Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+' • Harga Aktual dapat berbeda.':''};
  $('ss').onchange=updatePriceHint;
  $('salePayment').onchange=()=>{const isCash=$('salePayment').selectedOptions?.[0]?.dataset?.code==='CASH';if(isCash){const code=profile?.outlet==='Majesty Refill Phone'?'1103':profile?.outlet==='Majesty Plaza iPhone'?'1104':null;const a=[...$('saleAccount').options].find(o=>o.textContent.trim().startsWith(code+' '));if(a)$('saleAccount').value=a.value;} $('saleAccount').disabled=$('salePayment').value==='PIUTANG'||isCash;};
  $('closingSalesNo').onclick=()=>{document.querySelectorAll('.closingSalesMember').forEach(x=>x.checked=false);$('closingSalesPicker').classList.add('hidden');$('closingSalesNo').classList.remove('secondary');$('closingSalesYes').classList.add('secondary')};
  $('closingSalesYes').onclick=()=>{$('closingSalesPicker').classList.remove('hidden');$('closingSalesYes').classList.remove('secondary');$('closingSalesNo').classList.add('secondary')};
  $('sr').onchange=()=>{$('sdb').classList.toggle('hidden',$('sr').value!=='POTENSIAL');$('sob').classList.toggle('hidden',$('sr').value!=='GAGAL');$('stockBox').classList.toggle('hidden',$('sr').value!=='CLOSING')};
- $('saveSBtn').onclick=()=>saveS(id);$('modal').classList.remove('hidden');
+ $('saveSBtn').onclick=()=>saveS(leadId);
+ modal.classList.remove('hidden');
 }
+window.salesResult=salesResult;
 function salesResultMessage(l){
  const result=l.sales_result||'-';
  const pic=l.sales_claimed_by||profile?.name||'-';
@@ -2882,7 +2890,10 @@ function salesResultMessage(l){
 }
 function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
 async function saveS(id){
- const result=$('sr').value;
+ const leadId=String(id||'').trim();
+ const result=$('sr')?.value;
+ if(!result)return alert('Hasil Sales belum dipilih.');
+
  if(result==='CLOSING'){
    const stockId=$('ss')?.value;
    if(!stockId)return alert('Untuk CLOSING, wajib pilih produk/stock yang laku.');
@@ -2895,7 +2906,7 @@ async function saveS(id){
    if(payNow&&!paymentAccount)return alert('Kas/Bank penerima wajib dipilih.');
    const paymentMethod=payNow?paymentMode:null;
    const x=await sb.rpc('set_sales_closing_with_payment',{
-     p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,
+     p_lead_id:leadId,p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,
      p_payment_account_id:paymentAccount,p_payment_method_id:paymentMethod,p_pay_now:payNow
    });
    if(x.error)return alert('Closing gagal: '+x.error.message);
@@ -2919,7 +2930,7 @@ async function saveS(id){
  }
  if(result==='POTENSIAL'&&!$('sd').value)return alert('Tanggal follow-up wajib.');
  if(result==='GAGAL'&&!$('sreason').value.trim())return alert('Keterangan kenapa gagal wajib diisi.');
- const x=await sb.rpc('set_sales_result',{p_lead_id:id,p_result:result,p_follow_up_date:$('sd').value||null,p_reason:$('sreason')?.value.trim()||null});
+ const x=await sb.rpc('set_sales_result',{p_lead_id:leadId,p_result:result,p_follow_up_date:$('sd').value||null,p_reason:$('sreason')?.value.trim()||null});
  if(x.error)return alert(x.error.message);closeModal();await loadLeads();showHistory(result);
 }
 function tradePublicData(){return {

@@ -2480,7 +2480,7 @@ function renderRoleHome(){
    // Akun lain tetap mengikuti permission melalui cards.
    // Tim dapat melihat LEAD TRACKER + SALES & PENJUALAN.
    // Developer tetap melihat seluruh kelompok menu.
-   if(!developer && gi>1 && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
+   if(!forceVisible && !developer && gi>1 && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
    let allowed=forceVisible ? g[2] : g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    // Fungsi inventory utama wajib tampil dengan urutan yang sama seperti menu utama.
    if(inventoryAccess && g[1]==='INVENTORY & STOCK'){

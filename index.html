@@ -1920,6 +1920,7 @@ function hmRunMainMenuAction(action){
   case 'hmOpenTradeInline()': return hmOpenTradeInline();
   case 'hmOpenSellPhoneInline()': return hmOpenSellPhoneInline();
   case 'hmOpenFollowupTemplateInline()': return hmOpenFollowupTemplateInline();
+  case 'hmOpenCustomerDatabase()': return hmOpenCustomerDatabase();
   case "openInventorySection('sales')": return window.openInventorySection('sales');
   case "openInventorySection('stock')": return window.openInventorySection('stock');
   case 'openPerformance()': return hmOpenPerformanceInline();
@@ -1981,6 +1982,15 @@ function hmOpenFollowupInline(mode){
  panel.classList.remove('hidden');
  requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
 }
+function hmOpenCustomerDatabase(){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+ if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
+ if(title)title.textContent='👤 Database Customer';
+ body.innerHTML='<div class="box"><h3 style="margin-top:0">👤 DATABASE CUSTOMER</h3><div class="small" style="margin-bottom:12px">Database customer pribadi untuk Developer Aplikasi. Modul ini dipisahkan dari Lead Tracker dan tidak ditampilkan kepada tim.</div><div style="padding:14px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc"><b>🔒 Akses Terbatas</b><div class="small" style="margin-top:5px">Hanya akun Developer Aplikasi yang dapat mengakses database ini.</div></div><div style="margin-top:14px"><b>Data yang akan disimpan</b><ul class="small" style="line-height:1.7;margin-top:6px"><li>Nama customer</li><li>No. WhatsApp</li><li>Alamat</li><li>Riwayat pembelian</li><li>Minat produk</li><li>Outlet</li><li>PIC / Sales terakhir</li><li>Catatan customer</li></ul></div><div class="small" style="margin-top:12px">Struktur database customer akan dibuat terpisah dari Lead agar data customer tidak tercampur dengan proses penjualan.</div></div>';
+ panel.classList.remove('hidden');
+ requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+}
+
 function hmOpenQuickAction(){
  const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
  if(!mt||!mb||!modal)return;
@@ -2021,6 +2031,7 @@ function renderRoleHome(){
    add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
    add('📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()');
    add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
+   add('👤','Database Customer','Database customer khusus Developer Aplikasi','hmOpenCustomerDatabase()');
    add('💰','Finance','Kas, laba & neraca','openFinance()');
    add('📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
@@ -2165,6 +2176,9 @@ function renderRoleHome(){
    ['💎','KOMISI & REWARD',[
      ['💰','Komisi Tim','Seluruh komisi tim, bukan hanya Sales','openTeamCommission()'],
      ['💰','Komisi Saya','Komisi pribadi sesuai hak akses','openCommission()']
+   ]],
+   ['👤','DATABASE & CRM',[
+     ['👤','Database Customer','Database customer khusus Developer Aplikasi','hmOpenCustomerDatabase()']
    ]],
    ['⚡','TOOLS',[
      ['🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()'],

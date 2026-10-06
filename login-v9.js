@@ -57,6 +57,9 @@
       ...data,
       expires_at:data.expires_at||Math.floor(Date.now()/1000)+(data.expires_in||3600)
     };
+    // Simpan refresh token terbaru. Supabase dapat melakukan token rotation;
+    // jika token baru tidak disimpan, refresh halaman berikutnya akan logout.
+    try{localStorage.setItem('hm_auth_session',JSON.stringify(activeSession));}catch(e){console.warn('[HM] save refreshed session',e);}
     return activeSession.access_token;
   }
 
@@ -175,6 +178,8 @@
       if(!saved?.refresh_token)return false;
       // Restore using the refresh token so the user does not need to login on every page load.
       const session=await refreshAccessTokenFromSaved(saved);
+      // Pastikan session hasil refresh menjadi sumber session untuk reload berikutnya.
+      try{localStorage.setItem('hm_auth_session',JSON.stringify(session));}catch(e){console.warn('[HM] persist restored session',e);}
       const sb=await getClient(session);
       window.sb=sb;
       const starter=await waitForAppStarter();
@@ -188,7 +193,11 @@
       return true;
     }catch(ex){
       console.warn('[HM] Auto restore session failed:',ex);
-      try{localStorage.removeItem('hm_auth_session');}catch(e){}
+      // Jangan langsung menghapus session karena kegagalan sementara/network.
+      // Session hanya dibersihkan bila server memang menolak refresh token.
+      if(/sesi login sudah berakhir|refresh token/i.test(String(ex?.message||''))){
+        try{localStorage.removeItem('hm_auth_session');}catch(e){}
+      }
       return false;
     }
   }

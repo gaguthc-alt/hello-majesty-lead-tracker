@@ -473,14 +473,21 @@ window.openFinanceSection=async function(section){
     panel.classList.remove('hidden');
     body.innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">💵 KAS & BANK</h3><div class="small" style="margin-top:4px">Saldo dan mutasi rekening keuangan</div></div><button class="primary" type="button" onclick="window.openFinanceSection(\'cashbank\')">🔄 Refresh</button></div><div id="hmCashBankBox" style="margin-top:12px">Memuat saldo...</div></div>';
     const sb=window.sb;
-    const [start,end]=hmDateRange('month');
-    const x=await sb.rpc('finance_management_dashboard',{p_start_date:start,p_end_date:end});
     const box=document.getElementById('hmCashBankBox');
-    if(x.error){box.innerHTML='<div class="danger box">Gagal memuat Kas & Bank: '+String(x.error.message||x.error)+'</div>';return;}
-    const accounts=x.data?.accounts||[];
+    try{
+      if(!sb)throw new Error('Koneksi database belum siap.');
+      const rangeFn=typeof window.hmDateRange==='function'?window.hmDateRange:hmDateRange;
+      const [start,end]=rangeFn('month');
+      const x=await sb.rpc('finance_management_dashboard',{p_start_date:start,p_end_date:end});
+      if(x.error)throw x.error;
+      const accounts=x.data?.accounts||[];
     window.hmCashAccounts=accounts;
-    box.innerHTML='<div class="small">Posisi rekening • bulan berjalan</div><div style="margin-top:10px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:5px 0" data-code="'+String(a.code||'').replace(/"/g,'&quot;')+'" onclick="hmOpenCash(this.dataset.code)"><div class="row" style="justify-content:space-between"><span><b>'+a.code+'</b> '+a.name+'</span><b>'+hmRp(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada akun Kas & Bank aktif.</div>')+'</div><div class="box" style="margin-top:12px"><div class="small">Fungsi berikutnya: pencatatan uang masuk, uang keluar, transfer antar Kas/Bank, dan rekonsiliasi.</div></div>';
-    panel.scrollIntoView({behavior:'smooth',block:'start'});
+      box.innerHTML='<div class="small">Posisi rekening • bulan berjalan</div><div style="margin-top:10px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:5px 0" data-code="'+String(a.code||'').replace(/"/g,'&quot;')+'" onclick="hmOpenCash(this.dataset.code)"><div class="row" style="justify-content:space-between"><span><b>'+a.code+'</b> '+a.name+'</span><b>'+hmRp(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada akun Kas & Bank aktif.</div>')+'</div><div class="box" style="margin-top:12px"><div class="small">Fungsi berikutnya: pencatatan uang masuk, uang keluar, transfer antar Kas/Bank, dan rekonsiliasi.</div></div>';
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
+    }catch(ex){
+      console.error('[HM] Kas & Bank:',ex);
+      if(box)box.innerHTML='<div class="danger box"><b>Gagal memuat Kas & Bank.</b><div class="small" style="margin-top:6px">'+String(ex?.message||ex||'Terjadi kesalahan saat memuat saldo.')+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.openFinanceSection(\'cashbank\')">↻ Coba Lagi</button></div>';
+    }
     return;
   }
   if(section==='report'){

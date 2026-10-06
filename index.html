@@ -2190,35 +2190,32 @@ function hmRenderLeadTodayMain(){
  const isDivisi=roles.includes('DIVISI')||rawRole==='DIVISI';
  const isFacilitator=roles.includes('FASILITATOR')||rawRole==='FASILITATOR';
  const isTeam=!isMgmt&&!isDeveloper&&!isDivisi&&!isFacilitator;
- // Scope angka:
- // • Tim: hanya lead yang pernah di-claim/ditangani oleh dirinya sendiri.
- // • Fasilitator: seluruh lead outletnya.
- // • Divisi/Developer/Management: seluruh lead hari ini.
- const today=(isDeveloper||isDivisi||isMgmt)
-   ? allToday
-   : isFacilitator
-     ? allToday.filter(l=>l.outlet===profile?.outlet)
-     : isTeam
-       ? allToday.filter(l=>l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name)
-       : allToday.filter(viewerLead);
+ const today=(isDeveloper||isDivisi||isMgmt)?allToday:isFacilitator?allToday.filter(l=>l.outlet===profile?.outlet):isTeam?allToday.filter(l=>l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name):allToday.filter(viewerLead);
  const bucket=l=>{
   const sales=String(l.sales_result||'').toUpperCase(),cs=String(l.qualification_result||'').toUpperCase(),st=String(l.status_lead||'').toUpperCase(),hasil=String(l.hasil||'').toUpperCase();
-  if(sales==='CLOSING'||cs==='CLOSING'||hasil==='CLOSING')return 'CLOSING';
-  if(sales==='GAGAL'||cs==='GAGAL'||hasil==='GAGAL'||hasil==='LOST')return 'GAGAL';
-  if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
-  if(st==='HANDLE'||l.sales_claimed_by)return 'HANDLE';
-  if(st==='QUALIFIED')return 'QUALIFIED';
-  if(st==='CS LOCK')return 'CS LOCK';
+  // Hasil akhir harus dipisahkan lebih dulu.
+  if(sales==='CLOSING'||hasil==='CLOSING')return 'CLOSING';
+  if(sales==='GAGAL'||hasil==='GAGAL'||hasil==='LOST')return 'GAGAL';
+  if(hasil==='FOLLOW-UP'||(st==='HASIL'&&sales==='POTENSIAL'))return 'FOLLOW-UP';
+  // Untuk lead aktif, status_lead adalah tahap utama; jangan tertimpa qualification_result=POTENSIAL.
   if(st==='AVAILABLE')return 'AVAILABLE';
+  if(st==='CS LOCK')return 'CS LOCK';
+  if(st==='QUALIFIED')return 'QUALIFIED';
+  if(st==='HANDLE'||l.sales_claimed_by)return 'HANDLE';
+  if(st==='POTENSIAL'||cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
   return 'LAINNYA';
  };
- const statuses=[['AVAILABLE','AVAILABLE'],['CS LOCK','CS LOCK'],['POTENSIAL','POTENSIAL'],['QUALIFIED','QUALIFIED'],['HANDLE','HANDLE'],['CLOSING','CLOSING']];
+ const journey=[['AVAILABLE','AVAILABLE'],['CS LOCK','CS LOCK'],['POTENSIAL','POTENSIAL'],['QUALIFIED','QUALIFIED'],['HANDLE','HANDLE'],['CLOSING','CLOSING']];
+ const hasilRows=[['FOLLOW-UP','FOLLOW-UP'],['GAGAL','GAGAL']];
  const scopeLabel=isTeam?'Lead saya':isFacilitator?('Tim outlet • '+(profile?.outlet||'-')):(isDivisi||isDeveloper||isMgmt)?'Seluruh outlet':'Lead saya';
+ const box=(key,label)=>{const n=today.filter(l=>bucket(l)===key).length;return '<button type="button" class="role-home-submenu-item" style="min-height:72px;justify-content:center;text-align:center;cursor:pointer" onclick="hmOpenLeadTracker()"><b>'+label+'</b><span style="font-size:20px;font-weight:800">'+n+'</span></button>';};
  host.innerHTML='<div class="hm-lead-today-main" style="margin:14px 0 18px;padding:14px;border:1px solid #d0d5dd;border-radius:16px;background:#fff;box-shadow:0 4px 14px #0000000a">'+
    '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b style="font-size:16px">📅 LEAD HARI INI</b><div class="small" style="margin-top:3px">'+esc(scopeLabel)+'</div></div><span class="small">'+today.length+' aktivitas</span></div>'+
-   '<div style="display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:8px;margin-top:10px">'+
-   statuses.map(([key,label])=>{const n=today.filter(l=>bucket(l)===key).length;return '<button type="button" class="role-home-submenu-item" style="min-height:72px;justify-content:center;text-align:center;cursor:pointer" onclick="hmOpenLeadTracker()"><b>'+label+'</b><span style="font-size:20px;font-weight:800">'+n+'</span></button>';}).join('')+
-   '</div></div>';
+   '<div class="small" style="margin-top:10px;font-weight:700">PERJALANAN LEAD</div>'+
+   '<div style="display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:8px;margin-top:6px">'+journey.map(x=>box(x[0],x[1])).join('')+'</div>'+
+   '<div class="small" style="margin-top:10px;font-weight:700">HASIL / FOLLOW-UP HARI INI</div>'+
+   '<div style="display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:8px;margin-top:6px">'+hasilRows.map(x=>box(x[0],x[1])).join('')+'</div>'+
+   '</div>';
 }
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;

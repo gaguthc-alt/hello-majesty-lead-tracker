@@ -181,8 +181,6 @@ async function openInventoryDashboard(){
  if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management dan Admin Finance.');return;}
  const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;
  const open=!panel.classList.contains('hidden');
- // Jika panel sedang menampilkan Stock/Produk, tombol Dashboard HARUS berpindah
- // ke Dashboard Inventory, bukan mengikuti view sebelumnya.
  if(open && inventoryView==='dashboard'){
    panel.classList.add('hidden');
    if(btn)btn.textContent='📊 Dashboard Inventory';
@@ -192,17 +190,18 @@ async function openInventoryDashboard(){
  if(btn)btn.textContent='✖ Tutup Product & Stock';
  const section=document.getElementById('inventorySection');
  if(section)section.classList.remove('hidden');
- inventoryView='dashboard';
- if(open){
-   // Panel sudah ada: cukup render ulang isi panel ke Dashboard Inventory.
-   if(typeof renderInventoryBody==='function')renderInventoryBody();
-   if(typeof renderManagementStockSummary==='function'&&profile?.is_management)await renderManagementStockSummary().catch(()=>{});
-   return;
+
+ // Render Product & Stock terlebih dahulu. Setelah render selesai, paksa view ke Dashboard.
+ // Ini mencegah loadInventoryData/renderInventory mengembalikan view ke Stock READY.
+ try{
+   if(typeof renderInventory==='function') await renderInventory();
+ }catch(e){
+   console.error('[HM] Inventory dashboard load error',e);
  }
- if(typeof renderInventory==='function'){
-   renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));
- }else if(typeof renderInventoryBody==='function'){
-   renderInventoryBody();
+ inventoryView='dashboard';
+ if(typeof renderInventoryBody==='function') renderInventoryBody();
+ if(typeof renderManagementStockSummary==='function'&&profile?.is_management){
+   await renderManagementStockSummary().catch(()=>{});
  }
 }
 window.refreshHunterLauncher=async function(){

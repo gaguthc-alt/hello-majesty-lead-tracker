@@ -2260,6 +2260,38 @@ function renderRoleHome(){
      const title=String(item[1]||'');
      const action=String(item[3]||'').trim();
      console.log('[HM MENU CLICK]',{idx,title,action});
+     // APPROVAL MENU: panggil fungsi langsung dari tombol, tanpa bergantung dispatcher.
+     if(title==='Persetujuan Barang Masuk'){
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       const run=()=>{
+         const fn=window.openFinanceInventoryApprovals||window.openInventoryApprovals;
+         if(typeof fn!=='function') throw new Error('Modul Persetujuan Barang Masuk belum termuat.');
+         return fn();
+       };
+       void Promise.resolve().then(()=>{
+         if(typeof window.openFinanceInventoryApprovals==='function'||typeof window.openInventoryApprovals==='function') return run();
+         const s=document.createElement('script');
+         s.src='finance.js?v=20261006-approval-direct';
+         return new Promise((resolve,reject)=>{
+           s.onload=()=>{try{resolve(run())}catch(e){reject(e)}};
+           s.onerror=()=>reject(new Error('Finance gagal dimuat.'));
+           document.head.appendChild(s);
+         });
+       }).catch(ex=>alert('Persetujuan Barang Masuk gagal dibuka: '+(ex?.message||ex)));
+       return;
+     }
+     if(title==='Persetujuan Walk-In'){
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       void Promise.resolve().then(()=>{
+         if(typeof window.openWalkinApprovals!=='function') throw new Error('Modul Persetujuan Walk-In belum termuat.');
+         return window.openWalkinApprovals();
+       }).catch(ex=>alert('Persetujuan Walk-In gagal dibuka: '+(ex?.message||ex)));
+       return;
+     }
      if(title==='Brosur'){
        hmCloseMainMenu();
        hmActiveMainMenu=title;

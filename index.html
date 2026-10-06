@@ -2498,7 +2498,7 @@ function renderRoleHome(){
    const forceVisible = g[1]==='CONTENT & PROMOTION';
    const isAccountingGroup = g[1]==='ACCOUNTING';
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
-   if(g[1]==='FINANCE' && !developer)return '';
+   if(g[1]==='FINANCE' && !developer && !mg)return '';
    const isCommissionGroup = g[1]==='KOMISI & REWARD';
    const isDivisi = roles.includes('DIVISI') || rawRole==='DIVISI';
    // KOMISI & REWARD mempunyai aturan khusus:

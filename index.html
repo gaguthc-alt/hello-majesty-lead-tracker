@@ -2033,7 +2033,7 @@ function renderRoleHome(){
    add('💰','Komisi Saya','Komisi pribadi sesuai hak akses','openCommission()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
- }else if(facilitator){}else if(facilitator){
+ }else if(facilitator){
    add('🎯','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
    add('👥','Lead & Handover','Koordinasi lead tim','hmOpenLeadHandover()');
    add('📦','Product & Stock','Stock & approval','openInventorySection(\'stock\')');
@@ -2053,6 +2053,7 @@ function renderRoleHome(){
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan sales','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
+   add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
  }else if(cs){
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('👥','Lead Tracker','Follow-up customer','hmOpenLeadTracker()');
@@ -2597,7 +2598,7 @@ function applyRoleVisibility(){
  const actions=$('dashboardActions'); if(actions){actions.classList.add('hidden');actions.classList.remove('management-actions');actions.classList.remove('top-minimal-actions');} const finance=$('financeBtn');
  if(finance){finance.classList.add('hidden');if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
  toggle('cellFinanceReportBtn',false);
- renderRoleHome();
+ try{renderRoleHome();}catch(e){console.error('[HM] RoleHome render error:',e);const host=$('roleHome');if(host)host.innerHTML='<div class="box"><h3>Role Home</h3><p class="small">Menu gagal dirender. Silakan refresh aplikasi.</p></div>';}
 }
 window.hmStartApp=start;
 async function logout(){try{localStorage.removeItem('hm_auth_session')}catch(e){} location.reload()}

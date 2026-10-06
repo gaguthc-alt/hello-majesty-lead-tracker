@@ -2062,6 +2062,34 @@ function renderRoleHome(){
        });
        return;
      }
+     // LAPORAN FINANCE CELL: jalur langsung, tanpa bergantung pada guard/menu sequence.
+     if(action==='window.openCellFinanceReport()'){
+       hmCloseMainMenu();
+       hmActiveMainMenu='';
+       void Promise.resolve().then(()=>{
+         if(typeof window.openCellFinanceReport!=='function')throw new Error('Fungsi Laporan Finance Cell belum termuat.');
+         return window.openCellFinanceReport();
+       }).catch(ex=>{
+         console.error('[HM] Laporan Finance Cell gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Laporan Finance Cell: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
+       });
+       return;
+     }
+     // PERSETUJUAN BARANG MASUK: jalur langsung untuk Atmadita.
+     if(action==='window.openFinanceInventoryApprovals()'){
+       hmCloseMainMenu();
+       hmActiveMainMenu='';
+       void Promise.resolve().then(()=>{
+         if(typeof window.openFinanceInventoryApprovals!=='function')throw new Error('Fungsi Persetujuan Barang Masuk belum termuat.');
+         return window.openFinanceInventoryApprovals();
+       }).catch(ex=>{
+         console.error('[HM] Persetujuan barang masuk gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Persetujuan Barang Masuk: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
+       });
+       return;
+     }
      // KEWAJIBAN CELL: jalur langsung agar selalu responsif dan bisa diklik ulang.
      if(action==='window.openPartnerSettlement()'){
        hmCloseMainMenu();

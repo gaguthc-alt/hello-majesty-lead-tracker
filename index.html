@@ -2056,6 +2056,33 @@ function renderRoleHome(){
        });
        return;
      }
+     // FINANCE: buka langsung melalui jalur khusus agar tidak tertahan
+     // oleh sequence/penutupan panel menu utama.
+     if(action==='openFinance()'){
+       if(hmActiveMainMenu===title){
+         hmCloseMainMenu();
+         return;
+       }
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       void Promise.resolve()
+         .then(()=>window.openFinance())
+         .catch(ex=>{
+           console.error('[HM] Finance gagal dibuka:',ex);
+           const panel=document.getElementById('hmMenuPanel');
+           const body=document.getElementById('hmMenuPanelBody');
+           if(panel&&body){
+             body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Finance: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';
+             panel.classList.remove('hidden');
+             requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+           }else{
+             alert('Finance gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
+           }
+         });
+       return;
+     }
+
      // Form Lead Baru dibuka langsung; jangan lewat wrapper menu/sequence.
      if(action==='hmOpenLeadNewInline()'){
        if(hmActiveMainMenu===title){

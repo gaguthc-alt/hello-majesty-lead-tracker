@@ -2496,6 +2496,7 @@ function renderRoleHome(){
    // Tetap render sebagai HTML section — jangan return array mentah,
    // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.
    const forceVisible = g[1]==='CONTENT & PROMOTION';
+   const isAccountingGroup = g[1]==='ACCOUNTING';
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
    if(g[1]==='FINANCE' && !developer)return '';
    const isCommissionGroup = g[1]==='KOMISI & REWARD';
@@ -2520,8 +2521,8 @@ function renderRoleHome(){
    // Akun lain tetap mengikuti permission melalui cards.
    // Tim dapat melihat LEAD TRACKER + SALES & PENJUALAN.
    // Developer tetap melihat seluruh kelompok menu.
-   if(!forceVisible && !developer && gi>1 && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
-   let allowed=forceVisible ? g[2] : g[2].filter(item=>cards.some(x=>x[1]===item[1]));
+   if(!forceVisible && !developer && !isAccountingGroup && gi>1 && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
+   let allowed=(forceVisible || isAccountingGroup) ? g[2] : g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    // Fungsi inventory utama wajib tampil dengan urutan yang sama seperti menu utama.
    if(inventoryAccess && g[1]==='INVENTORY & STOCK'){
      const order=['Dashboard Inventory','Master Produk','Stok Siap Jual','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok','Stock Opname'];

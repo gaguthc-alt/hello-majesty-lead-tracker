@@ -176,9 +176,18 @@
       let saved=null;
       try{saved=JSON.parse(raw);}catch(e){localStorage.removeItem('hm_auth_session');return false;}
       if(!saved?.refresh_token)return false;
-      // Restore using the refresh token so the user does not need to login on every page load.
-      const session=await refreshAccessTokenFromSaved(saved);
-      // Pastikan session hasil refresh menjadi sumber session untuk reload berikutnya.
+      // Gunakan access token tersimpan bila masih valid. Jangan melakukan refresh
+      // token pada setiap page reload karena Supabase dapat merotasi refresh token
+      // dan reload/tab ganda dapat membuat token lama ditolak.
+      let session;
+      const now=Math.floor(Date.now()/1000);
+      if(saved.access_token && Number(saved.expires_at||0) > now + 90){
+        activeSession={...saved};
+        session=activeSession;
+      }else{
+        session=await refreshAccessTokenFromSaved(saved);
+      }
+      // Pastikan session terbaru tetap tersimpan untuk reload berikutnya.
       try{localStorage.setItem('hm_auth_session',JSON.stringify(session));}catch(e){console.warn('[HM] persist restored session',e);}
       const sb=await getClient(session);
       window.sb=sb;

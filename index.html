@@ -2174,7 +2174,6 @@ function renderRoleHome(){
    ]],
    ['📦','INVENTORY & STOCK',[
      ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
-     ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"],
      ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()'],
      ['📤','Barang Keluar','Barang terjual dan pengeluaran stock',"openInventorySection('sales')"],
      ['🔄','Mutasi Stok','Perpindahan stok antar outlet',"hmOpenInventoryFeature('mutasi')"],
@@ -2185,6 +2184,9 @@ function renderRoleHome(){
    ['💰','FINANCE',[
      ['💰','Finance','Kas, laba & kontrol keuangan','openFinance()'],
      ['📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()']
+   ]],
+   ['🧾','MASTER PRODUK',[
+     ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"]
    ]],
    ['📚','ACCOUNTING',[
      ['📊','Accounting','Neraca, laba rugi, jurnal & kontrol accounting','openAccounting()']

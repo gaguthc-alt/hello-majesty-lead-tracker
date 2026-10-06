@@ -2725,7 +2725,7 @@ function renderRoleHome(){
          if(typeof window.openCellFinanceReport!=='function'){
            await new Promise((resolve,reject)=>{
              const src='finance.js?v=20261006-finance-16';
-             const existing=[...document.scripts].find(s=>String(s.src||'').includes('inventory.js'));
+             const existing=[...document.scripts].find(s=>String(s.src||'').includes('finance.js'));
              if(existing && existing.dataset.hmReloading==='1'){
                existing.addEventListener('load',resolve,{once:true});
                existing.addEventListener('error',()=>reject(new Error('File Finance gagal dimuat.')),{once:true});

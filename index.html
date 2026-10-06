@@ -2228,7 +2228,9 @@ function hmRenderLeadTodayMain(){
  const isDivisi=roles.includes('DIVISI')||rawRole==='DIVISI';
  const isFacilitator=roles.includes('FASILITATOR')||rawRole==='FASILITATOR';
  const isTeam=!isMgmt&&!isDeveloper&&!isDivisi&&!isFacilitator;
- const today=(isDeveloper||isDivisi||isMgmt)?allToday:isFacilitator?allToday.filter(l=>l.outlet===profile?.outlet):isTeam?allToday.filter(l=>l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name):allToday.filter(viewerLead);
+ const myName=String(profile?.name||'').trim();
+ const myLead=l=>String(l.cs_claimed_by||'').trim()===myName||String(l.sales_claimed_by||'').trim()===myName;
+ const today=(isDeveloper||isDivisi||isMgmt)?allToday:isFacilitator?allToday.filter(myLead):isTeam?allToday.filter(myLead):allToday.filter(viewerLead);
  const bucket=l=>{
   const sales=String(l.sales_result||'').toUpperCase(),cs=String(l.qualification_result||'').toUpperCase(),st=String(l.status_lead||'').toUpperCase(),hasil=String(l.hasil||'').toUpperCase();
   // Hasil akhir harus dipisahkan lebih dulu.

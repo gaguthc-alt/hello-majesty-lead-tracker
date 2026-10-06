@@ -187,7 +187,38 @@ window.openFinanceInventoryApprovals=async function(){
   }
   if(modal){modal.classList.add('hidden');modal.style.display='none';}
 };
-window.openFinance=async function(){const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' '),roles=Array.isArray(window.hmRoles)?window.hmRoles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' ')):[],isManagement=!!p.is_management||roles.includes('MANAGEMENT')||role.includes('MANAGEMENT'),allowed=isManagement||role==='FASILITATOR'||role==='ADMIN FINANCE MAJESTY CELL';if(!allowed){alert('Finance hanya dapat diakses Management, Fasilitator, atau Admin Finance.');return;}const m=document.getElementById('modal'),t=document.getElementById('mt'),b=document.getElementById('mb');if(!m||!t||!b)return;m.classList.remove('hidden');m.style.display='flex';t.textContent='💰 Finance';b.innerHTML='<div class="box"><h3 style="margin-top:0">💰 FINANCE MANAGEMENT</h3><div class="small">Sumber data: Jurnal yang sudah POSTED.</div><div class="row" style="margin-top:10px"><button class="secondary" onclick="hmFinanceLoad(\'month\')">Bulan Ini</button><button class="secondary" onclick="hmFinanceLoad(\'today\')">Hari Ini</button><button class="secondary" onclick="hmFinanceLoad(\'year\')">Tahun Ini</button><button class="secondary" onclick="window.openPartnerSettlement()">🤝 Kewajiban & Settlement Cell</button>'+(role==='ADMIN FINANCE MAJESTY CELL'||p.is_management?'<button class="secondary" onclick="window.openFinanceInventoryApprovals()">🔔 Persetujuan Barang Masuk</button>':'')+'<button class="secondary" onclick="window.openFinanceDisbursement()">💳 Pencairan Finance</button></div><div id="hmFinBox" style="margin-top:10px">Memuat...</div></div>';m.classList.remove('hidden');await hmFinanceLoad('month');};
+window.openFinance=async function(){
+  const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
+  const isDeveloper=!!window.developer||role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
+  if(!isDeveloper){alert('Finance sementara hanya dapat diakses Developer Aplikasi.');return;}
+  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle'),modal=document.getElementById('modal');
+  if(!panel||!body)return;
+  if(modal){modal.classList.add('hidden');modal.style.display='none';}
+  if(title)title.textContent='💰 Finance';
+  panel.classList.remove('hidden');
+  body.innerHTML='<div class="box"><div class="small">⏳ Memuat Finance...</div></div>';
+  try{
+    const sb=window.sb;if(!sb)throw new Error('Koneksi database belum siap.');
+    const [start,end]=hmDateRange('month');
+    const x=await sb.rpc('finance_management_dashboard',{p_start_date:start,p_end_date:end});
+    if(x.error)throw x.error;
+    const d=x.data||{},accounts=d.accounts||[],money=v=>hmRp(v);
+    const cards=[['💵 Kas & Bank',d.cash_bank],['💰 Uang Masuk',d.cash_in],['💸 Uang Keluar',d.cash_out],['📊 Net Cashflow',d.net_cashflow],['🤝 Hutang Supplier',d.payable_supplier],['👤 Piutang Customer',d.receivable_customer]];
+    body.innerHTML='<div class="row" style="margin-bottom:10px"><button class="secondary" type="button" onclick="hmCloseMainMenu()">✖ Tutup</button><button class="primary" type="button" onclick="window.openFinance()">🔄 Refresh</button></div>'+
+      '<div class="small">Finance • periode '+start+' s/d '+end+'</div>'+
+      '<div class="fin-grid" style="margin-top:10px">'+cards.map(c=>'<div class="fin-card"><div class="small">'+c[0]+'</div><div class="fin-big">'+money(c[1])+'</div></div>').join('')+'</div>'+
+      '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🧾 Transaksi Finance</h3><div class="small">Transaksi yang sudah tercatat dan POSTED.</div><div id="hmFinanceTransactions" style="margin-top:8px">Memuat...</div></div>'+
+      '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">💵 Posisi Kas & Bank</h3><div class="small">Pilih akun untuk melihat mutasi.</div><div style="margin-top:8px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="hmOpenCash(\''+String(a.code||'').replace(/'/g,"\\'")+'\')"><div class="row" style="justify-content:space-between"><span><b>'+esc(String(a.code||''))+'</b> '+esc(String(a.name||''))+'</span><b>'+money(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+'</div></div>'+
+      '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">⚡ Aksi Finance</h3><div class="row"><button class="secondary" type="button" onclick="window.openFinanceDisbursement()">💳 Pencairan Finance</button><button class="secondary" type="button" onclick="window.openPartnerSettlement()">🤝 Kewajiban & Settlement Cell</button></div></div>';
+    window.hmCashAccounts=accounts;
+    const jr=await sb.from('journal_entries').select('id,journal_no,journal_date,source_type,description,posted').eq('posted',true).order('journal_date',{ascending:false}).limit(50);
+    const tx=document.getElementById('hmFinanceTransactions');
+    if(jr.error){if(tx)tx.innerHTML='<div class="danger box">'+esc(String(jr.error.message||jr.error))+'</div>';}
+    else if(tx){const rows=jr.data||[];tx.innerHTML=rows.length?rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(String(r.journal_no||'-'))+'</b><span class="badge">'+esc(String(r.source_type||'TRANSAKSI'))+'</span></div><div class="small">'+new Date(r.journal_date).toLocaleString('id-ID')+'</div><div>'+esc(String(r.description||'-'))+'</div></div>').join(''):'<div class="small">Belum ada transaksi Finance yang POSTED.</div>';}
+    panel.classList.remove('hidden');requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+  }catch(ex){console.error('[HM] Finance:',ex);body.innerHTML='<div class="box"><b>Gagal memuat Finance.</b><div class="small" style="margin-top:6px">'+esc(String(ex?.message||ex||'Terjadi kesalahan saat memuat data.'))+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.openFinance()">↻ Coba Lagi</button></div>';panel.classList.remove('hidden');requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));}
+};
+window.hmFinanceBack=async function(){await window.openFinance();};
 window.openHunterCommissionReport=async function(){
   const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
   if(!p.is_management && role!=='FASILITATOR'){alert('Akses komisi Hunter hanya untuk Management/Fasilitator.');return;}

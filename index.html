@@ -1635,11 +1635,15 @@ async function hmOpenContentPerformance(){
 function hmOpenLeadTracker(){
   const t=document.getElementById('mt'),b=document.getElementById('mb');
   if(!t||!b)return;
-  const rows=leads.filter(viewerLead).filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL');
-  t.textContent='👥 Lead Tracker';
-  b.innerHTML='<div class="small" style="margin-bottom:10px">Daftar lead aktif, status dan follow-up yang menjadi tanggung jawab outlet ini.</div>'+
-    '<div class="stats" style="margin-bottom:10px"><div class="stat"><div class="small">Lead Aktif</div><div class="num">'+rows.length+'</div></div><div class="stat"><div class="small">Follow-up Potensial</div><div class="num">'+rows.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length+'</div></div></div>'+
-    (rows.map(l=>card(l)).join('')||'<div class="small">Tidak ada lead aktif.</div>');
+  // Lead Tracker menampilkan seluruh perjalanan lead: AVAILABLE sampai HASIL.
+  // Data closing/gagal tidak dihapus dari tampilan.
+  const rows=leads.filter(viewerLead);
+  const activeRows=rows.filter(l=>getActiveLeadBucket(l));
+  const resultRows=rows.filter(l=>l.sales_result==='CLOSING'||l.sales_result==='GAGAL'||l.qualification_result==='GAGAL'||l.status_lead==='HASIL');
+  t.textContent='👥 Lead Tracker — Data Lead';
+  b.innerHTML='<div class="small" style="margin-bottom:10px">Seluruh data lead dari AVAILABLE → CS LOCK → POTENSIAL/QUALIFIED → HANDLE → HASIL.</div>'+
+    '<div class="stats" style="margin-bottom:10px"><div class="stat"><div class="small">Total Lead</div><div class="num">'+rows.length+'</div></div><div class="stat"><div class="small">Masih Aktif</div><div class="num">'+activeRows.length+'</div></div><div class="stat"><div class="small">Hasil</div><div class="num">'+resultRows.length+'</div></div><div class="stat"><div class="small">Follow-up Potensial</div><div class="num">'+rows.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length+'</div></div></div>'+
+    (rows.map(l=>card(l)).join('')||'<div class="small">Belum ada data lead.</div>');
   $('modal').classList.remove('hidden');
 }
 function hmOpenLeadHandover(){

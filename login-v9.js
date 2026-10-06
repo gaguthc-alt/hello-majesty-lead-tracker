@@ -133,7 +133,12 @@
       const session=await restPasswordLogin(email,password);
       const sb=await getClient(session);
       window.sb=sb;
-      try{localStorage.setItem('hm_auth_session',JSON.stringify(session));}catch(e){console.warn('[HM] save auth session',e);}
+      try{
+        const packed=JSON.stringify(session);
+        localStorage.setItem('hm_auth_session',packed);
+        localStorage.setItem('hm_auth_session_backup',packed);
+        sessionStorage.setItem('hm_auth_session',packed);
+      }catch(e){console.warn('[HM] save auth session',e);}
 
       // AUTH SUKSES = buka shell dashboard langsung.
       // Jangan menggantungkan perpindahan layar pada finance.js/start().
@@ -170,11 +175,14 @@
 
   async function restorePersistedSession(){
     try{
-      const raw=localStorage.getItem('hm_auth_session');
+      const raw =
+        localStorage.getItem('hm_auth_session') ||
+        sessionStorage.getItem('hm_auth_session') ||
+        localStorage.getItem('hm_auth_session_backup');
       if(!raw)return false;
       let saved=null;
-      try{saved=JSON.parse(raw);}catch(e){localStorage.removeItem('hm_auth_session');return false;}
-      if(!saved?.refresh_token)return false;
+      try{saved=JSON.parse(raw);}catch(e){return false;}
+      if(!saved?.access_token || !saved?.user)return false;
       // Gunakan access token tersimpan bila masih valid. Jangan melakukan refresh
       // token pada setiap page reload karena Supabase dapat merotasi refresh token
       // dan reload/tab ganda dapat membuat token lama ditolak.
@@ -187,7 +195,12 @@
         session=await refreshAccessTokenFromSaved(saved);
       }
       // Pastikan session terbaru tetap tersimpan untuk reload berikutnya.
-      try{localStorage.setItem('hm_auth_session',JSON.stringify(session));}catch(e){console.warn('[HM] persist restored session',e);}
+      try{
+        const packed=JSON.stringify(session);
+        localStorage.setItem('hm_auth_session',packed);
+        localStorage.setItem('hm_auth_session_backup',packed);
+        sessionStorage.setItem('hm_auth_session',packed);
+      }catch(e){console.warn('[HM] persist restored session',e);}
       const sb=await getClient(session);
       window.sb=sb;
       const starter=await waitForAppStarter();
@@ -204,7 +217,10 @@
       // Jangan hapus session tersimpan. Bila refresh token gagal tetapi access
       // token tersimpan masih ada, gunakan access token tersebut sebagai fallback.
       try{
-        const raw2=localStorage.getItem('hm_auth_session');
+        const raw2 =
+          localStorage.getItem('hm_auth_session') ||
+          sessionStorage.getItem('hm_auth_session') ||
+          localStorage.getItem('hm_auth_session_backup');
         const fallback=raw2?JSON.parse(raw2):null;
         if(fallback?.access_token && fallback?.user){
           activeSession={...fallback};

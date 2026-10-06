@@ -460,11 +460,25 @@ window.openFinance=openFinance;
 window.openFinanceSection=async function(section){
   const p=window.profile||{};
   const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
-  if(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJESTY CELL'].includes(role)){
+  const isDeveloper=!!window.developer||role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
+  if(!isDeveloper&&!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJESTY CELL'].includes(role)){
     alert('Akses Finance tidak diizinkan.'); return;
   }
   if(section==='cashbank'){
-    await window.openFinance();
+    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+    if(!panel||!body)return;
+    if(title)title.textContent='💵 Kas & Bank';
+    panel.classList.remove('hidden');
+    body.innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">💵 KAS & BANK</h3><div class="small" style="margin-top:4px">Saldo dan mutasi rekening keuangan</div></div><button class="primary" type="button" onclick="window.openFinanceSection(\'cashbank\')">🔄 Refresh</button></div><div id="hmCashBankBox" style="margin-top:12px">Memuat saldo...</div></div>';
+    const sb=window.sb;
+    const [start,end]=hmDateRange('month');
+    const x=await sb.rpc('finance_management_dashboard',{p_start_date:start,p_end_date:end});
+    const box=document.getElementById('hmCashBankBox');
+    if(x.error){box.innerHTML='<div class="danger box">Gagal memuat Kas & Bank: '+String(x.error.message||x.error)+'</div>';return;}
+    const accounts=x.data?.accounts||[];
+    window.hmCashAccounts=accounts;
+    box.innerHTML='<div class="small">Posisi rekening • bulan berjalan</div><div style="margin-top:10px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:5px 0" onclick="hmOpenCash(\\''+a.code+'\\')"><div class="row" style="justify-content:space-between"><span><b>'+a.code+'</b> '+a.name+'</span><b>'+hmRp(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada akun Kas & Bank aktif.</div>')+'</div><div class="box" style="margin-top:12px"><div class="small">Fungsi berikutnya: pencatatan uang masuk, uang keluar, transfer antar Kas/Bank, dan rekonsiliasi.</div></div>';
+    panel.scrollIntoView({behavior:'smooth',block:'start'});
     return;
   }
   if(section==='report'){

@@ -2753,7 +2753,7 @@ function card(l){
  const qualified=l.status_lead==='QUALIFIED';
  const limited=(l.status_lead==='CS LOCK'&&!q&&!mg)||(l.status_lead==='HANDLE'&&!own&&!mg);
  const displayStatus=l.sales_result==='CLOSING'?'HASIL • CLOSING':l.sales_result==='GAGAL'?'HASIL • GAGAL':l.qualification_result==='GAGAL'?'HASIL • GAGAL':l.qualification_result==='POTENSIAL'?'POTENSIAL • FOLLOW-UP':l.status_lead==='HASIL'?'HASIL':l.status_lead==='QUALIFIED'?'QUALIFIED':l.status_lead;
- return '<div class="lead"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(displayStatus)+'</span></h3>'+
+ return '<div class="lead" data-lead-id="'+esc(l.lead_id)+'"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(displayStatus)+'</span></h3>'+
  '<div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+(l.content_creator?' • Content: '+esc(l.content_creator):'')+'</div>'+
  '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+' • Sales: '+esc(l.sales_claimed_by||'-')+'</div>'+
  (limited?'<p class="small">Lead sedang ditangani oleh owner lain. Detail tidak tersedia.</p>':
@@ -3249,11 +3249,16 @@ async function confirmDelete(id){
  const btn=document.getElementById('deleteBtn');
  if(btn){btn.disabled=true;btn.textContent='Menghapus...';}
  try{
+  // Optimistic delete: kartu hilang SEGERA setelah konfirmasi, tanpa menunggu RPC/database.
+  document.querySelectorAll('[data-lead-id]').forEach(el=>{
+    if(String(el.getAttribute('data-lead-id')||'').trim()===leadId){
+      el.remove();
+    }
+  });
+  leads=(leads||[]).filter(l=>String(l?.lead_id||'').trim()!==leadId);
+
   const x=await sb.rpc('delete_lead',{p_lead_id:leadId,p_confirmation:'YA, HAPUS PERMANEN'});
   if(x.error)throw x.error;
-
-  // Hapus langsung dari state lokal agar kartu hilang saat ini juga.
-  leads=(leads||[]).filter(l=>String(l?.lead_id||'').trim()!==leadId);
   // Tutup modul Lead Tracker secara paksa agar kartu yang baru dihapus
   // tidak mungkin tetap terlihat di modal yang sedang terbuka.
   const modal=document.getElementById('modal');
@@ -3273,7 +3278,9 @@ async function confirmDelete(id){
   // Sinkronisasi database berjalan di belakang.
   loadLeads().catch(e=>console.error('[HM] Sinkronisasi setelah delete:',e));
  }catch(e){
+  // Jika database gagal, ambil ulang agar kartu yang dihapus secara optimistis kembali.
   if(btn){btn.disabled=false;btn.textContent='Hapus';}
+  await loadLeads().catch(()=>{});
   alert('Hapus lead gagal: '+String(e?.message||e));
  }
 }

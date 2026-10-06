@@ -181,12 +181,29 @@ async function openInventoryDashboard(){
  if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management dan Admin Finance.');return;}
  const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;
  const open=!panel.classList.contains('hidden');
- if(open && inventoryView==='dashboard'){panel.classList.add('hidden');if(btn)btn.textContent='📊 Dashboard Inventory';return;}
- panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Product & Stock';
- const section=document.getElementById('inventorySection');if(section)section.classList.remove('hidden');
- if(typeof renderManagementStockSummary==='function'&&profile?.is_management)await renderManagementStockSummary().catch(()=>{});
- if(open){setInventoryView('dashboard');return;}
- inventoryView='dashboard';renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));
+ // Jika panel sedang menampilkan Stock/Produk, tombol Dashboard HARUS berpindah
+ // ke Dashboard Inventory, bukan mengikuti view sebelumnya.
+ if(open && inventoryView==='dashboard'){
+   panel.classList.add('hidden');
+   if(btn)btn.textContent='📊 Dashboard Inventory';
+   return;
+ }
+ panel.classList.remove('hidden');
+ if(btn)btn.textContent='✖ Tutup Product & Stock';
+ const section=document.getElementById('inventorySection');
+ if(section)section.classList.remove('hidden');
+ inventoryView='dashboard';
+ if(open){
+   // Panel sudah ada: cukup render ulang isi panel ke Dashboard Inventory.
+   if(typeof renderInventoryBody==='function')renderInventoryBody();
+   if(typeof renderManagementStockSummary==='function'&&profile?.is_management)await renderManagementStockSummary().catch(()=>{});
+   return;
+ }
+ if(typeof renderInventory==='function'){
+   renderInventory().catch(e=>console.error('[HM] Inventory dashboard error',e));
+ }else if(typeof renderInventoryBody==='function'){
+   renderInventoryBody();
+ }
 }
 window.refreshHunterLauncher=async function(){
   const btn=document.getElementById('inventoryHunterBtn');

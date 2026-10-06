@@ -2223,6 +2223,8 @@ function hmRenderLeadTodayMain(){
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const isMgmt=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT');
  const isDeveloper=rawRole==='DEVELOPER APLIKASI';
+ const isAtmadita=String(profile?.name||'').trim().toLowerCase()==='atmadita';
+ if(isAtmadita){host.innerHTML='';return;}
  const isDivisi=roles.includes('DIVISI')||rawRole==='DIVISI';
  const isFacilitator=roles.includes('FASILITATOR')||rawRole==='FASILITATOR';
  const isTeam=!isMgmt&&!isDeveloper&&!isDivisi&&!isFacilitator;

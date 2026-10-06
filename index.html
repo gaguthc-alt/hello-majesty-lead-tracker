@@ -4193,7 +4193,8 @@ function accountingDates(){
 }
 function accountingRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID');}
 async function loadAccountingDashboard(){
-  if(!profile?.is_management)return;
+  const accountingAllowed=!!profile?.is_management||getActiveRoles().includes('FASILITATOR');
+  if(!accountingAllowed)return;
   const d=accountingDates();
   const [pl,h,b]=await Promise.all([
     sb.rpc('profit_loss_totals',{p_start_date:d.start,p_end_date:d.end}),

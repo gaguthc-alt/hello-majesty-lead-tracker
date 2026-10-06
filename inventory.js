@@ -185,12 +185,21 @@ async function openInventorySection(view){
  const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;
  const open=!panel.classList.contains('hidden');
  if(open && inventoryView===view){panel.classList.add('hidden');if(btn)btn.textContent='📊 Dashboard Inventory';return;}
- panel.classList.remove('hidden');if(btn)btn.textContent='✖ Tutup Product & Stock';
+ panel.classList.remove('hidden');
+ if(view==='sales'){
+   // Laporan Penjualan berdiri sendiri: jangan render ulang Product & Stock.
+   inventoryView='sales';
+   panel.className='box';
+   panel.innerHTML='<div id="inventoryBody"></div>';
+   if(btn)btn.textContent='✖ Tutup Laporan Penjualan';
+   try{await openSalesReport();}catch(e){console.error('[HM] Sales report error',e);alert(e?.message||e);}
+   return;
+ }
+ if(btn)btn.textContent='✖ Tutup Product & Stock';
  const section=document.getElementById('inventorySection');if(section)section.classList.remove('hidden');
  try{
    await renderInventory();
-   if(view==='sales') await openSalesReport();
-   else setInventoryView(view);
+   setInventoryView(view);
  }catch(e){console.error('[HM] Inventory section error',e);alert(e?.message||e);}
 }
 async function refreshInventory(btn){if(btn?.disabled)return;try{if(btn){btn.disabled=true;btn.textContent='⏳ Loading...'}await renderInventory()}catch(e){console.error(e);alert('Refresh Product & Stock error: '+(e?.message||e))}finally{if(btn){btn.disabled=false;btn.textContent='↻ Refresh'}}}

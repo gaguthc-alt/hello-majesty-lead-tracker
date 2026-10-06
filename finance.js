@@ -338,14 +338,11 @@ if(!panel||!body)throw new Error('Panel Finance belum siap.');
 if(modal){modal.classList.add('hidden');modal.style.display='none';}
 if(title)title.textContent='💰 Finance';
 panel.classList.remove('hidden');
-body.innerHTML='<div class="box"><h3 style="margin-top:0">💰 FINANCE</h3><div class="small">Kas, laba & neraca — kontrol keuangan Hello Majesty</div><div id="hmFinanceSummary" class="stats" style="grid-template-columns:1fr;gap:8px;margin-top:12px"><div class="box"><b>Memuat data Finance...</b></div></div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="openAccountingModule(\'balance\')">⚖️ Neraca</button><button class="secondary" type="button" onclick="openAccountingModule(\'profit\')">📈 Laba Rugi</button><button class="secondary" type="button" onclick="openAccountingModule(\'ledger\')">📖 Buku Besar</button></div></div>';
-const host=document.getElementById('hmFinanceSummary');
-try{
-const fa=await window.sb.from('financial_accounts').select('id,name,account_type,outlet').eq('active',true).order('name');
-if(fa.error)throw fa.error;
-const accounts=fa.data||[],cash=accounts.filter(x=>{const t=String(x.account_type||'').toUpperCase();return t.includes('CASH')||t.includes('BANK');});
-host.innerHTML='<div class="box"><div class="small">Akun kas & bank aktif</div><b style="font-size:20px">'+cash.length+' akun</b></div><div class="box"><div class="small">Status Accounting</div><b>Jurnal POSTED</b><div class="small" style="margin-top:4px">Gunakan Neraca dan Laba Rugi untuk rincian keuangan.</div></div>';
-}catch(e){host.innerHTML='<div class="box"><b>Finance siap dibuka</b><div class="small">Ringkasan akun belum dapat dimuat: '+esc(String(e?.message||e))+'</div></div>';}
+body.innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">💰 FINANCE MANAGEMENT</h3><div class="small" style="margin-top:4px">Kontrol keuangan Hello Majesty</div></div><button class="primary" type="button" onclick="window.hmFinanceLoad(\'month\')">🔄 Refresh</button></div>'+
+'<div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="secondary" type="button" onclick="window.hmFinanceLoad(\'today\')">📅 Hari Ini</button><button class="secondary" type="button" onclick="window.hmFinanceLoad(\'month\')">📆 Bulan Ini</button><button class="secondary" type="button" onclick="window.hmFinanceLoad(\'year\')">📊 Tahun Ini</button></div>'+
+'<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="secondary" type="button" onclick="openAccountingModule(\'balance\')">⚖️ Neraca</button><button class="secondary" type="button" onclick="openAccountingModule(\'profit\')">📈 Laba Rugi</button><button class="secondary" type="button" onclick="openAccountingModule(\'ledger\')">📖 Buku Besar</button></div>'+
+'<div id="hmFinBox" style="margin-top:12px">Memuat data Finance...</div></div>';
+await window.hmFinanceLoad('month');
 panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
 window.openFinance=openFinance;

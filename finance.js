@@ -442,7 +442,8 @@ const p=window.profile||{};
 const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
 const roles=Array.isArray(window.hmRoles)?window.hmRoles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' ')):[];
 const isManagement=!!p.is_management||roles.includes('MANAGEMENT')||role.includes('MANAGEMENT');
-if(!isManagement && role!=='FASILITATOR' && role!=='ADMIN FINANCE' && role!=='ADMIN FINANCE MAJESTY CELL'){alert('Akses Finance tidak diizinkan.');return;}
+const isDeveloper=!!window.developer||role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
+if(!isDeveloper&&!isManagement && role!=='FASILITATOR' && role!=='ADMIN FINANCE' && role!=='ADMIN FINANCE MAJESTY CELL'){alert('Akses Finance tidak diizinkan.');return;}
 const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle'),modal=document.getElementById('modal');
 if(!panel||!body)throw new Error('Panel Finance belum siap.');
 if(modal){modal.classList.add('hidden');modal.style.display='none';}
@@ -477,7 +478,7 @@ window.openFinanceSection=async function(section){
     if(x.error){box.innerHTML='<div class="danger box">Gagal memuat Kas & Bank: '+String(x.error.message||x.error)+'</div>';return;}
     const accounts=x.data?.accounts||[];
     window.hmCashAccounts=accounts;
-    box.innerHTML='<div class="small">Posisi rekening • bulan berjalan</div><div style="margin-top:10px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:5px 0" onclick="hmOpenCash(\\''+a.code+'\\')"><div class="row" style="justify-content:space-between"><span><b>'+a.code+'</b> '+a.name+'</span><b>'+hmRp(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada akun Kas & Bank aktif.</div>')+'</div><div class="box" style="margin-top:12px"><div class="small">Fungsi berikutnya: pencatatan uang masuk, uang keluar, transfer antar Kas/Bank, dan rekonsiliasi.</div></div>';
+    box.innerHTML='<div class="small">Posisi rekening • bulan berjalan</div><div style="margin-top:10px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:5px 0" data-code="'+String(a.code||'').replace(/"/g,'&quot;')+'" onclick="hmOpenCash(this.dataset.code)"><div class="row" style="justify-content:space-between"><span><b>'+a.code+'</b> '+a.name+'</span><b>'+hmRp(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada akun Kas & Bank aktif.</div>')+'</div><div class="box" style="margin-top:12px"><div class="small">Fungsi berikutnya: pencatatan uang masuk, uang keluar, transfer antar Kas/Bank, dan rekonsiliasi.</div></div>';
     panel.scrollIntoView({behavior:'smooth',block:'start'});
     return;
   }

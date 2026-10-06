@@ -147,7 +147,7 @@ window.payPartnerCapitalBalance=async function(outlet,amount){
 };
 window.openFinanceInventoryApprovals=async function(){
   const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' '),roles=typeof getActiveRoles==='function'?getActiveRoles():[role];
-  if(!p.is_management && !roles.includes('ADMIN FINANCE MAJESTY CELL'){alert('Approval Barang Masuk hanya untuk Finance Majesty Cell.');return;}
+  if(!p.is_management && !roles.includes('ADMIN FINANCE MAJESTY CELL')){alert('Approval Barang Masuk hanya untuk Finance Majesty Cell.');return;}
   const m=document.getElementById('modal'),t=document.getElementById('mt'),b=document.getElementById('mb');
   if(!m||!t||!b)return;
   t.textContent='🔔 Persetujuan Barang Masuk';
@@ -327,7 +327,29 @@ window.hmOpenCash=async function(code){const sb=window.sb,p=window.profile||{},a
   };
   window.openFinanceDisbursement=openFinanceDisbursement;
 
-  function patchAfterInline(){
+  async function openFinance(){
+const p=window.profile||{};
+const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
+const roles=Array.isArray(window.hmRoles)?window.hmRoles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' ')):[];
+const isManagement=!!p.is_management||roles.includes('MANAGEMENT')||role.includes('MANAGEMENT');
+if(!isManagement && role!=='FASILITATOR' && role!=='ADMIN FINANCE' && role!=='ADMIN FINANCE MAJESTY CELL'){alert('Akses Finance tidak diizinkan.');return;}
+const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle'),modal=document.getElementById('modal');
+if(!panel||!body)throw new Error('Panel Finance belum siap.');
+if(modal){modal.classList.add('hidden');modal.style.display='none';}
+if(title)title.textContent='💰 Finance';
+panel.classList.remove('hidden');
+body.innerHTML='<div class="box"><h3 style="margin-top:0">💰 FINANCE</h3><div class="small">Kas, laba & neraca — kontrol keuangan Hello Majesty</div><div id="hmFinanceSummary" class="stats" style="grid-template-columns:1fr;gap:8px;margin-top:12px"><div class="box"><b>Memuat data Finance...</b></div></div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="openAccountingModule(\'balance\')">⚖️ Neraca</button><button class="secondary" type="button" onclick="openAccountingModule(\'profit\')">📈 Laba Rugi</button><button class="secondary" type="button" onclick="openAccountingModule(\'ledger\')">📖 Buku Besar</button></div></div>';
+const host=document.getElementById('hmFinanceSummary');
+try{
+const fa=await window.sb.from('financial_accounts').select('id,name,account_type,outlet').eq('active',true).order('name');
+if(fa.error)throw fa.error;
+const accounts=fa.data||[],cash=accounts.filter(x=>{const t=String(x.account_type||'').toUpperCase();return t.includes('CASH')||t.includes('BANK');});
+host.innerHTML='<div class="box"><div class="small">Akun kas & bank aktif</div><b style="font-size:20px">'+cash.length+' akun</b></div><div class="box"><div class="small">Status Accounting</div><b>Jurnal POSTED</b><div class="small" style="margin-top:4px">Gunakan Neraca dan Laba Rugi untuk rincian keuangan.</div></div>';
+}catch(e){host.innerHTML='<div class="box"><b>Finance siap dibuka</b><div class="small">Ringkasan akun belum dapat dimuat: '+esc(String(e?.message||e))+'</div></div>';}
+panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+window.openFinance=openFinance;
+function patchAfterInline(){
     if(typeof window.saveS==='function' && !window.__hmOriginalSaveS){
       window.__hmOriginalSaveS=window.saveS;
       window.saveS=financeSaveS;

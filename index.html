@@ -1539,42 +1539,18 @@ function hmOpenTradeInline(){
  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
 }
 function sendTradeInlineWA(){
- const lines=[
- '📱 *FORM DATA TUKAR TAMBAH*',
- '*HELLO MAJESTY*',
- '',
- 'Mohon bantu isi data HP yang ingin ditukar:',
- '',
+ const msg=[
+ '📱 *FORM DATA TUKAR TAMBAH*','*HELLO MAJESTY*','',
+ 'Mohon bantu isi data HP yang ingin ditukar:','',
  '*DATA HP*',
- '1. Merek & Tipe :',
- '2. Kapasitas :',
- '3. Warna :',
- '4. Battery Health :',
- '5. Kondisi fisik :',
- '6. Minus :',
- '7. Kelengkapan :',
- '8. Garansi :',
- '9. Face ID :',
- '10. True Tone :',
- '11. Signal :',
- '12. Kamera :',
- '13. Speaker & Mic :',
- '14. Charging :',
- '15. Lama Pemakaian :',
- '',
- '*HP YANG DIINGINKAN*',
- '16. Tipe HP :',
- '17. Estimasi budget / tambah dana :',
- '',
- 'Silakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏',
- '',
- 'Setelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.',
- '',
- '— *HELLO MAJESTY*',
- '_Built on Trust._'
- ];
- const msg=lines.join('\n');
- window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
+ '1. Merek & Tipe :','2. Kapasitas :','3. Warna :','4. Battery Health :','5. Kondisi fisik :','6. Minus :','7. Kelengkapan :','8. Garansi :','9. Face ID :','10. True Tone :','11. Signal :','12. Kamera :','13. Speaker & Mic :','14. Charging :','15. Lama Pemakaian :','',
+ '*HP YANG DIINGINKAN*','16. Tipe HP :','17. Estimasi budget / tambah dana :','',
+ 'Silakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏','',
+ 'Setelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.','',
+ '— *HELLO MAJESTY*','_Built on Trust._'
+ ].join(String.fromCharCode(10));
+ const url='https://api.whatsapp.com/send?text='+encodeURIComponent(msg);
+ location.href=url;
 }
 async function submitTradeInline(){
  const msg=document.getElementById('hmtt_msg'),btn=document.getElementById('hmtt_submit');

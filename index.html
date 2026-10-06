@@ -4281,21 +4281,17 @@ window.openAccountingModule=openAccountingModule;
 /* Session bootstrap: refresh tidak boleh memicu logout. */
 (async()=>{
  try{
-  await ensureSupabase();
   if(new URLSearchParams(location.search).get("trade")==="1"){initTradePublic();return}
-  let session=(await sb.auth.getSession()).data.session;
-  // Backup session di sessionStorage agar Refresh Aplikasi tidak pernah memaksa login ulang.
-  if(!session){
-    try{
-      const raw=sessionStorage.getItem('hm_refresh_session');
-      if(raw){
-        const saved=JSON.parse(raw);
-        const restored=await sb.auth.setSession({access_token:saved.access_token,refresh_token:saved.refresh_token});
-        session=restored.data?.session||null;
-        if(session)sessionStorage.removeItem('hm_refresh_session');
-      }
-    }catch(e){console.warn('[HM] restore refresh session',e)}
+  // Login-v9 adalah sumber sesi utama. Jangan memanggil sb.auth.getSession()
+  // karena client utama memakai persistSession:false.
+  // Saat browser di-refresh, pulihkan sesi tersimpan melalui refresh token.
+  if(typeof window.hmRestoreLogin==='function'){
+    const restored=await window.hmRestoreLogin();
+    if(restored)return;
   }
+  // Fallback hanya bila login-v9 belum siap.
+  await ensureSupabase();
+  const session=(await sb.auth.getSession()).data?.session;
   if(session)await start(session.user);
  }catch(ex){
   console.error('[HM] Session bootstrap:',ex);

@@ -105,8 +105,8 @@ window.loadPartnerSettlementDetail=async function(outlet){
       :'<div class="small">Rincian historis Plaza belum tersedia.</div>';
     return;
   }
-  const {data:rows,error}=await sb.from('partner_capital_due').select('*').eq('outlet',outlet).order('sold_at',{ascending:false});
-  if(error){box.innerHTML='<div class="small">'+error.message+'</div>';return;}
+  const {data:rows,error}=await sb.rpc('partner_capital_due_detail',{p_outlet:outlet});
+  if(error){box.innerHTML='<div class="small">Gagal memuat rincian modal Cell: '+esc(String(error.message||error))+'</div>';return;}
   const ids=(rows||[]).map(r=>r.stock_unit_id).filter(Boolean);
   const stockRes=ids.length?await sb.from('stock_units').select('*').in('id',ids):{data:[]};
   const stockMap={};(stockRes.data||[]).forEach(s=>stockMap[s.id]=s);

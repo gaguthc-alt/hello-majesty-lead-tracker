@@ -334,6 +334,20 @@ function inventoryReceiveOutlet(){
  const sel=$('stoutlet');
  return profile?.is_management ? (sel?.value||'') : (profile?.outlet||'');
 }
+function hmRestoreStockCardActions(){
+ const body=document.getElementById('inventoryBody');
+ if(!body)return;
+ body.querySelectorAll('button[onclick^="openProductDetail("]').forEach(detailBtn=>{
+   if(detailBtn.parentElement?.querySelector('[data-hm-wa-action]'))return;
+   const m=String(detailBtn.getAttribute('onclick')||'').match(/openProductDetail\(['\"]([^'\"]+)['\"]\)/);
+   if(!m)return;
+   const id=m[1];
+   const wa=document.createElement('button');
+   wa.type='button'; wa.className='secondary'; wa.setAttribute('data-hm-wa-action','1'); wa.textContent='📤 Kirim ke WA';
+   wa.addEventListener('click',()=>{const s=inventoryStock.find(x=>x.id===id);if(s)shareProduct(s);});
+   detailBtn.insertAdjacentElement('afterend',wa);
+ });
+}
 function setInventoryView(view){if(inventoryDashboardLock&&view!=='dashboard')return;if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';inventoryDashboardLock=false;return;}inventoryView=view;if(view!=='dashboard')inventoryDashboardLock=false;if(view==='sales'){renderInventorySalesReport();}else renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='dashboard'?'DASHBOARD':view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
 async function openInventorySoldDetail(){
  const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';

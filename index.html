@@ -2372,9 +2372,26 @@ function renderRoleHome(){
        hmCloseMainMenu();
        hmActiveMainMenu='';
        void Promise.resolve().then(()=>{
-         const fn=typeof window.openInventoryApprovals==='function'?window.openInventoryApprovals:window.openFinanceInventoryApprovals;
-         if(typeof fn!=='function')throw new Error('Fungsi Persetujuan Barang Masuk belum termuat.');
-         return fn();
+         const callApproval=()=>{
+           const fn=typeof window.openInventoryApprovals==='function'?window.openInventoryApprovals:window.openFinanceInventoryApprovals;
+           if(typeof fn!=='function')throw new Error('Fungsi Persetujuan Barang Masuk belum termuat.');
+           return fn();
+         };
+         if(typeof window.openInventoryApprovals==='function'||typeof window.openFinanceInventoryApprovals==='function') return callApproval();
+         return new Promise((resolve,reject)=>{
+           const existing=[...document.scripts].find(s=>String(s.src||'').includes('finance.js'));
+           if(existing){
+             let tries=0;
+             const wait=()=>{ if(typeof window.openFinanceInventoryApprovals==='function'||typeof window.openInventoryApprovals==='function') return resolve(callApproval()); if(++tries>80)return reject(new Error('Modul Finance belum selesai dimuat.')); setTimeout(wait,100); };
+             wait();
+             return;
+           }
+           const s=document.createElement('script');
+           s.src='finance.js?v=20261006-finance-approval-retry';
+           s.onload=()=>{try{resolve(callApproval())}catch(e){reject(e)}};
+           s.onerror=()=>reject(new Error('Modul Finance gagal dimuat.'));
+           document.head.appendChild(s);
+         });
        }).catch(ex=>{
          console.error('[HM] Persetujuan barang masuk gagal dibuka:',ex);
          const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');

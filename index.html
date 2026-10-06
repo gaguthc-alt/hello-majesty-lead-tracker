@@ -2222,7 +2222,12 @@ function renderRoleHome(){
    // Developer tetap melihat seluruh kelompok menu.
    // Atmadita tidak memiliki menu karena cards sengaja kosong.
    if(!developer && gi>1)return '';
-   const allowed=g[2].filter(item=>cards.some(x=>x[1]===item[1]));
+   let allowed=g[2].filter(item=>cards.some(x=>x[1]===item[1]));
+   // Master Produk wajib tampil di dalam INVENTORY & STOCK untuk Management/Developer.
+   if((mg||developer) && g[1]==='INVENTORY & STOCK' && !allowed.some(item=>item[1]==='Master Produk')){
+     const mp=g[2].find(item=>item[1]==='Master Produk');
+     if(mp)allowed=[mp,...allowed];
+   }
    if(!allowed.length)return '';
    return '<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>'+g[0]+' '+esc(g[1])+'</span></div><div class="role-home-submenu">'+allowed.map(item=>{
      const card=cards.find(x=>x[1]===item[1]);

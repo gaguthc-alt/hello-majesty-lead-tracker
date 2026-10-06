@@ -1898,6 +1898,42 @@ async function hmOpenContentPerformance(){
   }
   node.classList.remove('hidden');
 }
+function hmOpenLeadToday(){
+  const t=document.getElementById('mt'),b=document.getElementById('mb');
+  if(!t||!b)return;
+  const rows=leads.filter(viewerLead);
+  const start=new Date();start.setHours(0,0,0,0);
+  const end=new Date(start);end.setDate(end.getDate()+1);
+  // "Hari ini" mengikuti aktivitas terakhir, sehingga lead lama yang sedang
+  // dikerjakan hari ini tetap masuk sampai hasil CLOSING/GAGAL.
+  const todayRows=rows.filter(l=>{
+    const d=new Date(l.updated_at||l.created_at);
+    return d>=start&&d<end;
+  });
+  const bucket=l=>{
+    const sales=String(l.sales_result||'').toUpperCase();
+    const cs=String(l.qualification_result||'').toUpperCase();
+    const status=String(l.status_lead||'').toUpperCase();
+    if(sales==='CLOSING'||cs==='CLOSING'||String(l.hasil||'').toUpperCase()==='CLOSING')return 'CLOSING';
+    if(sales==='GAGAL'||cs==='GAGAL'||String(l.hasil||'').toUpperCase()==='GAGAL'||String(l.hasil||'').toUpperCase()==='LOST')return 'GAGAL';
+    if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
+    if(status==='HANDLE'||l.sales_claimed_by)return 'HANDLE';
+    if(status==='QUALIFIED')return 'QUALIFIED';
+    if(status==='CS LOCK')return 'CS LOCK';
+    if(status==='AVAILABLE')return 'AVAILABLE';
+    return status||'LAINNYA';
+  };
+  const count=s=>todayRows.filter(l=>bucket(l)===s).length;
+  const order=['AVAILABLE','CS LOCK','POTENSIAL','QUALIFIED','HANDLE','CLOSING','GAGAL'];
+  t.textContent='📅 Lead Hari Ini';
+  b.innerHTML='<div class="small" style="margin-bottom:10px">Lead yang memiliki aktivitas hari ini, ditampilkan dari <b>AVAILABLE sampai CLOSING</b>. Lead lama tetap muncul jika hari ini ada perubahan/follow-up.</div>'+
+    '<div class="stats" style="margin-bottom:12px">'+
+    '<div class="stat"><div class="small">Total Hari Ini</div><div class="num">'+todayRows.length+'</div></div>'+
+    order.map(s=>'<div class="stat"><div class="small">'+s+'</div><div class="num">'+count(s)+'</div></div>').join('')+
+    '</div>'+
+    (todayRows.length?order.map(s=>todayRows.filter(l=>bucket(l)===s).map(l=>card(l)).join('')).join(''):'<div class="small">Belum ada aktivitas lead hari ini.</div>');
+  $('modal').classList.remove('hidden');
+}
 function hmOpenLeadTracker(){
   const t=document.getElementById('mt'),b=document.getElementById('mb');
   if(!t||!b)return;
@@ -2115,6 +2151,7 @@ function renderRoleHome(){
  if(mg || developer){
    add('📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()');
    add('👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()');
+   add('📅','Lead Hari Ini','Lead yang aktif/berubah hari ini dari AVAILABLE sampai CLOSING','hmOpenLeadToday()');
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');
    add('🤝','Lead Handover','Qualified/Potensial → handover & share ke Sales','hmOpenLeadHandover()');
    add('🔔','Perlu Perhatian','Follow-up yang harus segera ditindaklanjuti','showNeedsAttention()');

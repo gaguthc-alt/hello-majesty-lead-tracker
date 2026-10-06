@@ -1923,6 +1923,11 @@ function hmRunMainMenuAction(action){
   case 'hmOpenCustomerDatabase()': return hmOpenCustomerDatabase();
   case "openInventorySection('sales')": return window.openInventorySection('sales');
   case "openInventorySection('stock')": return window.openInventorySection('stock');
+  case 'openReceiveStock()': return openReceiveStock();
+  case "hmOpenInventoryFeature('mutasi')": return window.hmOpenInventoryFeature('mutasi');
+  case "hmOpenInventoryFeature('riwayat')": return window.hmOpenInventoryFeature('riwayat');
+  case "hmOpenInventoryFeature('penyesuaian')": return window.hmOpenInventoryFeature('penyesuaian');
+  case "hmOpenInventoryFeature('opname')": return window.hmOpenInventoryFeature('opname');
   case 'openPerformance()': return hmOpenPerformanceInline();
   case 'hmOpenPerformanceInline()': return hmOpenPerformanceInline();
   case 'hmOpenPerformanceReport()': return hmOpenPerformanceReport();

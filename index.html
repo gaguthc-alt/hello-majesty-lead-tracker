@@ -2486,6 +2486,8 @@ function renderRoleHome(){
    // Tetap render sebagai HTML section — jangan return array mentah,
    // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.
    const forceVisible = g[1]==='CONTENT & PROMOTION';
+   // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
+   if(g[1]==='FINANCE' && !developer)return '';
    const isCommissionGroup = g[1]==='KOMISI & REWARD';
    const isDivisi = roles.includes('DIVISI') || rawRole==='DIVISI';
    // KOMISI & REWARD mempunyai aturan khusus:

@@ -215,7 +215,10 @@
     const old=activeSession;
     activeSession={...saved};
     try{
-      return {...activeSession,...(await refreshAccessToken())};
+      await refreshAccessToken();
+      // refreshAccessToken() sudah memperbarui activeSession secara penuh,
+      // termasuk access_token, refresh_token, expires_at, dan user.
+      return {...activeSession};
     }catch(ex){
       activeSession=old;
       throw ex;
@@ -226,7 +229,7 @@
   window.hmLoginClient=()=>getClient();
   window.hmRestoreLogin=restorePersistedSession;
   // Auto-restore the last authenticated session on page load.
-  setTimeout(()=>restorePersistedSession(),50);
+  setTimeout(()=>restorePersistedSession(),500);
 
   // Enter key should use the same protected login handler.
   document.addEventListener('keydown',function(e){

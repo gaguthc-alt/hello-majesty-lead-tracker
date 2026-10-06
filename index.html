@@ -2059,15 +2059,18 @@ function renderRoleHome(){
      // FINANCE: buka langsung melalui jalur khusus agar tidak tertahan
      // oleh sequence/penutupan panel menu utama.
      if(action==='openFinance()'){
-       if(hmActiveMainMenu===title){
-         hmCloseMainMenu();
-         return;
-       }
+       // Finance selalu boleh diklik ulang. Jangan gunakan guard
+       // hmActiveMainMenu karena jika percobaan sebelumnya gagal,
+       // status "Finance" dapat tertinggal dan membuat tombol terlihat macet.
        hmCloseMainMenu();
-       hmActiveMainMenu=title;
-       hmSetMainMenuButtonOpen(title);
+       hmActiveMainMenu='';
        void Promise.resolve()
-         .then(()=>window.openFinance())
+         .then(()=>{
+           if(typeof window.openFinance!=='function'){
+             throw new Error('Fungsi Finance belum termuat.');
+           }
+           return window.openFinance();
+         })
          .catch(ex=>{
            console.error('[HM] Finance gagal dibuka:',ex);
            const panel=document.getElementById('hmMenuPanel');

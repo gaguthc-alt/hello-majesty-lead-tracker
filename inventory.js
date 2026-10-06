@@ -178,34 +178,29 @@ async function renderInventory(){
   bindTop('🔴 Terjual',()=>openInventorySoldDetail(), 'Klik untuk melihat rincian barang terjual');
   bindTop('↩️ Retur',()=>openInventoryReturnDetail(), 'Klik untuk melihat rincian retur');
 }
+async function renderStandaloneInventoryDashboard(){
+ const section=document.getElementById('inventoryDashboardSection'),panel=document.getElementById('inventoryDashboardPanel');
+ if(!section||!panel)return;
+ section.classList.remove('hidden');section.setAttribute('aria-hidden','false');
+ panel.className='box';
+ panel.innerHTML='<div class="small">⏳ Memuat Dashboard Inventory...</div>';
+ try{
+   await loadInventoryData();
+   panel.innerHTML='<div id="inventoryBody"></div>';
+   inventoryView='dashboard';
+   renderInventoryDashboardBody();
+ }catch(e){
+   console.error('[HM] Standalone Inventory Dashboard error',e);
+   panel.innerHTML='<div class="box" style="color:#b42318"><b>Dashboard Inventory gagal memuat data.</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';
+ }
+}
 async function openInventoryDashboard(){
  if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management dan Admin Finance.');return;}
- const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;
- const open=!panel.classList.contains('hidden');
- if(open && inventoryView==='dashboard'){
-   inventoryDashboardLock=false;
-   panel.classList.add('hidden');
-   if(btn)btn.textContent='📊 Dashboard Inventory';
-   return;
- }
  inventoryDashboardLock=true;
- panel.classList.remove('hidden');
- if(btn)btn.textContent='✖ Tutup Product & Stock';
- const section=document.getElementById('inventorySection');
- if(section)section.classList.remove('hidden');
- try{await renderInventory();}catch(e){console.error('[HM] Inventory dashboard load error',e);}
- if(!inventoryDashboardLock)return;
- inventoryView='dashboard';
- renderInventoryBody();
- const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: DASHBOARD';
- // Re-apply once after the browser finishes any queued Product & Stock render.
- setTimeout(()=>{
-   if(inventoryDashboardLock && document.getElementById('inventoryPanel')&&!document.getElementById('inventoryPanel').classList.contains('hidden')){
-     inventoryView='dashboard';
-     renderInventoryBody();
-     const d=document.getElementById('inventoryViewDebug');if(d)d.textContent='Mode: DASHBOARD';
-   }
- },300);
+ const oldSection=document.getElementById('inventorySection'),dashSection=document.getElementById('inventoryDashboardSection');
+ if(oldSection)oldSection.classList.add('hidden');
+ if(dashSection){dashSection.classList.remove('hidden');dashSection.setAttribute('aria-hidden','false');}
+ try{await renderStandaloneInventoryDashboard();}catch(e){console.error('[HM] Inventory dashboard open error',e);}
 }
 window.refreshHunterLauncher=async function(){
   const btn=document.getElementById('inventoryHunterBtn');
@@ -251,6 +246,9 @@ async function refreshMasterProductView(btn){
 }
 window.renderMasterProductView=renderMasterProductView;
 async function openInventorySection(view){
+ const dashSection=document.getElementById('inventoryDashboardSection');
+ if(dashSection){dashSection.classList.add('hidden');dashSection.setAttribute('aria-hidden','true');}
+ inventoryDashboardLock=false;
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  if(role==='ADMIN FINANCE MAJESTY CELL' && (view==='dashboard'||view==='sales')){alert('Bagian ini tidak termasuk akses Finance Majesty Cell.');return;}
  const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;
@@ -359,7 +357,7 @@ function renderInventoryDashboardBody(){
   '<div class="box"><h3 style="margin:0">📊 DASHBOARD INVENTORY</h3><div class="small" style="margin-top:5px">Kontrol stock untuk keputusan pembelian, penjualan, dan pergerakan barang.</div>'+
   '<div class="row" style="margin-top:10px"><select id="invDashOutlet"'+(isAdminFinance?' disabled':'')+'>'+(isManagement?'<option value="">📍 Semua Outlet</option>':'')+outlets.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select><select id="invDashCat"><option value="">Semua Kategori</option>'+cats.map(x=>'<option value="'+x+'">'+invCategory(x)+'</option>').join('')+'</select></div></div>'+
   '<div class="stats inventory-dashboard-stats">'+invStat('💰 Modal READY',canViewCost?rp(modal):'—')+invStat('🏷️ Nilai Jual',canViewCost?rp(jual):'—')+invStat('📈 Potensi Laba',canViewCost?rp(profit):'—')+'</div>'+
-  '<div class="row" style="margin-top:10px"><button class="secondary" onclick="inventoryView=\'stock\';renderInventoryBody()">📦 Lihat Stock</button>'+(canReceiveStock()?'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button>':'')+'</div>'+
+  '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openInventorySection(\'stock\')">📦 Lihat Stock</button>'+(canReceiveStock()?'<button class="success" onclick="openReceiveStock()">＋ Barang Masuk</button>':'')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">⚡ Perhatian</h3><div class="stats"><div class="stat"><div class="small">Barang masuk hari ini</div><div class="num">'+receivedToday+'</div></div><div class="stat"><div class="small">Stock >30 hari</div><div class="num">'+old30+'</div></div><div class="stat"><div class="small">Stock >60 hari</div><div class="num">'+old60+'</div></div></div></div>'+
   '<div class="box"><h3 style="margin:0 0 8px">🏪 Stock per Outlet</h3>'+(byOutlet.length?byOutlet.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.o)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Potensi '+rp(x.jual-x.cost):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">📱 Stock per Kategori</h3>'+(byCategory.length?byCategory.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+invCategory(x.cat)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Margin '+pct(x.jual-x.cost,x.jual):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+

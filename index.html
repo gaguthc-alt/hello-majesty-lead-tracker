@@ -4335,7 +4335,7 @@ async function openAccountingModule(module){
     const summary=await sb.rpc('balance_sheet_account_summary',{p_as_of_date:d.end,p_outlet:outletParam});
     if(summary.error)return host.innerHTML='<p>'+escA(summary.error.message)+'</p>';
     const all=summary.data||[];
-    const assets=all.filter(r=>r.account_type==='ASSET'&&!['1101','1102'].includes(String(r.account_code)));
+    const assets=all.filter(r=>r.account_type==='ASSET');
     const liabilities=all.filter(r=>r.account_type==='LIABILITY');
     const equity=all.filter(r=>r.account_type==='EQUITY');
     const totalByType=(arr)=>arr.reduce((n,r)=>n+Number(r.balance||0),0);

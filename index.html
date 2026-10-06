@@ -2296,12 +2296,35 @@ function renderRoleHome(){
      const title=String(item[1]||'');
      const action=String(item[3]||'').trim();
      console.log('[HM MENU CLICK]',{idx,title,action});
-     // APPROVAL MENU: panggil fungsi langsung dari tombol, tanpa bergantung dispatcher.
+     // APPROVAL MENU: samakan jalur Barang Masuk dengan Walk-In.
+     // Loader Inventory dipanggil bila fungsi belum tersedia, lalu panel inline dibuka oleh modul yang sama.
      if(title==='Persetujuan Barang Masuk'){
        hmCloseMainMenu();
        hmActiveMainMenu=title;
        hmSetMainMenuButtonOpen(title);
-       hmOpenInventoryApprovalDirect();
+       const runReceive=()=>{
+         const fn=window.openInventoryApprovals;
+         if(typeof fn!=='function') throw new Error('Fungsi Persetujuan Barang Masuk belum tersedia setelah modul dimuat.');
+         return fn();
+       };
+       void Promise.resolve().then(()=>{
+         if(typeof window.openInventoryApprovals==='function') return runReceive();
+         const s=document.createElement('script');
+         s.src='inventory.js?v=20261006-approval5';
+         return new Promise((resolve,reject)=>{
+           s.onload=()=>{try{resolve(runReceive())}catch(e){reject(e)}};
+           s.onerror=()=>reject(new Error('Modul Inventory gagal dimuat.'));
+           document.head.appendChild(s);
+         });
+       }).catch(ex=>{
+         console.error('[HM] Persetujuan Barang Masuk gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){
+           body.innerHTML='<div style="padding:10px;color:#b42318"><b>Persetujuan Barang Masuk gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||'Terjadi kesalahan')+'</div></div>';
+           panel.classList.remove('hidden');
+           panel.scrollIntoView({behavior:'smooth',block:'start'});
+         }else alert('Persetujuan Barang Masuk gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
+       });
        return;
      }
      if(title==='Persetujuan Walk-In'){

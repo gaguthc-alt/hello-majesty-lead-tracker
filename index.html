@@ -3066,6 +3066,19 @@ function buildInitialData(){
  if(t==='INFORMASI')Object.assign(d,{information:initialField('i_info'),related:initialField('i_info_related')});
  return d;
 }
+function showHMToast(message){
+ let t=document.getElementById('hmToast');
+ if(!t){
+  t=document.createElement('div');
+  t.id='hmToast';
+  t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:#111827;color:#fff;padding:12px 18px;border-radius:14px;font-weight:700;box-shadow:0 8px 24px #0005;max-width:90vw;text-align:center';
+  document.body.appendChild(t);
+ }
+ t.textContent=message;
+ t.style.display='block';
+ clearTimeout(window.hmToastTimer);
+ window.hmToastTimer=setTimeout(()=>{t.style.display='none';},2200);
+}
 let hmLeadSaveBusy=false;
 async function saveLead(){
  if(hmLeadSaveBusy)return;
@@ -3086,11 +3099,20 @@ async function saveLead(){
    if(x.error)throw x.error;
    const createdLead=Array.isArray(x.data)?x.data[0]:x.data;
    const createdId=createdLead?.lead_id||'';
-   alert('✅ Lead berhasil disimpan'+(createdId?'\nID Lead: '+createdId:'')+'\n\nLead sudah masuk ke Lead Aktif.');
+
+   // Tampilkan hasil simpan SEGERA. Jangan menunggu refresh database atau
+   // menahan UI dengan alert, supaya user langsung tahu lead sudah tersimpan.
+   if(createdLead){
+     leads=[createdLead,...(leads||[]).filter(l=>String(l?.lead_id||'')!==String(createdId))];
+   }
    closeModal();
    const panel=document.getElementById('hmMenuPanel');
    if(panel)panel.classList.add('hidden');
-   await loadLeads();
+   await render();
+
+   // Sinkronisasi database dilakukan di belakang.
+   loadLeads().catch(e=>console.error('[HM] Sinkronisasi lead baru:',e));
+   showHMToast('✅ Lead berhasil disimpan'+(createdId?' • '+createdId:''));
  }catch(e){
    alert(e?.message||'Lead gagal disimpan.');
  }finally{

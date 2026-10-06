@@ -2476,6 +2476,24 @@ function renderRoleHome(){
    // Tetap render sebagai HTML section — jangan return array mentah,
    // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.
    const forceVisible = g[1]==='CONTENT & PROMOTION';
+   const isCommissionGroup = g[1]==='KOMISI & REWARD';
+   const isDivisi = roles.includes('DIVISI') || rawRole==='DIVISI';
+   // KOMISI & REWARD mempunyai aturan khusus:
+   // - Komisi Tim hanya untuk DIVISI.
+   // - Komisi Saya untuk semua peran selain DIVISI.
+   // Divisi tidak perlu melihat Komisi Saya.
+   if(isCommissionGroup){
+     let allowed = isDivisi
+       ? g[2].filter(item=>item[1]==='Komisi Tim')
+       : g[2].filter(item=>item[1]==='Komisi Saya');
+     if(!allowed.length)return '';
+     return '<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>'+g[0]+' '+esc(g[1])+'</span></div><div class="role-home-submenu">'+allowed.map(item=>{
+       let card=cards.find(x=>x[1]===item[1]);
+       if(!card){ card=[item[0],item[1],item[2],item[3]]; cards.push(card); }
+       const cardIndex=cards.indexOf(card);
+       return '<button type="button" class="role-home-submenu-item" data-hm-menu-index="'+cardIndex+'" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
+     }).join('')+'</div></section>';
+   }
    // Developer Aplikasi melihat seluruh kelompok menu untuk pengembangan.
    // Akun lain tetap mengikuti permission melalui cards.
    // Tim dapat melihat LEAD TRACKER + SALES & PENJUALAN.

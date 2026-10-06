@@ -3079,14 +3079,14 @@ function showHMToast(message){
  clearTimeout(window.hmToastTimer);
  window.hmToastTimer=setTimeout(()=>{t.style.display='none';},2200);
 }
-var hmLeadSaveBusy=false;
+window.hmLeadSaveBusy = false;
 async function saveLead(){
-  if(hmLeadSaveBusy)return;
+  if(window.hmLeadSaveBusy)return;
   const type=hmLeadField('fneedtype')?.value;
   if(!type)return alert('Kebutuhan wajib dipilih.');
 
   const btn=document.getElementById('hm_saveLeadBtn');
-  hmLeadSaveBusy=true;
+  window.hmLeadSaveBusy=true;
   if(btn){
     btn.disabled=true;
     btn.style.pointerEvents='none';
@@ -3148,7 +3148,7 @@ async function saveLead(){
     console.error('[HM] saveLead error:',err);
     alert('Lead gagal disimpan.\n\n'+String(err?.message||err));
   }finally{
-    hmLeadSaveBusy=false;
+    window.hmLeadSaveBusy=false;
     if(btn){
       btn.disabled=false;
       btn.style.pointerEvents='auto';

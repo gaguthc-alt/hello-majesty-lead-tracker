@@ -208,7 +208,7 @@
   window.hmLoginClient=()=>getClient();
   window.hmRestoreLogin=restorePersistedSession;
   // Auto-restore the last authenticated session on page load.
-  restorePersistedSession();
+  setTimeout(()=>restorePersistedSession(),50);
 
   // Enter key should use the same protected login handler.
   document.addEventListener('keydown',function(e){

@@ -2505,7 +2505,7 @@ function renderRoleHome(){
    // CONTENT & PROMOTION adalah menu standar untuk SEMUA akun.
    // Tetap render sebagai HTML section — jangan return array mentah,
    // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.
-   const forceVisible = g[1]==='CONTENT & PROMOTION' && !rawRole.includes('ADMIN FINANCE');
+   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups));
    const isAccountingGroup = g[1]==='ACCOUNTING' && developer;
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
    if(g[1]==='FINANCE' && !developer && !mg)return '';

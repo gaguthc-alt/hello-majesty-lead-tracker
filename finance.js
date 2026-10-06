@@ -192,7 +192,8 @@ window.openFinanceInventoryApprovals=async function(){
 window.openFinance=async function(){
   const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
   const isDeveloper=!!window.developer||role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
-  if(!isDeveloper){alert('Finance sementara hanya dapat diakses Developer Aplikasi.');return;}
+  const financeAllowed=isDeveloper||!!p.is_management||['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJESTY CELL'].includes(role);
+  if(!financeAllowed){alert('Akses Finance tidak diizinkan.');return;}
   const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle'),modal=document.getElementById('modal');
   if(!panel||!body)return;
   if(modal){modal.classList.add('hidden');modal.style.display='none';}

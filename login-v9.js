@@ -135,9 +135,13 @@
       window.sb=sb;
       try{
         const packed=JSON.stringify(session);
+        // Hanya localStorage yang menjadi sumber sesi persisten.
+        // Backup/sessionStorage lama tidak boleh dipakai untuk auto-login
+        // setelah user memilih Logout.
+        localStorage.removeItem('hm_auth_session_backup');
+        sessionStorage.removeItem('hm_auth_session');
+        localStorage.removeItem('hm_auth_logout_marker');
         localStorage.setItem('hm_auth_session',packed);
-        localStorage.setItem('hm_auth_session_backup',packed);
-        sessionStorage.setItem('hm_auth_session',packed);
       }catch(e){console.warn('[HM] save auth session',e);}
 
       // AUTH SUKSES = buka shell dashboard langsung.
@@ -175,10 +179,11 @@
 
   async function restorePersistedSession(){
     try{
-      const raw =
-        localStorage.getItem('hm_auth_session') ||
-        sessionStorage.getItem('hm_auth_session') ||
-        localStorage.getItem('hm_auth_session_backup');
+      // Auto-login hanya boleh berasal dari sesi persisten utama.
+      // Jangan pernah mengambil backup/sessionStorage lama karena keduanya
+      // dapat membuat akun masuk kembali setelah Logout.
+      if(localStorage.getItem('hm_auth_logout_marker'))return false;
+      const raw=localStorage.getItem('hm_auth_session');
       if(!raw)return false;
       let saved=null;
       try{saved=JSON.parse(raw);}catch(e){return false;}
@@ -198,8 +203,8 @@
       try{
         const packed=JSON.stringify(session);
         localStorage.setItem('hm_auth_session',packed);
-        localStorage.setItem('hm_auth_session_backup',packed);
-        sessionStorage.setItem('hm_auth_session',packed);
+        localStorage.removeItem('hm_auth_session_backup');
+        sessionStorage.removeItem('hm_auth_session');
       }catch(e){console.warn('[HM] persist restored session',e);}
       const sb=await getClient(session);
       window.sb=sb;
@@ -214,14 +219,10 @@
       return true;
     }catch(ex){
       console.warn('[HM] Auto restore session failed:',ex);
-      // Jangan hapus session tersimpan. Bila refresh token gagal tetapi access
-      // token tersimpan masih ada, gunakan access token tersebut sebagai fallback.
+      // Jangan melakukan fallback ke backup/sessionStorage.
+      // Jika sesi persisten gagal dipulihkan, pengguna harus login kembali.
       try{
-        const raw2 =
-          localStorage.getItem('hm_auth_session') ||
-          sessionStorage.getItem('hm_auth_session') ||
-          localStorage.getItem('hm_auth_session_backup');
-        const fallback=raw2?JSON.parse(raw2):null;
+        const fallback=JSON.parse(localStorage.getItem('hm_auth_session')||'null');
         if(fallback?.access_token && fallback?.user){
           activeSession={...fallback};
           const sb=await getClient(fallback);

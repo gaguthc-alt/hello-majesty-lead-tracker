@@ -1810,20 +1810,20 @@ function hmOpenQuickAction(){
 }
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
- const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT'),has=r=>roles.includes(r);
+ const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT'),developer=rawRole==='DEVELOPER APLIKASI',has=r=>roles.includes(r);
  const facilitator=has('FASILITATOR')||rawRole==='FASILITATOR',sales=has('SALES'),cs=has('CS')||has('CUSTOMER SERVICE')||rawRole.includes('CS')||rawRole.includes('CUSTOMER SERVICE'),creator=has('CONTENT CREATOR');
- const title=mg?'Management':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty');
+ const title=developer?'Developer Aplikasi':(mg?'Management':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty'));
  const sub=mg?'Pusat kendali bisnis • seluruh outlet':(profile?.outlet||'Workspace sesuai peran aktif');
 
  // MENU UTAMA = hanya fungsi yang memang diberikan kepada akun/role.
  // Management melihat seluruh modul utama.
  const isAtmadita=String(profile?.name||'').trim().toLowerCase()==='atmadita';
  const cards=[],add=(icon,title,desc,fn)=>{
-  if(isAtmadita&&['Lead Tracker','Lead & Handover','Lead Baru','Search Lead','Product & Stock','Content Performance','Laporan Penjualan','Target & Performa'].includes(String(title)))return;
+  if(isAtmadita)return;
   if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
  };
 
- if(mg){
+ if(mg || developer){
    add('📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()');
    add('👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()');
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');

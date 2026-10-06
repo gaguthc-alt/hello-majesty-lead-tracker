@@ -32,17 +32,29 @@
 
   async function openMutasi(){
     if(!can())return alert('Anda tidak memiliki akses Mutasi Stok.');
-    const r=await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,asking_price,battery_health,status').eq('status','READY').order('outlet').order('created_at',{ascending:false});
-    if(r.error)throw r.error;
-    const pm=await products((r.data||[]).map(x=>x.product_id));
-    const outlets=[...new Set((r.data||[]).map(x=>x.outlet).filter(Boolean))];
-    const html='<div class="small" style="margin-bottom:10px">Pilih stock READY lalu tentukan outlet tujuan. Mutasi langsung tercatat ke Riwayat Stok.</div>'+
-      '<div class="box"><label>Outlet tujuan cepat</label><select id="hmMutasiDefault"><option value="">— pilih saat mutasi —</option>'+outlets.map(o=>'<option>'+escx(o)+'</option>').join('')+'</select></div>'+
-      ((r.data||[]).length?(r.data||[]).map((s,i)=>{const p=pm[s.product_id]||{};return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+escx(p.product||'Produk')+(p.variant?' — '+escx(p.variant):'')+'</b><div class="small">'+escx(s.outlet||'-')+' • '+escx(s.color||'-')+(s.battery_health!=null?' • BH '+escx(s.battery_health)+'%':'')+' • '+escx(s.imei_1?'IMEI ••••'+String(s.imei_1).slice(-4):'IMEI -')+'</div><div style="margin-top:5px">Harga jual: <b>'+money(s.asking_price)+'</b></div><button class="success" style="margin-top:8px" onclick="hmDoMutasi(\''+s.id+'\')">🔄 Mutasikan</button></div>';}).join(''):'<div class="box"><b>Tidak ada stock READY untuk dimutasi.</b></div>');
+    // Tujuan menentukan asal stok secara otomatis:
+    // Plaza <- READY dari Refill | Refill <- READY dari Plaza.
+    const targetOptions=['Plaza','Refill'];
+    const html='<div class="small" style="margin-bottom:10px">Pilih tujuan. Sistem hanya menampilkan Stock READY dari outlet lawan.</div>'+
+      '<div class="box"><label>Tujuan Mutasi</label><select id="hmMutasiDefault" onchange="hmReloadMutasi()"><option value="">— pilih tujuan —</option>'+targetOptions.map(o=>'<option>'+o+'</option>').join('')+'</select><div id="hmMutasiSourceHint" class="small" style="margin-top:7px"></div></div>'+
+      '<div id="hmMutasiList"><div class="box">Pilih tujuan terlebih dahulu.</div></div>';
     panel('🔄 Mutasi Stok',html);
   }
+
+  window.hmReloadMutasi=async function(){
+    const to=document.getElementById('hmMutasiDefault')?.value||'';
+    const list=document.getElementById('hmMutasiList'),hint=document.getElementById('hmMutasiSourceHint');
+    if(!list)return;
+    if(!to){if(hint)hint.textContent='';list.innerHTML='<div class="box">Pilih tujuan terlebih dahulu.</div>';return;}
+    const from=to==='Plaza'?'Refill':'Plaza';
+    if(hint)hint.textContent='Sumber stok: '+from+' • hanya status READY';
+    const r=await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,asking_price,battery_health,status').eq('status','READY').eq('outlet',from).order('created_at',{ascending:false});
+    if(r.error){list.innerHTML='<div class="box"><b>Gagal memuat stok.</b><div class="small">'+escx(r.error.message)+'</div></div>';return;}
+    const pm=await products((r.data||[]).map(x=>x.product_id));
+    list.innerHTML=(r.data||[]).length?(r.data||[]).map((s,i)=>{const p=pm[s.product_id]||{};return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+escx(p.product||'Produk')+(p.variant?' — '+escx(p.variant):'')+'</b><div class="small">'+escx(from)+' → '+escx(to)+' • '+escx(s.color||'-')+(s.battery_health!=null?' • BH '+escx(s.battery_health)+'%':'')+' • '+escx(s.imei_1?'IMEI ••••'+String(s.imei_1).slice(-4):'IMEI -')+'</div><div style="margin-top:5px">Harga jual: <b>'+money(s.asking_price)+'</b></div><button class="success" style="margin-top:8px" onclick="hmDoMutasi(\''+s.id+'\')">🔄 Mutasikan ke '+escx(to)+'</button></div>';}).join(''):'<div class="box"><b>Tidak ada Stock READY di '+escx(from)+' untuk dimutasi ke '+escx(to)+'.</b></div>';
+  };
   window.hmDoMutasi=async function(id){
-    const to=document.getElementById('hmMutasiDefault')?.value||prompt('Outlet tujuan:')||'';
+    const to=document.getElementById('hmMutasiDefault')?.value||'';
     if(!to.trim())return;
     const note=prompt('Catatan mutasi (opsional):')||null;
     const r=await sb.rpc('create_stock_transfer',{p_stock_unit_id:id,p_to_outlet:to.trim(),p_notes:note});

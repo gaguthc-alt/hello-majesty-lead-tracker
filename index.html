@@ -1480,7 +1480,7 @@ function hmInlineIdsForMenu(key){
  // Ini mencegah "Tanya AI" / "Content Performance" tertukar dengan menu lain.
  if(k==='hmopentargetoutlet()')return ['targetBoard'];
  if(k==='hmopencontentperformance()')return ['contentPerformance'];
- if(k==='openinventorydashboard()'||k==="openinventorysection('stock')"||k==="openinventorysection('sales')")return ['inventoryPanel'];
+ if(k==='openinventorydashboard()'||k==="openinventorysection('stock')"||k==="openinventorysection('products')"||k==="openinventorysection('sales')")return ['inventoryPanel'];
  if(k==='openperformance()'||k==='hmopenperformancereport()')return ['performance'];
  if(k==="showfollowuptoday('today')"||k==="showfollowuptoday('overdue')"||k==="showfollowuptoday('all')"||k==='showneedsattention()')return ['leads'];
  return [];
@@ -2304,7 +2304,7 @@ function renderRoleHome(){
      // Product & Stock / Laporan Penjualan / Komisi Tim memakai jalur inline
      // khusus agar tidak bergantung pada modal lama dan tidak tertutup oleh
      // hmCloseMainMenu()/sequence guard.
-     if(action==="openInventorySection('stock')" || action==="openInventorySection('sales')" || action==='openTeamCommission()'){
+     if(action==="openInventorySection('stock')" || action==="openInventorySection('products')" || action==="openInventorySection('sales')" || action==='openTeamCommission()'){
        if(hmActiveMainMenu===title){
          hmCloseMainMenu();
          return;

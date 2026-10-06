@@ -1481,6 +1481,38 @@ function hmResetMainMenuButtonLabels(){
  const host=document.getElementById('roleHome');
  if(!host)return;
  // Capture khusus agar Persetujuan Barang Masuk tetap bekerja walau handler menu lain bermasalah.
+ const financeBtn=host.querySelector('[data-hm-menu-title="Finance"]');
+ if(financeBtn && !financeBtn.dataset.hmFinanceCapture){
+   financeBtn.dataset.hmFinanceCapture='1';
+   financeBtn.addEventListener('click',function(e){
+     e.preventDefault();
+     e.stopImmediatePropagation();
+     hmCloseMainMenu();
+     hmActiveMainMenu='Finance';
+     const run=()=>{
+       if(typeof window.openFinance!=='function') throw new Error('Modul Finance belum siap.');
+       return window.openFinance();
+     };
+     void Promise.resolve().then(()=>{
+       if(typeof window.openFinance==='function') return run();
+       const s=document.createElement('script');
+       s.src='finance.js?v=20261006-finance-direct-1';
+       return new Promise((resolve,reject)=>{
+         s.onload=()=>{try{resolve(run())}catch(ex){reject(ex)}};
+         s.onerror=()=>reject(new Error('Modul Finance gagal dimuat.'));
+         document.head.appendChild(s);
+       });
+     }).catch(ex=>{
+       console.error('[HM] Finance direct gagal:',ex);
+       const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+       if(panel&&body){
+         body.innerHTML='<div class="box" style="color:#b42318"><b>Finance gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||ex)+'</div></div>';
+         panel.classList.remove('hidden');
+         panel.scrollIntoView({behavior:'smooth',block:'start'});
+       }else alert('Finance gagal dibuka: '+(ex?.message||ex));
+     });
+   },true);
+ }
  const receiveBtn=host.querySelector('[data-hm-menu-title="Persetujuan Barang Masuk"]');
  if(receiveBtn && !receiveBtn.dataset.hmReceiveCapture){
    receiveBtn.dataset.hmReceiveCapture='1';

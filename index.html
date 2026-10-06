@@ -2035,7 +2035,13 @@ function renderRoleHome(){
    add('💰','Finance','Kas, laba & neraca','openFinance()');
    add('📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
-   add('📦','Product & Stock','Kontrol seluruh inventory',"openInventorySection('stock')");
+   add('📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')");
+   add('📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()');
+   add('📤','Barang Keluar','Barang terjual dan pengeluaran stock',"openInventorySection('sales')");
+   add('🔄','Mutasi Stok','Perpindahan stok antar outlet',"hmOpenInventoryFeature('mutasi')");
+   add('📋','Riwayat Stok','Riwayat aktivitas barang masuk, keluar & mutasi',"hmOpenInventoryFeature('riwayat')");
+   add('⚠️','Penyesuaian Stok','Koreksi selisih stok dengan alasan',"hmOpenInventoryFeature('penyesuaian')");
+   add('🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')");
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
@@ -2162,7 +2168,13 @@ function renderRoleHome(){
      ['💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()']
    ]],
    ['📦','INVENTORY & STOCK',[
-     ['📦','Product & Stock','Master produk, stock outlet & pusat',"openInventorySection('stock')"]
+     ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
+     ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()'],
+     ['📤','Barang Keluar','Barang terjual dan pengeluaran stock',"openInventorySection('sales')"],
+     ['🔄','Mutasi Stok','Perpindahan stok antar outlet',"hmOpenInventoryFeature('mutasi')"],
+     ['📋','Riwayat Stok','Riwayat aktivitas barang masuk, keluar & mutasi',"hmOpenInventoryFeature('riwayat')"],
+     ['⚠️','Penyesuaian Stok','Koreksi selisih stok dengan alasan',"hmOpenInventoryFeature('penyesuaian')"],
+     ['🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')"]
    ]],
    ['💰','FINANCE',[
      ['💰','Finance','Kas, laba & kontrol keuangan','openFinance()'],
@@ -3899,6 +3911,22 @@ window.openAccountingModule=openAccountingModule;
   if($('loginErr'))$('loginErr').textContent=ex?.message||'Aplikasi gagal dimuat.';
  }
 })();
+window.hmOpenInventoryFeature=function(feature){
+ const labels={mutasi:'🔄 Mutasi Stok',riwayat:'📋 Riwayat Stok',penyesuaian:'⚠️ Penyesuaian Stok',opname:'🔎 Stock Opname'};
+ const title=labels[feature]||'📦 Inventory';
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),heading=document.getElementById('hmMenuPanelTitle');
+ if(panel&&body){
+   if(heading)heading.textContent=title;
+   body.innerHTML='<div class="box"><h3 style="margin-top:0">'+title+'</h3><div class="small">Menu sudah tersedia di Inventory & Stock. Modul detail ini akan digunakan untuk proses '+title.replace(/^[^ ]+ /,'').toLowerCase()+'.</div></div>';
+   panel.classList.remove('hidden');
+   requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+   return;
+ }
+ const modal=document.getElementById('modal'),mt=document.getElementById('mt'),mb=document.getElementById('mb');
+ if(mt)mt.textContent=title;
+ if(mb)mb.innerHTML='<div class="box"><h3 style="margin-top:0">'+title+'</h3><div class="small">Modul detail siap ditambahkan.</div></div>';
+ if(modal)modal.classList.remove('hidden');
+};
 function toggleContentPerformance(ev){
   if(ev){ev.preventDefault();ev.stopPropagation();}
   return false;

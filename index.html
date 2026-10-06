@@ -1592,7 +1592,6 @@ async function hmOpenTargetOutlet(){
   if(typeof renderTargetBoard==='function') await renderTargetBoard();
 }
 async function hmOpenPerformanceInline(){
- const openSeq=hmMenuActionSeq;
  const panel=document.getElementById('hmMenuPanel');
  const body=document.getElementById('hmMenuPanelBody');
  const title=document.getElementById('hmMenuPanelTitle');
@@ -1600,46 +1599,51 @@ async function hmOpenPerformanceInline(){
  if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
  if(title)title.textContent='🎯 Target & Performa';
  let node=document.getElementById('performance');
- if(!node){
-   node=document.createElement('div');
-   node.id='performance';
-   node.className='box';
- }
+ if(!node){node=document.createElement('div');node.id='performance';node.className='box';}
  if(node.parentNode!==body){
    const placeholder=document.createComment('HM_INLINE_performance');
-   node.parentNode?.insertBefore(placeholder,node);
+   if(node.parentNode)node.parentNode.insertBefore(placeholder,node);
    body.appendChild(node);
    hmInlineMoved.push({node,placeholder});
  }
  node.classList.remove('hidden');
  panel.classList.remove('hidden');
  if(modal)modal.classList.add('hidden');
- node.innerHTML='<div class="small">⏳ Memuat Target & Performa...</div>';
- try{
-   await ensureSupabase();
-   if(!profile?.user_id)throw new Error('Session belum siap. Silakan coba lagi.');
-   if(typeof window.openPerformance!=='function'){
-     await new Promise((resolve,reject)=>{
-       const s=document.createElement('script');
-       s.src='performance.js?v=20261006-1';
-       s.onload=resolve;
-       s.onerror=()=>reject(new Error('Modul Target & Performa gagal dimuat.'));
-       document.head.appendChild(s);
-     });
-   }
-   if(typeof window.openPerformance!=='function')throw new Error('Modul Target & Performa belum siap.');
-   await window.openPerformance();
-   const loaded=document.getElementById('performance');
-   if(loaded&&loaded.parentNode!==body){
-     body.appendChild(loaded);
-   }
-   if(openSeq!==hmMenuActionSeq)return;
- }catch(ex){
-   if(openSeq!==hmMenuActionSeq)return;
-   console.error('[HM] Target & Performa:',ex);
-   node.innerHTML='<h3 style="margin-top:0">🎯 TARGET & PERFORMA</h3><div class="small" style="color:#b91c1c">Gagal memuat data: '+esc(ex?.message||'Terjadi kesalahan')+'</div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="hmOpenPerformanceInline()">↻ Coba Lagi</button><button class="secondary" type="button" onclick="hmCloseMainMenu()">✖ Tutup</button></div>';
- }
- node.classList.remove('hidden');
+ node.innerHTML='<h3 style="margin-top:0">🎯 TARGET & PERFORMA</h3>'+
+   '<div class="small" style="margin-bottom:10px">Target dibandingkan dengan pencapaian penjualan setiap outlet.</div>'+
+   '<div class="row" style="flex-wrap:wrap;margin-bottom:10px"><button class="secondary" type="button" id="hmPerfMonth">📊 Bulan Ini</button><button class="secondary" type="button" id="hmPerfLast">↩️ Bulan Kemarin</button></div>'+
+   '<div id="hmPerfBody"><div class="small">⏳ Memuat data...</div></div>';
+ const render=async(mode)=>{
+   const host=document.getElementById('hmPerfBody'); if(!host)return;
+   host.innerHTML='<div class="small">⏳ Memuat target & realisasi...</div>';
+   try{
+     const d0=new Date(); if(mode==='last')d0.setMonth(d0.getMonth()-1);
+     const y=d0.getFullYear(),m=d0.getMonth();
+     const ms=new Date(y,m,1).toISOString().slice(0,10);
+     const next=new Date(y,m+1,1).toISOString().slice(0,10);
+     const [tr,sr]=await Promise.all([
+       mode==='month'?sb.rpc('dashboard_target_summary'):sb.from('monthly_outlet_targets').select('*').eq('month_start',ms),
+       sb.from('sales_transactions').select('id,outlet,sale_price,discount,gross_profit,sold_at').gte('sold_at',ms+'T00:00:00').lt('sold_at',next+'T00:00:00')
+     ]);
+     if(tr.error)throw tr.error; if(sr.error)throw sr.error;
+     const data=mode==='month'?(tr.data||{}):{outlets:tr.data||[]};
+     let outlets=data.outlets||[];
+     if(!profile?.is_management&&profile?.outlet)outlets=outlets.filter(o=>o.outlet===profile.outlet);
+     const sales={};
+     (sr.data||[]).forEach(r=>{const k=r.outlet||'-';sales[k]??={units:0,omzet:0,laba:0};sales[k].units++;sales[k].omzet+=Number(r.sale_price||0)-Number(r.discount||0);sales[k].laba+=Number(r.gross_profit||0);});
+     const pct=(a,t)=>Number(t)>0?Math.round(Number(a||0)/Number(t)*100):0;
+     const rp=n=>'Rp'+Number(n||0).toLocaleString('id-ID');
+     const short=n=>{n=Number(n||0);if(n>=1000000000)return(n/1e9).toFixed(1).replace('.0','')+'M';if(n>=1000000)return(n/1e6).toFixed(1).replace('.0','')+'jt';return rp(n);};
+     const total=outlets.reduce((a,o)=>{const s=sales[o.outlet]||{};a.tu+=Number(o.closing_target||0);a.au+=Number(o.closing_actual??s.units??0);a.tn+=Number(o.nominal_target||0);a.an+=s.omzet||0;a.l+=s.laba||0;return a;},{tu:0,au:0,tn:0,an:0,l:0});
+     let html='<div class="stats"><div class="stat"><div class="small">🏆 Unit</div><div class="num">'+total.au+' / '+total.tu+'</div><div class="small">'+pct(total.au,total.tu)+'%</div></div><div class="stat"><div class="small">💰 Omzet</div><div class="num">'+short(total.an)+'</div><div class="small">Target '+short(total.tn)+' • '+pct(total.an,total.tn)+'%</div></div><div class="stat"><div class="small">📈 Laba</div><div class="num">'+short(total.l)+'</div></div></div>';
+     html+='<div class="box"><b>🏪 PERFORMA OUTLET</b><div class="small">'+d0.toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</div></div>';
+     html+=outlets.length?outlets.map(o=>{const s=sales[o.outlet]||{},u=Number(o.closing_actual??s.units??0),t=Number(o.closing_target||0),a=Number(s.omzet||0),nt=Number(o.nominal_target||0);return '<div class="lead"><div class="row" style="justify-content:space-between"><b>🏪 '+esc(o.outlet||'-')+'</b><span class="badge">'+pct(u,t)+'% Unit</span></div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">🏆 Closing</div><div class="num">'+u+' / '+t+'</div></div><div class="stat"><div class="small">💰 Omzet</div><div class="num">'+short(a)+'</div></div><div class="stat"><div class="small">📈 Laba</div><div class="num">'+short(s.laba||0)+'</div></div></div><div class="small" style="margin-top:6px">Target Nominal: '+short(nt)+' • Pencapaian: '+pct(a,nt)+'%</div></div>';}).join(''):'<div class="lead"><b>Target belum tersedia</b><div class="small">Belum ada target outlet untuk periode ini.</div></div>';
+     host.innerHTML=html;
+   }catch(e){console.error('[HM] Target Performance',e);host.innerHTML='<div class="lead"><b>Gagal memuat data</b><div class="small" style="margin-top:6px;color:#b91c1c">'+esc(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="hmOpenPerformanceInline()">↻ Coba Lagi</button></div>';}
+ };
+ document.getElementById('hmPerfMonth').onclick=()=>render('month');
+ document.getElementById('hmPerfLast').onclick=()=>render('last');
+ await render('month');
 }
 window.hmOpenPerformanceInline=hmOpenPerformanceInline;
 

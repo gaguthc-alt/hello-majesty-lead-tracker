@@ -145,7 +145,7 @@ window.loadPartnerSettlementDetail=async function(outlet){
           '<b>'+esc(product)+'</b>'+
           (variant?' — '+esc(variant):'')+
           (color?' • '+esc(color):'')+
-          '<br><span class="small">'+grade.replace(/^<span>/,'').replace(/<\\/span>$/,'')+
+          '<br><span class="small">'+grade.replace(/^<span>/,'').replace(/<\/span>$/,'')+
           bh+' • Modal '+hmRp(r.capital_due)+' • IMEI '+esc(String(imei))+
           '</span></label>';
       }).join('')+

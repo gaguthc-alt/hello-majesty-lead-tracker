@@ -3143,12 +3143,18 @@ async function updateLead(id){
 }
 async function resetLead(id){if(!confirm('Reset lead ke AVAILABLE?'))return;const x=await sb.rpc('reset_lead',{p_lead_id:id});if(x.error)return alert(x.error.message);await loadLeads()}
 function deleteLead(id){
- $('mt').textContent='🗑 Hapus Permanen';$('mb').innerHTML='<label>Ketik: YA, HAPUS PERMANEN</label><input id="dc"><button id="deleteBtn" class="danger">Hapus Permanen</button>';
- $('deleteBtn').onclick=()=>confirmDelete(id);$('modal').classList.remove('hidden');
+ $('mt').textContent='🗑 Hapus';
+ $('mb').innerHTML='<p>Yakin ingin menghapus lead ini?</p><button id="deleteBtn" class="danger">Hapus</button>';
+ $('deleteBtn').onclick=()=>confirmDelete(id);
+ $('modal').classList.remove('hidden');
 }
 async function confirmDelete(id){
- if($('dc').value.trim()!=='YA, HAPUS PERMANEN')return alert('Konfirmasi tidak sesuai.');
- const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:$('dc').value.trim()});if(x.error)return alert(x.error.message);closeModal();await loadLeads();
+ const ok=confirm('Yakin ingin menghapus lead ini?');
+ if(!ok)return;
+ const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:'YA, HAPUS PERMANEN'});
+ if(x.error)return alert(x.error.message);
+ closeModal();
+ await loadLeads();
 }
 function showTodayLeads(){
  const todayStart=new Date();todayStart.setHours(0,0,0,0);

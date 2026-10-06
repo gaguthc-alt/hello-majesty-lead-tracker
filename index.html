@@ -1509,7 +1509,7 @@ function hmOpenTradeInline(){
  body.innerHTML='<div class="box"><h3 style="margin-top:0">Form Tukar Tambah</h3><div class="small">Pesan WhatsApp siap dikirim. Data pesan tetap mengikuti sistem Tukar Tambah.</div><textarea id="hmTradeMsg" rows="12" style="margin-top:10px">'+esc(msg)+'</textarea><div class="row" style="margin-top:10px"><button class="success" type="button" onclick="navigator.clipboard?.writeText(document.getElementById(\'hmTradeMsg\').value).then(()=>alert(\'Pesan disalin.\'))">📋 Salin Pesan</button><button class="secondary" type="button" onclick="window.open(\'https://wa.me/?text=\'+encodeURIComponent(document.getElementById(\'hmTradeMsg\').value),\'_blank\')">📲 Buka WhatsApp</button></div></div>';
  requestAnimationFrame(()=>requestAnimationFrame(()=>{const p=document.getElementById('hmMenuPanel');if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');if(p&&!p.classList.contains('hidden'))p.scrollIntoView({behavior:'smooth',block:'start'});}));
 }
-async function hmMainMenuClick(title,fn,actionKey){
+async async function hmMainMenuClick(title,fn,actionKey){
  const key=String(title||'');
  const route=String(actionKey||key);
  if(hmActiveMainMenu===key){

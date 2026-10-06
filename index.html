@@ -2140,6 +2140,7 @@ function renderRoleHome(){
    add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Barang masuk yang menunggu verifikasi','openInventoryApprovals()');
    add('🚶','Persetujuan Walk-In','Verifikasi penjualan Walk-In yang menunggu persetujuan','openWalkinApprovals()');
+   add('🔔','Persetujuan Closing Stock','Closing Stock yang menunggu persetujuan','openStockSaleApprovals()');
    add('💰','Komisi Tim','Seluruh komisi tim, bukan hanya Sales','openTeamCommission()');
    add('💰','Komisi Saya','Komisi pribadi sesuai hak akses','openCommission()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
@@ -3397,7 +3398,33 @@ function salesResultMessage(l){
  return ['❌ *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: GAGAL*','📱 Produk: '+product,'📝 Alasan: '+(l.objection||'-'),'','Lead dinyatakan gagal setelah proses konsultasi dan follow-up oleh '+pic+'.','','— HELLO MAJESTY','Built on Trust.'].join(nl);
 }
 function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
+async function submitStockClosingApproval(id){
+ const stockId=$('ss')?.value;
+ if(!stockId)return alert('Untuk CLOSING, wajib pilih produk/stock yang laku.');
+ const salePrice=Number($('sap')?.value||0);
+ if(!salePrice)return alert('Untuk CLOSING, Harga Jual Aktual wajib diisi.');
+ const teamMemberIds=[...document.querySelectorAll('.closingSalesMember:checked')].map(x=>x.value);
+ const paymentMode=$('salePayment')?.value||'PIUTANG';
+ const payNow=paymentMode!=='PIUTANG';
+ const paymentAccount=payNow?($('saleAccount')?.value||null):null;
+ if(paymentMode==='PAY_LATER'&&!$('payLaterProvider')?.value)return alert('Untuk Pay Later, wajib pilih provider.');
+ const paymentMethod=payNow?(paymentMode==='PAY_LATER'?$('payLaterProvider').value:paymentMode):null;
+ if(payNow&&!paymentMethod)return alert('Metode pembayaran wajib dipilih.');
+ if(payNow&&!paymentAccount)return alert('Untuk pembayaran ini, wajib pilih Kas/Bank penerima.');
+ const fee=Math.max(Number(document.getElementById('financeEstimatedFee')?.value||0),0);
+ const notes=document.getElementById('financeNotes')?.value?.trim()||null;
+ const x=await sb.rpc('submit_stock_sale_approval',{p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,p_payment_account_id:paymentAccount,p_payment_method_id:paymentMethod,p_pay_now:payNow,p_finance_estimated_fee:fee,p_finance_notes:notes});
+ if(x.error)return alert('Pengajuan Closing gagal: '+x.error.message);
+ const temp=window.hmStockClosingTempLeadId;
+ if(temp){leads=leads.filter(l=>String(l.lead_id)!==String(temp));window.hmStockClosingTempLeadId=null;}
+ window.hmStockClosingApprovalMode=false;
+ alert('Closing berhasil diajukan. Status: MENUNGGU PERSETUJUAN.');
+ closeModal();
+ if(typeof renderInventory==='function')await renderInventory();
+}
+
 async function saveS(id){
+ if(window.hmStockClosingApprovalMode)return submitStockClosingApproval(id);
  const leadId=String(id||'').trim();
  const result=$('sr')?.value;
  if(!result)return alert('Hasil Sales belum dipilih.');

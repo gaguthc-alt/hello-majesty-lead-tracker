@@ -3012,7 +3012,19 @@ function applyRoleVisibility(){
  try{hmRenderLeadTodayMain();}catch(e){console.error('[HM] Lead Hari Ini render error:',e);}
 }
 window.hmStartApp=start;
-async function logout(){try{localStorage.removeItem('hm_auth_session')}catch(e){} location.reload()}
+async function logout(){
+  try{
+    // Logout harus membatalkan SEMUA jejak sesi persisten yang pernah dipakai
+    // versi lama aplikasi, supaya browser tidak auto-login kembali.
+    localStorage.removeItem('hm_auth_session');
+    localStorage.removeItem('hm_auth_session_backup');
+    sessionStorage.removeItem('hm_auth_session');
+    localStorage.setItem('hm_auth_logout_marker',String(Date.now()));
+    // Beri tahu tab Hello Majesty lain bahwa sesi sudah di-logout.
+    try{localStorage.setItem('hm_auth_logout_broadcast',String(Date.now()));}catch(_e){}
+  }catch(e){console.warn('[HM] logout cleanup',e);}
+  location.reload();
+}
 async function loadLeads(){
  // Arsip tidak dihapus dari Lead Tracker. Data lead tetap tersedia
  // dari AVAILABLE sampai HASIL, termasuk lead yang sudah diarsipkan.

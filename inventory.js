@@ -18,8 +18,12 @@ function maskImei(v){
 async function loadInventoryData(){
   inventoryCanFacilitator=false;
   inventoryCanHunter=false;
+  const hmRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+  const hmDeveloper=hmRole==='DEVELOPER APLIKASI'||hmRole==='DEVELOPER';
+  const hmDivisi=hmRole==='DIVISI';
+  inventoryCanFacilitator=hmRole==='FASILITATOR'||hmDivisi;
   inventoryCanContentCreator=!!profile?.is_management || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR';
-  if(!profile?.is_management){
+  if(!profile?.is_management && !inventoryCanFacilitator && !hmDeveloper){
     const perm=await sb.rpc('has_facilitator_inventory_access');
     if(!perm.error) inventoryCanFacilitator=!!perm.data;
   }
@@ -28,7 +32,8 @@ async function loadInventoryData(){
   window.hmCanFacilitator=inventoryCanFacilitator; window.hmCanContentCreator=inventoryCanContentCreator;
   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
   const isPartnerFinance=role==='ADMIN FINANCE MAJESTY CELL';
-  const stockView=profile?.is_management?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
+  const isDeveloper=hmRole==='DEVELOPER APLIKASI'||hmRole==='DEVELOPER';
+  const stockView=(profile?.is_management||isDeveloper)?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
   if(!profile?.is_management && profile?.outlet && !isPartnerFinance) stockQuery=stockQuery.eq('outlet',profile.outlet);
   const [p,s]=await Promise.all([

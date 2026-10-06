@@ -49,7 +49,6 @@
     });
     let data=null; try{data=await res.json();}catch(_e){}
     if(!res.ok||!data?.access_token){
-      activeSession=null;
       throw new Error('Sesi login sudah berakhir. Silakan login kembali.');
     }
     activeSession={
@@ -202,10 +201,27 @@
       return true;
     }catch(ex){
       console.warn('[HM] Auto restore session failed:',ex);
-      // Jangan langsung menghapus session karena kegagalan sementara/network.
-      // Session hanya dibersihkan bila server memang menolak refresh token.
-      if(/sesi login sudah berakhir|refresh token/i.test(String(ex?.message||''))){
-        try{localStorage.removeItem('hm_auth_session');}catch(e){}
+      // Jangan hapus session tersimpan. Bila refresh token gagal tetapi access
+      // token tersimpan masih ada, gunakan access token tersebut sebagai fallback.
+      try{
+        const raw2=localStorage.getItem('hm_auth_session');
+        const fallback=raw2?JSON.parse(raw2):null;
+        if(fallback?.access_token && fallback?.user){
+          activeSession={...fallback};
+          const sb=await getClient(fallback);
+          window.sb=sb;
+          const starter=await waitForAppStarter();
+          const loginPage=document.getElementById('login');
+          const appPage=document.getElementById('app');
+          const roleHome=document.getElementById('roleHome');
+          if(loginPage)loginPage.classList.add('hidden');
+          if(appPage)appPage.classList.remove('hidden');
+          if(roleHome)roleHome.classList.remove('hidden');
+          Promise.resolve(starter(fallback.user,sb)).catch(err=>console.error('[HM] Fallback dashboard error:',err));
+          return true;
+        }
+      }catch(fallbackErr){
+        console.warn('[HM] Saved access-token fallback failed:',fallbackErr);
       }
       return false;
     }

@@ -171,45 +171,21 @@ window.payPartnerCapitalBalance=async function(outlet,amount){
 window.openFinanceInventoryApprovals=async function(){
   const p=window.profile||{};
   const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
-  const roles=Array.isArray(window.hmRoles)?window.hmRoles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' ')):(
-    typeof getActiveRoles==='function'?getActiveRoles():[role]
-  );
-  const isManagement=!!p.is_management||roles.includes('MANAGEMENT')||role.includes('MANAGEMENT');
-  const isFinance=role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL'||roles.includes('ADMIN FINANCE')||roles.includes('ADMIN FINANCE MAJESTY CELL');
-  if(!isManagement&&!isFinance){
-    alert('Persetujuan Barang Masuk hanya dapat diakses Management atau Admin Finance.');
-    return;
-  }
-  const panel=document.getElementById('hmMenuPanel');
-  const body=document.getElementById('hmMenuPanelBody');
-  const title=document.getElementById('hmMenuPanelTitle');
-  const modal=document.getElementById('modal');
-  const mt=document.getElementById('mt');
-  const mb=document.getElementById('mb');
-  if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
-  if(modal){modal.classList.add('hidden');modal.style.display='none';}
-  if(title)title.textContent='🔔 Persetujuan Barang Masuk';
-  body.innerHTML='<div class="box"><div class="small">⏳ Memuat Persetujuan Barang Masuk...</div></div>';
-  panel.classList.remove('hidden');
-  requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
-  try{
-    const inventoryFn=window.openInventoryApprovals;
-    if(typeof inventoryFn!=='function'||inventoryFn===window.openFinanceInventoryApprovals){
-      throw new Error('Modul Inventory untuk approval belum siap.');
-    }
-    await inventoryFn();
-    if(mt&&mb){
-      if(title)title.textContent=mt.textContent||'🔔 Persetujuan Barang Masuk';
-      body.replaceChildren(...Array.from(mb.childNodes));
-    }
-    if(modal){modal.classList.add('hidden');modal.style.display='none';}
+  const roles=Array.isArray(window.hmRoles)?window.hmRoles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' ')):[role];
+  const canApprove=role==='FASILITATOR'||role==='ADMIN FINANCE MAJESTY CELL'||roles.includes('FASILITATOR')||roles.includes('ADMIN FINANCE MAJESTY CELL');
+  if(!canApprove){alert('Persetujuan Barang Masuk hanya dapat dilakukan Fasilitator atau Admin Finance Majesty Cell.');return;}
+  const fn=window.openInventoryApprovals;
+  if(typeof fn!=='function')throw new Error('Modul Inventory untuk approval belum siap.');
+  await fn();
+  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+  const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
+  if(panel&&body&&mt&&mb){
+    if(title)title.textContent=mt.textContent||'🔔 Persetujuan Barang Masuk';
+    body.replaceChildren(...Array.from(mb.childNodes));
     panel.classList.remove('hidden');
     requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
-  }catch(ex){
-    console.error('[HM] Persetujuan Barang Masuk:',ex);
-    body.innerHTML='<div class="box"><b>Gagal membuka Persetujuan Barang Masuk.</b><div class="small" style="margin-top:6px">'+esc(String(ex?.message||ex||'Terjadi kesalahan.'))+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.openFinanceInventoryApprovals()">↻ Coba Lagi</button></div>';
-    panel.classList.remove('hidden');
   }
+  if(modal){modal.classList.add('hidden');modal.style.display='none';}
 };
 window.openFinance=async function(){const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' '),roles=Array.isArray(window.hmRoles)?window.hmRoles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' ')):[],isManagement=!!p.is_management||roles.includes('MANAGEMENT')||role.includes('MANAGEMENT'),allowed=isManagement||role==='FASILITATOR'||role==='ADMIN FINANCE MAJESTY CELL';if(!allowed){alert('Finance hanya dapat diakses Management, Fasilitator, atau Admin Finance.');return;}const m=document.getElementById('modal'),t=document.getElementById('mt'),b=document.getElementById('mb');if(!m||!t||!b)return;m.classList.remove('hidden');m.style.display='flex';t.textContent='💰 Finance';b.innerHTML='<div class="box"><h3 style="margin-top:0">💰 FINANCE MANAGEMENT</h3><div class="small">Sumber data: Jurnal yang sudah POSTED.</div><div class="row" style="margin-top:10px"><button class="secondary" onclick="hmFinanceLoad(\'month\')">Bulan Ini</button><button class="secondary" onclick="hmFinanceLoad(\'today\')">Hari Ini</button><button class="secondary" onclick="hmFinanceLoad(\'year\')">Tahun Ini</button><button class="secondary" onclick="window.openPartnerSettlement()">🤝 Kewajiban & Settlement Cell</button>'+(role==='ADMIN FINANCE MAJESTY CELL'||p.is_management?'<button class="secondary" onclick="window.openFinanceInventoryApprovals()">🔔 Persetujuan Barang Masuk</button>':'')+'<button class="secondary" onclick="window.openFinanceDisbursement()">💳 Pencairan Finance</button></div><div id="hmFinBox" style="margin-top:10px">Memuat...</div></div>';m.classList.remove('hidden');await hmFinanceLoad('month');};
 window.openHunterCommissionReport=async function(){

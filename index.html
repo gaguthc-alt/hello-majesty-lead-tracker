@@ -1156,7 +1156,8 @@ main{
 </div>
 </section>
 <!-- HM LOGIN: single source of truth is login-v9.js -->
-</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="roleHome"></div><div id="workspace" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Finance Cell</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="contentPerformance" class="hidden"></div><section id="inventoryDashboardSection" class="hidden" aria-hidden="true"><div id="inventoryDashboardPanel" class="box hidden"></div></section><section id="hunterStockSection" class="hidden" aria-hidden="true"><div id="hunterStockPanel" class="box hidden"></div></section><div id="inventorySection" class="hidden" aria-hidden="true"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Kelola stok siap jual, stock hunter, dan master produk.</div></div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTrackerBox" class="box"><h3>📋 DATA LEAD</h3><div class="small" style="margin-bottom:10px">Seluruh lead dari AVAILABLE sampai HASIL. Lead yang sudah CLOSING atau GAGAL tetap tersimpan dan ditampilkan sebagai hasil.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
+</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="roleHome"></div><div id="workspace" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Finance Cell</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="contentPerformance" class="hidden"></div><section id="inventoryDashboardSection" class="hidden" aria-hidden="true"><div id="inventoryDashboardPanel" class="box hidden"></div></section><section id="hunterStockSection" class="hidden" aria-hidden="true"><div id="hunterStockPanel" class="box hidden"></div></section><div id="inventorySection" class="hidden" aria-hidden="true"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Kelola stok siap jual, stock hunter, dan master produk.</div></div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTodayBoard"></div>
+<div id="leadTrackerBox" class="box"><h3>📋 DATA LEAD</h3><div class="small" style="margin-bottom:10px">Seluruh lead dari AVAILABLE sampai HASIL. Lead yang sudah CLOSING atau GAGAL tetap tersimpan dan ditampilkan sebagai hasil.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
 
 async function renderManagementStockSummary(){
  if(!profile?.is_management)return;
@@ -2151,7 +2152,6 @@ function renderRoleHome(){
  if(mg || developer){
    add('📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()');
    add('👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()');
-   add('📅','Lead Hari Ini','Lead yang aktif/berubah hari ini dari AVAILABLE sampai CLOSING','hmOpenLeadToday()');
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');
    add('🤝','Lead Handover','Qualified/Potensial → handover & share ke Sales','hmOpenLeadHandover()');
    add('🔔','Perlu Perhatian','Follow-up yang harus segera ditindaklanjuti','showNeedsAttention()');
@@ -3012,7 +3012,31 @@ async function render(){
  }else{
   if(leadResume){leadResume.classList.remove('hidden');leadResume.style.display='block';}
  }
- renderCommissionActions();
+ renderCommissionActions(); 
+ // LEAD HARI INI — ringkasan visual di atas Lead Tracker
+ const todayBox=$('leadTodayBoard');
+ if(todayBox){
+   const now=new Date(),d0=new Date(now);d0.setHours(0,0,0,0);
+   const d1=new Date(d0);d1.setDate(d1.getDate()+1);
+   const todayRows=allLeads.filter(l=>{const d=new Date(l.updated_at||l.created_at);return d>=d0&&d<d1;});
+   const bucket=l=>{
+     const sales=String(l.sales_result||'').toUpperCase(),cs=String(l.qualification_result||'').toUpperCase(),st=String(l.status_lead||'').toUpperCase(),hasil=String(l.hasil||'').toUpperCase();
+     if(sales==='CLOSING'||cs==='CLOSING'||hasil==='CLOSING')return 'CLOSING';
+     if(sales==='GAGAL'||cs==='GAGAL'||hasil==='GAGAL'||hasil==='LOST')return 'GAGAL';
+     if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
+     if(st==='HANDLE'||l.sales_claimed_by)return 'HANDLE';
+     if(st==='QUALIFIED')return 'QUALIFIED';
+     if(st==='CS LOCK')return 'CS LOCK';
+     if(st==='AVAILABLE')return 'AVAILABLE';
+     return 'LAINNYA';
+   };
+   const statuses=[['AVAILABLE','Available'],['CS LOCK','CS Lock'],['POTENSIAL','Potensial'],['QUALIFIED','Qualified'],['HANDLE','Handle'],['CLOSING','Closing']];
+   todayBox.innerHTML='<div class="box" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">📅 LEAD HARI INI</h3><span class="small">'+todayRows.length+' aktivitas</span></div>'+
+     '<div class="row" style="display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:8px;margin-top:10px">'+
+     statuses.map(([key,label])=>{const n=todayRows.filter(l=>bucket(l)===key).length;return '<div class="stat" style="cursor:pointer;text-align:center" onclick="showCurrentStatus(\''+key+'\')"><div class="small">'+label+'</div><div class="num">'+n+'</div></div>';}).join('')+
+     '</div></div>';
+ }
+
  
  renderTargetBoard().catch(e=>console.error('[HM] Target board error',e));
 

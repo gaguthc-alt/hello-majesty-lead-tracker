@@ -2267,20 +2267,23 @@ function renderRoleHome(){
        hmCloseMainMenu();
        hmActiveMainMenu=title;
        hmSetMainMenuButtonOpen(title);
-       const run=()=>{
-         const fn=window.openInventoryApprovals||window.openFinanceInventoryApprovals;
-         if(typeof fn!=='function') throw new Error('Modul Persetujuan Barang Masuk belum termuat.');
+       const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),pt=document.getElementById('hmMenuPanelTitle');
+       if(pt)pt.textContent='🔔 Persetujuan Barang Masuk';
+       if(panel&&body){
+         panel.classList.remove('hidden');
+         body.innerHTML='<div class="box"><b>Memuat Persetujuan Barang Masuk…</b></div>';
+         panel.scrollIntoView({behavior:'smooth',block:'start'});
+       }
+       const finish=()=>{
+         const fn=window.openInventoryApprovals;
+         if(typeof fn!=='function')throw new Error('Fungsi Persetujuan Barang Masuk tidak tersedia.');
          return fn();
        };
-       void Promise.resolve().then(()=>{
-         const s=document.createElement('script');
-         s.src='inventory.js?v=20261006-approval-direct-4';
-         return new Promise((resolve,reject)=>{
-           s.onload=()=>{try{resolve(run())}catch(e){reject(e)}};
-           s.onerror=()=>reject(new Error('Finance gagal dimuat.'));
-           document.head.appendChild(s);
-         });
-       }).catch(ex=>alert('Persetujuan Barang Masuk gagal dibuka: '+(ex?.message||ex)));
+       const s=document.createElement('script');
+       s.src='inventory.js?v=20261006-approval-direct-5';
+       s.onload=()=>{try{Promise.resolve(finish()).catch(ex=>{throw ex}).catch(ex=>{if(body)body.innerHTML='<div class="box" style="color:#b42318"><b>Persetujuan Barang Masuk gagal dibuka</b><div>'+String(ex?.message||ex)+'</div></div>';console.error(ex)})}catch(ex){if(body)body.innerHTML='<div class="box" style="color:#b42318"><b>Persetujuan Barang Masuk gagal dibuka</b><div>'+String(ex?.message||ex)+'</div></div>';console.error(ex)}};
+       s.onerror=()=>{if(body)body.innerHTML='<div class="box" style="color:#b42318"><b>Modul Inventory gagal dimuat.</b></div>'};
+       document.head.appendChild(s);
        return;
      }
      if(title==='Persetujuan Walk-In'){

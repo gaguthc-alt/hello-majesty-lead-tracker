@@ -2250,16 +2250,31 @@ function renderRoleHome(){
 
  // Ensure core Inventory actions have backing cards so the grouped menu renderer
  // can safely resolve their action handlers.
+ const inventoryAccess=mg||developer||facilitator||roles.includes('DIVISI')||rawRole==='DIVISI';
+ const inventoryAllAccess=inventoryAccess;
+ const inventoryFacDivAccess=facilitator||roles.includes('DIVISI')||rawRole==='DIVISI';
  const coreInventoryCards=[
    ['📊','Dashboard Inventory','Ringkasan stok dan inventory seluruh outlet','openInventoryDashboard()'],
    ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"],
    ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
    ['📈','Laporan Penjualan','Laporan penjualan per outlet','openSalesReport()'],
-   ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()']
+   ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()'],
+   ['🧑‍💼','Stock Hunter','Barang Hunter yang masih READY dan belum laku','openHunterStock()'],
+   ['🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')"],
+   ['🔔','Persetujuan Barang Masuk','Verifikasi barang yang sudah diinput dan menunggu persetujuan','window.openFinanceInventoryApprovals()'],
+   ['🚶','Persetujuan Walk-In','Verifikasi penjualan Walk-In yang menunggu persetujuan','openWalkinApprovals()'],
+   ['🔄','Mutasi Stok','Perpindahan stok antar outlet',"hmOpenInventoryFeature('mutasi')"],
+   ['📋','Riwayat Stok','Riwayat aktivitas barang masuk, keluar & mutasi',"hmOpenInventoryFeature('riwayat')"],
+   ['⚠️','Penyesuaian Stok','Koreksi selisih stok dengan alasan',"hmOpenInventoryFeature('penyesuaian')"]
  ];
- if(mg||developer) coreInventoryCards.forEach(item=>{
-   if(!cards.some(x=>x[1]===item[1])) cards.push(item);
- });
+ if(inventoryAccess){
+   const allItems=['Stok Siap Jual','Laporan Penjualan','Stock Hunter','Stock Opname'];
+   const facDivItems=['Dashboard Inventory','Master Produk','Barang Masuk','Persetujuan Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
+   coreInventoryCards.forEach(item=>{
+     const allowed=allItems.includes(item[1])||(inventoryFacDivAccess&&facDivItems.includes(item[1]))||(developer&&item[1]==='Dashboard Inventory');
+     if(allowed&&!cards.some(x=>x[1]===item[1]))cards.push(item);
+   });
+ }
  window.hmMainMenuItems=cards;
  const menuGroups=[
    ['🎯','LEAD TRACKER',[
@@ -2326,13 +2341,12 @@ function renderRoleHome(){
    // Tim dapat melihat LEAD TRACKER + SALES & PENJUALAN.
    // Developer tetap melihat seluruh kelompok menu.
    // Atmadita tidak memiliki menu karena cards sengaja kosong.
-   if(!developer && gi>1)return '';
+   if(!developer && gi>1 && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
    let allowed=g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    // Fungsi inventory utama wajib tampil dengan urutan yang sama seperti menu utama.
-   if((mg||developer) && g[1]==='INVENTORY & STOCK'){
-     const required=['Dashboard Inventory','Master Produk','Stok Siap Jual','Laporan Penjualan','Barang Masuk','Stock Hunter'];
-     const requiredItems=required.map(name=>g[2].find(x=>x[1]===name)).filter(Boolean);
-     allowed=requiredItems.concat(allowed.filter(x=>!required.includes(x[1])));
+   if(inventoryAccess && g[1]==='INVENTORY & STOCK'){
+     const order=['Dashboard Inventory','Master Produk','Stok Siap Jual','Laporan Penjualan','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok','Stock Opname'];
+     allowed=order.map(name=>g[2].find(x=>x[1]===name)).filter(Boolean).filter(item=>cards.some(x=>x[1]===item[1]));
    }
    if(!allowed.length)return '';
    return '<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>'+g[0]+' '+esc(g[1])+'</span></div><div class="role-home-submenu">'+allowed.map(item=>{

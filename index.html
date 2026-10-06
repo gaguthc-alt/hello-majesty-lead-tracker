@@ -1938,7 +1938,7 @@ function hmRunMainMenuAction(action){
   case 'hmOpenLeadHandover()': return hmOpenLeadHandover();
   case 'window.openCellFinanceReport()': return window.openCellFinanceReport();
   case 'window.openPartnerSettlement()': return window.openPartnerSettlement();
-  case 'window.openFinanceInventoryApprovals()': return window.openFinanceInventoryApprovals();
+  case 'window.openFinanceInventoryApprovals()': return (typeof window.openInventoryApprovals==='function'?window.openInventoryApprovals():window.openFinanceInventoryApprovals());
   case 'hmOpenQuickAction()': return hmOpenQuickAction();
   case "hmOpenFollowupInline('TODAY')": return hmOpenFollowupInline('TODAY');
   case "showFollowupToday('TODAY')": return showFollowupToday('TODAY');
@@ -2053,7 +2053,7 @@ function renderRoleHome(){
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
    add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
-   add('🔔','Persetujuan Barang Masuk','Approve stock masuk dari Majesty Cell ke outlet','window.openFinanceInventoryApprovals()');
+   add('🔔','Persetujuan Barang Masuk','Barang masuk yang menunggu verifikasi','openInventoryApprovals()');
    add('🚶','Persetujuan Walk-In','Verifikasi penjualan Walk-In yang menunggu persetujuan','openWalkinApprovals()');
    add('💰','Komisi Tim','Seluruh komisi tim, bukan hanya Sales','openTeamCommission()');
    add('💰','Komisi Saya','Komisi pribadi sesuai hak akses','openCommission()');

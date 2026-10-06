@@ -2092,6 +2092,12 @@ function hmRunMainMenuAction(action){
   case 'openAI()': return openAI();
   case 'openBrochures()': return hmOpenBrochuresInline();
   case 'openAccounting()': return openAccounting();
+  case 'openAccountingModule("journal")': return openAccountingModule('journal');
+  case 'openAccountingModule("ledger")': return openAccountingModule('ledger');
+  case 'openAccountingModule("balance")': return openAccountingModule('balance');
+  case 'openAccountingModule("profit")': return openAccountingModule('profit');
+  case 'openAccountingModule("health")': return openAccountingModule('health');
+  case 'openAccountingModule("transfer")': return openAccountingModule('transfer');
   case 'openFinance()': return openFinance();
   case 'hmOpenFinanceReport()': return (typeof window.hmOpenFinanceReport==='function' ? window.hmOpenFinanceReport() : hmLoadModule('finance').then(()=>window.hmOpenFinanceReport()));
   case 'openFinanceSection("cashbank")': return (typeof window.openFinanceSection==='function' ? window.openFinanceSection('cashbank') : hmLoadModule('finance').then(()=>window.openFinanceSection('cashbank')));

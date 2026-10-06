@@ -3163,9 +3163,9 @@ async function confirmDelete(id){
   closeModal();
   await render();
 
-  // Sinkronkan ulang dengan database tanpa membutuhkan refresh manual.
-  await loadLeads();
-  alert('✅ Lead berhasil dihapus.');
+  // Sinkronkan ulang dengan database tanpa memblokir tampilan dengan alert.
+  // Kartu yang dihapus sudah langsung dibuang dari state + render di atas.
+  loadLeads().catch(e=>console.error('[HM] Sinkronisasi setelah delete:',e));
  }catch(e){
   if(btn){btn.disabled=false;btn.textContent='Hapus';}
   alert('Hapus lead gagal: '+String(e?.message||e));

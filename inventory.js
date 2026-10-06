@@ -179,6 +179,39 @@ window.refreshHunterLauncher=async function(){
     if(!r.error && r.data===true)btn.classList.remove('hidden');
   }catch(e){console.warn('[HM] Hunter launcher access check',e);}
 };
+function renderMasterProductView(){
+ const panel=document.getElementById('inventoryPanel');
+ if(!panel)return;
+ const canManage=!!profile?.is_management || inventoryCanFacilitator;
+ const management=!!profile?.is_management;
+ const q=String(document.getElementById('hmMasterProductSearch')?.value||'').trim().toLowerCase();
+ const cat=String(document.getElementById('hmMasterProductCategory')?.value||'');
+ const rows=inventoryProducts.filter(p=>{
+   const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ').toLowerCase();
+   return (!cat||p.category===cat)&&(!q||searchHaystack(hay,q));
+ });
+ panel.className='box';
+ panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2 style="margin:0">🧾 MASTER PRODUK</h2><div class="small">Database produk dan data master</div></div><div class="row">'+
+   '<button class="secondary" type="button" onclick="refreshMasterProductView(this)">↻ Refresh</button>'+
+   (canManage?'<button class="success" type="button" onclick="openAddProduct()">＋ Tambah Produk</button>':'')+
+   '</div></div>'+
+   '<div class="row" style="margin-top:12px"><input id="hmMasterProductSearch" placeholder="🔎 Cari produk / varian / kategori / warna" value="'+esc(q)+'" oninput="renderMasterProductView()">'+
+   '<select id="hmMasterProductCategory" onchange="renderMasterProductView()"><option value="">Semua Kategori</option><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option><option value="STOCK_NEW_PUSAT">Stock New Pusat</option><option value="STOCK_SECOND_PUSAT">Stock Second Pusat</option></select></div>'+
+   '<div class="small" style="margin-top:10px">Menampilkan '+rows.length+' produk master</div>'+
+   '<div style="margin-top:10px">'+(rows.length?rows.map(p=>'<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(masterProductLabel(p))+'</b><div class="small">'+esc(invCategory(p.category))+'</div></div><div class="row">'+(canManage?'<button class="secondary" type="button" onclick="openEditProduct(\''+p.id+'\')">✏️ Edit</button>':'')+(management?'<button class="danger" type="button" onclick="deactivateProduct(\''+p.id+'\')">Hapus</button>':'')+'</div></div></div>').join(''):'<div class="small">Tidak ada produk yang sesuai.</div>')+'</div>';
+ const sel=document.getElementById('hmMasterProductCategory'); if(sel)sel.value=cat;
+ const input=document.getElementById('hmMasterProductSearch'); if(input){input.focus();input.setSelectionRange(input.value.length,input.value.length);}
+}
+async function refreshMasterProductView(btn){
+ if(btn?.disabled)return;
+ try{
+  if(btn){btn.disabled=true;btn.textContent='⏳ Loading...';}
+  await loadInventoryData();
+  renderMasterProductView();
+ }catch(e){console.error('[HM] Master Produk refresh error',e);alert('Refresh Master Produk gagal: '+(e?.message||e));}
+ finally{if(btn){btn.disabled=false;btn.textContent='↻ Refresh';}}
+}
+window.renderMasterProductView=renderMasterProductView;
 async function openInventorySection(view){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  if(role==='ADMIN FINANCE MAJESTY CELL' && (view==='dashboard'||view==='sales')){alert('Bagian ini tidak termasuk akses Finance Majesty Cell.');return;}
@@ -193,6 +226,15 @@ async function openInventorySection(view){
    panel.innerHTML='<div id="inventoryBody"></div>';
    if(btn)btn.textContent='✖ Tutup Laporan Penjualan';
    try{await openSalesReport();}catch(e){console.error('[HM] Sales report error',e);alert(e?.message||e);}
+   return;
+ }
+ if(view==='products'){
+   inventoryView='products';
+   if(btn)btn.textContent='✖ Tutup Master Produk';
+   try{
+     await loadInventoryData();
+     renderMasterProductView();
+   }catch(e){console.error('[HM] Master Produk error',e);alert(e?.message||e);}
    return;
  }
  if(btn)btn.textContent='✖ Tutup Product & Stock';

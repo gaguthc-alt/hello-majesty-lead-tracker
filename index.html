@@ -2867,9 +2867,15 @@ async function salesResult(id){
  const rows=st.data||[];
  const tp=await sb.from('team_profiles').select('user_id,name,outlet,role').eq('active',true).eq('outlet',profile.outlet).order('name');
  const teamRows=tp.error?[]:(tp.data||[]);
- const perm=await sb.from('team_permissions').select('user_id,can_sales').eq('active',true);
- const salesIds=new Set((perm.data||[]).filter(x=>x.can_sales).map(x=>x.user_id));
- const salesTeam=teamRows.filter(x=>x.user_id!==profile?.user_id && (String(x.role||'').toUpperCase().replace(/_/g,' ')==='SALES'||salesIds.has(x.user_id)));
+ // team_permissions memakai id sendiri, bukan user_id. Cocokkan hak Sales berdasarkan nama + outlet.
+ const perm=await sb.from('team_permissions').select('name,outlet,can_sales').eq('active',true).eq('can_sales',true);
+ const salesKeys=new Set((perm.data||[]).map(x=>String(x.outlet||'')+'|'+String(x.name||'').trim().toUpperCase()));
+ const salesTeam=teamRows.filter(x=>{
+   if(x.user_id===profile?.user_id)return false;
+   const roleSales=['SALES','SALES OUTLET','SALES HP'].includes(String(x.role||'').toUpperCase().replace(/_/g,' '));
+   const permissionSales=salesKeys.has(String(x.outlet||'')+'|'+String(x.name||'').trim().toUpperCase());
+   return roleSales||permissionSales;
+ });
  const opts=rows.map(s=>'<option value="'+esc(s.id)+'">'+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+' • List Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</option>').join('');
  const salesOpts=salesTeam.map(x=>'<label style="display:flex;align-items:center;gap:8px;margin:7px 0"><input type="checkbox" class="closingSalesMember" value="'+esc(x.user_id)+'"> <span>'+esc(x.name||'-')+'</span></label>').join('');
  const pm=await sb.from('payment_methods').select('id,code,name').eq('active',true).order('name');

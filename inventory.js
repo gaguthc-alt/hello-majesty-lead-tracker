@@ -487,6 +487,26 @@ function stockPhotoGallery(s,editable=false){
  ).join('')+'</div></div>';
 }
 function openProductDetail(id){const s=inventoryStock.find(x=>x.id===id);if(!s)return;const c=s.category;let d='';if(c==='IPHONE_SECOND')d='<b>Grade:</b> '+esc(s.grade||'-')+'<br><b>Kondisi:</b> '+esc(s.condition||'-')+'<br><b>Battery Health:</b> '+(s.battery_health!=null?s.battery_health+'%':'-')+'<br><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'<br><b>Minus:</b> '+esc(s.minus||'-')+'<br>';else if(c==='ANDROID_SECOND')d='<b>Warna:</b> '+esc(s.color||'-')+'<br><b>Kondisi:</b> '+esc(s.condition||'-')+'<br><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'<br><b>Minus:</b> '+esc(s.minus||'-')+'<br>';else if(c==='ANDROID_NEW')d='<b>Warna:</b> '+esc(s.color||'-')+'<br>';d+='<b>IMEI:</b> '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+'<br><b>Harga Jual:</b> Rp'+inventoryNumber(s.asking_price).toLocaleString('id-ID');const html=`<div class="box"><h2 style="margin:0">${esc((()=>{let raw=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(raw)?.[1]?.toUpperCase()||'';raw=raw.replace(/\s+(NEW|SECOND)$/i,'').trim();return [raw,s.variant,s.color,suffix].filter(Boolean).join(' — ')})())}</h2><div class="small">${invCategory(s.category)} • ${esc(s.status)}</div></div><div class="lead">${d}${stockPhotoGallery(s,false)}</div><div class="row"><button class="success" onclick="shareProduct(inventoryStock.find(x=>x.id===\'${id}\'))">📤 Kirim Info Customer</button>${profile?.role==='SALES'&&s.status==='READY'?'<button class="success" onclick="closeModal();openSellStock(\''+id+'\')">💰 Closing</button>':''}</div>`;$('mt').textContent='📱 Detail Produk';$('mb').innerHTML=html;$('modal').classList.remove('hidden')}
+async function openSellStock(stockId){
+ const s=(inventoryStock||[]).find(x=>x.id===stockId);
+ if(!s||s.status!=='READY')return alert('Stock tidak tersedia untuk Closing.');
+ if(profile?.role!=='SALES')return alert('Closing Stock Siap Jual hanya dapat diajukan oleh Sales.');
+ if(typeof window.salesResult!=='function')return alert('Form Closing belum siap. Silakan refresh aplikasi.');
+ const temp='STOCK-CLOSING-'+String(stockId).replace(/-/g,'').slice(0,12)+'-'+Date.now();
+ window.hmStockClosingApprovalMode=true; window.hmStockClosingTempLeadId=temp;
+ window.leads=window.leads||[];
+ window.leads.push({lead_id:temp,customer:'Walk-In',whatsapp:'',outlet:profile?.outlet||s.outlet,product:[s.product,s.variant,s.color].filter(Boolean).join(' — '),status_lead:'HANDLE',sales_claimed_by:profile?.name||'',sales_result:'POTENSIAL'});
+ try{
+   await window.salesResult(temp);
+   const sel=document.getElementById('ss');
+   if(sel){sel.value=stockId;sel.dispatchEvent(new Event('change',{bubbles:true}));}
+   const title=document.getElementById('mt'); if(title)title.textContent='💰 Closing Stock Siap Jual';
+ }catch(e){
+   window.hmStockClosingApprovalMode=false;window.hmStockClosingTempLeadId=null;
+   window.leads=window.leads.filter(l=>String(l.lead_id)!==String(temp));throw e;
+ }
+}
+
 function invCategory(c){return ({IPHONE_NEW:'iPhone New',IPHONE_SECOND:'iPhone Second',ANDROID_NEW:'Android New',ANDROID_SECOND:'Android Second',STOCK_NEW_PUSAT:'Stock New Pusat',STOCK_SECOND_PUSAT:'Stock Second Pusat'})[c]||c}
 function masterProductLabel(p){const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();return [product,variant,p.color,suffix].filter(Boolean).join(' — ')}
 function stockCard(s){

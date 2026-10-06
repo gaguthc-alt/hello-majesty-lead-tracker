@@ -2242,6 +2242,18 @@ function renderRoleHome(){
  // termasuk ketika CS hanya merupakan role tambahan.
  if(mg || cs)add('📖','Brosur','Materi produk & promosi','openBrochures()');
 
+ // Ensure core Inventory actions have backing cards so the grouped menu renderer
+ // can safely resolve their action handlers.
+ const coreInventoryCards=[
+   ['📊','Dashboard Inventory','Ringkasan stok dan inventory seluruh outlet','openInventoryDashboard()'],
+   ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"],
+   ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
+   ['📈','Laporan Penjualan','Laporan penjualan per outlet','openSalesReport()'],
+   ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()']
+ ];
+ if(mg||developer) coreInventoryCards.forEach(item=>{
+   if(!cards.some(x=>x[1]===item[1])) cards.push(item);
+ });
  window.hmMainMenuItems=cards;
  const menuGroups=[
    ['🎯','LEAD TRACKER',[

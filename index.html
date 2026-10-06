@@ -2246,8 +2246,7 @@ function renderRoleHome(){
  // Management melihat seluruh modul utama.
  const isAtmadita=String(profile?.name||'').trim().toLowerCase()==='atmadita';
  const cards=[],add=(icon,title,desc,fn)=>{
-  const atmaditaFinanceOnly=['Finance','Laporan Finance','Kas & Bank','Hutang & Piutang','Payroll & Komisi'];
-  if(isAtmadita && !atmaditaFinanceOnly.includes(title))return;
+  if(isAtmadita)return;
   if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
  };
 

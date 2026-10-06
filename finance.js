@@ -497,18 +497,39 @@ window.openFinanceSection=async function(section){
   }
   const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
   if(!panel||!body)return;
-  const config={
-    payable:{title:'🤝 Hutang & Piutang',items:[
-      ['Hutang Supplier','Kewajiban kepada supplier dan partner'],
-      ['Piutang Customer','Tagihan customer yang belum diterima'],
-      ['Jatuh Tempo','Daftar kewajiban dan piutang yang mendekati jatuh tempo']
-    ]},
-    payroll:{title:'💳 Payroll & Komisi',items:[
-      ['Gaji','Daftar dan riwayat pembayaran gaji'],
-      ['Komisi','Komisi tim dan komisi personal'],
-      ['Reward','Reward dan pembayaran insentif']
-    ]}
-  }[section];
+  if(section==='payable'){
+    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+    if(!panel||!body)return;
+    if(title)title.textContent='🤝 Hutang & Piutang';
+    panel.classList.remove('hidden');
+    body.innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🤝 HUTANG & PIUTANG</h3><div class="small" style="margin-top:4px">Kontrol kewajiban, tagihan dan jatuh tempo</div></div><button class="primary" type="button" onclick="window.openFinanceSection(\'payable\')">🔄 Refresh</button></div><div id="hmPayableBox" style="margin-top:12px">Memuat data...</div></div>';
+    const box=document.getElementById('hmPayableBox');
+    try{
+      if(!window.sb)throw new Error('Koneksi database belum siap.');
+      const rangeFn=typeof window.hmDateRange==='function'?window.hmDateRange:hmDateRange;
+      const [startDate,endDate]=rangeFn('month');
+      const res=await window.sb.rpc('finance_management_dashboard',{p_start_date:startDate,p_end_date:endDate});
+      if(res.error)throw res.error;
+      const d=res.data||{}, money=v=>typeof window.hmRp==='function'?window.hmRp(v):('Rp'+Number(v||0).toLocaleString('id-ID'));
+      const payable=Number(d.payable_supplier||0), receivable=Number(d.receivable_customer||0);
+      let cellHtml='';
+      try{
+        const cell=await window.sb.rpc('partner_obligation_summary');
+        if(!cell.error){
+          const rows=Array.isArray(cell.data)?cell.data:[];
+          const list=rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()==='MAJESTY CELL');
+          const total=list.reduce((a,x)=>a+Number(x.capital_due||0)+Number(x.profit_share_due||0),0);
+          cellHtml='<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🤝 Majesty Cell</h3><div class="fin-summary-line"><span>Kewajiban berjalan</span><b>'+money(total)+'</b></div><div class="small" style="margin-top:6px">Rincian modal dan profit sharing tetap dikelola melalui menu Majesty Cell.</div></div>';
+        }
+      }catch(e){console.warn('[HM] Cell obligation summary:',e);}
+      box.innerHTML='<div class="small">Ringkasan periode '+startDate+' s/d '+endDate+'</div><div class="fin-grid" style="margin-top:10px"><div class="fin-card"><div class="small">🤝 Hutang Supplier</div><div class="fin-big">'+money(payable)+'</div><div class="small">Belum dibayar</div></div><div class="fin-card"><div class="small">👤 Piutang Customer</div><div class="fin-big">'+money(receivable)+'</div><div class="small">Belum diterima</div></div><div class="fin-card"><div class="small">⚠️ Jatuh Tempo</div><div class="fin-big">—</div><div class="small">Data jatuh tempo belum tersedia</div></div></div><div class="box" style="margin-top:12px"><h3 style="margin-top:0">🤝 Hutang Supplier</h3><div class="small">Total kewajiban supplier yang tercatat pada Finance.</div><div class="fin-summary-line" style="margin-top:8px"><b>Total</b><strong>'+money(payable)+'</strong></div></div><div class="box" style="margin-top:12px"><h3 style="margin-top:0">👤 Piutang Customer</h3><div class="small">Total tagihan customer yang belum diterima.</div><div class="fin-summary-line" style="margin-top:8px"><b>Total</b><strong>'+money(receivable)+'</strong></div></div>'+cellHtml+'<div class="box" style="margin-top:12px"><h3 style="margin-top:0">💳 Pembayaran</h3><div class="small">Pencatatan pembayaran hutang/piutang akan dihubungkan ke Kas & Bank setelah sumber data detail tersedia. Kita tidak membuat transaksi fiktif.</div></div>';
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
+    }catch(ex){
+      console.error('[HM] Hutang & Piutang:',ex);
+      if(box)box.innerHTML='<div class="danger box"><b>Gagal memuat Hutang & Piutang.</b><div class="small" style="margin-top:6px">'+String(ex?.message||ex||'Terjadi kesalahan saat memuat data.')+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.openFinanceSection(\'payable\')">↻ Coba Lagi</button></div>';
+    }
+    return;
+  }
   if(!config)return;
   if(title)title.textContent=config.title;
   body.innerHTML='<div class="box"><button type="button" class="secondary" onclick="window.openFinance()">← Kembali Finance</button><h3 style="margin:12px 0 4px">'+config.title+'</h3><div class="small">Menu sudah disiapkan sebagai bagian dari Admin Finance.</div><div class="role-home-submenu" style="margin-top:12px">'+config.items.map(x=>'<div class="role-home-submenu-item"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('')+'</div><div class="small" style="margin-top:12px">Detail transaksi dan laporan modul ini akan ditata pada tahap berikutnya.</div></div>';

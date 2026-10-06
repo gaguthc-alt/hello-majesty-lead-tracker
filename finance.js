@@ -543,14 +543,27 @@ window.openFinanceSection=async function(section){
       const d=window.sb?await window.sb.rpc('finance_management_dashboard',{p_start_date:startDate,p_end_date:endDate}):null;
       if(d?.error)throw d.error;
       const x=d?.data||{};
-      const commission=Number(x.commission||x.total_commission||0), payroll=Number(x.payroll||x.total_payroll||0), reward=Number(x.reward||x.total_reward||0);
+      let commission=Number(x.commission||x.total_commission||0);
+      let commissionRows=[];
+      try{
+        const cr=await window.sb.rpc('management_team_commission_report',{p_month_start:startDate});
+        if(!cr.error){
+          commissionRows=Array.isArray(cr.data)?cr.data:[];
+          const keys=['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'];
+          commission=commissionRows.reduce((sum,row)=>sum+keys.reduce((s,k)=>s+Number(row[k]||0),0),0);
+        }
+      }catch(e){console.warn('[HM] Commission report:',e);}
+      const payroll=Number(x.payroll||x.total_payroll||0), reward=Number(x.reward||x.total_reward||0);
+      const commissionDetail=commissionRows.length
+        ? commissionRows.map(row=>'<div class="fin-summary-line"><span>'+String(row.name||'Tim')+'</span><b>'+money(['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'].reduce((s,k)=>s+Number(row[k]||0),0))+'</b></div>').join('')
+        : '<div class="small">Belum ada data komisi tim untuk periode ini.</div>';
       box.innerHTML='<div class="small">Periode '+startDate+' s/d '+endDate+'</div>'+
         '<div class="fin-grid" style="margin-top:10px">'+
         '<div class="fin-card"><div class="small">👥 Payroll</div><div class="fin-big">'+money(payroll)+'</div><div class="small">Kewajiban gaji</div></div>'+
         '<div class="fin-card"><div class="small">🏆 Komisi</div><div class="fin-big">'+money(commission)+'</div><div class="small">Kewajiban komisi</div></div>'+
         '<div class="fin-card"><div class="small">🎁 Reward</div><div class="fin-big">'+money(reward)+'</div><div class="small">Reward yang tercatat</div></div></div>'+
         '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">👤 Payroll</h3><div class="small">Data per karyawan dan status pembayaran akan ditampilkan setelah sumber payroll tersedia.</div></div>'+
-        '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🏆 Komisi</h3><div class="small">Komisi per anggota tim, periode, dasar perhitungan, penyesuaian dan status pembayaran.</div></div>'+
+        '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🏆 Komisi</h3>'+commissionDetail+'<div class="small" style="margin-top:8px">Sumber: laporan komisi tim yang sudah digunakan oleh modul Komisi Tim.</div></div>'+
         '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🎁 Reward</h3><div class="small">Penerima, jenis reward, nominal, alasan dan status pembayaran.</div></div>'+
         '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">💰 Pembayaran</h3><div class="small">Pembayaran payroll, komisi dan reward nantinya dicatat melalui Kas & Bank beserta bukti transaksi.</div></div>';
       panel.scrollIntoView({behavior:'smooth',block:'start'});

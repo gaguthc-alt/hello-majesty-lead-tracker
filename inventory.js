@@ -827,7 +827,7 @@ async function openSalesReport(){
  window.hmSalesReportOutlets=[...new Set(rows.map(r=>String(r.outlet||'').trim()).filter(Boolean))].sort();
  window.hmSalesReportOutlet=isAdminFinance&&profile?.outlet?profile.outlet:(window.hmSalesReportOutlet||'ALL');
  if(window.hmSalesReportOutlet!=='ALL'&&!window.hmSalesReportOutlets.includes(window.hmSalesReportOutlet))window.hmSalesReportOutlet='ALL';
- window.hmSalesReportPeriod=window.hmSalesReportPeriod||'TODAY';
+ window.hmSalesReportPeriod=window.hmSalesReportPeriod||'MONTH';
  inventoryView='sales';
  const panel=$('inventoryPanel');if(panel)panel.classList.remove('hidden');
  const btn=$('inventoryDashboardBtn');if(btn)btn.textContent='✖ Tutup Product & Stock';
@@ -843,7 +843,9 @@ function buildSalesReportData(){
  return {today:calc(filtered.filter(isToday)),month:calc(filtered.filter(isMonth))};
 }
 function renderInventorySalesReport(){
- const d=buildSalesReportData(),body=$('inventoryBody');if(!body)return;
+ let body=$('inventoryBody');
+ if(!body){const panel=$('inventoryPanel');if(!panel)return;panel.innerHTML='<div id="inventoryBody"></div>';body=$('inventoryBody');}
+ const d=buildSalesReportData();
  const period=window.hmSalesReportPeriod||'TODAY',x=d[period==='MONTH'?'month':'today'];
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const lockedOutlet=(role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL')&&profile?.outlet?String(profile.outlet):null;

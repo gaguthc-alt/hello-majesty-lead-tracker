@@ -1578,6 +1578,7 @@ function hmInlineIdsForMenu(key){
  // Tentukan panel berdasarkan TUJUAN aksi, bukan judul tombol.
  // Ini mencegah "Tanya AI" / "Content Performance" tertukar dengan menu lain.
  if(k==='hmopentargetoutlet()')return ['targetBoard'];
+ if(k==='openaccountingmodule("journal")'||k==='openaccountingmodule("ledger")'||k==='openaccountingmodule("balance")'||k==='openaccountingmodule("profit")'||k==='openaccountingmodule("health")'||k==='openaccountingmodule("transfer")')return ['accountingDetail'];
  if(k==='hmopencontentperformance()')return ['contentPerformance'];
  if(k==='openinventorydashboard()')return ['inventoryDashboardSection'];
  if(k==='openhunterstock()')return ['hunterStockSection'];

@@ -3018,7 +3018,7 @@ async function render(){
  if(todayBox){
    const now=new Date(),d0=new Date(now);d0.setHours(0,0,0,0);
    const d1=new Date(d0);d1.setDate(d1.getDate()+1);
-   const todayRows=allLeads.filter(l=>{const d=new Date(l.updated_at||l.created_at);return d>=d0&&d<d1;});
+   const todayRows=(leads||[]).filter(viewerLead).filter(l=>{const d=new Date(l.updated_at||l.created_at);return d>=d0&&d<d1;});
    const bucket=l=>{
      const sales=String(l.sales_result||'').toUpperCase(),cs=String(l.qualification_result||'').toUpperCase(),st=String(l.status_lead||'').toUpperCase(),hasil=String(l.hasil||'').toUpperCase();
      if(sales==='CLOSING'||cs==='CLOSING'||hasil==='CLOSING')return 'CLOSING';

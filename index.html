@@ -4297,7 +4297,7 @@ function hmEnsureAccountingDetailPanel(){
   return host;
 }
 async function openAccountingModule(module){
-  const host=document.getElementById('accountingDetail');if(!host)return;
+  const host=hmEnsureAccountingDetailPanel();
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
   const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   if(module==='transfer'){

@@ -2473,16 +2473,15 @@ function renderRoleHome(){
  // fungsi dan role tim hanya melihat tombol yang memang diberikan.
  const visibleGroups=menuGroups.map((g,gi)=>{
    // CONTENT & PROMOTION adalah menu standar untuk SEMUA akun.
-   // Grup lain tetap mengikuti permission masing-masing role.
-   if(g[1]==='CONTENT & PROMOTION'){
-     return g;
-   }
+   // Tetap render sebagai HTML section — jangan return array mentah,
+   // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.
+   const forceVisible = g[1]==='CONTENT & PROMOTION';
    // Developer Aplikasi melihat seluruh kelompok menu untuk pengembangan.
    // Akun lain tetap mengikuti permission melalui cards.
    // Tim dapat melihat LEAD TRACKER + SALES & PENJUALAN.
    // Developer tetap melihat seluruh kelompok menu.
    if(!developer && gi>1 && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
-   let allowed=g[2].filter(item=>cards.some(x=>x[1]===item[1]));
+   let allowed=forceVisible ? g[2] : g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    // Fungsi inventory utama wajib tampil dengan urutan yang sama seperti menu utama.
    if(inventoryAccess && g[1]==='INVENTORY & STOCK'){
      const order=['Dashboard Inventory','Master Produk','Stok Siap Jual','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok','Stock Opname'];

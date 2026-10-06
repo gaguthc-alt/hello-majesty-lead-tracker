@@ -2093,6 +2093,10 @@ function hmRunMainMenuAction(action){
   case 'openBrochures()': return hmOpenBrochuresInline();
   case 'openAccounting()': return openAccounting();
   case 'openFinance()': return openFinance();
+  case 'hmOpenFinanceReport()': return (typeof window.hmOpenFinanceReport==='function' ? window.hmOpenFinanceReport() : hmLoadModule('finance').then(()=>window.hmOpenFinanceReport()));
+  case 'openFinanceSection("cashbank")': return (typeof window.openFinanceSection==='function' ? window.openFinanceSection('cashbank') : hmLoadModule('finance').then(()=>window.openFinanceSection('cashbank')));
+  case 'openFinanceSection("payable")': return (typeof window.openFinanceSection==='function' ? window.openFinanceSection('payable') : hmLoadModule('finance').then(()=>window.openFinanceSection('payable')));
+  case 'openFinanceSection("payroll")': return (typeof window.openFinanceSection==='function' ? window.openFinanceSection('payroll') : hmLoadModule('finance').then(()=>window.openFinanceSection('payroll')));
   case 'openInventoryDashboard()': return window.openInventoryDashboard();
   case 'openHunterStock()': return window.openHunterStock();
   case 'hmOpenTargetOutlet()': return hmOpenTargetOutlet();

@@ -1821,8 +1821,10 @@ function renderRoleHome(){
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
    add('💰','Finance','Kas, laba & neraca','openFinance()');
+   add('📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()');
    add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
    add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
+   add('🔔','Persetujuan Barang Masuk','Persetujuan transaksi barang masuk','openInventoryApprovals()');
    add('📦','Product & Stock','Kontrol seluruh inventory',"openInventorySection('stock')");
    add('🎯','Target & Performa','Target seluruh outlet','hmOpenTargetOutlet()');
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
@@ -1924,16 +1926,12 @@ function renderRoleHome(){
    ['🛒','SALES & PENJUALAN',[
      ['🎯','Target & Performa','Target, closing & qualification','openPerformance()'],
      ['🏪','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()'],
-     ['📦','Product & Stock','Produk & ketersediaan stock',"openInventorySection('stock')"],
      ['📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\\'sales\\')'],
      ['🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()']
    ]],
    ['💰','FINANCE',[
      ['💰','Finance','Kas, laba & kontrol keuangan','openFinance()'],
-     ['📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()'],
-     ['📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()'],
-     ['🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()'],
-     ['🔔','Persetujuan Barang Masuk','Persetujuan transaksi barang masuk','openInventoryApprovals()']
+     ['📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()']
    ]],
    ['📚','ACCOUNTING',[
      ['📊','Accounting','Neraca, laba rugi, jurnal & kontrol accounting','openAccounting()']

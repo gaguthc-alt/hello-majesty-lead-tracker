@@ -554,16 +554,22 @@ window.openFinanceSection=async function(section){
         }
       }catch(e){console.warn('[HM] Commission report:',e);}
       const payroll=Number(x.payroll||x.total_payroll||0), reward=Number(x.reward||x.total_reward||0);
-      const commissionDetail=commissionRows.length
-        ? commissionRows.map(row=>'<div class="fin-summary-line"><span>'+String(row.name||'Tim')+'</span><b>'+money(['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'].reduce((s,k)=>s+Number(row[k]||0),0))+'</b></div>').join('')
-        : '<div class="small">Belum ada data komisi tim untuk periode ini.</div>';
+      const commissionItems=commissionRows.map(row=>({
+        name:String(row.name||'Tim'),
+        amount:['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'].reduce((s,k)=>s+Number(row[k]||0),0)
+      })).sort((a,b)=>b.amount-a.amount);
+      const commissionDetail=commissionItems.length
+        ? '<div style="overflow:auto;border:1px solid #e5e7eb;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#f8fafc"><th style="text-align:center;padding:10px;width:48px">No</th><th style="text-align:left;padding:10px">Nama</th><th style="text-align:right;padding:10px">Komisi</th><th style="text-align:center;padding:10px;width:110px">Status</th></tr></thead><tbody>'+
+          commissionItems.map((item,n)=>'<tr><td style="padding:9px 10px;text-align:center;border-top:1px solid #eef2f7">'+(n+1)+'</td><td style="padding:9px 10px;border-top:1px solid #eef2f7;font-weight:600">'+item.name+'</td><td style="padding:9px 10px;text-align:right;border-top:1px solid #eef2f7;font-weight:700">'+money(item.amount)+'</td><td style="padding:9px 10px;text-align:center;border-top:1px solid #eef2f7"><span style="display:inline-block;padding:4px 8px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:12px">Belum dibayar</span></td></tr>').join('')+
+          '</tbody></table></div>'
+        : '<div class="small" style="padding:12px 0">Belum ada data komisi tim untuk periode ini.</div>';
       box.innerHTML='<div class="small">Periode '+startDate+' s/d '+endDate+'</div>'+
         '<div class="fin-grid" style="margin-top:10px">'+
         '<div class="fin-card"><div class="small">👥 Payroll</div><div class="fin-big">'+money(payroll)+'</div><div class="small">Kewajiban gaji</div></div>'+
         '<div class="fin-card"><div class="small">🏆 Komisi</div><div class="fin-big">'+money(commission)+'</div><div class="small">Kewajiban komisi</div></div>'+
         '<div class="fin-card"><div class="small">🎁 Reward</div><div class="fin-big">'+money(reward)+'</div><div class="small">Reward yang tercatat</div></div></div>'+
         '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">👤 Payroll</h3><div class="small">Data per karyawan dan status pembayaran akan ditampilkan setelah sumber payroll tersedia.</div></div>'+
-        '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🏆 Komisi</h3>'+commissionDetail+'<div class="small" style="margin-top:8px">Sumber: laporan komisi tim yang sudah digunakan oleh modul Komisi Tim.</div></div>'+
+        '<div class="box" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px"><div><h3 style="margin:0">🏆 Komisi Tim</h3><div class="small" style="margin-top:4px">Rekap komisi berdasarkan periode berjalan</div></div><div style="font-size:20px;font-weight:800">'+money(commission)+'</div></div>'+commissionDetail+'<div class="small" style="margin-top:10px">Sumber: laporan Komisi Tim.</div></div>'+
         '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🎁 Reward</h3><div class="small">Penerima, jenis reward, nominal, alasan dan status pembayaran.</div></div>'+
         '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">💰 Pembayaran</h3><div class="small">Pembayaran payroll, komisi dan reward nantinya dicatat melalui Kas & Bank beserta bukti transaksi.</div></div>';
       panel.scrollIntoView({behavior:'smooth',block:'start'});

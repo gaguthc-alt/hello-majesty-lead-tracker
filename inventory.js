@@ -950,3 +950,5 @@ window.openInventoryDashboard=openInventoryDashboard;
 window.openInventorySection=openInventorySection;
 window.renderInventory=renderInventory;
 window.openSalesReport=openSalesReport;
+
+setInterval(hmRestoreStockCardActions,1500);

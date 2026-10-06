@@ -602,23 +602,9 @@ async function cleanupSoldStockPhotos(stockId){
  return true;
 }
 async function markStockSold(id){
- if(!(profile?.is_management||inventoryCanFacilitator))return alert('Hanya Management atau Facilitator yang dapat menandai stock SOLD.');
- const s=inventoryStock.find(x=>x.id===id);if(!s||s.status!=='READY')return;
- const name=[s.product,s.variant,s.color].filter(Boolean).join(' — ');
- const input=prompt('Masukkan Harga Jual Aktual untuk '+name+'\\n\\nHarga List: Rp'+inventoryNumber(s.asking_price).toLocaleString('id-ID')+'\\n\\nHarga transaksi customer:',String(s.asking_price||''));
- if(input===null)return;
- const salePrice=Number(String(input).replace(/[^0-9]/g,''));
- if(!salePrice||salePrice<=0)return alert('Harga Jual Aktual wajib diisi.');
- if(!confirm('Tandai stock sebagai SOLD?\\n\\n'+name+'\\nHarga Jual Aktual: Rp'+salePrice.toLocaleString('id-ID')))return;
- const x=await sb.rpc('mark_stock_sold',{p_stock_id:id,p_sale_price:salePrice});
- if(x.error)return alert('Gagal menandai SOLD: '+x.error.message);
- try{
-  await cleanupSoldStockPhotos(id);
- }catch(e){
-  console.error('[HM] SOLD photo cleanup error',e);
-  alert('Stock sudah SOLD, tetapi foto belum berhasil dibersihkan. Coba lagi dari unit tersebut.\\n\\n'+(e?.message||e));
- }
- await renderInventory();
+ // SOLD tidak boleh melewati Form Hasil Sales/Closing dan persetujuan.
+ if(typeof openSellStock==='function') return openSellStock(id);
+ return alert('Form Closing belum siap. Silakan refresh aplikasi.');
 }
 function openProductMaster(){
  const canOpen=!!profile?.is_management || inventoryCanFacilitator;

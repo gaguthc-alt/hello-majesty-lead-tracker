@@ -4401,16 +4401,42 @@ async function loadContentPosts(){const x=await sb.from('content_posts').select(
 function contentMonthStart(){return contentSelectedMonth}
 function contentMonthOptions(){let a=[],d=new Date();d.setDate(1);for(let i=0;i<3;i++){const y=d.getFullYear(),m=d.getMonth()-i;const dt=new Date(y,m,1);const v=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-01';a.push('<option value="'+v+'" '+(v===contentSelectedMonth?'selected':'')+'>'+v.slice(0,7)+'</option>')}return a.join('')}
 async function addContentPost(){
- const cc=profile?.is_management?await sb.from('team_profiles').select('name').eq('outlet',profile?.outlet||'').eq('active',true).order('name'):await sb.from('team_permissions').select('name').eq('outlet',profile.outlet).eq('active',true).eq('can_content_creator',true).order('name');
- const names=(cc.data||[]).map(x=>'<option>'+esc(x.name)+'</option>').join('');
- $('mt').textContent='🎬 Tambah Content';$('mb').innerHTML='<label>Content Creator</label><select id="cpcreator">'+names+'</select><label>Platform</label><select id="cpplatform"><option>TIKTOK</option><option>INSTAGRAM</option><option>FACEBOOK</option><option>YOUTUBE</option></select><label>Link Content</label><input id="cpurl" placeholder="https://vt.tiktok.com/..."><label>Judul / Deskripsi</label><input id="cptitle"><label>Tanggal Upload</label><input id="cpposted" type="datetime-local" value="'+new Date().toISOString().slice(0,16)+'"><div class="row"><div style="flex:1"><label>Views</label><input id="cpviews" type="number" value="0"></div><div style="flex:1"><label>Comments</label><input id="cpcomments" type="number" value="0"></div></div><div class="row"><div style="flex:1"><label>DM</label><input id="cpdms" type="number" value="0"></div><div style="flex:1"><label>Likes</label><input id="cplikes" type="number" value="0"></div></div><label>Shares</label><input id="cpshares" type="number" value="0"><button class="success" onclick="saveContentPost()">Simpan Content</button>';
+ const can=await canContentCreator();
+ if(!can)return alert('Akses Content Creator tidak tersedia.');
+ let names=[];
+ if(profile?.is_management){
+   const cc=await sb.from('team_profiles').select('name').eq('outlet',profile?.outlet||'').eq('active',true).order('name');
+   if(cc.error)throw cc.error;
+   names=(cc.data||[]).map(x=>x.name);
+ }else if(getActiveRoles().includes('CONTENT CREATOR')||String(profile?.role||'').toUpperCase().replace(/_/g,' ')==='CONTENT CREATOR'){
+   names=[profile?.name].filter(Boolean);
+ }else{
+   const cc=await sb.from('team_permissions').select('name').eq('outlet',profile.outlet).eq('active',true).eq('can_content_creator',true).order('name');
+   if(cc.error)throw cc.error;
+   names=(cc.data||[]).map(x=>x.name);
+ }
+ if(!names.length)return alert('Belum ada Content Creator yang aktif untuk outlet ini.');
+ const options=names.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
+ $('mt').textContent='🎬 Tambah Content';
+ $('mb').innerHTML='<label>Content Creator</label><select id="cpcreator">'+options+'</select><label>Platform</label><select id="cpplatform"><option>TIKTOK</option><option>INSTAGRAM</option><option>FACEBOOK</option><option>YOUTUBE</option></select><label>Link Content</label><input id="cpurl" placeholder="https://vt.tiktok.com/..."><label>Judul / Deskripsi</label><input id="cptitle"><label>Tanggal Upload</label><input id="cpposted" type="datetime-local" value="'+new Date().toISOString().slice(0,16)+'"><div class="row"><div style="flex:1"><label>Views</label><input id="cpviews" type="number" min="0" value="0"></div><div style="flex:1"><label>Comments</label><input id="cpcomments" type="number" min="0" value="0"></div></div><div class="row"><div style="flex:1"><label>DM</label><input id="cpdms" type="number" min="0" value="0"></div><div style="flex:1"><label>Likes</label><input id="cplikes" type="number" min="0" value="0"></div></div><label>Shares</label><input id="cpshares" type="number" min="0" value="0"><button class="success" type="button" onclick="saveContentPost()">Simpan Content</button>';
  $('modal').classList.remove('hidden');
 }
 async function saveContentPost(){
- const url=$('cpurl').value.trim();if(!url)return alert('Link content wajib diisi.');
- const creator=$('cpcreator').value;
- const x=await sb.from('content_posts').insert({outlet:profile.outlet,content_creator:creator,platform:$('cpplatform').value,post_url:url,title:$('cptitle').value.trim()||null,posted_at:new Date($('cpposted').value).toISOString(),views:Number($('cpviews').value||0),comments:Number($('cpcomments').value||0),dms:Number($('cpdms').value||0),likes:Number($('cplikes').value||0),shares:Number($('cpshares').value||0)});
- if(x.error)return alert(x.error.message);closeModal();await renderContentPerformance();
+ try{
+   const url=$('cpurl')?.value.trim();
+   if(!url)return alert('Link content wajib diisi.');
+   const posted=$('cpposted')?.value;
+   if(!posted)return alert('Tanggal upload wajib diisi.');
+   const creator=$('cpcreator')?.value;
+   if(!creator)return alert('Content Creator wajib dipilih.');
+   const x=await sb.from('content_posts').insert({outlet:profile.outlet,content_creator:creator,platform:$('cpplatform').value,post_url:url,title:$('cptitle').value.trim()||null,posted_at:new Date(posted).toISOString(),views:Number($('cpviews').value||0),comments:Number($('cpcomments').value||0),dms:Number($('cpdms').value||0),likes:Number($('cplikes').value||0),shares:Number($('cpshares').value||0)});
+   if(x.error)throw x.error;
+   closeModal();
+   await renderContentPerformance();
+ }catch(ex){
+   console.error('[HM] saveContentPost:',ex);
+   alert('Content gagal disimpan: '+(ex?.message||ex));
+ }
 }
 async function editContentPost(encodedId){
  const id=decodeURIComponent(encodedId);

@@ -2062,12 +2062,29 @@ function renderRoleHome(){
        });
        return;
      }
-     // LAPORAN FINANCE CELL: jalur langsung, tanpa bergantung pada guard/menu sequence.
+     // LAPORAN FINANCE CELL: pastikan modul Finance termuat lalu buka.
      if(action==='window.openCellFinanceReport()'){
        hmCloseMainMenu();
        hmActiveMainMenu='';
-       void Promise.resolve().then(()=>{
-         if(typeof window.openCellFinanceReport!=='function')throw new Error('Fungsi Laporan Finance Cell belum termuat.');
+       void Promise.resolve().then(async()=>{
+         if(typeof window.openCellFinanceReport!=='function'){
+           await new Promise((resolve,reject)=>{
+             const src='finance.js?v=20261006-finance-fix-4';
+             const existing=[...document.scripts].find(s=>String(s.src||'').includes('finance.js'));
+             if(existing && existing.dataset.hmReloading==='1'){
+               existing.addEventListener('load',resolve,{once:true});
+               existing.addEventListener('error',()=>reject(new Error('File Finance gagal dimuat.')),{once:true});
+               return;
+             }
+             const s=document.createElement('script');
+             s.src=src;
+             s.dataset.hmReloading='1';
+             s.onload=resolve;
+             s.onerror=()=>reject(new Error('File Finance gagal dimuat.'));
+             document.head.appendChild(s);
+           });
+         }
+         if(typeof window.openCellFinanceReport!=='function')throw new Error('Modul Laporan Finance Cell tidak berhasil dimuat.');
          return window.openCellFinanceReport();
        }).catch(ex=>{
          console.error('[HM] Laporan Finance Cell gagal dibuka:',ex);

@@ -2246,7 +2246,8 @@ function renderRoleHome(){
  // Management melihat seluruh modul utama.
  const isAtmadita=String(profile?.name||'').trim().toLowerCase()==='atmadita';
  const cards=[],add=(icon,title,desc,fn)=>{
-  if(isAtmadita)return;
+  const atmaditaFinanceOnly=['Finance','Laporan Finance','Kas & Bank','Hutang & Piutang','Payroll & Komisi'];
+  if(isAtmadita && !atmaditaFinanceOnly.includes(title))return;
   if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
  };
 
@@ -2263,8 +2264,11 @@ function renderRoleHome(){
    add('📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()');
    add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
    add('👤','Database Customer','Database customer khusus Developer Aplikasi','hmOpenCustomerDatabase()');
-   add('💰','Finance','Kas, laba & neraca','openFinance()');
+   add('💰','Finance','Kas, laba & kontrol keuangan','openFinance()');
    add('📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()');
+   add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
+   add('🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")');
+   add('💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
    add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')");
@@ -2336,6 +2340,9 @@ function renderRoleHome(){
  }else if(has('ADMIN FINANCE')){
    add('💰','Finance','Finance outlet','openFinance()');
    add('📊','Laporan Finance','Laporan keuangan','hmOpenFinanceReport()');
+   add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
+   add('🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")');
+   add('💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Bantuan finance','openAI()');
@@ -2451,7 +2458,10 @@ function renderRoleHome(){
    ]],
    ['💰','FINANCE',[
      ['💰','Finance','Kas, laba & kontrol keuangan','openFinance()'],
-     ['📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()']
+     ['📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()'],
+     ['💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")'],
+     ['🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")'],
+     ['💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")']
    ]],
    ['📚','ACCOUNTING',[
      ['📊','Accounting','Neraca, laba rugi, jurnal & kontrol accounting','openAccounting()']

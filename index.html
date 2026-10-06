@@ -4383,7 +4383,7 @@ async function renderContentPerformance(){
     hmContentPerformanceRequest=null;
   }
 }
-async function canContentCreator(){
+async async function canContentCreator(){
  const rolesNow=getActiveRoles();
  const raw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  if(profile?.is_management||raw==='DEVELOPER APLIKASI'||rolesNow.includes('CONTENT CREATOR'))return true;

@@ -1390,7 +1390,7 @@ async function start(u,authClient){
   if(p.can_hunter)hmPermissionRoles.push('HUNTER');
   const displayRoles=getActiveRoles();
   const displayPosition=String(profile?.role||'').trim()|| (profile?.is_management?'Management':displayRoles.join(' + '));
-  $('identity').textContent=profile.name+' • '+displayPosition+' • '+profile.outlet;
+  $('identity').textContent=profile.name+' • '+displayPosition+(profile.outlet?' • '+profile.outlet:'');
 
   // RENDER HOME FIRST. Permission/menu logic must never be able to leave
   // the authenticated user with a blank dashboard.
@@ -2241,9 +2241,9 @@ function hmRenderLeadTodayMain(){
  host.innerHTML='<div class="hm-lead-today-main" style="margin:14px 0 18px;padding:14px;border:1px solid #d0d5dd;border-radius:16px;background:#fff;box-shadow:0 4px 14px #0000000a">'+
    '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b style="font-size:16px">📅 LEAD HARI INI</b><div class="small" style="margin-top:3px">'+esc(scopeLabel)+'</div></div><span class="small">'+today.length+' aktivitas</span></div>'+
    '<div class="small" style="margin-top:10px;font-weight:700">PERJALANAN LEAD</div>'+
-   '<div style="display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:8px;margin-top:6px">'+journey.map(x=>box(x[0],x[1])).join('')+'</div>'+
+   '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px">'+journey.map(x=>box(x[0],x[1])).join('')+'</div>'+
    '<div class="small" style="margin-top:10px;font-weight:700">HASIL / FOLLOW-UP HARI INI</div>'+
-   '<div style="display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:8px;margin-top:6px">'+hasilRows.map(x=>box(x[0],x[1])).join('')+'</div>'+
+   '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px">'+hasilRows.map(x=>box(x[0],x[1])).join('')+'</div>'+
    '</div>';
 }
 function renderRoleHome(){

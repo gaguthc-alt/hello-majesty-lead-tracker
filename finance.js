@@ -383,3 +383,53 @@ function patchAfterInline(){
   setInterval(patchAfterInline,500);
   window.hmFinanceSalesReady=true;
 })();
+
+/* HM LEAD NEW — prevent double submission on mobile */
+(function(){
+  function installLeadSaveGuard(){
+    const btn=document.getElementById('saveLeadBtn');
+    if(!btn || btn.dataset.hmDoubleGuard==='1')return;
+    const original=btn.onclick;
+    if(typeof original!=='function')return;
+    btn.dataset.hmDoubleGuard='1';
+    btn.onclick=function(e){
+      if(btn.dataset.hmSaving==='1')return;
+      btn.dataset.hmSaving='1';
+      btn.disabled=true;
+      btn.style.pointerEvents='none';
+      btn.setAttribute('aria-busy','true');
+      btn.textContent='Menyimpan...';
+      let result;
+      try{ result=original.call(this,e); }
+      catch(err){
+        btn.dataset.hmSaving='0';
+        btn.disabled=false;
+        btn.style.pointerEvents='auto';
+        btn.removeAttribute('aria-busy');
+        btn.textContent='Simpan Lead';
+        throw err;
+      }
+      Promise.resolve(result).finally(()=>{
+        if(document.getElementById('saveLeadBtn')===btn){
+          btn.dataset.hmSaving='0';
+          btn.disabled=false;
+          btn.style.pointerEvents='auto';
+          btn.removeAttribute('aria-busy');
+          btn.textContent='Simpan Lead';
+        }
+      });
+      return result;
+    };
+  }
+  const oldAddLead=window.addLead;
+  if(typeof oldAddLead==='function'){
+    window.addLead=async function(){
+      const result=await oldAddLead.apply(this,arguments);
+      installLeadSaveGuard();
+      return result;
+    };
+  }
+  document.addEventListener('click',function(e){
+    if(e.target?.id==='saveLeadBtn')setTimeout(installLeadSaveGuard,0);
+  },true);
+})();

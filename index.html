@@ -1897,6 +1897,18 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
 
+ // CS selalu mendapatkan GROUP LEAD TRACKER, baik CS sebagai role utama
+ // maupun CS sebagai permission/fungsi tambahan pada akun dengan role lain.
+ // Ini sengaja ditempatkan setelah seluruh role utama diproses agar tidak
+ // bergantung pada urutan role (mis. SALES + CS).
+ if(!mg && cs){
+   add('📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()');
+   add('👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()');
+   add('🤝','Lead Handover','Qualified/Potensial → handover & share ke Sales','hmOpenLeadHandover()');
+   add('🔔','Perlu Perhatian','Follow-up yang harus segera ditindaklanjuti','showNeedsAttention()');
+   add('🔎','Pencarian Lead','Cari lead berdasarkan ID, nama, WhatsApp, kebutuhan, outlet, atau status','openLeadSearch()');
+ }
+
  // CS dan SALES adalah fungsi operasional, bukan harus menjadi role utama.
  // Siapa pun yang memiliki salah satu fungsi ini mendapatkan menu kerja yang sama.
  if(!mg && (cs || sales)){

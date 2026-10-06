@@ -2402,7 +2402,7 @@ function renderRoleHome(){
          if(typeof window.openCellFinanceReport!=='function'){
            await new Promise((resolve,reject)=>{
              const src='finance.js?v=20261006-finance-fix-4';
-             const existing=[...document.scripts].find(s=>String(s.src||'').includes('finance.js'));
+             const existing=[...document.scripts].find(s=>String(s.src||'').includes('inventory.js'));
              if(existing && existing.dataset.hmReloading==='1'){
                existing.addEventListener('load',resolve,{once:true});
                existing.addEventListener('error',()=>reject(new Error('File Finance gagal dimuat.')),{once:true});
@@ -2431,11 +2431,11 @@ function renderRoleHome(){
        hmActiveMainMenu='';
        void Promise.resolve().then(()=>{
          const callApproval=()=>{
-           const fn=typeof window.openFinanceInventoryApprovals==='function'?window.openFinanceInventoryApprovals:window.openInventoryApprovals;
+           const fn=typeof window.openInventoryApprovals==='function'?window.openInventoryApprovals:window.openFinanceInventoryApprovals;
            if(typeof fn!=='function')throw new Error('Fungsi Persetujuan Barang Masuk belum termuat.');
            return fn();
          };
-         if(typeof window.openFinanceInventoryApprovals==='function'||typeof window.openInventoryApprovals==='function') return callApproval();
+         if(typeof window.openInventoryApprovals==='function'||typeof window.openFinanceInventoryApprovals==='function') return callApproval();
          return new Promise((resolve,reject)=>{
            const existing=[...document.scripts].find(s=>String(s.src||'').includes('finance.js'));
            if(existing){
@@ -2445,7 +2445,7 @@ function renderRoleHome(){
              return;
            }
            const s=document.createElement('script');
-           s.src='finance.js?v=20261006-finance-approval-retry';
+           s.src='inventory.js?v=20261006-approval-retry-3';
            s.onload=()=>{try{resolve(callApproval())}catch(e){reject(e)}};
            s.onerror=()=>reject(new Error('Modul Finance gagal dimuat.'));
            document.head.appendChild(s);

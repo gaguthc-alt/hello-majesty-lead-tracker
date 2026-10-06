@@ -1505,30 +1505,37 @@ function hmMoveViewsInline(key){
 }
 function hmOpenTradeInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
- if(!panel||!body)return;
- panel.classList.remove('hidden');
- const title=document.getElementById('hmMenuPanelTitle');
- if(title)title.textContent='🔄 Tukar Tambah';
- body.innerHTML='<div class="box"><h3 style="margin-top:0">📱 FORM TUKAR TAMBAH</h3>'+
- '<div class="small" style="margin-bottom:10px">Masukkan data perangkat customer. Data akan masuk ke sistem untuk ditindaklanjuti Sales.</div>'+
- '<label>Nama Customer</label><input id="hmtt_customer" placeholder="Nama lengkap">'+
+ if(!panel||!body)return; panel.classList.remove('hidden');
+ const title=document.getElementById('hmMenuPanelTitle'); if(title)title.textContent='🔄 Tukar Tambah';
+ body.innerHTML='<div class="box"><h3 style="margin-top:0">📱 FORM DATA TUKAR TAMBAH</h3>'+
+ '<div style="font-weight:700;margin-bottom:12px">HELLO MAJESTY</div>'+
+ '<div class="small">Mohon bantu isi data HP yang ingin ditukar:</div>'+
+ '<div style="font-weight:700;margin:14px 0 6px">DATA CUSTOMER</div>'+
+ '<label>Nama Customer</label><input id="hmtt_customer" placeholder="Nama customer">'+
  '<label>No WhatsApp</label><input id="hmtt_whatsapp" placeholder="08xxxxxxxxxx">'+
+ '<div style="font-weight:700;margin:14px 0 6px">DATA HP</div>'+
  '<label>1. Merek &amp; Tipe</label><input id="hmtt_device" placeholder="Contoh: iPhone 13">'+
- '<label>Kapasitas</label><input id="hmtt_capacity" placeholder="128 GB">'+
- '<label>Warna</label><input id="hmtt_color" placeholder="Contoh: Midnight">'+
- '<label>Kondisi Umum</label><input id="hmtt_condition" placeholder="Normal / ada lecet / dll">'+
- '<label>Kelengkapan</label><input id="hmtt_completeness" placeholder="Unit + Box + Kabel">'+
- '<label>Garansi</label><select id="hmtt_warranty"><option value="">— Pilih —</option><option>iBox</option><option>Inter</option><option>Distributor</option><option>Garansi Toko</option><option>Tidak Ada</option><option>Tidak Tahu</option></select>'+
- '<label>Fungsi / Kondisi Fitur</label><input id="hmtt_function" placeholder="Face ID ON, True Tone ON, kamera normal, dll">'+
- '<label>Signal</label><select id="hmtt_signal"><option value="">— Pilih —</option><option>ON</option><option>OFF</option><option>Tidak Tahu</option></select>'+
- '<label>Battery Health</label><input id="hmtt_bh" placeholder="Khusus iPhone, contoh 85%">'+
- '<label>Minus</label><input id="hmtt_minus" placeholder="Tidak ada / layar retak / dll">'+
- '<label>Estimasi Lama Pemakaian</label><input id="hmtt_usage" placeholder="Contoh: ±2 tahun">'+
- '<label>HP yang Diinginkan</label><input id="hmtt_wanted" placeholder="Unit yang ingin dibeli">'+
- '<label>Estimasi Budget / Tambah Dana</label><input id="hmtt_budget" placeholder="Contoh: tambah 5 juta">'+
- '<label>Catatan Tambahan</label><textarea id="hmtt_notes" placeholder="Informasi lain yang perlu diketahui"></textarea>'+
- '<button id="hmtt_submit" class="success" style="width:100%;margin-top:12px" type="button" onclick="submitTradeInline()">Kirim Data Tukar Tambah</button>'+
- '<p id="hmtt_msg" class="small" style="margin-top:10px"></p></div>';
+ '<label>2. Kapasitas</label><input id="hmtt_capacity" placeholder="128 GB">'+
+ '<label>3. Warna</label><input id="hmtt_color" placeholder="Contoh: Midnight">'+
+ '<label>4. Battery Health</label><input id="hmtt_bh" placeholder="Contoh: 85%">'+
+ '<label>5. Kondisi Fisik</label><input id="hmtt_condition" placeholder="Normal / ada lecet">'+
+ '<label>6. Minus</label><input id="hmtt_minus" placeholder="Tidak ada / layar retak">'+
+ '<label>7. Kelengkapan</label><input id="hmtt_completeness" placeholder="Unit + Box + Kabel">'+
+ '<label>8. Garansi</label><input id="hmtt_warranty" placeholder="iBox / Inter / Toko / Tidak ada">'+
+ '<label>9. Face ID</label><select id="hmtt_faceid"><option value="">— Pilih —</option><option>ON</option><option>OFF</option><option>Tidak Tahu</option></select>'+
+ '<label>10. True Tone</label><select id="hmtt_truetone"><option value="">— Pilih —</option><option>ON</option><option>OFF</option><option>Tidak Tahu</option></select>'+
+ '<label>11. Signal</label><select id="hmtt_signal"><option value="">— Pilih —</option><option>ON</option><option>OFF</option><option>Tidak Tahu</option></select>'+
+ '<label>12. Kamera</label><select id="hmtt_camera"><option value="">— Pilih —</option><option>Normal</option><option>Bermasalah</option><option>Tidak Tahu</option></select>'+
+ '<label>13. Speaker &amp; Mic</label><select id="hmtt_speaker"><option value="">— Pilih —</option><option>Normal</option><option>Bermasalah</option><option>Tidak Tahu</option></select>'+
+ '<label>14. Charging</label><select id="hmtt_charging"><option value="">— Pilih —</option><option>Normal</option><option>Bermasalah</option><option>Tidak Tahu</option></select>'+
+ '<label>15. Lama Pemakaian</label><input id="hmtt_usage" placeholder="Contoh: ±2 tahun">'+
+ '<div style="font-weight:700;margin:14px 0 6px">HP YANG DIINGINKAN</div>'+
+ '<label>16. Tipe HP</label><input id="hmtt_wanted" placeholder="Contoh: iPhone 17 256 GB">'+
+ '<label>17. Estimasi Budget / Tambah Dana</label><input id="hmtt_budget" placeholder="Contoh: tambah Rp5.000.000">'+
+ '<div class="small" style="margin-top:12px">Silakan isi langsung pada form di atas lalu kirim kembali. Setelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.</div>'+
+ '<div style="margin-top:12px;font-weight:700">— HELLO MAJESTY<br><span style="font-weight:400;font-style:italic">Built on Trust.</span></div>'+
+ '<button id="hmtt_submit" class="success" style="width:100%;margin-top:14px" type="button" onclick="submitTradeInline()">Kirim Data Tukar Tambah</button>'+
+ '<p id="hmtt_msg" class="small"></p></div>';
  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
 }
 async function submitTradeInline(){
@@ -1538,16 +1545,13 @@ async function submitTradeInline(){
  if(!customer||!whatsapp){if(msg)msg.textContent='Nama Customer dan No WhatsApp wajib diisi.';return;}
  btn.disabled=true;btn.textContent='Mengirim...';
  try{
-   await ensureSupabase();
-   const data={device:val('hmtt_device'),capacity:val('hmtt_capacity'),color:val('hmtt_color'),condition:val('hmtt_condition'),completeness:val('hmtt_completeness'),warranty:val('hmtt_warranty'),function_check:val('hmtt_function'),signal:val('hmtt_signal'),battery_health:val('hmtt_bh'),minus:val('hmtt_minus'),usage_duration:val('hmtt_usage'),wanted_product:val('hmtt_wanted'),budget:val('hmtt_budget'),notes:val('hmtt_notes')};
-   const x=await sb.rpc('create_trade_inquiry',{p_customer:customer,p_whatsapp:whatsapp,p_outlet:profile?.outlet||null,p_data:data});
-   if(x.error)throw x.error;
-   if(msg)msg.innerHTML='✅ Data tukar tambah berhasil disimpan. Nomor pengajuan: <b>'+esc(x.data?.inquiry_id||'-')+'</b>';
-   btn.textContent='✓ Tersimpan';
- }catch(e){
-   if(msg)msg.textContent=e?.message||'Data gagal disimpan.';
-   btn.disabled=false;btn.textContent='Kirim Data Tukar Tambah';
- }
+  await ensureSupabase();
+  const data={device:val('hmtt_device'),capacity:val('hmtt_capacity'),color:val('hmtt_color'),battery_health:val('hmtt_bh'),condition:val('hmtt_condition'),minus:val('hmtt_minus'),completeness:val('hmtt_completeness'),warranty:val('hmtt_warranty'),face_id:val('hmtt_faceid'),true_tone:val('hmtt_truetone'),signal:val('hmtt_signal'),camera:val('hmtt_camera'),speaker_mic:val('hmtt_speaker'),charging:val('hmtt_charging'),usage_duration:val('hmtt_usage'),wanted_product:val('hmtt_wanted'),budget:val('hmtt_budget')};
+  const x=await sb.rpc('create_trade_inquiry',{p_customer:customer,p_whatsapp:whatsapp,p_outlet:profile?.outlet||null,p_data:data});
+  if(x.error)throw x.error;
+  if(msg)msg.innerHTML='✅ Data tukar tambah berhasil disimpan. Nomor pengajuan: <b>'+esc(x.data?.inquiry_id||'-')+'</b>';
+  btn.textContent='✓ Tersimpan';
+ }catch(e){if(msg)msg.textContent=e?.message||'Data gagal disimpan.';btn.disabled=false;btn.textContent='Kirim Data Tukar Tambah';}
 }
 async function hmMainMenuClick(title,fn,actionKey){
  const key=String(title||'');

@@ -2020,6 +2020,7 @@ function renderRoleHome(){
    add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')');
    add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
    add('📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()');
+   add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
    add('💰','Finance','Kas, laba & neraca','openFinance()');
    add('📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
@@ -2177,7 +2178,7 @@ function renderRoleHome(){
    // Developer Aplikasi melihat seluruh kelompok menu untuk pengembangan.
    // Akun lain tetap mengikuti permission melalui cards.
    if(!developer && gi!==0)return '';
-   const allowed=developer?g[2]:g[2].filter(item=>cards.some(x=>x[1]===item[1]));
+   const allowed=g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    if(!allowed.length)return '';
    return '<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>'+g[0]+' '+esc(g[1])+'</span></div><div class="role-home-submenu">'+allowed.map(item=>{
      const card=cards.find(x=>x[1]===item[1]);

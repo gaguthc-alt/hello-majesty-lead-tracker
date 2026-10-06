@@ -3081,54 +3081,81 @@ function showHMToast(message){
 }
 let hmLeadSaveBusy=false;
 async function saveLead(){
- if(hmLeadSaveBusy)return;
- const type=hmLeadField('fneedtype')?.value;
- if(!type)return alert('Kebutuhan wajib dipilih.');
- const btn=document.getElementById('hm_saveLeadBtn');
- hmLeadSaveBusy=true;
- if(btn){
-   btn.disabled=true;
-   btn.style.pointerEvents='none';
-   btn.setAttribute('aria-busy','true');
-   btn.textContent='Menyimpan...';
- }
- try{
-   const d=buildInitialData();
-   const summary=type==='PEMBELIAN'?(d.product||'') : type==='SERVICE'?(d.device+' '+d.model+' — '+d.complaint) : type==='TUKAR TAMBAH'?(d.device+' '+d.capacity+' → '+d.wanted_product) : type==='KREDIT/CICILAN'?(d.product||'') : (d.information||'');
-   const x=await sb.rpc('create_lead',{p_customer:hmLeadField('fc')?.value||'',p_whatsapp:hmLeadField('fw')?.value||'',p_product:d.product||d.wanted_product||null,p_need:summary||type,p_budget:d.budget||d.dp_budget||d.price||null,p_timeline:null,p_preference:d.preference||null,p_catatan:hmLeadField('fcatatan')?.value.trim()||null,p_content_creator:null,p_need_type:type,p_initial_data:d});
-   if(x.error)throw x.error;
-   const createdLead=Array.isArray(x.data)?x.data[0]:x.data;
-   const createdId=createdLead?.lead_id||'';
+  if(hmLeadSaveBusy)return;
+  const type=hmLeadField('fneedtype')?.value;
+  if(!type)return alert('Kebutuhan wajib dipilih.');
 
-   // Tampilkan hasil simpan SEGERA. Jangan menunggu refresh database atau
-   // menahan UI dengan alert, supaya user langsung tahu lead sudah tersimpan.
-   if(createdLead){
-     leads=[createdLead,...(leads||[]).filter(l=>String(l?.lead_id||'')!==String(createdId))];
-   }
-   // Tutup semua tampilan input dan tampilkan hasil simpan tanpa menunggu refresh.
-   const modal=document.getElementById('modal');
-   if(modal){modal.classList.add('hidden');modal.style.display='none';}
-   const panel=document.getElementById('hmMenuPanel');
-   if(panel){panel.classList.add('hidden');panel.style.display='none';}
+  const btn=document.getElementById('hm_saveLeadBtn');
+  hmLeadSaveBusy=true;
+  if(btn){
+    btn.disabled=true;
+    btn.style.pointerEvents='none';
+    btn.setAttribute('aria-busy','true');
+    btn.textContent='Menyimpan...';
+  }
 
-   // Render langsung; database disinkronkan di belakang.
-   render().catch(e=>console.error('[HM] Render setelah save:',e));
-   showHMToast('✅ Lead berhasil disimpan'+(createdId?' • '+createdId:''));
+  try{
+    const d=buildInitialData();
+    const customer=hmLeadField('fc')?.value||'';
+    const whatsapp=hmLeadField('fw')?.value||'';
+    const catatan=hmLeadField('fcatatan')?.value?.trim()||'';
+    const summary=
+      type==='PEMBELIAN'?(d.product||''):
+      type==='SERVICE'?(String(d.device||'')+' '+String(d.model||'')+' — '+String(d.complaint||'')):
+      type==='TUKAR TAMBAH'?(String(d.device||'')+' '+String(d.capacity||'')+' → '+String(d.wanted_product||'')):
+      type==='KREDIT/CICILAN'?(d.product||''):
+      (d.information||'');
 
-   // Kembalikan panel agar bisa dibuka lagi normal.
-   setTimeout(()=>{if(panel)panel.style.removeProperty('display');},0);
-   loadLeads().catch(e=>console.error('[HM] Sinkronisasi lead baru:',e));
- }catch(e){
-   alert(e?.message||'Lead gagal disimpan.');
- }finally{
-   hmLeadSaveBusy=false;
-   if(btn){
-     btn.disabled=false;
-     btn.style.pointerEvents='auto';
-     btn.removeAttribute('aria-busy');
-     btn.textContent='Simpan Lead';
-   }
- }
+    const result=await sb.rpc('create_lead',{
+      p_customer:customer,
+      p_whatsapp:whatsapp,
+      p_product:d.product||d.wanted_product||null,
+      p_need:summary||type,
+      p_budget:d.budget||d.dp_budget||d.price||null,
+      p_timeline:null,
+      p_preference:d.preference||null,
+      p_catatan:catatan||null,
+      p_content_creator:null,
+      p_need_type:type,
+      p_initial_data:d
+    });
+    if(result.error)throw result.error;
+
+    const created=Array.isArray(result.data)?result.data[0]:result.data;
+    const createdId=created?.lead_id||'';
+
+    if(created){
+      leads=[created,...(leads||[]).filter(l=>String(l?.lead_id||'')!==String(createdId))];
+    }
+
+    // Tutup form segera setelah Supabase mengonfirmasi berhasil.
+    const mainPanel=document.getElementById('hmMenuPanel');
+    if(mainPanel){
+      mainPanel.classList.add('hidden');
+      mainPanel.style.removeProperty('display');
+    }
+    const leadModal=document.getElementById('modal');
+    if(leadModal){
+      leadModal.classList.add('hidden');
+      leadModal.style.removeProperty('display');
+    }
+
+    showHMToast('✅ Lead berhasil disimpan'+(createdId?' • '+createdId:''));
+
+    // Sinkronisasi tidak menghalangi respons UI.
+    loadLeads().catch(err=>console.error('[HM] Sync lead baru:',err));
+  }catch(err){
+    console.error('[HM] saveLead error:',err);
+    alert('Lead gagal disimpan.\n\n'+String(err?.message||err));
+  }finally{
+    hmLeadSaveBusy=false;
+    if(btn){
+      btn.disabled=false;
+      btn.style.pointerEvents='auto';
+      btn.removeAttribute('aria-busy');
+      btn.textContent='Simpan Lead';
+    }
+  }
 }
 function editNeedFields(t,d){
  const v=k=>esc(d?.[k]??'');

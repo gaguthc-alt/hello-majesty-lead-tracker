@@ -804,30 +804,50 @@ function hmNormalizePhone(v){return String(v||'').replace(/[^0-9]/g,'').replace(
 async function openSalesReport(){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const isAdminFinance=role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL';
- const q=sb.from('sales_transactions').select('*').order('sold_at',{ascending:false});
- if(isAdminFinance&&profile?.outlet)q.eq('outlet',profile.outlet);
+ let q=sb.from('sales_transactions').select('*').order('sold_at',{ascending:false});
+ if(isAdminFinance&&profile?.outlet)q=q.eq('outlet',profile.outlet);
  const x=await q;
- if(x.error)return alert(x.error.message);
+ if(x.error)throw x.error;
  const rows=x.data||[];
  const stockIds=[...new Set(rows.map(r=>r.stock_unit_id).filter(Boolean))];
- const salesIds=[...new Set(rows.map(r=>r.sales_user_id).filter(Boolean))];
+ let stocks=[],peopleMap={},productMap={},leadMap={};
+
+ // Data utama transaksi adalah wajib. Data produk/Sales/lead hanya pelengkap,
+ // supaya satu query tambahan yang gagal tidak membuat laporan ikut gagal.
+ try{
+   const [stockRes,peopleRes]=await Promise.all([
+     stockIds.length?sb.from('stock_units').select('id,product_id,color,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
+     rows.length?sb.rpc('get_sales_report_people',{p_transaction_ids:rows.map(r=>r.id).filter(Boolean)}):Promise.resolve({data:[]})
+   ]);
+   if(!stockRes.error)stocks=stockRes.data||[];
+   if(!peopleRes.error)peopleMap=Object.fromEntries((peopleRes.data||[]).map(p=>[p.transaction_id,p]));
+ }catch(e){console.warn('[HM] Sales report enrichment skipped:',e);}
+
+ const productIds=[...new Set(stocks.map(s=>s.product_id).filter(Boolean))];
+ if(productIds.length){
+   try{
+     const productRes=await sb.from('product_master').select('id,product,variant').in('id',productIds);
+     if(!productRes.error)productMap=Object.fromEntries((productRes.data||[]).map(p=>[p.id,p]));
+   }catch(e){console.warn('[HM] Product enrichment skipped:',e);}
+ }
+
  const phones=[...new Set(rows.map(r=>hmNormalizePhone(r.customer_phone)).filter(Boolean))];
- const [stockRes,peopleRes]=await Promise.all([
-   stockIds.length?sb.from('stock_units').select('id,product_id,color,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
-   rows.length?sb.rpc('get_sales_report_people',{p_transaction_ids:rows.map(r=>r.id).filter(Boolean)}):Promise.resolve({data:[]})
- ]);
- if(stockRes.error)return alert('Data produk penjualan gagal dimuat: '+stockRes.error.message);
- if(peopleRes.error)return alert('Data Sales gagal dimuat: '+peopleRes.error.message);
- const stocks=stockRes.data||[],peopleMap=Object.fromEntries((peopleRes.data||[]).map(p=>[p.transaction_id,p])),productIds=[...new Set(stocks.map(s=>s.product_id).filter(Boolean))];
- const productRes=productIds.length?await sb.from('product_master').select('id,product,variant').in('id',productIds):{data:[]};
- if(productRes.error)return alert('Master produk gagal dimuat: '+productRes.error.message);
- const leadRes=phones.length?await sb.from('leads').select('whatsapp,cs,cs_claimed_by,customer,updated_at').in('whatsapp',rows.map(r=>r.customer_phone).filter(Boolean)).order('updated_at',{ascending:false}):{data:[]};
- const stockMap=Object.fromEntries(stocks.map(s=>[s.id,s])),productMap=Object.fromEntries((productRes.data||[]).map(p=>[p.id,p]));
- const leadMap={};
- (leadRes.data||[]).forEach(l=>{const p=hmNormalizePhone(l.whatsapp);if(p&&!leadMap[p])leadMap[p]=l;});
+ if(phones.length){
+   try{
+     const leadRes=await sb.from('leads').select('whatsapp,cs,cs_claimed_by,customer,updated_at').in('whatsapp',rows.map(r=>r.customer_phone).filter(Boolean)).order('updated_at',{ascending:false});
+     if(!leadRes.error)leadRes.data?.forEach(l=>{const p=hmNormalizePhone(l.whatsapp);if(p&&!leadMap[p])leadMap[p]=l;});
+   }catch(e){console.warn('[HM] Lead enrichment skipped:',e);}
+ }
+
+ const stockMap=Object.fromEntries(stocks.map(s=>[s.id,s]));
  window.hmSalesReportRows=rows.map(r=>{
    const st=stockMap[r.stock_unit_id]||{},pm=productMap[st.product_id]||{},lead=leadMap[hmNormalizePhone(r.customer_phone)]||null;
-   return {...r,display_product:[pm.product||'Produk tidak ditemukan',pm.variant].filter(Boolean).join(' — '),display_cs:r.customer_source==='WALK-IN'?'Walk-In':(peopleMap[r.id]?.cs_name||lead?.cs||lead?.cs_claimed_by||'-'),display_sales:peopleMap[r.id]?.sales_name||'-'};
+   return {
+     ...r,
+     display_product:[pm.product||r.product_name||'Produk tidak ditemukan',pm.variant].filter(Boolean).join(' — '),
+     display_cs:r.customer_source==='WALK-IN'?'Walk-In':(peopleMap[r.id]?.cs_name||r.cs_closing||lead?.cs||lead?.cs_claimed_by||'-'),
+     display_sales:peopleMap[r.id]?.sales_name||r.sales_closing||'-'
+   };
  });
  window.hmSalesReportOutlets=[...new Set(rows.map(r=>String(r.outlet||'').trim()).filter(Boolean))].sort();
  window.hmSalesReportOutlet=isAdminFinance&&profile?.outlet?profile.outlet:(window.hmSalesReportOutlet||'ALL');
@@ -835,9 +855,10 @@ async function openSalesReport(){
  window.hmSalesReportPeriod=window.hmSalesReportPeriod||'MONTH';
  inventoryView='sales';
  const panel=$('inventoryPanel');if(panel)panel.classList.remove('hidden');
- const btn=$('inventoryDashboardBtn');if(btn)btn.textContent='✖ Tutup Product & Stock';
+ const btn=$('inventoryDashboardBtn');if(btn)btn.textContent='✖ Tutup Laporan Penjualan';
  renderInventorySalesReport();
 }
+
 function buildSalesReportData(){
  const rows=window.hmSalesReportRows||[],outlet=window.hmSalesReportOutlet||'ALL';
  const filtered=outlet==='ALL'?rows:rows.filter(r=>String(r.outlet||'').trim()===outlet);

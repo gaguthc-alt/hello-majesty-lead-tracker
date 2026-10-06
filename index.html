@@ -1388,7 +1388,8 @@ async function start(u,authClient){
   if(p.can_content_creator)hmPermissionRoles.push('CONTENT CREATOR');
   if(p.can_hunter)hmPermissionRoles.push('HUNTER');
   const displayRoles=getActiveRoles();
-  $('identity').textContent=profile.name+' • '+(profile.is_management?'Management':displayRoles.join(' + '))+' • '+profile.outlet;
+  const displayPosition=String(profile?.role||'').trim()|| (profile?.is_management?'Management':displayRoles.join(' + '));
+  $('identity').textContent=profile.name+' • '+displayPosition+' • '+profile.outlet;
   applyRoleVisibility();
   renderCommissionActions();
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}

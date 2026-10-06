@@ -1538,6 +1538,36 @@ function hmOpenTradeInline(){
  '<p id="hmtt_msg" class="small"></p></div>';
  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
 }
+function hmOpenFollowupTemplateInline(){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+ if(!panel||!body)return;
+ panel.classList.remove('hidden');
+ const title=document.getElementById('hmMenuPanelTitle'); if(title)title.textContent='💬 Template Follow-up';
+ const templates=[
+  ['konsultasi','🟢 Setelah Konsultasi','Follow-up customer setelah konsultasi'],
+  ['potensial','🟡 Lead Potensial','Follow-up lead yang masih mempertimbangkan'],
+  ['harga','💰 Follow-up Harga','Update harga / pilihan produk'],
+  ['belum','🔵 Belum Closing','Follow-up customer yang belum closing'],
+  ['stok','📦 Stok Tersedia','Informasi saat produk yang dicari tersedia'],
+  ['after','❤️ After Sales','Follow-up setelah customer membeli']
+ ];
+ body.innerHTML='<div class="box"><h3 style="margin-top:0">💬 TEMPLATE FOLLOW-UP</h3><div class="small">Pilih template sesuai kondisi customer. Setelah itu template dapat langsung dibagikan ke WhatsApp.</div><div id="hmFollowupTemplateList" style="margin-top:12px">'+templates.map(t=>'<button type="button" style="width:100%;text-align:left;margin:5px 0;background:#f8fafc;color:#101828;border:1px solid #e4e7ec!important;border-radius:12px!important;padding:12px!important" onclick="sendFollowupTemplateWA(\''+t[0]+'\')"><b>'+t[1]+'</b><span style="display:block;font-size:11px;color:#667085;margin-top:3px">'+t[2]+'</span></button>').join('')+'</div><div class="small" style="margin-top:12px">Template dikirim kosong agar Sales dapat menyesuaikan nama customer, produk, harga, dan konteks percakapan.</div></div>';
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Template Follow-up');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
+}
+function sendFollowupTemplateWA(type){
+ const nl=String.fromCharCode(10);
+ const templates={
+  konsultasi:['🟢 *FOLLOW-UP SETELAH KONSULTASI*','*HELLO MAJESTY*','','Halo Kak 👋','Kemarin kita sempat ngobrol mengenai *[nama produk]* ya.','Kakak masih mencari HP tersebut atau ada tipe lain yang ingin dibandingkan? 😊','','Kalau mau, saya bantu cek pilihan dan harga yang paling sesuai dengan budget Kakak.'],
+  potensial:['🟡 *FOLLOW-UP LEAD POTENSIAL*','*HELLO MAJESTY*','','Halo Kak 👋','Saya [nama] dari *Hello Majesty*.','Mau follow-up sedikit mengenai HP yang kemarin Kakak tanyakan 😊','','Apakah masih ada rencana untuk ambil HP-nya dalam waktu dekat?'],
+  harga:['💰 *FOLLOW-UP HARGA*','*HELLO MAJESTY*','','Halo Kak 👋','Untuk HP yang kemarin Kakak tanyakan, saya update kembali ya.','Saat ini ada pilihan *[produk]* dengan harga *Rp[harga]*.','','Kalau Kakak mau, saya bisa bantu cek stok dan pilihan lainnya.'],
+  belum:['🔵 *FOLLOW-UP BELUM CLOSING*','*HELLO MAJESTY*','','Halo Kak 😊','Saya follow-up kembali untuk HP yang kemarin kita bahas.','Kalau masih pertimbangan, tidak masalah. Saya bisa bantu carikan alternatif yang lebih sesuai dengan budget Kakak 👍'],
+  stok:['📦 *FOLLOW-UP STOK TERSEDIA*','*HELLO MAJESTY*','','Halo Kak 👋','Info untuk HP yang kemarin Kakak tanyakan, stoknya saat ini *tersedia*.','Kalau Kakak berminat, saya bisa bantu amankan/siapkan unitnya terlebih dahulu 😊'],
+  after:['❤️ *AFTER SALES*','*HELLO MAJESTY*','','Halo Kak 👋','Bagaimana dengan HP-nya? Semoga sudah nyaman digunakan ya 😊','','Kalau ada kendala atau ada yang ingin ditanyakan, silakan chat saya kapan saja.']
+ };
+ const arr=templates[String(type)]||templates.potensial;
+ const msg=arr.concat(['','— *HELLO MAJESTY*','_Built on Trust._']).join(nl);
+ location.href='https://api.whatsapp.com/send?text='+encodeURIComponent(msg);
+}
 function hmOpenSellPhoneInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
  if(!panel||!body)return;
@@ -1889,6 +1919,7 @@ function hmRunMainMenuAction(action){
   case 'hmOpenLeadNewInline()': return hmOpenLeadNewInline();
   case 'hmOpenTradeInline()': return hmOpenTradeInline();
   case 'hmOpenSellPhoneInline()': return hmOpenSellPhoneInline();
+  case 'hmOpenFollowupTemplateInline()': return hmOpenFollowupTemplateInline();
   case "openInventorySection('sales')": return window.openInventorySection('sales');
   case "openInventorySection('stock')": return window.openInventorySection('stock');
   case 'openPerformance()': return hmOpenPerformanceInline();
@@ -2032,6 +2063,7 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Bantuan CS','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
    add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
+   add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
    add('🔴','Perlu Perhatian','Lead aktif yang perlu segera ditindaklanjuti','showNeedsAttention()');
  }else if(creator){
@@ -2105,7 +2137,8 @@ function renderRoleHome(){
      ['🏪','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()'],
      ['📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')'],
      ['🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()'],
-     ['📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()']
+     ['📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()'],
+     ['💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()']
    ]],
    ['💰','FINANCE',[
      ['💰','Finance','Kas, laba & kontrol keuangan','openFinance()'],

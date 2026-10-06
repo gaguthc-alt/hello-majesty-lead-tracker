@@ -4522,4 +4522,21 @@ window.addEventListener('DOMContentLoaded',function(){
  });
 });
 
-</script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";</script></body></html>
+</script><script>window.ACCOUNTING_BALANCE_FIX="20261003-6";</script><script>
+/* HM BOOT WATCHDOG — never leave the browser on a blank shell */
+(function(){
+  setTimeout(function(){
+    try{
+      var login=document.getElementById('login');
+      var app=document.getElementById('app');
+      var home=document.getElementById('roleHome');
+      if(login && app && login.classList.contains('hidden') && app.classList.contains('hidden')){
+        login.classList.remove('hidden');
+        if(home)home.classList.add('hidden');
+        var err=document.getElementById('loginErr');
+        if(err && !err.textContent)err.textContent='Sesi belum dipulihkan. Silakan LOGIN kembali.';
+      }
+    }catch(e){console.error('[HM] boot watchdog',e);}
+  },8000);
+})();
+</script></body></html>

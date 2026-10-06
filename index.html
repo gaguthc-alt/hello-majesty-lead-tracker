@@ -1391,12 +1391,30 @@ async function start(u,authClient){
   const displayRoles=getActiveRoles();
   const displayPosition=String(profile?.role||'').trim()|| (profile?.is_management?'Management':displayRoles.join(' + '));
   $('identity').textContent=profile.name+' • '+displayPosition+' • '+profile.outlet;
-  applyRoleVisibility();
-  renderCommissionActions();
+
+  // RENDER HOME FIRST. Permission/menu logic must never be able to leave
+  // the authenticated user with a blank dashboard.
+  $('app').classList.remove('hidden');
+  $('roleHome').classList.remove('hidden');
+  try{
+    renderRoleHome();
+    if(typeof hmRenderLeadTodayMain==='function')hmRenderLeadTodayMain();
+  }catch(homeErr){
+    console.error('[HM] RoleHome initial render error:',homeErr);
+    $('roleHome').innerHTML='<div class="box"><h3>Dashboard</h3><p class="small">Dashboard berhasil login, tetapi menu gagal dirender: '+esc(homeErr?.message||homeErr)+'</p></div>';
+  }
+
+  try{applyRoleVisibility();}catch(visibilityErr){
+    console.error('[HM] Role visibility error:',visibilityErr);
+  }
+  try{renderCommissionActions();}catch(commissionErr){
+    console.warn('[HM] Commission actions error:',commissionErr);
+  }
   if(profile.must_change_password){$('passwordBox').classList.remove('hidden');return}
   $('roleHome').classList.remove('hidden');
-  // Re-apply role visibility after dashboard is rendered; some modules render asynchronously.
-  applyRoleVisibility();
+  // Re-apply only the safe dashboard render path; do not let a module
+  // visibility error blank the authenticated home screen.
+  try{applyRoleVisibility();}catch(e){console.warn('[HM] Final visibility pass skipped:',e);}
   try{await loadLeads();openUrl();}
   catch(ex){
    console.error('[HM] Dashboard load error',ex);

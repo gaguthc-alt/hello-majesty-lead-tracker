@@ -2311,9 +2311,14 @@ function renderRoleHome(){
    if(!developer && gi>1)return '';
    let allowed=g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    // Master Produk wajib tampil di dalam INVENTORY & STOCK untuk Management/Developer.
-   if((mg||developer) && g[1]==='INVENTORY & STOCK' && !allowed.some(item=>item[1]==='Master Produk')){
-     const mp=g[2].find(item=>item[1]==='Master Produk');
-     if(mp)allowed=[mp,...allowed];
+   if((mg||developer) && g[1]==='INVENTORY & STOCK'){
+     // Fungsi inventory utama harus selalu terlihat di menu utama Management/Developer,
+     // walaupun belum terdaftar sebagai "card" permission lama.
+     const required=['Dashboard Inventory','Master Produk','Stok Siap Jual','Laporan Penjualan','Barang Masuk'];
+     required.slice().reverse().forEach(name=>{
+       const item=g[2].find(x=>x[1]===name);
+       if(item && !allowed.some(x=>x[1]===name)) allowed=[item,...allowed];
+     });
    }
    if(!allowed.length)return '';
    return '<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>'+g[0]+' '+esc(g[1])+'</span></div><div class="role-home-submenu">'+allowed.map(item=>{

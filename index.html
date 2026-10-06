@@ -1737,7 +1737,7 @@ function hmRunMainMenuAction(action){
   case 'hmOpenLeadHandover()': return hmOpenLeadHandover();
   case 'window.openCellFinanceReport()': return window.openCellFinanceReport();
   case 'window.openPartnerSettlement()': return window.openPartnerSettlement();
-  case 'window.openFinanceInventoryApprovals()': return window.openFinanceInventoryApprovals();
+  case 'window.openFinanceInventoryApprovals()': return window.openInventoryApprovals();
   case 'hmOpenQuickAction()': return hmOpenQuickAction();
   case "hmOpenFollowupInline('TODAY')": return hmOpenFollowupInline('TODAY');
   case "showFollowupToday('TODAY')": return showFollowupToday('TODAY');
@@ -1871,7 +1871,7 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Ide content & DM','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
-   add('🔔','Persetujuan Barang Masuk','Setujui barang masuk dari Majesty Cell ke outlet','window.openFinanceInventoryApprovals()');
+   add('🔔','Persetujuan Barang Masuk','Setujui barang masuk dari Majesty Cell ke outlet','openInventoryApprovals()');
    add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
    add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
@@ -2094,7 +2094,7 @@ function renderRoleHome(){
        return;
      }
      // PERSETUJUAN BARANG MASUK: jalur langsung untuk Atmadita.
-     if(action==='window.openFinanceInventoryApprovals()'){
+     if(action==='window.openFinanceInventoryApprovals()'||action==='openInventoryApprovals()'){
        hmCloseMainMenu();
        hmActiveMainMenu='';
        void Promise.resolve().then(()=>{

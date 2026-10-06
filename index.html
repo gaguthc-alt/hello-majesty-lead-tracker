@@ -1506,12 +1506,48 @@ function hmMoveViewsInline(key){
 function hmOpenTradeInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
  if(!panel||!body)return;
- const msg=typeof tradeWaMessage==='function'?tradeWaMessage():'';
  panel.classList.remove('hidden');
  const title=document.getElementById('hmMenuPanelTitle');
  if(title)title.textContent='🔄 Tukar Tambah';
- body.innerHTML='<div class="box"><h3 style="margin-top:0">Form Tukar Tambah</h3><div class="small">Pesan WhatsApp siap dikirim. Data pesan tetap mengikuti sistem Tukar Tambah.</div><textarea id="hmTradeMsg" rows="12" style="margin-top:10px">'+esc(msg)+'</textarea><div class="row" style="margin-top:10px"><button class="success" type="button" onclick="navigator.clipboard?.writeText(document.getElementById(\'hmTradeMsg\').value).then(()=>alert(\'Pesan disalin.\'))">📋 Salin Pesan</button><button class="secondary" type="button" onclick="window.open(\'https://wa.me/?text=\'+encodeURIComponent(document.getElementById(\'hmTradeMsg\').value),\'_blank\')">📲 Buka WhatsApp</button></div></div>';
- requestAnimationFrame(()=>requestAnimationFrame(()=>{const p=document.getElementById('hmMenuPanel');if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');if(p&&!p.classList.contains('hidden'))p.scrollIntoView({behavior:'smooth',block:'start'});}));
+ body.innerHTML='<div class="box"><h3 style="margin-top:0">📱 FORM TUKAR TAMBAH</h3>'+
+ '<div class="small" style="margin-bottom:10px">Masukkan data perangkat customer. Data akan masuk ke sistem untuk ditindaklanjuti Sales.</div>'+
+ '<label>Nama Customer</label><input id="hmtt_customer" placeholder="Nama lengkap">'+
+ '<label>No WhatsApp</label><input id="hmtt_whatsapp" placeholder="08xxxxxxxxxx">'+
+ '<label>HP yang Dimiliki</label><input id="hmtt_device" placeholder="Contoh: iPhone 13">'+
+ '<label>Kapasitas</label><input id="hmtt_capacity" placeholder="128 GB">'+
+ '<label>Warna</label><input id="hmtt_color" placeholder="Contoh: Midnight">'+
+ '<label>Kondisi Umum</label><input id="hmtt_condition" placeholder="Normal / ada lecet / dll">'+
+ '<label>Kelengkapan</label><input id="hmtt_completeness" placeholder="Unit + Box + Kabel">'+
+ '<label>Garansi</label><select id="hmtt_warranty"><option value="">— Pilih —</option><option>iBox</option><option>Inter</option><option>Distributor</option><option>Garansi Toko</option><option>Tidak Ada</option><option>Tidak Tahu</option></select>'+
+ '<label>Fungsi / Kondisi Fitur</label><input id="hmtt_function" placeholder="Face ID ON, True Tone ON, kamera normal, dll">'+
+ '<label>Signal</label><select id="hmtt_signal"><option value="">— Pilih —</option><option>ON</option><option>OFF</option><option>Tidak Tahu</option></select>'+
+ '<label>Battery Health</label><input id="hmtt_bh" placeholder="Khusus iPhone, contoh 85%">'+
+ '<label>Minus</label><input id="hmtt_minus" placeholder="Tidak ada / layar retak / dll">'+
+ '<label>Estimasi Lama Pemakaian</label><input id="hmtt_usage" placeholder="Contoh: ±2 tahun">'+
+ '<label>HP yang Diinginkan</label><input id="hmtt_wanted" placeholder="Unit yang ingin dibeli">'+
+ '<label>Estimasi Budget / Tambah Dana</label><input id="hmtt_budget" placeholder="Contoh: tambah 5 juta">'+
+ '<label>Catatan Tambahan</label><textarea id="hmtt_notes" placeholder="Informasi lain yang perlu diketahui"></textarea>'+
+ '<button id="hmtt_submit" class="success" style="width:100%;margin-top:12px" type="button" onclick="submitTradeInline()">Kirim Data Tukar Tambah</button>'+
+ '<p id="hmtt_msg" class="small" style="margin-top:10px"></p></div>';
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
+}
+async function submitTradeInline(){
+ const msg=document.getElementById('hmtt_msg'),btn=document.getElementById('hmtt_submit');
+ const val=id=>String(document.getElementById(id)?.value||'').trim();
+ const customer=val('hmtt_customer'),whatsapp=val('hmtt_whatsapp');
+ if(!customer||!whatsapp){if(msg)msg.textContent='Nama Customer dan No WhatsApp wajib diisi.';return;}
+ btn.disabled=true;btn.textContent='Mengirim...';
+ try{
+   await ensureSupabase();
+   const data={device:val('hmtt_device'),capacity:val('hmtt_capacity'),color:val('hmtt_color'),condition:val('hmtt_condition'),completeness:val('hmtt_completeness'),warranty:val('hmtt_warranty'),function_check:val('hmtt_function'),signal:val('hmtt_signal'),battery_health:val('hmtt_bh'),minus:val('hmtt_minus'),usage_duration:val('hmtt_usage'),wanted_product:val('hmtt_wanted'),budget:val('hmtt_budget'),notes:val('hmtt_notes')};
+   const x=await sb.rpc('create_trade_inquiry',{p_customer:customer,p_whatsapp:whatsapp,p_outlet:profile?.outlet||null,p_data:data});
+   if(x.error)throw x.error;
+   if(msg)msg.innerHTML='✅ Data tukar tambah berhasil disimpan. Nomor pengajuan: <b>'+esc(x.data?.inquiry_id||'-')+'</b>';
+   btn.textContent='✓ Tersimpan';
+ }catch(e){
+   if(msg)msg.textContent=e?.message||'Data gagal disimpan.';
+   btn.disabled=false;btn.textContent='Kirim Data Tukar Tambah';
+ }
 }
 async function hmMainMenuClick(title,fn,actionKey){
  const key=String(title||'');

@@ -47,21 +47,39 @@ window.loadCellFinanceReport=async function(){
 };
 window.openPartnerSettlement=async function(){
   const p=window.profile||{};
-  if(!p.is_management && String(p.role||'').toUpperCase()!=='ADMIN FINANCE MAJESTY CELL'){alert('Akses settlement tidak diizinkan.');return;}
-  const m=document.getElementById('modal'),t=document.getElementById('mt'),b=document.getElementById('mb');
-  if(!m||!t||!b)return;
-  t.textContent='🤝 Kewajiban Majesty Cell';
-  const {data:rows,error}=await sb.rpc('partner_obligation_summary');
-  if(error){console.error('[HM] Partner obligation summary:',error);alert('Gagal memuat kewajiban Majesty Cell: '+(error.message||error));return;}
-  const list=(rows||[]).filter(x=>String(x.partner_name||'').toUpperCase()==='MAJESTY CELL' && ['Majesty Refill Phone','Majesty Plaza iPhone'].includes(x.outlet));
-  const refill=list.find(x=>x.outlet==='Majesty Refill Phone')||{};
-  const plaza=list.find(x=>x.outlet==='Majesty Plaza iPhone')||{};
-  const card=(label,x,buttons)=>'<div class="box" style="margin-top:12px"><h3>'+label+'</h3><div class="fin-grid"><div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+hmRp(Number(x.capital_due||0))+'</div></div><div class="fin-card"><div class="small">Profit Sharing</div><div class="fin-big">'+hmRp(Number(x.profit_share_due||0))+'</div></div></div><div style="margin-top:10px"><b>Total Kewajiban: '+hmRp(Number(x.capital_due||0)+Number(x.profit_share_due||0))+'</b></div>'+buttons+'</div>';
-  b.innerHTML='<div class="small">Kewajiban Majesty Cell dipisahkan berdasarkan outlet.</div>'+
-    card('📱 Majesty Refill Phone',refill,'<div class="row" style="margin-top:12px"><button class="primary" onclick="window.loadPartnerSettlementDetail(\'Majesty Refill Phone\')">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement(\'Majesty Refill Phone\')">🤝 Setor Profit Sharing</button></div>')+
-    card('📱 Majesty Plaza iPhone',plaza,'<div class="row" style="margin-top:12px"><button class="primary" onclick="window.loadPartnerSettlementDetail(\'Majesty Plaza iPhone\')">📋 Rincian & Setor Modal</button></div>')+
-    '<div id="partnerSettlementDetail" style="margin-top:14px"></div>';
-  m.classList.remove('hidden');
+  const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
+  if(!p.is_management && role!=='ADMIN FINANCE MAJESTY CELL'){
+    alert('Akses settlement tidak diizinkan.');
+    return;
+  }
+  const panel=document.getElementById('hmMenuPanel');
+  const body=document.getElementById('hmMenuPanelBody');
+  const title=document.getElementById('hmMenuPanelTitle');
+  const modal=document.getElementById('modal');
+  if(!panel||!body) throw new Error('Panel Menu Utama belum siap.');
+  if(modal){modal.classList.add('hidden');modal.style.display='none';}
+  if(title)title.textContent='🤝 Kewajiban Majesty Cell';
+  panel.classList.remove('hidden');
+  body.innerHTML='<div class="box"><div class="small">⏳ Memuat kewajiban Majesty Cell...</div></div>';
+  try{
+    if(!window.sb)throw new Error('Koneksi database belum siap.');
+    const {data:rows,error}=await window.sb.rpc('partner_obligation_summary');
+    if(error)throw error;
+    const list=(rows||[]).filter(x=>String(x.partner_name||'').toUpperCase()==='MAJESTY CELL'&&['Majesty Refill Phone','Majesty Plaza iPhone'].includes(x.outlet));
+    const refill=list.find(x=>x.outlet==='Majesty Refill Phone')||{};
+    const plaza=list.find(x=>x.outlet==='Majesty Plaza iPhone')||{};
+    const card=(label,x,buttons)=>'<div class="box" style="margin-top:12px"><h3>'+label+'</h3><div class="fin-grid"><div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+hmRp(Number(x.capital_due||0))+'</div></div><div class="fin-card"><div class="small">Profit Sharing</div><div class="fin-big">'+hmRp(Number(x.profit_share_due||0))+'</div></div></div><div style="margin-top:10px"><b>Total Kewajiban: '+hmRp(Number(x.capital_due||0)+Number(x.profit_share_due||0))+'</b></div>'+buttons+'</div>';
+    body.innerHTML='<div class="small">Kewajiban Majesty Cell dipisahkan berdasarkan outlet.</div>'+
+      card('📱 Majesty Refill Phone',refill,'<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Refill Phone\')">📋 Rincian & Setor Modal</button><button class="secondary" type="button" onclick="window.loadPartnerProfitSettlement(\'Majesty Refill Phone\')">🤝 Setor Profit Sharing</button></div>')+
+      card('📱 Majesty Plaza iPhone',plaza,'<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Plaza iPhone\')">📋 Rincian & Setor Modal</button></div>')+
+      '<div id="partnerSettlementDetail" style="margin-top:14px"></div>';
+    panel.classList.remove('hidden');
+    requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+  }catch(ex){
+    console.error('[HM] Partner obligation summary:',ex);
+    body.innerHTML='<div class="box"><b>Gagal memuat Kewajiban Cell.</b><div class="small" style="margin-top:6px">'+esc(ex?.message||'Terjadi kesalahan saat memuat data.')+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.openPartnerSettlement()">↻ Coba Lagi</button></div>';
+    panel.classList.remove('hidden');
+  }
 };
 window.payPartnerCapitalSettlement=async function(){
   const ids=[...document.querySelectorAll('.partner-capital-check:checked')].map(x=>x.value);

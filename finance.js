@@ -530,6 +530,36 @@ window.openFinanceSection=async function(section){
     }
     return;
   }
+  if(section==='payroll'){
+    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+    if(!panel||!body)return;
+    if(title)title.textContent='💳 Payroll & Komisi';
+    panel.classList.remove('hidden');
+    body.innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">💳 PAYROLL & KOMISI</h3><div class="small" style="margin-top:4px">Gaji, komisi, reward dan pembayaran tim</div></div><button class="primary" type="button" onclick="window.openFinanceSection(\'payroll\')">🔄 Refresh</button></div><div id="hmPayrollBox" style="margin-top:12px">Memuat data...</div></div>';
+    const box=document.getElementById('hmPayrollBox');
+    try{
+      const money=v=>typeof window.hmRp==='function'?window.hmRp(v):('Rp'+Number(v||0).toLocaleString('id-ID'));
+      const [startDate,endDate]=typeof window.hmDateRange==='function'?window.hmDateRange('month'):hmDateRange('month');
+      const d=window.sb?await window.sb.rpc('finance_management_dashboard',{p_start_date:startDate,p_end_date:endDate}):null;
+      if(d?.error)throw d.error;
+      const x=d?.data||{};
+      const commission=Number(x.commission||x.total_commission||0), payroll=Number(x.payroll||x.total_payroll||0), reward=Number(x.reward||x.total_reward||0);
+      box.innerHTML='<div class="small">Periode '+startDate+' s/d '+endDate+'</div>'+
+        '<div class="fin-grid" style="margin-top:10px">'+
+        '<div class="fin-card"><div class="small">👥 Payroll</div><div class="fin-big">'+money(payroll)+'</div><div class="small">Kewajiban gaji</div></div>'+
+        '<div class="fin-card"><div class="small">🏆 Komisi</div><div class="fin-big">'+money(commission)+'</div><div class="small">Kewajiban komisi</div></div>'+
+        '<div class="fin-card"><div class="small">🎁 Reward</div><div class="fin-big">'+money(reward)+'</div><div class="small">Reward yang tercatat</div></div></div>'+
+        '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">👤 Payroll</h3><div class="small">Data per karyawan dan status pembayaran akan ditampilkan setelah sumber payroll tersedia.</div></div>'+
+        '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🏆 Komisi</h3><div class="small">Komisi per anggota tim, periode, dasar perhitungan, penyesuaian dan status pembayaran.</div></div>'+
+        '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🎁 Reward</h3><div class="small">Penerima, jenis reward, nominal, alasan dan status pembayaran.</div></div>'+
+        '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">💰 Pembayaran</h3><div class="small">Pembayaran payroll, komisi dan reward nantinya dicatat melalui Kas & Bank beserta bukti transaksi.</div></div>';
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
+    }catch(ex){
+      console.error('[HM] Payroll & Komisi:',ex);
+      if(box)box.innerHTML='<div class="danger box"><b>Gagal memuat Payroll & Komisi.</b><div class="small" style="margin-top:6px">'+String(ex?.message||ex||'Terjadi kesalahan saat memuat data.')+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.openFinanceSection(\'payroll\')">↻ Coba Lagi</button></div>';
+    }
+    return;
+  }
   if(!config)return;
   if(title)title.textContent=config.title;
   body.innerHTML='<div class="box"><button type="button" class="secondary" onclick="window.openFinance()">← Kembali Finance</button><h3 style="margin:12px 0 4px">'+config.title+'</h3><div class="small">Menu sudah disiapkan sebagai bagian dari Admin Finance.</div><div class="role-home-submenu" style="margin-top:12px">'+config.items.map(x=>'<div class="role-home-submenu-item"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('')+'</div><div class="small" style="margin-top:12px">Detail transaksi dan laporan modul ini akan ditata pada tahap berikutnya.</div></div>';

@@ -2454,11 +2454,15 @@ function renderRoleHome(){
  // Permission tetap mengikuti "cards", sehingga Management dapat melihat seluruh
  // fungsi dan role tim hanya melihat tombol yang memang diberikan.
  const visibleGroups=menuGroups.map((g,gi)=>{
+   // CONTENT & PROMOTION adalah menu standar untuk SEMUA akun.
+   // Grup lain tetap mengikuti permission masing-masing role.
+   if(g[1]==='CONTENT & PROMOTION'){
+     return g;
+   }
    // Developer Aplikasi melihat seluruh kelompok menu untuk pengembangan.
    // Akun lain tetap mengikuti permission melalui cards.
    // Tim dapat melihat LEAD TRACKER + SALES & PENJUALAN.
    // Developer tetap melihat seluruh kelompok menu.
-   // Atmadita tidak memiliki menu karena cards sengaja kosong.
    if(!developer && gi>1 && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
    let allowed=g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    // Fungsi inventory utama wajib tampil dengan urutan yang sama seperti menu utama.
@@ -4367,6 +4371,7 @@ async function renderContentPerformance(){
  }else{
    const t=d.team||{},o=d.own||{};
    const can=await canContentCreator();
+   window.hmCanEditContent=can;
    host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">'+esc(d.outlet||'')+' • '+(d.locked?'🔒 Laporan terkunci':'Monitoring bulan ini')+'</div></div><div class="row"><select onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select>'+(can?'<button class="success" onclick="addContentPost()">＋ Tambah Content</button>':'')+'<button class="secondary" onclick="showMyContentDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten Outlet</div><div class="num">'+fmt(t.content_count)+'</div></div><div class="stat"><div class="small">👁️ Views Outlet</div><div class="num">'+fmt(t.views)+'</div></div><div class="stat"><div class="small">💬 Comments Outlet</div><div class="num">'+fmt(t.comments)+'</div></div><div class="stat"><div class="small">📩 DM Outlet</div><div class="num">'+fmt(t.dms)+'</div></div></div>'+(can?'<div class="box" style="margin-bottom:0"><b>Kontribusi Saya</b><div class="small">🎬 '+fmt(o.content_count)+' konten • 👁️ '+fmt(o.views)+' views • 💬 '+fmt(o.comments)+' comments • 📩 '+fmt(o.dms)+' DM</div></div>':'')
  }
  decorateContentPerformance(); const dash=document.getElementById('workspace'); const panelBody=document.getElementById('hmMenuPanelBody'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(!dash.contains(host) && !(panelBody&&panelBody.contains(host)))dash.insertBefore(host,inventorySection||stats);
@@ -4378,7 +4383,13 @@ async function renderContentPerformance(){
     hmContentPerformanceRequest=null;
   }
 }
-async function canContentCreator(){if(profile?.is_management)return true;const x=await sb.from('team_permissions').select('can_content_creator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();return !!x.data?.can_content_creator}
+async function canContentCreator(){
+ const rolesNow=getActiveRoles();
+ const raw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ if(profile?.is_management||raw==='DEVELOPER APLIKASI'||rolesNow.includes('CONTENT CREATOR'))return true;
+ const x=await sb.from('team_permissions').select('can_content_creator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle();
+ return !!x.data?.can_content_creator;
+}
 async function loadContentPosts(){const x=await sb.from('content_posts').select('*').eq('active',true).order('posted_at',{ascending:false});if(x.error)throw x.error;return x.data||[]}
 function contentMonthStart(){return contentSelectedMonth}
 function contentMonthOptions(){let a=[],d=new Date();d.setDate(1);for(let i=0;i<3;i++){const y=d.getFullYear(),m=d.getMonth()-i;const dt=new Date(y,m,1);const v=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-01';a.push('<option value="'+v+'" '+(v===contentSelectedMonth?'selected':'')+'>'+v.slice(0,7)+'</option>')}return a.join('')}
@@ -4393,6 +4404,28 @@ async function saveContentPost(){
  const creator=$('cpcreator').value;
  const x=await sb.from('content_posts').insert({outlet:profile.outlet,content_creator:creator,platform:$('cpplatform').value,post_url:url,title:$('cptitle').value.trim()||null,posted_at:new Date($('cpposted').value).toISOString(),views:Number($('cpviews').value||0),comments:Number($('cpcomments').value||0),dms:Number($('cpdms').value||0),likes:Number($('cplikes').value||0),shares:Number($('cpshares').value||0)});
  if(x.error)return alert(x.error.message);closeModal();await renderContentPerformance();
+}
+async function editContentPost(encodedId){
+ const id=decodeURIComponent(encodedId);
+ const can=await canContentCreator();
+ if(!can)return alert('Akses update Content Creator tidak tersedia.');
+ const posts=await loadContentPosts();
+ const p=posts.find(x=>String(x.content_id)===String(id));
+ if(!p)return alert('Data content tidak ditemukan.');
+ $('mt').textContent='✏️ Update Content';
+ $('mb').innerHTML='<label>Content Creator</label><input value="'+esc(p.content_creator||profile?.name||'')+'" disabled><label>Platform</label><select id="epplatform"><option>TIKTOK</option><option>INSTAGRAM</option><option>FACEBOOK</option><option>YOUTUBE</option></select><label>Link Content</label><input id="epurl" value="'+esc(p.post_url||'')+'"><label>Judul / Deskripsi</label><input id="eptitle" value="'+esc(p.title||'')+'"><label>Tanggal Upload</label><input id="epposted" type="datetime-local" value="'+new Date(p.posted_at).toISOString().slice(0,16)+'"><div class="row"><div style="flex:1"><label>Views</label><input id="epviews" type="number" value="'+Number(p.views||0)+'"></div><div style="flex:1"><label>Comments</label><input id="epcomments" type="number" value="'+Number(p.comments||0)+'"></div></div><div class="row"><div style="flex:1"><label>DM</label><input id="epdms" type="number" value="'+Number(p.dms||0)+'"></div><div style="flex:1"><label>Likes</label><input id="eplikes" type="number" value="'+Number(p.likes||0)+'"></div></div><label>Shares</label><input id="epshares" type="number" value="'+Number(p.shares||0)+'"><button class="success" type="button" onclick="saveContentPostUpdate(\\''+encodeURIComponent(id)+'\\' )">Simpan Update</button>';
+ $('epplatform').value=p.platform||'TIKTOK';
+ $('modal').classList.remove('hidden');
+}
+async function saveContentPostUpdate(encodedId){
+ const id=decodeURIComponent(encodedId),can=await canContentCreator();
+ if(!can)return alert('Akses update Content Creator tidak tersedia.');
+ const url=$('epurl').value.trim();if(!url)return alert('Link content wajib diisi.');
+ const x=await sb.from('content_posts').update({platform:$('epplatform').value,post_url:url,title:$('eptitle').value.trim()||null,posted_at:new Date($('epposted').value).toISOString(),views:Number($('epviews').value||0),comments:Number($('epcomments').value||0),dms:Number($('epdms').value||0),likes:Number($('eplikes').value||0),shares:Number($('epshares').value||0)}).eq('content_id',id);
+ if(x.error)return alert(x.error.message);
+ closeModal();
+ window.hmCanEditContent=true;
+ await renderContentPerformance();
 }
 async function showMyContentDetail(){
  const posts=await loadContentPosts(), month=contentMonthStart(), mine=posts.filter(p=>p.outlet===profile.outlet&&p.month_start===month&&p.content_creator===profile.name);
@@ -4424,7 +4457,8 @@ async function showContentListFor(encoded){
  $('mt').textContent='🎬 '+key;$('mb').innerHTML=(mine.map(contentDetailCard).join('')||'<p class="small">Belum ada content.</p>')+'<button class="secondary" onclick="showContentManagementDetail()">← Kembali</button>'; 
 }
 function contentDetailCard(p){
- return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(p.title||'Content '+p.content_id.slice(0,8))+'</b><span class="badge">'+esc(p.platform)+'</span></div><div class="small">'+new Date(p.posted_at).toLocaleString('id-ID')+'</div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">👁️ Views</div><div class="num">'+Number(p.views||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+Number(p.comments||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+Number(p.dms||0).toLocaleString('id-ID')+'</div></div></div><a href="'+esc(p.post_url)+'" target="_blank">🔗 Buka Content</a></div>';
+ const canEdit=!!window.hmCanEditContent;
+ return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(p.title||'Content '+p.content_id.slice(0,8))+'</b><span class="badge">'+esc(p.platform)+'</span></div><div class="small">'+new Date(p.posted_at).toLocaleString('id-ID')+'</div><div class="stats" style="margin-top:8px"><div class="stat"><div class="small">👁️ Views</div><div class="num">'+Number(p.views||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+Number(p.comments||0).toLocaleString('id-ID')+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+Number(p.dms||0).toLocaleString('id-ID')+'</div></div></div><div class="row" style="margin-top:8px"><a href="'+esc(p.post_url)+'" target="_blank">🔗 Buka Content</a>'+(canEdit?'<button class="secondary" type="button" onclick="editContentPost(\\''+encodeURIComponent(p.content_id)+'\\' )">✏️ Update Data</button>':'')+'</div></div>';
 }
 const oldRender=window.render;
 window.render=async function(){const r=await oldRender();applyRoleVisibility();return r};

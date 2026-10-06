@@ -118,7 +118,7 @@
     if(it.error)throw it.error;
     const ids=(it.data||[]).map(x=>x.stock_unit_id),stocks=await loadStocks(ids),pm=await products(Object.values(stocks).map(x=>x.product_id));
     const done=(it.data||[]).filter(x=>x.counted_present!==null).length;
-    const html='<div class="box"><b>'+escx(r.data.opname_no)+'</b><div class="small">'+escx(r.data.outlet)+' • '+done+'/'+(it.data||[]).length+' item diperiksa</div>'+(r.data.status==='POSTED'?'<div style="margin-top:8px">🟢 Sudah diposting.</div>':'<button class="success" style="margin-top:8px" onclick="hmPostOpname(\''+id+'\')">✓ POST Stock Opname</button>')+'</div>'+
+    const html='<div class="box"><b>'+escx(r.data.opname_no)+'</b><div class="small">'+escx(r.data.outlet)+' • '+done+'/'+(it.data||[]).length+' item diperiksa</div>'+(r.data.status==='POSTED'?'<div style="margin-top:8px">🟢 Sudah diposting.</div><button class="success" style="margin-top:8px" onclick="hmShareOpname(\''+id+'\')">📲 Share Hasil ke WhatsApp</button>':'<button class="success" style="margin-top:8px" onclick="hmPostOpname(\''+id+'\')">✓ POST Stock Opname</button>')+'</div>'+
       ((it.data||[]).map((x,i)=>{const s=stocks[x.stock_unit_id]||{},p=pm[s.product_id]||{};return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+escx(p.product||'Produk')+(p.variant?' — '+escx(p.variant):'')+'</b><div class="small">'+escx(s.color||'-')+' • Sistem: <b>'+escx(x.system_status)+'</b></div><div class="row" style="margin-top:8px"><button class="success" onclick="hmCountOpname(\''+id+'\',\''+x.stock_unit_id+'\',true)">✓ Barang Ada</button><button class="danger" onclick="hmCountOpname(\''+id+'\',\''+x.stock_unit_id+'\',false)">✕ Tidak Ada</button></div><div class="small" style="margin-top:5px">Hasil: '+(x.counted_present?'ADA':'BELUM DIHITUNG')+'</div></div>';}).join('')||'<div class="box">Tidak ada stock untuk outlet ini.</div>');
     panel('🔎 '+r.data.opname_no,html);
   };
@@ -127,6 +127,28 @@
     const r=await sb.rpc('record_stock_opname_count',{p_opname_id:opnameId,p_stock_unit_id:stockId,p_counted_present:present,p_counted_status:null,p_note:note||null});
     if(r.error)return alert('Gagal menyimpan hitungan: '+r.error.message);
     await hmOpenOpname(opnameId);
+  };
+  window.hmShareOpname=async function(id){
+    try{
+      const h=await sb.from('stock_opnames').select('id,opname_no,outlet,status,created_at').eq('id',id).single();
+      if(h.error)throw h.error;
+      const it=await sb.from('stock_opname_items').select('stock_unit_id,system_status,counted_present,notes').eq('opname_id',id).order('created_at');
+      if(it.error)throw it.error;
+      const ids=(it.data||[]).map(x=>x.stock_unit_id),stocks=await loadStocks(ids),pm=await products(Object.values(stocks).map(x=>x.product_id));
+      const total=(it.data||[]).length,ada=(it.data||[]).filter(x=>x.counted_present===true).length,tidakAda=(it.data||[]).filter(x=>x.counted_present===false).length,belum=(it.data||[]).filter(x=>x.counted_present===null).length;
+      const lines=(it.data||[]).filter(x=>x.counted_present===false).map((x,i)=>{
+        const s=stocks[x.stock_unit_id]||{},p=pm[s.product_id]||{};
+        return (i+1)+'. '+(p.product||'Produk')+(p.variant?' — '+p.variant:'')+' | '+(s.color||'-')+' | '+(s.imei_1?'IMEI ••••'+String(s.imei_1).slice(-4):'IMEI -')+(x.notes?' | '+x.notes:'');
+      });
+      const d=new Date(h.data.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
+      let msg='📋 HASIL STOCK OPNAME\n\nOutlet: '+h.data.outlet+'\nNo. Opname: '+h.data.opname_no+'\nTanggal: '+d+'\n\nTotal diperiksa: '+total+' unit\n✅ Barang ada: '+ada+' unit\n❌ Tidak ditemukan: '+tidakAda+' unit'+(belum?'\n⏳ Belum dihitung: '+belum+' unit':'');
+      if(lines.length)msg+='\n\n❌ DETAIL TIDAK DITEMUKAN\n'+lines.join('\n');
+      msg+='\n\nStatus: '+h.data.status+'\n\n— HELLO MAJESTY';
+      window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+    }catch(e){
+      console.error('[HM] share opname',e);
+      alert('Gagal menyiapkan laporan WhatsApp: '+(e?.message||e));
+    }
   };
   window.hmPostOpname=async function(id){
     if(!confirm('POST Stock Opname? Setelah diposting, hasil akan menjadi penyesuaian stok.'))return;

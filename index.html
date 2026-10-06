@@ -3079,7 +3079,7 @@ function showHMToast(message){
  clearTimeout(window.hmToastTimer);
  window.hmToastTimer=setTimeout(()=>{t.style.display='none';},2200);
 }
-let hmLeadSaveBusy=false;
+var hmLeadSaveBusy=false;
 async function saveLead(){
   if(hmLeadSaveBusy)return;
   const type=hmLeadField('fneedtype')?.value;

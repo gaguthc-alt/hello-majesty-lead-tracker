@@ -541,7 +541,7 @@ function stockCard(s){
    '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
-   (ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(management||facilitator))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
+   (ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
    (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
 }
@@ -549,7 +549,7 @@ async function openSupplierReturn(id){
  const s=inventoryStock.find(x=>x.id===id);
  if(!s)return alert('Stock tidak ditemukan.');
  if(s.status!=='READY')return alert('Hanya stock READY yang dapat diretur.');
- if(!(profile?.is_management||inventoryCanFacilitator))return alert('Hanya Management atau Facilitator yang dapat melakukan retur supplier.');
+ const actorRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); if(!(actorRole==='FASILITATOR'||actorRole==='DIVISI'||inventoryCanFacilitator))return alert('Hanya Fasilitator atau Divisi yang dapat melakukan retur supplier.');
  const label=[s.product,s.variant,s.color].filter(Boolean).join(' — ');
  $('mt').textContent='↩️ Retur Supplier';
  $('mb').innerHTML='<div class="notice"><b>Barang:</b> '+esc(label)+'<br><b>Outlet:</b> '+esc(s.outlet||'-')+'<br><b>IMEI:</b> '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+'</div>'+

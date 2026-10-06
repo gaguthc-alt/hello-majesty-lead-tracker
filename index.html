@@ -2099,6 +2099,29 @@ function renderRoleHome(){
        });
        return;
      }
+     // TARGET & PERFORMA: buka langsung tanpa sequence/modal lama agar selalu responsif.
+     if(action==='hmOpenPerformanceInline()' || action==='openPerformance()'){
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       void Promise.resolve(hmOpenPerformanceInline()).then(()=>{
+         const panel=document.getElementById('hmMenuPanel');
+         if(panel){
+           const pt=document.getElementById('hmMenuPanelTitle');
+           if(pt)pt.textContent='🎯 Target & Performa';
+           panel.classList.remove('hidden');
+           requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+         }
+       }).catch(ex=>{
+         console.error('[HM] Target & Performa gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){
+           body.innerHTML='<div style="padding:10px;color:#b42318"><b>Gagal membuka Target & Performa</b><div style="margin-top:6px">'+esc(ex?.message||'Terjadi kesalahan')+'</div></div>';
+           panel.classList.remove('hidden');
+         }
+       });
+       return;
+     }
      // Product & Stock / Laporan Penjualan / Komisi Tim memakai jalur inline
      // khusus agar tidak bergantung pada modal lama dan tidak tertutup oleh
      // hmCloseMainMenu()/sequence guard.

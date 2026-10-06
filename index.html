@@ -2969,6 +2969,10 @@ function applyRoleVisibility(){
  if(finance){finance.classList.add('hidden');if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
  toggle('cellFinanceReportBtn',false);
  try{renderRoleHome();}catch(e){console.error('[HM] RoleHome render error:',e);const host=$('roleHome');if(host)host.innerHTML='<div class="box"><h3>Role Home</h3><p class="small">Menu gagal dirender. Silakan refresh aplikasi.</p></div>';}
+ // LEAD HARI INI harus dirender SETELAH Role Home dibuat.
+ // Sebelumnya fungsi ini dipanggil terlalu awal dari render(), lalu renderRoleHome()
+ // mengganti innerHTML sehingga kotak Lead Hari Ini hilang.
+ try{hmRenderLeadTodayMain();}catch(e){console.error('[HM] Lead Hari Ini render error:',e);}
 }
 window.hmStartApp=start;
 async function logout(){try{localStorage.removeItem('hm_auth_session')}catch(e){} location.reload()}

@@ -61,7 +61,7 @@ window.openPartnerSettlement=async function(){
     card('📱 Majesty Refill Phone',refill,'<div class="row" style="margin-top:12px"><button class="primary" onclick="window.loadPartnerSettlementDetail(\'Majesty Refill Phone\')">📋 Rincian & Setor Modal</button><button class="secondary" onclick="window.loadPartnerProfitSettlement(\'Majesty Refill Phone\')">🤝 Setor Profit Sharing</button></div>')+
     card('📱 Majesty Plaza iPhone',plaza,'<div class="row" style="margin-top:12px"><button class="primary" onclick="window.loadPartnerSettlementDetail(\'Majesty Plaza iPhone\')">📋 Rincian & Setor Modal</button></div>')+
     '<div id="partnerSettlementDetail" style="margin-top:14px"></div>';
-  m.style.display='flex';
+  m.classList.remove('hidden');
 };
 window.payPartnerCapitalSettlement=async function(){
   const ids=[...document.querySelectorAll('.partner-capital-check:checked')].map(x=>x.value);

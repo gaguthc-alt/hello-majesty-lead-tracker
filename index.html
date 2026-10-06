@@ -2288,10 +2288,29 @@ function renderRoleHome(){
        hmCloseMainMenu();
        hmActiveMainMenu=title;
        hmSetMainMenuButtonOpen(title);
+       const runWalkin=()=>{
+         const fn=window.openWalkinApprovals;
+         if(typeof fn!=='function') throw new Error('Fungsi Persetujuan Walk-In belum tersedia setelah modul dimuat.');
+         return fn();
+       };
        void Promise.resolve().then(()=>{
-         if(typeof window.openWalkinApprovals!=='function') throw new Error('Modul Persetujuan Walk-In belum termuat.');
-         return window.openWalkinApprovals();
-       }).catch(ex=>alert('Persetujuan Walk-In gagal dibuka: '+(ex?.message||ex)));
+         if(typeof window.openWalkinApprovals==='function') return runWalkin();
+         const s=document.createElement('script');
+         s.src='inventory.js?v=20261006-walkin-direct-1';
+         return new Promise((resolve,reject)=>{
+           s.onload=()=>{try{resolve(runWalkin())}catch(e){reject(e)}};
+           s.onerror=()=>reject(new Error('Modul Inventory gagal dimuat.'));
+           document.head.appendChild(s);
+         });
+       }).catch(ex=>{
+         console.error('[HM] Persetujuan Walk-In gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){
+           body.innerHTML='<div style="padding:10px;color:#b42318"><b>Persetujuan Walk-In gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||'Terjadi kesalahan')+'</div></div>';
+           panel.classList.remove('hidden');
+           panel.scrollIntoView({behavior:'smooth',block:'start'});
+         }else alert('Persetujuan Walk-In gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
+       });
        return;
      }
      if(title==='Brosur'){

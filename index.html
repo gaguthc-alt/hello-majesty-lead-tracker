@@ -1420,6 +1420,40 @@ function getActiveRoles(){
  const base=raw.split(/[,;|+]+/).map(x=>x.trim()).filter(Boolean);
  return [...new Set([...base,...hmPermissionRoles])];
 }
+async function hmOpenInventoryApprovalDirect(){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+ if(!panel||!body) return;
+ title.textContent='🔔 Persetujuan Barang Masuk';
+ panel.classList.remove('hidden');
+ body.innerHTML='<div class="box"><b>Memuat data Barang Masuk…</b></div>';
+ panel.scrollIntoView({behavior:'smooth',block:'start'});
+ try{
+  if(!window.sb) throw new Error('Koneksi database belum siap.');
+  const r=await sb.from('inventory_receive_approvals').select('id,stock_unit_id,requested_by,requested_at,status,review_note').eq('status','PENDING').order('requested_at',{ascending:false});
+  if(r.error) throw r.error;
+  const rows=r.data||[];
+  if(!rows.length){body.innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">✅</div><b>Tidak ada Barang Masuk yang menunggu verifikasi.</b></div>';return;}
+  const ids=rows.map(x=>x.stock_unit_id).filter(Boolean);
+  const s=ids.length?await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,cost,asking_price,status,partner_name').in('id',ids):{data:[],error:null};
+  if(s.error)throw s.error;
+  const stocks=s.data||[], pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
+  const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[],error:null};
+  if(pr.error)throw pr.error;
+  const users=[...new Set(rows.map(x=>x.requested_by).filter(Boolean))];
+  const ur=users.length?await sb.from('team_profiles').select('user_id,name,role').in('user_id',users):{data:[],error:null};
+  if(ur.error)throw ur.error;
+  const pm=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));
+  const um=Object.fromEntries((ur.data||[]).map(x=>[x.user_id,x]));
+  body.innerHTML=rows.map((a,i)=>{
+   const s=stocks.find(x=>x.id===a.stock_unit_id)||{},p=pm[s.product_id]||{},u=um[a.requested_by]||{};
+   const can=typeof window.reviewInventoryReceive==='function' && String(a.requested_by)!==String(profile?.user_id);
+   return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(s.outlet||'-')+'</b> • 👤 Diinput oleh: <b>'+esc(u.name||'User')+'</b><br>🕒 '+new Date(a.requested_at).toLocaleString('id-ID')+'</div><div>IMEI: '+esc(s.imei_1||'-')+'<br>Modal: <b>Rp'+Number(s.cost||0).toLocaleString('id-ID')+'</b> • Jual: <b>Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</b></div><div class="small">Status: MENUNGGU PERSETUJUAN</div>'+(can?'<div class="row" style="margin-top:8px"><button class="success" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'APPROVE\')">✓ Setujui & Masukkan ke Stock</button><button class="secondary" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'CHANGES_REQUESTED\')">✎ Minta Koreksi</button><button class="danger" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'REJECT\')">✕ Tolak</button></div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi.</div>')+'</div>';
+  }).join('');
+ }catch(ex){
+  console.error('[HM] direct inventory approval',ex);
+  body.innerHTML='<div class="box" style="color:#b42318"><b>Gagal memuat Persetujuan Barang Masuk</b><div style="margin-top:6px">'+esc(ex?.message||ex)+'</div></div>';
+ }
+}
 function hmSetDashboardModulesVisible(show){
  // ROLE HOME adalah satu-satunya beranda dashboard.
  // Modul lama tetap dipertahankan sebagai mesin/fungsi internal,
@@ -2267,23 +2301,7 @@ function renderRoleHome(){
        hmCloseMainMenu();
        hmActiveMainMenu=title;
        hmSetMainMenuButtonOpen(title);
-       const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),pt=document.getElementById('hmMenuPanelTitle');
-       if(pt)pt.textContent='🔔 Persetujuan Barang Masuk';
-       if(panel&&body){
-         panel.classList.remove('hidden');
-         body.innerHTML='<div class="box"><b>Memuat Persetujuan Barang Masuk…</b></div>';
-         panel.scrollIntoView({behavior:'smooth',block:'start'});
-       }
-       try{
-         if(typeof window.openInventoryApprovals!=='function') throw new Error('Fungsi Persetujuan Barang Masuk belum tersedia.');
-         Promise.resolve(window.openInventoryApprovals()).catch(ex=>{
-           console.error('[HM] approval receive',ex);
-           if(body)body.innerHTML='<div class="box" style="color:#b42318"><b>Persetujuan Barang Masuk gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||ex)+'</div></div>';
-         });
-       }catch(ex){
-         console.error('[HM] approval receive',ex);
-         if(body)body.innerHTML='<div class="box" style="color:#b42318"><b>Persetujuan Barang Masuk gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||ex)+'</div></div>';
-       }
+       hmOpenInventoryApprovalDirect();
        return;
      }
      if(title==='Persetujuan Walk-In'){

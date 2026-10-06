@@ -1925,6 +1925,8 @@ function hmRunMainMenuAction(action){
   case "openInventorySection('stock')": return window.openInventorySection('stock');
   case "openInventorySection('products')": return window.openInventorySection('products');
   case 'openReceiveStock()': return openReceiveStock();
+  case 'openWalkinApprovals()':
+   return (typeof window.openWalkinApprovals==='function' ? window.openWalkinApprovals() : hmLoadModule('inventory').then(()=>window.openWalkinApprovals()));
   case "hmOpenInventoryFeature('mutasi')": return window.hmOpenInventoryFeature('mutasi');
   case "hmOpenInventoryFeature('riwayat')": return window.hmOpenInventoryFeature('riwayat');
   case "hmOpenInventoryFeature('penyesuaian')": return window.hmOpenInventoryFeature('penyesuaian');

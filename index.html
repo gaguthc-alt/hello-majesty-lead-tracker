@@ -2334,8 +2334,13 @@ function renderRoleHome(){
    }
    if(!allowed.length)return '';
    return '<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>'+g[0]+' '+esc(g[1])+'</span></div><div class="role-home-submenu">'+allowed.map(item=>{
-     const card=cards.find(x=>x[1]===item[1]);
-     const cardIndex=cards.indexOf(card); return '<button type="button" class="role-home-submenu-item" data-hm-menu-index="'+cardIndex+'" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
+     let card=cards.find(x=>x[1]===item[1]);
+     if(!card){
+       card=[item[0],item[1],item[2],item[3]];
+       cards.push(card);
+     }
+     const cardIndex=cards.indexOf(card);
+     return '<button type="button" class="role-home-submenu-item" data-hm-menu-index="'+cardIndex+'" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
    }).join('')+'</div></section>';
  }).join('');
  const roleCards='';

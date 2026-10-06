@@ -2175,6 +2175,10 @@ function renderRoleHome(){
      ['📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()'],
      ['💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()']
    ]],
+   ['🔔','PERSETUJUAN',[
+     ['📥','Persetujuan Barang Masuk','Persetujuan stock yang menunggu verifikasi','window.openFinanceInventoryApprovals()'],
+     ['🚶','Persetujuan Walk-In','Verifikasi penjualan Walk-In yang menunggu persetujuan','openWalkinApprovals()']
+   ]],
    ['📦','INVENTORY & STOCK',[
      ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"],
      ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
@@ -2199,7 +2203,6 @@ function renderRoleHome(){
    ['🤝','MAJESTY CELL',[
      ['📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()'],
      ['🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()'],
-     ['🔔','Persetujuan Barang Masuk','Approve stock masuk dari Majesty Cell ke outlet','window.openFinanceInventoryApprovals()'],
    ]],
    ['💎','KOMISI & REWARD',[
      ['💰','Komisi Tim','Seluruh komisi tim, bukan hanya Sales','openTeamCommission()'],

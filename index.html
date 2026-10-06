@@ -3149,12 +3149,27 @@ function deleteLead(id){
  $('modal').classList.remove('hidden');
 }
 async function confirmDelete(id){
+ const leadId=String(id||'').trim();
  const ok=confirm('Yakin ingin menghapus lead ini?');
  if(!ok)return;
- const x=await sb.rpc('delete_lead',{p_lead_id:id,p_confirmation:'YA, HAPUS PERMANEN'});
- if(x.error)return alert(x.error.message);
- closeModal();
- await loadLeads();
+ const btn=document.getElementById('deleteBtn');
+ if(btn){btn.disabled=true;btn.textContent='Menghapus...';}
+ try{
+  const x=await sb.rpc('delete_lead',{p_lead_id:leadId,p_confirmation:'YA, HAPUS PERMANEN'});
+  if(x.error)throw x.error;
+
+  // Hapus langsung dari state lokal agar kartu hilang saat ini juga.
+  leads=(leads||[]).filter(l=>String(l?.lead_id||'').trim()!==leadId);
+  closeModal();
+  await render();
+
+  // Sinkronkan ulang dengan database tanpa membutuhkan refresh manual.
+  await loadLeads();
+  alert('✅ Lead berhasil dihapus.');
+ }catch(e){
+  if(btn){btn.disabled=false;btn.textContent='Hapus';}
+  alert('Hapus lead gagal: '+String(e?.message||e));
+ }
 }
 function showTodayLeads(){
  const todayStart=new Date();todayStart.setHours(0,0,0,0);

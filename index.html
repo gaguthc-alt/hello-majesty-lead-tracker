@@ -2750,7 +2750,7 @@ function card(l){
  '</div>')+
  '<div class="row">'+
  (canClaimCS?'<button class="success" onclick="claimCS(\''+esc(l.lead_id)+'\')">Claim CS</button>':'')+
- (q?'<button class="success" onclick="qualify(\''+esc(l.lead_id)+'\')">✓ Qualification</button>':'')+
+ (q?'<button type="button" class="success" onclick="window.qualify(\''+esc(l.lead_id)+'\')">✓ Qualification</button>':'')+
  (sh?'<button class="success" onclick="handoverSales(\''+esc(l.lead_id)+'\')">🤝 Handover ke Sales</button><button class="secondary" onclick="share(\''+esc(l.lead_id)+'\')">📢 Share ke Group WA</button>':'')+
  (sr?'<button class="success" onclick="salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button><button class="secondary" onclick="shareSalesClaim(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+
  (own?'<button class="secondary" onclick="editLead(\''+esc(l.lead_id)+'\')">Buka / Update</button>':'')+
@@ -2764,11 +2764,18 @@ async function claimCS(id){
  await loadLeads();
 }
 function qualify(id){
- const l=leads.find(x=>x.lead_id===id);$('mt').textContent='Qualification CS';
+ const leadId=String(id||'').trim();
+ const l=leads.find(x=>String(x.lead_id)===leadId);
+ if(!l){alert('Lead tidak ditemukan. Silakan refresh Lead Tracker.');return;}
+ const mt=$('mt'),mb=$('mb'),modal=$('modal');
+ if(!mt||!mb||!modal){alert('Panel Qualification belum siap. Silakan buka Lead Aktif kembali.');return;}
+ mt.textContent='Qualification CS';
  $('mb').innerHTML='<label>Hasil</label><select id="qr"><option value="">— Pilih —</option><option>QUALIFIED</option><option>POTENSIAL</option><option>GAGAL</option></select><div id="qob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="qreason" placeholder="Contoh: budget tidak cocok, tidak ada respons, memilih produk lain...">'+esc(l?.objection||'')+'</textarea></div><div id="qdb" class="hidden"><label>Tanggal Follow-up</label><input id="qd" type="date"></div><button id="saveQBtn" class="success">Simpan Qualification</button>';
  $('qr').onchange=()=>{$('qob').classList.toggle('hidden',$('qr').value!=='GAGAL');$('qdb').classList.toggle('hidden',$('qr').value!=='POTENSIAL')};
- $('saveQBtn').onclick=()=>saveQ(id);$('modal').classList.remove('hidden');
+ $('saveQBtn').onclick=()=>saveQ(leadId);
+ modal.classList.remove('hidden');
 }
+window.qualify=qualify;
 async function saveQ(id){
  const result=$('qr').value;
  if(!result)return alert('Pilih hasil.');

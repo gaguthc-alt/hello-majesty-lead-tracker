@@ -2040,6 +2040,7 @@ function renderRoleHome(){
    add('💰','Finance','Kas, laba & neraca','openFinance()');
    add('📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
+   add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')");
    add('📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()');
    add('📤','Barang Keluar','Barang terjual dan pengeluaran stock',"openInventorySection('sales')");
@@ -2059,6 +2060,7 @@ function renderRoleHome(){
  }else if(facilitator){
    add('🎯','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
    add('👥','Lead & Handover','Koordinasi lead tim','hmOpenLeadHandover()');
+   add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Product & Stock','Stock & approval','openInventorySection(\'stock\')');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('📊','Laporan Fasilitator','Penjualan & Stock READY','hmOpenFacilitatorReportsInline()');

@@ -1977,7 +1977,11 @@ function renderRoleHome(){
  // Menu utama sekarang berupa kelompok pekerjaan yang langsung terlihat.
  // Permission tetap mengikuti "cards", sehingga Management dapat melihat seluruh
  // fungsi dan role tim hanya melihat tombol yang memang diberikan.
- const visibleGroups=menuGroups.map(g=>{
+ const visibleGroups=menuGroups.map((g,gi)=>{
+   // Sementara tahap uji Lead Tracker: sembunyikan seluruh group lain
+   // untuk SEMUA akun. Group lain akan diaktifkan kembali setelah
+   // permission masing-masing fungsi selesai ditentukan.
+   if(gi!==0)return '';
    const allowed=g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    if(!allowed.length)return '';
    return '<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>'+g[0]+' '+esc(g[1])+'</span></div><div class="role-home-submenu">'+allowed.map(item=>{

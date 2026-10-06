@@ -34,6 +34,8 @@
     return {outlets:x.data||[],management:true};
   }
 
+  // Sumber tunggal KPI Closing: transaksi penjualan yang sudah sah.
+  // Ini otomatis mencakup penjualan Lead maupun Walk-In setelah menjadi sales transaction.
   async function getSales(mode){
     const start=monthStart(mode).toISOString();
     const end=monthEnd(mode).toISOString();
@@ -55,11 +57,11 @@
 
   function outletCard(o,s){
     const closingTarget=Number(o.closing_target||0);
-    const closingActual=Number(o.closing_actual??s.units??0);
-    const nominalTarget=Number(o.nominal_target||0);
-    const nominalActual=Number(s.omzet||0);
+    const closingActual=Number(s.units||0);
+    const profitTarget=Number(o.nominal_target||0);
+    const profitActual=Number(s.profit||0);
     const unitPct=pct(closingActual,closingTarget);
-    const nominalPct=pct(nominalActual,nominalTarget);
+    const profitPct=pct(profitActual,profitTarget);
     const waTarget=Number(o.wa_target||0),waActual=Number(o.wa_actual||0);
     const qTarget=Number(o.qualified_target||0),qActual=Number(o.qualified_actual||0);
     return '<div class="lead">'+
@@ -73,9 +75,9 @@
         '<div class="stat"><div class="small">🏆 Closing</div><div class="num">'+fmt(closingActual)+' / '+fmt(closingTarget)+'</div><div class="small">'+unitPct+'%</div></div>'+
       '</div>'+
       '<div class="box" style="margin:8px 0 0;background:#f8fafc">'+
-        '<div class="row" style="justify-content:space-between"><b>💰 Omzet</b><b>Rp'+fmt(nominalActual)+'</b></div>'+
-        '<div class="small" style="margin-top:4px">Target Rp'+fmt(nominalTarget)+' • Pencapaian '+nominalPct+'%</div>'+
-        '<div class="small" style="margin-top:3px">Laba: Rp'+fmt(s.profit||0)+'</div>'+
+        '<div class="row" style="justify-content:space-between"><b>📈 Profit / Laba</b><b>Rp'+fmt(profitActual)+'</b></div>'+
+        '<div class="small" style="margin-top:4px">Target Profit Rp'+fmt(profitTarget)+' • Pencapaian '+profitPct+'%</div>'+
+        '<div class="small" style="margin-top:3px">Omzet: Rp'+fmt(s.omzet||0)+' • tidak digunakan untuk KPI nominal</div>'+
       '</div>'+
       '<div class="small" style="margin-top:7px">🎁 '+escP(o.bonus_label||'Bonus belum diatur')+(Number(o.bonus_amount||0)?' • Rp'+fmt(o.bonus_amount):'')+'</div>'+
     '</div>';
@@ -94,17 +96,17 @@
       const total=outlets.reduce((a,o)=>{
         const s=sales[o.outlet]||{};
         a.targetUnit+=Number(o.closing_target||0);
-        a.actualUnit+=Number(o.closing_actual??s.units??0);
-        a.targetNominal+=Number(o.nominal_target||0);
-        a.actualNominal+=Number(s.omzet||0);
-        a.profit+=Number(s.profit||0);
+        a.actualUnit+=Number(s.units||0);
+        a.targetProfit+=Number(o.nominal_target||0);
+        a.actualProfit+=Number(s.profit||0);
+        a.omzet+=Number(s.omzet||0);
         return a;
-      },{targetUnit:0,actualUnit:0,targetNominal:0,actualNominal:0,profit:0});
+      },{targetUnit:0,actualUnit:0,targetProfit:0,actualProfit:0,omzet:0});
 
       let html='<div class="stats">'+
-        '<div class="stat"><div class="small">🏆 Unit</div><div class="num">'+fmt(total.actualUnit)+' / '+fmt(total.targetUnit)+'</div><div class="small">'+pct(total.actualUnit,total.targetUnit)+'% tercapai</div></div>'+
-        '<div class="stat"><div class="small">💰 Omzet</div><div class="num">Rp'+nominal(total.actualNominal)+'</div><div class="small">Target Rp'+nominal(total.targetNominal)+' • '+pct(total.actualNominal,total.targetNominal)+'%</div></div>'+
-        '<div class="stat"><div class="small">📈 Laba</div><div class="num">Rp'+nominal(total.profit)+'</div><div class="small">Realisasi periode</div></div>'+
+        '<div class="stat"><div class="small">🏆 Closing</div><div class="num">'+fmt(total.actualUnit)+' / '+fmt(total.targetUnit)+'</div><div class="small">'+pct(total.actualUnit,total.targetUnit)+'% tercapai</div></div>'+
+        '<div class="stat"><div class="small">📈 Profit / Laba</div><div class="num">Rp'+nominal(total.actualProfit)+'</div><div class="small">Target Rp'+nominal(total.targetProfit)+' • '+pct(total.actualProfit,total.targetProfit)+'%</div></div>'+
+        '<div class="stat"><div class="small">💰 Omzet</div><div class="num">Rp'+nominal(total.omzet)+'</div><div class="small">Informasi penjualan • bukan KPI nominal</div></div>'+
       '</div>';
 
       html+='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><b>🏪 PERFORMA OUTLET</b><span class="small">'+escP(monthLabel(mode))+'</span></div></div>';
@@ -127,7 +129,7 @@
     }
     box.classList.remove('hidden');
     box.innerHTML='<h3 style="margin-top:0">🎯 TARGET & PERFORMA</h3>'+
-      '<div class="small" style="margin-bottom:10px">Perbandingan target dengan pencapaian nyata penjualan per outlet.</div>'+
+      '<div class="small" style="margin-bottom:10px">Closing dihitung dari transaksi penjualan yang sah; Walk-In dan Lead tidak dihitung dua kali. Target nominal adalah Profit/Laba.</div>'+
       '<div class="row" style="flex-wrap:wrap">'+
         '<button class="secondary" id="perfMonth">📊 Bulan Ini</button>'+
         '<button class="secondary" id="perfLastMonth">↩️ Bulan Kemarin</button>'+

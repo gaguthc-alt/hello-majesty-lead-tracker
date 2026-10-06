@@ -1534,9 +1534,16 @@ function hmOpenTradeInline(){
  '<label>17. Estimasi Budget / Tambah Dana</label><input id="hmtt_budget" placeholder="Contoh: tambah Rp5.000.000">'+
  '<div class="small" style="margin-top:12px">Silakan isi langsung pada form di atas lalu kirim kembali. Setelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.</div>'+
  '<div style="margin-top:12px;font-weight:700">— HELLO MAJESTY<br><span style="font-weight:400;font-style:italic">Built on Trust.</span></div>'+
- '<button id="hmtt_submit" class="success" style="width:100%;margin-top:14px" type="button" onclick="submitTradeInline()">Kirim Data Tukar Tambah</button>'+
+ '<button id="hmtt_submit" class="success" style="width:100%;margin-top:14px" type="button" onclick="submitTradeInline()">Kirim Data Tukar Tambah</button><button id="hmtt_wa" style="width:100%;margin-top:8px" type="button" onclick="sendTradeInlineWA()">📲 Buka & Kirim ke WhatsApp</button>'+
  '<p id="hmtt_msg" class="small"></p></div>';
  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
+}
+function sendTradeInlineWA(){
+ const val=id=>String(document.getElementById(id)?.value||'').trim();
+ const customer=val('hmtt_customer'),whatsapp=val('hmtt_whatsapp');
+ if(!customer||!whatsapp){const m=document.getElementById('hmtt_msg');if(m)m.textContent='Nama Customer dan No WhatsApp wajib diisi.';return;}
+ const msg='📱 *FORM DATA TUKAR TAMBAH*\\n*HELLO MAJESTY*\\n\\nMohon bantu isi data HP yang ingin ditukar:\\n\\n*DATA HP*\\n1. Merek & Tipe : '+val('hmtt_device')+'\\n2. Kapasitas : '+val('hmtt_capacity')+'\\n3. Warna : '+val('hmtt_color')+'\\n4. Battery Health : '+val('hmtt_bh')+'\\n5. Kondisi fisik : '+val('hmtt_condition')+'\\n6. Minus : '+val('hmtt_minus')+'\\n7. Kelengkapan : '+val('hmtt_completeness')+'\\n8. Garansi : '+val('hmtt_warranty')+'\\n9. Face ID : '+val('hmtt_faceid')+'\\n10. True Tone : '+val('hmtt_truetone')+'\\n11. Signal : '+val('hmtt_signal')+'\\n12. Kamera : '+val('hmtt_camera')+'\\n13. Speaker & Mic : '+val('hmtt_speaker')+'\\n14. Charging : '+val('hmtt_charging')+'\\n15. Lama Pemakaian : '+val('hmtt_usage')+'\\n\\n*HP YANG DIINGINKAN*\\n16. Tipe HP : '+val('hmtt_wanted')+'\\n17. Estimasi budget / tambah dana : '+val('hmtt_budget')+'\\n\\nSilakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏\\n\\nSetelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.\\n\\n— *HELLO MAJESTY*\\n_Built on Trust._';
+ const clean=whatsapp.replace(/[^0-9+]/g,''); const url=(clean?('https://wa.me/'+(clean.startsWith('+')?clean.slice(1):clean)):'https://wa.me/')+'?text='+encodeURIComponent(msg); window.open(url,'_blank');
 }
 async function submitTradeInline(){
  const msg=document.getElementById('hmtt_msg'),btn=document.getElementById('hmtt_submit');

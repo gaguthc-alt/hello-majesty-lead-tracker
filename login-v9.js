@@ -239,6 +239,16 @@
       }catch(fallbackErr){
         console.warn('[HM] Saved access-token fallback failed:',fallbackErr);
       }
+      // Jangan pernah meninggalkan layar kosong jika restore gagal.
+      // Kembalikan shell login secara eksplisit sebagai fallback terakhir.
+      try{
+        const loginPage=document.getElementById('login');
+        const appPage=document.getElementById('app');
+        const roleHome=document.getElementById('roleHome');
+        if(loginPage)loginPage.classList.remove('hidden');
+        if(appPage)appPage.classList.add('hidden');
+        if(roleHome)roleHome.classList.add('hidden');
+      }catch(_e){}
       return false;
     }
   }

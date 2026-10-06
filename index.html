@@ -2425,6 +2425,22 @@ function renderRoleHome(){
        });
        return;
      }
+     // PERSETUJUAN WALK-IN: jalur langsung dari menu Inventory & Stock.
+     if(action==='openWalkinApprovals()'){
+       hmCloseMainMenu();
+       hmActiveMainMenu='';
+       void Promise.resolve().then(()=>{
+         if(typeof window.openWalkinApprovals!=='function')throw new Error('Fungsi Persetujuan Walk-In belum termuat.');
+         return window.openWalkinApprovals();
+       }).catch(ex=>{
+         console.error('[HM] Persetujuan Walk-In gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Persetujuan Walk-In: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
+         else alert('Persetujuan Walk-In gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
+       });
+       return;
+     }
+
      // KEWAJIBAN CELL: jalur langsung agar selalu responsif dan bisa diklik ulang.
      if(action==='window.openPartnerSettlement()'){
        hmCloseMainMenu();

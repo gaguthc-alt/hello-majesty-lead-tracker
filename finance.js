@@ -227,6 +227,29 @@ window.loadHunterCommissionReport=async function(){
     '<div class="stats" style="grid-template-columns:1fr;gap:8px;margin-top:10px">'+cards.map(c=>'<div class="stat" style="min-width:0"><div class="small">'+c[0]+'</div><div class="num" style="'+hmFinNum(c[1])+'">'+money(c[1])+'</div></div>').join('')+'</div>'+
     '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🧾 Rincian Komisi Hunter</h3>'+list+'</div>';
 };
+window.openStockSaleApprovals=async function(){
+ const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
+ if(!p.is_management&&!['FASILITATOR','DEVELOPER','DEVELOPER APLIKASI'].includes(role)){alert('Akses persetujuan Closing Stock tidak diizinkan.');return;}
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle'),modal=document.getElementById('modal');
+ if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
+ if(modal){modal.classList.add('hidden');modal.style.display='none';}
+ if(title)title.textContent='🔔 Persetujuan Closing Stock';
+ panel.classList.remove('hidden'); body.innerHTML='<div class="box">⏳ Memuat pengajuan Closing Stock...</div>';
+ const r=await window.sb.rpc('list_stock_sale_approvals');
+ if(r.error){body.innerHTML='<div class="danger box">'+esc(String(r.error.message||r.error))+'</div>';return;}
+ const rows=Array.isArray(r.data)?r.data:[];
+ body.innerHTML=rows.length?rows.map((x,i)=>'<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+esc([x.product,x.variant,x.color].filter(Boolean).join(' — ')||'Produk')+'</b><div class="small">📍 '+esc(x.outlet||'-')+' • 👤 Pengaju: <b>'+esc(x.requester_name||'-')+'</b><br>🕒 '+new Date(x.requested_at).toLocaleString('id-ID')+'</div><div style="margin-top:6px">Harga Jual: <b>Rp'+Number(x.sale_price||0).toLocaleString('id-ID')+'</b> • Harga List: Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</div><div class="small">Pembayaran: '+esc(x.pay_now?'Dibayar saat closing':'Piutang Customer')+(x.finance_estimated_fee?' • Estimasi Finance: Rp'+Number(x.finance_estimated_fee).toLocaleString('id-ID'):'')+'</div><div class="row" style="margin-top:9px"><button class="success" type="button" onclick="window.reviewStockSaleApproval(\\''+x.id+'\\',\\'APPROVE\\')">✓ Setujui & SOLD</button><button class="danger" type="button" onclick="window.reviewStockSaleApproval(\\''+x.id+'\\',\\'REJECT\\')">✕ Tolak</button></div></div>').join(''):'<div class="box" style="text-align:center"><b>✅ Tidak ada Closing Stock yang menunggu persetujuan.</b></div>';
+ panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});
+};
+window.reviewStockSaleApproval=async function(id,action){
+ let note=null;if(action==='REJECT'){note=prompt('Alasan penolakan wajib diisi:')||'';if(!note.trim())return;}
+ if(action==='APPROVE'&&!confirm('Setujui Closing ini dan ubah Stock menjadi SOLD?'))return;
+ const r=await window.sb.rpc('review_stock_sale_approval',{p_approval_id:id,p_action:action,p_note:note});
+ if(r.error){alert('Proses persetujuan gagal: '+String(r.error.message||r.error));return;}
+ alert(action==='APPROVE'?'Closing disetujui. Stock sekarang SOLD dan masuk Laporan Penjualan.':'Closing ditolak. Stock tetap READY.');
+ await window.openStockSaleApprovals();
+};
+
 window.hmFinanceLoad=async function(mode){const box=document.getElementById('hmFinBox'),sb=window.sb,p=window.profile||{};if(!box||!sb||(!p.is_management&&String(p.role||'').trim().toUpperCase().replace(/_/g,' ')!=='FASILITATOR'))return;box.innerHTML='<div class="small">Memuat data Finance...</div>';const[start,end]=hmDateRange(mode),x=await sb.rpc('finance_management_dashboard',{p_start_date:start,p_end_date:end});if(x.error){box.innerHTML='<div class="danger box">Finance error: '+String(x.error.message||x.error)+'</div>';return;}const d=x.data||{},accounts=d.accounts||[];const cards=[['💵 Kas & Bank',d.cash_bank],['💰 Uang Masuk',d.cash_in],['💸 Uang Keluar',d.cash_out],['📊 Net Cashflow',d.net_cashflow],['🤝 Hutang Supplier',d.payable_supplier],['👤 Piutang Customer',d.receivable_customer]];box.innerHTML='<div class="small">Periode '+start+' s/d '+end+'</div><div class="stats" style="margin-top:10px;grid-template-columns:1fr;gap:8px">'+cards.map(c=>'<div class="stat" style="min-width:0"><div class="small">'+c[0]+'</div><div class="num" style="'+hmFinNum(c[1])+'">'+hmRp(c[1])+'</div></div>').join('')+'</div><div class="box" style="margin-top:10px"><h3 style="margin-top:0">💵 Kas & Bank</h3><div class="small">Pilih akun untuk melihat mutasi</div>'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="hmOpenCash(\''+a.code+'\')"><div class="row" style="justify-content:space-between"><span><b>'+a.code+'</b> '+a.name+'</span><b>'+hmRp(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+'</div><div class="small" style="margin-top:8px">Finance hanya dapat diakses Management.</div>';window.hmCashAccounts=accounts;};
 window.hmFinanceBack=async function(){await window.openFinance();};
 window.hmOpenCash=async function(code){const sb=window.sb,p=window.profile||{},a=(window.hmCashAccounts||[]).find(x=>x.code===code);if(!sb||(!p.is_management&&String(p.role||'').trim().toUpperCase().replace(/_/g,' ')!=='FASILITATOR')||!a)return;const[tb,mb]=[document.getElementById('mt'),document.getElementById('mb')];tb.textContent='💵 '+a.name;mb.innerHTML='<div class="box"><button type="button" class="secondary" onclick="hmFinanceBack()">← Kembali Finance</button><h3 style="margin:8px 0 4px">'+a.code+' — '+a.name+'</h3><div class="small">Mutasi bulan ini</div><div id="hmCashDetail">Memuat...</div></div>';const[start,end]=hmDateRange('month');const x=await sb.from('accounting_accounts').select('id').eq('code',code).eq('active',true).maybeSingle();if(x.error||!x.data){document.getElementById('hmCashDetail').textContent='Akun tidak ditemukan.';return;}const r=await sb.rpc('finance_cash_account_mutation',{p_account_id:x.data.id,p_start_date:start,p_end_date:end});if(r.error){document.getElementById('hmCashDetail').textContent='Gagal memuat mutasi: '+r.error.message;return;}const d=r.data||{};document.getElementById('hmCashDetail').innerHTML='<div class="stats" style="grid-template-columns:1fr;gap:8px">'+[['Saldo Awal',d.opening],['Masuk',d.debit],['Keluar',d.credit],['Saldo Akhir',d.closing]].map(c=>'<div class="stat" style="min-width:0"><div class="small">'+c[0]+'</div><div class="num" style="'+hmFinNum(c[1])+'">'+hmRp(c[1])+'</div></div>').join('')+'</div><div style="margin-top:10px">'+((d.rows||[]).length?(d.rows||[]).map(r=>'<div class="lead"><div class="small">'+new Date(r.date).toLocaleString('id-ID')+' • '+r.journal_no+'</div><b>'+String(r.description||'-')+'</b><div style="margin-top:4px">Masuk: '+hmRp(r.debit)+' • Keluar: '+hmRp(r.credit)+'</div></div>').join(''):'<div class="small">Belum ada mutasi pada periode ini.</div>')+'</div>';};
@@ -285,6 +308,7 @@ window.hmOpenCash=async function(code){const sb=window.sb,p=window.profile||{},a
   }
 
   async function financeSaveS(id){
+    if(window.hmStockClosingApprovalMode)return window.__hmOriginalSaveS(id);
     const result=document.getElementById('sr')?.value;
     if(result!=='CLOSING') return window.__hmOriginalSaveS(id);
     const stockId=document.getElementById('ss')?.value;

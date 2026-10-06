@@ -113,6 +113,12 @@ window.loadPartnerSettlementDetail=async function(outlet){
   const productIds=(stockRes.data||[]).map(s=>s.product_id).filter(Boolean);
   const pmRes=productIds.length?await sb.from('product_master').select('id,product,variant,grade').in('id',productIds):{data:[]};
   const pmMap={};(pmRes.data||[]).forEach(p=>pmMap[p.id]=p);
+  // Fallback: beberapa stock lama menyimpan nama produk langsung di stock_units.
+  const productNames={};
+  (stockRes.data||[]).forEach(s=>{
+    const pm=pmMap[s.product_id];
+    productNames[s.id]=pm?.product||s.product||s.product_name||s.name||'Produk tidak ditemukan';
+  });
   const unitName=s=>{
     if(!s)return 'Stock';
     const pm=pmMap[s.product_id]||{};
@@ -126,7 +132,8 @@ window.loadPartnerSettlementDetail=async function(outlet){
     const imei=s.imei_1||s.imei||'-';
     const grade=s.grade?' • Grade '+esc(String(s.grade)):'';
     const bh=s.battery_health!=null?' • BH '+Number(s.battery_health)+'%':'';
-    return '<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd"><input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" style="width:auto;margin-right:8px"><b>'+esc(unitName(s))+'</b><br><span class="small">'+grade.replace(/^ • /,'')+(bh?' • BH '+Number(s.battery_health)+'%':'')+' • Modal '+hmRp(r.capital_due)+' • IMEI '+esc(String(imei))+'</span></label>';
+    const productLabel=productNames[r.stock_unit_id]||unitName(s);
+    return '<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd"><input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" style="width:auto;margin-right:8px"><b>'+esc(productLabel)+'</b>'+(pmMap[s.product_id]?.variant||s.variant?' — '+esc(pmMap[s.product_id]?.variant||s.variant||''):'')+(s.color?' • '+esc(s.color):'')+'<br><span class="small">'+grade.replace(/^ • /,'')+(bh?' • BH '+Number(s.battery_health)+'%':'')+' • Modal '+hmRp(r.capital_due)+' • IMEI '+esc(String(imei))+'</span></label>';
   }).join('')+'<button class="success" style="margin-top:12px" onclick="window.payPartnerCapitalSettlement()">💸 Setor Modal Terpilih</button>':'<div class="small">Tidak ada modal Cell yang belum disetor.</div>';
 };
 window.payPartnerPlazaHistoricalCapital=async function(){

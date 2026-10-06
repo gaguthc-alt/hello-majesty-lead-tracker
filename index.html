@@ -2062,6 +2062,40 @@ function renderRoleHome(){
        });
        return;
      }
+     // KEWAJIBAN CELL: jalur langsung agar selalu responsif dan bisa diklik ulang.
+     if(action==='window.openPartnerSettlement()'){
+       hmCloseMainMenu();
+       hmActiveMainMenu='';
+       void Promise.resolve()
+         .then(()=>{
+           if(typeof window.openPartnerSettlement!=='function')throw new Error('Fungsi Kewajiban Cell belum termuat.');
+           return window.openPartnerSettlement();
+         })
+         .then(()=>{
+           const modal=document.getElementById('modal');
+           const panel=document.getElementById('hmMenuPanel');
+           const panelTitle=document.getElementById('hmMenuPanelTitle');
+           const panelBody=document.getElementById('hmMenuPanelBody');
+           const mt=document.getElementById('mt');
+           const mb=document.getElementById('mb');
+           if(panel&&modal&&mb&&!modal.classList.contains('hidden')){
+             if(panelTitle)panelTitle.textContent=mt?.textContent||'🤝 Kewajiban Majesty Cell';
+             if(panelBody){panelBody.innerHTML='';while(mb.firstChild)panelBody.appendChild(mb.firstChild);}
+             modal.classList.add('hidden');
+             panel.classList.remove('hidden');
+           }
+           if(panel){panel.classList.remove('hidden');requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));}
+         })
+         .catch(ex=>{
+           console.error('[HM] Kewajiban Cell gagal dibuka:',ex);
+           const panel=document.getElementById('hmMenuPanel');
+           const body=document.getElementById('hmMenuPanelBody');
+           if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Kewajiban Cell: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
+           else alert('Kewajiban Cell gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
+         });
+       return;
+     }
+
      // FINANCE: buka langsung melalui jalur khusus agar tidak tertahan
      // oleh sequence/penutupan panel menu utama.
      if(action==='openFinance()'){

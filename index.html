@@ -2392,9 +2392,13 @@ function applyRoleVisibility(){
 window.hmStartApp=start;
 async function logout(){try{localStorage.removeItem('hm_auth_session')}catch(e){} location.reload()}
 async function loadLeads(){
+ // Arsip tidak dihapus dari Lead Tracker. Data lead tetap tersedia
+ // dari AVAILABLE sampai HASIL, termasuk lead yang sudah diarsipkan.
  await sb.rpc('archive_completed_leads');
- const x=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false});
- if(x.error){alert(x.error.message);return}leads=x.data||[];await render();
+ const x=await sb.from('leads').select('*').order('created_at',{ascending:false});
+ if(x.error){alert(x.error.message);return}
+ leads=x.data||[];
+ await render();
 }
 async function refreshAppTotal(btn){
  // Refresh Aplikasi = refresh data + kembali ke Role Home.

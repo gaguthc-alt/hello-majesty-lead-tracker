@@ -553,7 +553,22 @@ window.openFinanceSection=async function(section){
           commission=commissionRows.reduce((sum,row)=>sum+keys.reduce((s,k)=>s+Number(row[k]||0),0),0);
         }
       }catch(e){console.warn('[HM] Commission report:',e);}
-      const payroll=Number(x.payroll||x.total_payroll||0), reward=Number(x.reward||x.total_reward||0);
+      const payroll=Number(x.payroll||x.total_payroll||0);
+      let rewardRows=[];
+      try{
+        let rq=window.sb.from('monthly_outlet_targets').select('outlet,closing_target,closing_actual,bonus_label,bonus_amount').eq('month_start',startDate);
+        if(profile?.outlet && !profile?.is_management)rq=rq.eq('outlet',profile.outlet);
+        const rr=await rq;
+        if(rr.error)throw rr.error;
+        rewardRows=(rr.data||[]).map(r=>({...r,eligible:Number(r.closing_actual||0)>=Number(r.closing_target||0)})).filter(r=>Number(r.bonus_amount||0)>0);
+      }catch(e){console.warn('[HM] Reward target:',e);}
+      const reward=rewardRows.filter(r=>r.eligible).reduce((s,r)=>s+Number(r.bonus_amount||0),0);
+      const rewardConfigured=rewardRows.reduce((s,r)=>s+Number(r.bonus_amount||0),0);
+      const rewardDetail=rewardRows.length
+        ? '<div style="overflow:auto;border:1px solid #e5e7eb;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#f8fafc"><th style="text-align:left;padding:10px">Outlet</th><th style="text-align:right;padding:10px">Reward</th><th style="text-align:center;padding:10px">Pencapaian</th><th style="text-align:center;padding:10px">Status</th></tr></thead><tbody>'+
+          rewardRows.map(r=>'<tr><td style="padding:9px 10px;border-top:1px solid #eef2f7;font-weight:600">'+String(r.outlet||'-')+'<div class="small">'+String(r.bonus_label||'Reward')+'</div></td><td style="padding:9px 10px;text-align:right;border-top:1px solid #eef2f7;font-weight:700">'+money(r.bonus_amount)+'</td><td style="padding:9px 10px;text-align:center;border-top:1px solid #eef2f7">'+Number(r.closing_actual||0)+' / '+Number(r.closing_target||0)+'</td><td style="padding:9px 10px;text-align:center;border-top:1px solid #eef2f7"><span style="display:inline-block;padding:4px 8px;border-radius:999px;background:${r.eligible ? "#dcfce7" : "#fef3c7"};color:${r.eligible ? "#166534" : "#92400e"};font-size:12px">'+(r.eligible?'Berhak':'Belum berhak')+'</span></td></tr>').join('')+
+          '</tbody></table></div>'
+        : '<div class="small" style="padding:12px 0">Belum ada reward yang dikonfigurasi untuk periode ini.</div>';
       const commissionItems=commissionRows.map(row=>({
         name:String(row.name||'Tim'),
         amount:['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'].reduce((s,k)=>s+Number(row[k]||0),0)
@@ -570,7 +585,7 @@ window.openFinanceSection=async function(section){
         '<div class="fin-card"><div class="small">🎁 Reward</div><div class="fin-big">'+money(reward)+'</div><div class="small">Reward yang tercatat</div></div></div>'+
         '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">👤 Payroll</h3><div class="small">Data per karyawan dan status pembayaran akan ditampilkan setelah sumber payroll tersedia.</div></div>'+
         '<div class="box" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px"><div><h3 style="margin:0">🏆 Komisi Tim</h3><div class="small" style="margin-top:4px">Rekap komisi berdasarkan periode berjalan</div></div><div style="font-size:20px;font-weight:800">'+money(commission)+'</div></div>'+commissionDetail+'<div class="small" style="margin-top:10px">Sumber: laporan Komisi Tim.</div></div>'+
-        '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🎁 Reward</h3><div class="small">Penerima, jenis reward, nominal, alasan dan status pembayaran.</div></div>'+
+        '<div class="box" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px"><div><h3 style="margin:0">🎁 Reward</h3><div class="small" style="margin-top:4px">Reward berdasarkan target outlet periode berjalan</div></div><div style="font-size:20px;font-weight:800">'+money(reward)+'</div></div>'+rewardDetail+'<div class="small" style="margin-top:10px">Total reward terkonfigurasi: '+money(rewardConfigured)+' • Yang berhak: '+money(reward)+'</div></div>'+
         '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">💰 Pembayaran</h3><div class="small">Pembayaran payroll, komisi dan reward nantinya dicatat melalui Kas & Bank beserta bukti transaksi.</div></div>';
       panel.scrollIntoView({behavior:'smooth',block:'start'});
     }catch(ex){

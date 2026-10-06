@@ -4225,7 +4225,7 @@ async function loadAccountingDashboard(){
   if(box)box.innerHTML='<div class="stat accounting-stat"><div class="small">💰 Total Aset</div><div class="num accounting-num">'+accountingRp(bs.total_assets)+'</div></div><div class="stat accounting-stat"><div class="small">🧾 Liabilitas</div><div class="num accounting-num">'+accountingRp(bs.total_liabilities)+'</div></div><div class="stat accounting-stat"><div class="small">🏦 Ekuitas</div><div class="num accounting-num">'+accountingRp(bs.total_equity)+'</div></div><div class="stat accounting-stat"><div class="small">📈 Laba Bersih</div><div class="num accounting-num">'+accountingRp(p.net_profit)+'</div></div>';
 }
 window.openBalanceAccountDetail=async function(accountId,accountCode,accountName){
-  const host=document.getElementById('accountingDetail');if(!host)return;
+  const host=hmEnsureAccountingDetailPanel();
   const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   host.classList.remove('hidden');host.innerHTML='<b>Memuat rincian...</b>';
   const selected=window.accountingBalanceOutlet||'ALL';
@@ -4253,6 +4253,25 @@ window.openBalanceAccountDetail=async function(accountId,accountCode,accountName
     (rows.length?rows.map(r=>'<div class="lead" style="margin:7px 0"><div class="small">'+new Date(r.journal_date).toLocaleString('id-ID')+' • '+escA(r.journal_no)+' • '+escA(r.outlet||'Pusat')+'</div><b>'+escA(r.description||'-')+'</b><div class="small" style="margin-top:5px">Debit: '+accountingRp(r.debit)+' • Kredit: '+accountingRp(r.credit)+'</div><div style="margin-top:4px"><b>Saldo: '+accountingRp(r.balance)+'</b></div></div>').join(''):'<div class="small">Belum ada transaksi.</div>')+
     '</div>';
 };
+function hmEnsureAccountingDetailPanel(){
+  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+  if(!panel||!body)throw new Error('Panel Accounting belum siap.');
+  let host=document.getElementById('accountingDetail');
+  if(!host){
+    host=document.createElement('div');
+    host.id='accountingDetail';
+    host.className='box';
+    host.style.marginTop='10px';
+    body.appendChild(host);
+  }else if(host.parentNode!==body){
+    body.appendChild(host);
+  }
+  host.classList.remove('hidden');
+  const modal=document.getElementById('modal');
+  if(modal)modal.classList.add('hidden');
+  panel.classList.remove('hidden');
+  return host;
+}
 async function openAccountingModule(module){
   const host=document.getElementById('accountingDetail');if(!host)return;
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';

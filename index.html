@@ -1538,6 +1538,49 @@ function hmOpenTradeInline(){
  '<p id="hmtt_msg" class="small"></p></div>';
  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
 }
+function hmOpenSellPhoneInline(){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+ if(!panel||!body)return;
+ panel.classList.remove('hidden');
+ const title=document.getElementById('hmMenuPanelTitle'); if(title)title.textContent='📱 Form Data Jual HP';
+ body.innerHTML='<div class="box"><h3 style="margin-top:0">📱 FORM DATA JUAL HP</h3>'+
+ '<div style="font-weight:700;margin-bottom:12px">HELLO MAJESTY</div>'+
+ '<div class="small">Mohon bantu isi data HP yang ingin dijual:</div>'+
+ '<div style="font-weight:700;margin:14px 0 6px">DATA HP</div>'+
+ '<label>1. Merek &amp; Tipe</label><input id="hmsj_device" placeholder="Contoh: iPhone 13">'+
+ '<label>2. Kapasitas</label><input id="hmsj_capacity" placeholder="128 GB">'+
+ '<label>3. Warna</label><input id="hmsj_color" placeholder="Contoh: Midnight">'+
+ '<label>4. Battery Health</label><input id="hmsj_bh" placeholder="Contoh: 85%">'+
+ '<label>5. Kondisi fisik</label><input id="hmsj_condition" placeholder="Normal / ada lecet">'+
+ '<label>6. Minus</label><input id="hmsj_minus" placeholder="Tidak ada / layar retak">'+
+ '<label>7. Kelengkapan</label><input id="hmsj_completeness" placeholder="Unit + Box + Kabel">'+
+ '<label>8. Garansi</label><input id="hmsj_warranty" placeholder="iBox / Inter / Toko / Tidak ada">'+
+ '<label>9. Face ID</label><input id="hmsj_faceid" placeholder="ON / OFF / Tidak Tahu">'+
+ '<label>10. True Tone</label><input id="hmsj_truetone" placeholder="ON / OFF / Tidak Tahu">'+
+ '<label>11. Signal</label><input id="hmsj_signal" placeholder="Normal / Bermasalah">'+
+ '<label>12. Kamera</label><input id="hmsj_camera" placeholder="Normal / Bermasalah">'+
+ '<label>13. Speaker &amp; Mic</label><input id="hmsj_speaker" placeholder="Normal / Bermasalah">'+
+ '<label>14. Charging</label><input id="hmsj_charging" placeholder="Normal / Bermasalah">'+
+ '<label>15. Lama Pemakaian</label><input id="hmsj_usage" placeholder="Contoh: ±2 tahun">'+
+ '<div class="small" style="margin-top:12px">Setelah data diterima, tim Sales akan membantu pengecekan kondisi dan memberikan estimasi harga beli.</div>'+
+ '<div style="margin-top:12px;font-weight:700">— HELLO MAJESTY<br><span style="font-weight:400;font-style:italic">Built on Trust.</span></div>'+
+ '<button id="hmsj_wa" style="width:100%;margin-top:8px" type="button" onclick="sendSellPhoneInlineWA()">📤 Share ke WhatsApp</button>'+
+ '</div>';
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Form Data Jual HP');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
+}
+function sendSellPhoneInlineWA(){
+ const msg=[
+ '📱 *FORM DATA JUAL HP*','*HELLO MAJESTY*','',
+ 'Mohon bantu isi data HP yang ingin dijual:','',
+ '*DATA HP*',
+ '1. Merek & Tipe :','2. Kapasitas :','3. Warna :','4. Battery Health :','5. Kondisi fisik :','6. Minus :','7. Kelengkapan :','8. Garansi :','9. Face ID :','10. True Tone :','11. Signal :','12. Kamera :','13. Speaker & Mic :','14. Charging :','15. Lama Pemakaian :','',
+ 'Silakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏','',
+ 'Setelah data kami terima, tim Sales akan bantu cek kondisi dan koordinasi untuk estimasi harga beli HP.',
+ '',
+ '— *HELLO MAJESTY*','_Built on Trust._'
+ ].join(String.fromCharCode(10));
+ location.href='https://api.whatsapp.com/send?text='+encodeURIComponent(msg);
+}
 function sendTradeInlineWA(){
  const msg=[
  '📱 *FORM DATA TUKAR TAMBAH*','*HELLO MAJESTY*','',
@@ -2059,7 +2102,8 @@ function renderRoleHome(){
    ['🛒','SALES & PENJUALAN',[
      ['🏪','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()'],
      ['📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')'],
-     ['🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()']
+     ['🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()'],
+     ['📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()']
    ]],
    ['💰','FINANCE',[
      ['💰','Finance','Kas, laba & kontrol keuangan','openFinance()'],

@@ -3237,6 +3237,8 @@ async function updateLead(id){
 }
 async function resetLead(id){if(!confirm('Reset lead ke AVAILABLE?'))return;const x=await sb.rpc('reset_lead',{p_lead_id:id});if(x.error)return alert(x.error.message);await loadLeads()}
 function deleteLead(id){
+ const modal=document.getElementById('modal');
+ if(modal)modal.style.display='';
  $('mt').textContent='🗑 Hapus';
  $('mb').innerHTML='<p>Yakin ingin menghapus lead ini?</p><button id="deleteBtn" class="danger">Hapus</button>';
  $('deleteBtn').onclick=()=>confirmDelete(id);
@@ -3266,7 +3268,7 @@ async function confirmDelete(id){
   if(mb)mb.innerHTML='';
   if(modal){
     modal.classList.add('hidden');
-    modal.style.display='none';
+    modal.style.display='';
   }
 
   // Buang dari state lokal dan render halaman utama tanpa menunggu database.

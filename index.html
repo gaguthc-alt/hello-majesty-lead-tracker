@@ -2507,7 +2507,8 @@ function renderRoleHome(){
    // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.
    const isAtmaditaAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita';
    const isDivisiAccount = roles.includes('DIVISI') || rawRole==='DIVISI';
-   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='MAJESTY CELL' && (isAtmaditaAccount || isDivisiAccount)));
+   const isSakaAccount = String(profile?.name||'').trim().toLowerCase()==='saka';
+   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='MAJESTY CELL' && (isAtmaditaAccount || isDivisiAccount || isSakaAccount)));
    const isAccountingGroup = g[1]==='ACCOUNTING' && developer;
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
    if(g[1]==='FINANCE' && !developer && !mg)return '';

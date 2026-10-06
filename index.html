@@ -2649,6 +2649,30 @@ function renderRoleHome(){
        });
        return;
      }
+     // ACCOUNTING: jalur langsung agar submenu tidak tertahan oleh router/panel lama.
+     if(action.startsWith('openAccountingModule("')){
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       void Promise.resolve().then(async()=>{
+         const panel=document.getElementById('hmMenuPanel');
+         const body=document.getElementById('hmMenuPanelBody');
+         if(!panel||!body)throw new Error('Panel menu Accounting belum siap.');
+         const m=action.match(/^openAccountingModule\("([^"]+)"\)$/);
+         if(!m)throw new Error('Tujuan Accounting tidak valid.');
+         await openAccountingModule(m[1]);
+         panel.classList.remove('hidden');
+         requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+       }).catch(ex=>{
+         console.error('[HM] Accounting gagal dibuka:',title,ex);
+         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+         if(panel&&body){
+           body.innerHTML='<div style="padding:10px;color:#b42318"><b>'+esc(title)+' gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||'Terjadi kesalahan')+'</div></div>';
+           panel.classList.remove('hidden');
+         }
+       });
+       return;
+     }
      // TARGET & PERFORMA: buka langsung tanpa sequence/modal lama agar selalu responsif.
      if(action==='hmOpenPerformanceInline()' || action==='openPerformance()'){
        hmCloseMainMenu();

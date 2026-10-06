@@ -2,6 +2,7 @@ function hasContentCreatorAccess(){const r=String(profile?.role||'').trim().toUp
 /* HM_INVENTORY_STABLE_20260930_ANDROID_SECOND_3 */
 /* Hello Majesty Inventory & Hunter */
 let inventoryProducts=[], inventoryStock=[], inventoryView='stock';
+let inventoryDashboardLock=false;
 let hunterDashboard=[]; let inventoryCanFacilitator=false; let inventoryCanContentCreator=false; let inventoryCanHunter=false;
 function canViewFullImei(){
  return !!profile?.is_management || inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR' || (Array.isArray(window.hmRoles) && window.hmRoles.some(r=>String(r).toUpperCase()==='FASILITATOR'));
@@ -182,27 +183,29 @@ async function openInventoryDashboard(){
  const panel=$('inventoryPanel'),btn=$('inventoryDashboardBtn');if(!panel)return;
  const open=!panel.classList.contains('hidden');
  if(open && inventoryView==='dashboard'){
+   inventoryDashboardLock=false;
    panel.classList.add('hidden');
    if(btn)btn.textContent='📊 Dashboard Inventory';
    return;
  }
+ inventoryDashboardLock=true;
  panel.classList.remove('hidden');
  if(btn)btn.textContent='✖ Tutup Product & Stock';
  const section=document.getElementById('inventorySection');
  if(section)section.classList.remove('hidden');
-
- // Render Product & Stock terlebih dahulu. Setelah render selesai, paksa view ke Dashboard.
- // Ini mencegah loadInventoryData/renderInventory mengembalikan view ke Stock READY.
- try{
-   if(typeof renderInventory==='function') await renderInventory();
- }catch(e){
-   console.error('[HM] Inventory dashboard load error',e);
- }
+ try{await renderInventory();}catch(e){console.error('[HM] Inventory dashboard load error',e);}
+ if(!inventoryDashboardLock)return;
  inventoryView='dashboard';
- if(typeof renderInventoryBody==='function') renderInventoryBody();
- if(typeof renderManagementStockSummary==='function'&&profile?.is_management){
-   await renderManagementStockSummary().catch(()=>{});
- }
+ renderInventoryBody();
+ const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: DASHBOARD';
+ // Re-apply once after the browser finishes any queued Product & Stock render.
+ setTimeout(()=>{
+   if(inventoryDashboardLock && document.getElementById('inventoryPanel')&&!document.getElementById('inventoryPanel').classList.contains('hidden')){
+     inventoryView='dashboard';
+     renderInventoryBody();
+     const d=document.getElementById('inventoryViewDebug');if(d)d.textContent='Mode: DASHBOARD';
+   }
+ },300);
 }
 window.refreshHunterLauncher=async function(){
   const btn=document.getElementById('inventoryHunterBtn');
@@ -316,7 +319,7 @@ function inventoryReceiveOutlet(){
  const sel=$('stoutlet');
  return profile?.is_management ? (sel?.value||'') : (profile?.outlet||'');
 }
-function setInventoryView(view){if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';return;}inventoryView=view;if(view==='sales'){renderInventorySalesReport();}else renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
+function setInventoryView(view){if(inventoryDashboardLock&&view!=='dashboard')return;if(view==='dashboard'&&!canViewInventoryDashboard()){inventoryView='stock';inventoryDashboardLock=false;return;}inventoryView=view;if(view!=='dashboard')inventoryDashboardLock=false;if(view==='sales'){renderInventorySalesReport();}else renderInventoryBody();const dbg=document.getElementById('inventoryViewDebug');if(dbg)dbg.textContent='Mode: '+(view==='dashboard'?'DASHBOARD':view==='products'?'PRODUK':'STOCK');const panel=document.getElementById('inventoryPanel');if(panel){const buttons=panel.querySelectorAll('.row button');buttons.forEach(b=>{if(b.textContent.trim()==='Stock'||b.textContent.trim()==='Produk')b.classList.toggle('secondary',b.textContent.trim().toLowerCase()!==view)})}}
 async function openInventorySoldDetail(){
  const outletSel=$('invDashOutlet')?.value||'',catSel=$('invDashCat')?.value||'';
  const rows=inventoryStock.filter(s=>s.status==='SOLD'&&(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));

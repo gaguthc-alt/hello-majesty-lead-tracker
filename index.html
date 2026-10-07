@@ -2443,7 +2443,7 @@ function renderRoleHome(){
    ['⚠️','Penyesuaian Stok','Koreksi selisih stok dengan alasan',"hmOpenInventoryFeature('penyesuaian')"]
  ];
  if(inventoryAccess){
-   const allItems=['Stok Siap Jual','Stock Hunter','Stock Opname'];
+   const allItems=['Stok Siap Jual','Laporan Fasilitator','Stock Hunter','Stock Opname'];
    const facDivItems=['Dashboard Inventory','Laporan Fasilitator','Master Produk','Barang Masuk','Persetujuan Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
    coreInventoryCards.forEach(item=>{
      const allowed=allItems.includes(item[1])||(inventoryFacDivAccess&&facDivItems.includes(item[1]))||(developer&&item[1]==='Dashboard Inventory');

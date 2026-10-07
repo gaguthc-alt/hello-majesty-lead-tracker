@@ -495,7 +495,7 @@ function openProductDetail(id){const s=inventoryStock.find(x=>x.id===id);if(!s)r
 async function openSellStock(stockId){
  const s=(inventoryStock||[]).find(x=>x.id===stockId);
  if(!s||s.status!=='READY')return alert('Stock tidak tersedia untuk Closing.');
- const roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const isSales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')); if(!isSales)return alert('Closing Stock Siap Jual hanya dapat diajukan oleh Sales.');
+ const roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const isSales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')); const isManagement=!!profile?.is_management||roleRaw.includes('MANAGEMENT'); if(!isSales&&!isManagement)return alert('Closing Stock Siap Jual hanya dapat diajukan oleh Sales atau Management.');
  if(typeof window.salesResult!=='function')return alert('Form Closing belum siap. Silakan refresh aplikasi.');
  const temp='STOCK-CLOSING-'+String(stockId).replace(/-/g,'').slice(0,12)+'-'+Date.now();
  window.hmStockClosingApprovalMode=true; window.hmStockClosingTempLeadId=temp;
@@ -541,7 +541,7 @@ function stockCard(s){
    '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
-   (ready&&sales?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
+   (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
    (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
 }

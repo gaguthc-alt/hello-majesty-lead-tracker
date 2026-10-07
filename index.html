@@ -2425,7 +2425,7 @@ function renderRoleHome(){
 
  // Ensure core Inventory actions have backing cards so the grouped menu renderer
  // can safely resolve their action handlers.
- const inventoryAccess=mg||developer||facilitator||roles.includes('DIVISI')||rawRole==='DIVISI';
+ const inventoryAccess=mg||developer||facilitator||roles.includes('DIVISI')||rawRole==='DIVISI'||inventoryHunterAccess;
  const inventoryAllAccess=inventoryAccess;
  const inventoryIsManagementLevel=mg||developer||roles.includes('DIVISI')||rawRole==='DIVISI';
  const inventoryHunterAccess=has('HUNTER')||rawRole==='HUNTER'||facilitator;
@@ -2445,7 +2445,7 @@ function renderRoleHome(){
    ['⚠️','Penyesuaian Stok','Koreksi selisih stok dengan alasan',"hmOpenInventoryFeature('penyesuaian')"]
  ];
  if(inventoryAccess){
-   const allItems=['Stok Siap Jual','Laporan Fasilitator','Stock Hunter','Stock Opname'];
+   const allItems=['Stok Siap Jual'];
    const facDivItems=['Dashboard Inventory','Laporan Fasilitator','Master Produk','Barang Masuk','Persetujuan Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
    coreInventoryCards.forEach(item=>{
      const allowed=item[1]==='Stock Hunter'

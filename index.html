@@ -2425,10 +2425,10 @@ function renderRoleHome(){
 
  // Ensure core Inventory actions have backing cards so the grouped menu renderer
  // can safely resolve their action handlers.
+ const inventoryHunterAccess=has('HUNTER')||rawRole==='HUNTER'||facilitator;
  const inventoryAccess=mg||developer||facilitator||roles.includes('DIVISI')||rawRole==='DIVISI'||inventoryHunterAccess;
  const inventoryAllAccess=inventoryAccess;
  const inventoryIsManagementLevel=mg||developer||roles.includes('DIVISI')||rawRole==='DIVISI';
- const inventoryHunterAccess=has('HUNTER')||rawRole==='HUNTER'||facilitator;
  const inventoryFacDivAccess=facilitator||roles.includes('DIVISI')||rawRole==='DIVISI';
  const coreInventoryCards=[
    ['📊','Dashboard Inventory','Ringkasan stok dan inventory seluruh outlet','openInventoryDashboard()'],

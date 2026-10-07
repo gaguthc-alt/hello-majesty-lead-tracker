@@ -2428,7 +2428,7 @@ function renderRoleHome(){
  const inventoryAccess=mg||developer||facilitator||roles.includes('DIVISI')||rawRole==='DIVISI';
  const inventoryAllAccess=inventoryAccess;
  const inventoryIsManagementLevel=mg||developer||roles.includes('DIVISI')||rawRole==='DIVISI';
- const inventoryHunterAccess=has('HUNTER')||rawRole==='HUNTER';
+ const inventoryHunterAccess=has('HUNTER')||rawRole==='HUNTER'||facilitator;
  const inventoryFacDivAccess=facilitator||roles.includes('DIVISI')||rawRole==='DIVISI';
  const coreInventoryCards=[
    ['📊','Dashboard Inventory','Ringkasan stok dan inventory seluruh outlet','openInventoryDashboard()'],

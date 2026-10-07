@@ -2541,12 +2541,13 @@ function renderRoleHome(){
    const isCommissionGroup = g[1]==='KOMISI & REWARD';
    const isDivisi = roles.includes('DIVISI') || rawRole==='DIVISI';
    // KOMISI & REWARD mempunyai aturan khusus:
-   // - Komisi Tim hanya untuk DIVISI.
-   // - Komisi Saya untuk semua peran selain DIVISI.
-   // Divisi tidak perlu melihat Komisi Saya.
+   // - Komisi Tim untuk DIVISI dan DEVELOPER.
+   // - Komisi Saya untuk semua peran selain DIVISI/DEVELOPER.
+   // Divisi dan Developer tidak perlu melihat Komisi Saya.
    if(isCommissionGroup){
      if(rawRole.includes('ADMIN FINANCE'))return '';
-     let allowed = isDivisi
+     const canSeeCommissionTeam = isDivisi || developer;
+     let allowed = canSeeCommissionTeam
        ? g[2].filter(item=>item[1]==='Komisi Tim')
        : g[2].filter(item=>item[1]==='Komisi Saya');
      if(!allowed.length)return '';

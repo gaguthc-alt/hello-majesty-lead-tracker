@@ -70,3 +70,29 @@
     },1500);
   });
 })();
+(function(){
+  function hmAddFacilitatorReportButton(){
+    try{
+      const p=window.profile||{};
+      const raw=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
+      const isFacilitator=raw==='FASILITATOR'||(Array.isArray(p.roles)&&p.roles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='FASILITATOR'));
+      if(!p.is_management&&!isFacilitator)return;
+      if(typeof window.openFacilitatorReports!=='function')return;
+      const launcher=document.getElementById('inventoryLauncher');
+      if(!launcher||launcher.querySelector('[data-hm-facilitator-reports]'))return;
+      const row=launcher.querySelector('.row');
+      if(!row)return;
+      const b=document.createElement('button');
+      b.className='secondary';
+      b.type='button';
+      b.setAttribute('data-hm-facilitator-reports','1');
+      b.textContent='📲 Laporan Fasilitator';
+      b.onclick=window.openFacilitatorReports;
+      row.appendChild(b);
+    }catch(e){console.warn('[HM Facilitator Report]',e);}
+  }
+  window.addEventListener('DOMContentLoaded',function(){
+    setTimeout(hmAddFacilitatorReportButton,1800);
+    setTimeout(hmAddFacilitatorReportButton,3500);
+  });
+})();

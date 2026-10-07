@@ -495,7 +495,7 @@ function openProductDetail(id){const s=inventoryStock.find(x=>x.id===id);if(!s)r
 async function openSellStock(stockId){
  const s=(inventoryStock||[]).find(x=>x.id===stockId);
  if(!s||s.status!=='READY')return alert('Stock tidak tersedia untuk Closing.');
- if(profile?.role!=='SALES')return alert('Closing Stock Siap Jual hanya dapat diajukan oleh Sales.');
+ const roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const isSales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')); if(!isSales)return alert('Closing Stock Siap Jual hanya dapat diajukan oleh Sales.');
  if(typeof window.salesResult!=='function')return alert('Form Closing belum siap. Silakan refresh aplikasi.');
  const temp='STOCK-CLOSING-'+String(stockId).replace(/-/g,'').slice(0,12)+'-'+Date.now();
  window.hmStockClosingApprovalMode=true; window.hmStockClosingTempLeadId=temp;
@@ -515,7 +515,7 @@ async function openSellStock(stockId){
 function invCategory(c){return ({IPHONE_NEW:'iPhone New',IPHONE_SECOND:'iPhone Second',ANDROID_NEW:'Android New',ANDROID_SECOND:'Android Second',STOCK_NEW_PUSAT:'Stock New Pusat',STOCK_SECOND_PUSAT:'Stock Second Pusat'})[c]||c}
 function masterProductLabel(p){const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();return [product,variant,p.color,suffix].filter(Boolean).join(' — ')}
 function stockCard(s){
- const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',canViewCost=management||facilitator,ready=s.status==='READY',sales=profile?.role==='SALES',c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
+ const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',canViewCost=management||facilitator,ready=s.status==='READY',roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),sales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')),c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
  const rawTitle=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';
  const cleanProduct=rawTitle.replace(/\s+(NEW|SECOND)$/i,'').trim();
  const title=[cleanProduct,s.variant,s.color,suffix].filter(Boolean).join(' — ');

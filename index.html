@@ -2430,6 +2430,7 @@ function renderRoleHome(){
  const inventoryFacDivAccess=facilitator||roles.includes('DIVISI')||rawRole==='DIVISI';
  const coreInventoryCards=[
    ['📊','Dashboard Inventory','Ringkasan stok dan inventory seluruh outlet','openInventoryDashboard()'],
+   ['📲','Laporan Fasilitator','Penjualan & Stock READY','hmOpenFacilitatorReportsInline()'],
    ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"],
    ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
    ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()'],
@@ -2443,7 +2444,7 @@ function renderRoleHome(){
  ];
  if(inventoryAccess){
    const allItems=['Stok Siap Jual','Stock Hunter','Stock Opname'];
-   const facDivItems=['Dashboard Inventory','Master Produk','Barang Masuk','Persetujuan Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
+   const facDivItems=['Dashboard Inventory','Laporan Fasilitator','Master Produk','Barang Masuk','Persetujuan Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
    coreInventoryCards.forEach(item=>{
      const allowed=allItems.includes(item[1])||(inventoryFacDivAccess&&facDivItems.includes(item[1]))||(developer&&item[1]==='Dashboard Inventory');
      if(allowed&&!cards.some(x=>x[1]===item[1]))cards.push(item);
@@ -2467,6 +2468,7 @@ function renderRoleHome(){
    ]],
    ['📦','INVENTORY & STOCK',[
      ['📊','Dashboard Inventory','Ringkasan stok dan inventory seluruh outlet','openInventoryDashboard()'],
+     ['📲','Laporan Fasilitator','Penjualan & Stock READY','hmOpenFacilitatorReportsInline()'],
      ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"],
      ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
      ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()'],
@@ -2559,7 +2561,7 @@ function renderRoleHome(){
    let allowed=(forceVisible || isAccountingGroup) ? g[2] : g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    // Fungsi inventory utama wajib tampil dengan urutan yang sama seperti menu utama.
    if(inventoryAccess && g[1]==='INVENTORY & STOCK'){
-     const order=['Dashboard Inventory','Master Produk','Stok Siap Jual','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok','Stock Opname'];
+     const order=['Dashboard Inventory','Laporan Fasilitator','Master Produk','Stok Siap Jual','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok','Stock Opname'];
      allowed=order.map(name=>g[2].find(x=>x[1]===name)).filter(Boolean).filter(item=>cards.some(x=>x[1]===item[1]));
    }
    if(!allowed.length)return '';

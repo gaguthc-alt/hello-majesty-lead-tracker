@@ -2428,6 +2428,7 @@ function renderRoleHome(){
  const inventoryAccess=mg||developer||facilitator||roles.includes('DIVISI')||rawRole==='DIVISI';
  const inventoryAllAccess=inventoryAccess;
  const inventoryIsManagementLevel=mg||developer||roles.includes('DIVISI')||rawRole==='DIVISI';
+ const inventoryHunterAccess=has('HUNTER')||rawRole==='HUNTER';
  const inventoryFacDivAccess=facilitator||roles.includes('DIVISI')||rawRole==='DIVISI';
  const coreInventoryCards=[
    ['📊','Dashboard Inventory','Ringkasan stok dan inventory seluruh outlet','openInventoryDashboard()'],
@@ -2447,7 +2448,9 @@ function renderRoleHome(){
    const allItems=['Stok Siap Jual','Laporan Fasilitator','Stock Hunter','Stock Opname'];
    const facDivItems=['Dashboard Inventory','Laporan Fasilitator','Master Produk','Barang Masuk','Persetujuan Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
    coreInventoryCards.forEach(item=>{
-     const allowed=inventoryIsManagementLevel||allItems.includes(item[1])||(inventoryFacDivAccess&&facDivItems.includes(item[1]));
+     const allowed=item[1]==='Stock Hunter'
+       ? (inventoryIsManagementLevel||inventoryHunterAccess)
+       : (inventoryIsManagementLevel||allItems.includes(item[1])||(inventoryFacDivAccess&&facDivItems.includes(item[1])));
      if(allowed&&!cards.some(x=>x[1]===item[1]))cards.push(item);
    });
  }

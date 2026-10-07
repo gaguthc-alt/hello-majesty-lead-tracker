@@ -1316,6 +1316,15 @@ window.renderCommissionActions = renderCommissionActions;
 
 const KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW',SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
 let sb=null,profile=null,leads=[];
+// Helper global untuk modul Inventory membuat lead sementara tanpa bentrok dengan elemen DOM id="leads".
+window.hmAddStockClosingLead=function(lead){
+  if(!lead)return;
+  leads=(leads||[]).filter(l=>String(l?.lead_id||'')!==String(lead?.lead_id||''));
+  leads=[lead,...(leads||[])];
+};
+window.hmRemoveStockClosingLead=function(id){
+  leads=(leads||[]).filter(l=>String(l?.lead_id||'')!==String(id||''));
+};
 let hmPermissionRoles=[];
 let hmDashboardOpened=false;
 var contentSelectedMonth=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';})();

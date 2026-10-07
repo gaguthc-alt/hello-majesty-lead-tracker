@@ -499,8 +499,9 @@ async function openSellStock(stockId){
  if(typeof window.salesResult!=='function')return alert('Form Closing belum siap. Silakan refresh aplikasi.');
  const temp='STOCK-CLOSING-'+String(stockId).replace(/-/g,'').slice(0,12)+'-'+Date.now();
  window.hmStockClosingApprovalMode=true; window.hmStockClosingTempLeadId=temp;
- window.leads=window.leads||[];
- window.leads.push({lead_id:temp,customer:'Walk-In',whatsapp:'',outlet:profile?.outlet||s.outlet,product:[s.product,s.variant,s.color].filter(Boolean).join(' — '),status_lead:'HANDLE',sales_claimed_by:profile?.name||'',sales_result:'POTENSIAL'});
+ const tempLead={lead_id:temp,customer:'Walk-In',whatsapp:'',outlet:profile?.outlet||s.outlet,product:[s.product,s.variant,s.color].filter(Boolean).join(' — '),status_lead:'HANDLE',sales_claimed_by:profile?.name||'',sales_result:'POTENSIAL'};
+ if(typeof window.hmAddStockClosingLead!=='function')return alert('Modul Closing belum siap. Silakan refresh aplikasi.');
+ window.hmAddStockClosingLead(tempLead);
  try{
    await window.salesResult(temp);
    const sel=document.getElementById('ss');
@@ -508,7 +509,7 @@ async function openSellStock(stockId){
    const title=document.getElementById('mt'); if(title)title.textContent='💰 Closing Stock Siap Jual';
  }catch(e){
    window.hmStockClosingApprovalMode=false;window.hmStockClosingTempLeadId=null;
-   window.leads=window.leads.filter(l=>String(l.lead_id)!==String(temp));throw e;
+   if(typeof window.hmRemoveStockClosingLead==='function')window.hmRemoveStockClosingLead(temp);throw e;
  }
 }
 

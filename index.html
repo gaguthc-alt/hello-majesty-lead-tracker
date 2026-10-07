@@ -2092,6 +2092,14 @@ function hmLoadModule(name){
 }
 window.hmLoadModule=hmLoadModule;
 
+function hmOpenFacilitatorReportsInline(){
+  if(typeof window.openFacilitatorReports==='function'){
+    return window.openFacilitatorReports();
+  }
+  throw new Error('Modul Laporan Fasilitator belum siap.');
+}
+window.hmOpenFacilitatorReportsInline=hmOpenFacilitatorReportsInline;
+
 function hmRunMainMenuAction(action){
  const a=String(action||'').trim();
  switch(a){
@@ -2293,6 +2301,7 @@ function renderRoleHome(){
    add('📊','Accounting','Accounting & laporan','openAccounting()');
    add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')");
+   add('📊','Laporan Fasilitator','Penjualan & Stock READY','hmOpenFacilitatorReportsInline()');
    add('📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()');
    add('📤','Barang Keluar','Barang terjual dan pengeluaran stock',"openInventorySection('sales')");
    add('🔄','Mutasi Stok','Perpindahan stok antar outlet',"hmOpenInventoryFeature('mutasi')");

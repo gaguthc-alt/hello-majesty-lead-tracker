@@ -86,6 +86,7 @@ window.openWalkinApprovals=async function(){
  const isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
  const can=!!profile?.is_management||isDeveloper||role==='FASILITATOR';
  if(!can)return alert('Persetujuan Walk-In hanya dapat dilakukan Management, Developer, atau Fasilitator.');
+ const reviewerOutlet=(!profile?.is_management&&!isDeveloper)?String(profile?.outlet||'').trim():null;
 
  const [w,sale]=await Promise.all([
    sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false}),
@@ -94,15 +95,21 @@ window.openWalkinApprovals=async function(){
  if(w.error)return showWalkinApprovalError(w.error);
  if(sale.error)return showWalkinApprovalError(sale.error);
 
- const rows=[
+ const allRows=[
    ...(w.data||[]).map(x=>({...x,approval_kind:'WALKIN'})),
    ...(sale.data||[]).map(x=>({...x,approval_kind:'STOCK'}))
  ].sort((a,b)=>new Date(b.requested_at)-new Date(a.requested_at));
 
- const ids=rows.map(x=>x.stock_unit_id).filter(Boolean);
+ const ids=allRows.map(x=>x.stock_unit_id).filter(Boolean);
  const s=ids.length?await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,cost,asking_price,status').in('id',ids):{data:[]};
  if(s.error)return showWalkinApprovalError(s.error);
  const stocks=s.data||[];
+ const allowedStockIds=new Set(
+   reviewerOutlet
+     ? stocks.filter(x=>String(x.outlet||'').trim()===reviewerOutlet).map(x=>x.id)
+     : stocks.map(x=>x.id)
+ );
+ const rows=allRows.filter(x=>!reviewerOutlet||allowedStockIds.has(x.stock_unit_id));
  const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
  const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};
  const products=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));

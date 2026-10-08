@@ -205,7 +205,7 @@ async function openMyClosings(){
       sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_claimed_by',me).order('updated_at',{ascending:false}).limit(100),
       sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_pic',me).order('updated_at',{ascending:false}).limit(100),
       sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).order('requested_at',{ascending:false}).limit(100),
-      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,sale_price,status,requested_at,reviewed_at,review_note').contains('sales_user_ids',[uid]).order('requested_at',{ascending:false}).limit(100),
+      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,team_member_ids,sale_price,status,requested_at,reviewed_at,review_note').contains('team_member_ids',[uid]).order('requested_at',{ascending:false}).limit(100),
       sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).order('requested_at',{ascending:false}).limit(100),
       sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').contains('sales_user_ids',[uid]).order('requested_at',{ascending:false}).limit(100)
     ]);

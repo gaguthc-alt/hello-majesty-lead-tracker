@@ -2256,14 +2256,10 @@ function hmEnsureHomePerformanceStyle(){
 async function hmRenderHomePerformance(){
  const host=document.getElementById('roleHome');
  if(!host)return;
- let block=document.getElementById('hmHomePerformance');
- if(!block){ block=document.createElement('section'); block.id='hmHomePerformance'; host.appendChild(block); }
- block.className='hm-home-performance';
+ const block=document.getElementById('hmHomePerformance');
+ if(!block||!profile)return;
  const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
- if(!db||!profile){
-   block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA</div><div class="small">Menyiapkan data performa...</div>';
-   return;
- }
+ if(!db)return;
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
  const isManagement=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI';
@@ -2271,37 +2267,21 @@ async function hmRenderHomePerformance(){
  const monthEnd=new Date(new Date().getFullYear(),new Date().getMonth()+1,1);
  const fmt=n=>Number(n||0).toLocaleString('id-ID');
  const escH=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
- const empty={claim_cs:0,handover:0,cs_closing:0,sales_closing:0};
+ const period=monthStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+ const card=(label,value,icon)=>'<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(value)+'</div></div>';
+ const section=(title,data,sub)=>'<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+title+'</b><span>'+sub+'</span></div></div><div class="hm-home-perf-grid">'+card('Claim CS',data.claim_cs,'📲')+card('Handover CS',data.handover,'🤝')+card('CS Closing',data.cs_closing,'🎯')+card('Sales Closing',data.sales_closing,'🏆')+'</div></div>';
  try{
-   const [perf,profiles] = await Promise.all([
-     db.rpc('team_lead_performance_report',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString()}),
-     db.from('team_profiles').select('name,outlet,active,is_management').eq('active',true)
-   ]);
-   if(perf.error)throw perf.error;
-   if(profiles.error)throw profiles.error;
-   const rows=Array.isArray(perf.data)?perf.data:[];
-   const people=Array.isArray(profiles.data)?profiles.data:[];
-   const outletByName={};
-   people.forEach(p=>{outletByName[String(p.name||'').trim()]=p.outlet||'';});
-   const ownRow=rows.find(r=>String(r.employee_name||'').trim().toLowerCase()===String(profile.name||'').trim().toLowerCase())||empty;
-   const own={
-     claim_cs:Number(ownRow.claim_cs||0),handover:Number(ownRow.handover||0),
-     cs_closing:Number(ownRow.cs_closing||0),sales_closing:Number(ownRow.sales_closing||0)
-   };
-   const scopeRows=isManagement?rows:rows.filter(r=>String(outletByName[String(r.employee_name||'').trim()]||'')===String(profile.outlet||''));
-   const total=scopeRows.reduce((a,r)=>{
-     a.claim_cs+=Number(r.claim_cs||0);a.handover+=Number(r.handover||0);
-     a.cs_closing+=Number(r.cs_closing||0);a.sales_closing+=Number(r.sales_closing||0);return a;
-   },{...empty});
-   const period=monthStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
-   const scopeLabel=isManagement?'Seluruh outlet':('Outlet • '+(profile.outlet||'-'));
-   const card=(label,value,icon)=>'<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(value)+'</div></div>';
-   const section=(title,data,sub)=>'<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+title+'</b><span>'+sub+'</span></div></div><div class="hm-home-perf-grid">'+
-      card('Claim CS',data.claim_cs,'📲')+card('Handover CS',data.handover,'🤝')+card('CS Closing',data.cs_closing,'🎯')+card('Sales Closing',data.sales_closing,'🏆')+
-      '</div></div>';
-   block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+
-     section('PERFORMA SAYA',own,'Aktivitas akun ini')+
-     section('TOTAL '+(isManagement?'SELURUH OUTLET':'OUTLET'),total,scopeLabel);
+   const {data,error}=await db.rpc('home_performance_summary',{
+     p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),
+     p_employee_name:profile.name||'',p_outlet:profile.outlet||'',p_all_outlets:isManagement
+   });
+   if(error)throw error;
+   const r=Array.isArray(data)?data[0]:data;
+   if(!r)throw new Error('Data performa kosong');
+   const own={claim_cs:r.own_claim_cs||0,handover:r.own_handover||0,cs_closing:r.own_cs_closing||0,sales_closing:r.own_sales_closing||0};
+   const total={claim_cs:r.total_claim_cs||0,handover:r.total_handover||0,cs_closing:r.total_cs_closing||0,sales_closing:r.total_sales_closing||0};
+   const scopeLabel=isManagement?'Seluruh outlet':'Outlet • '+(profile.outlet||'-');
+   block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+section('PERFORMA SAYA',own,'Aktivitas akun ini')+section('TOTAL '+(isManagement?'SELURUH OUTLET':'OUTLET'),total,scopeLabel);
  }catch(e){
    console.error('[HM] Home performance:',e);
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA</div><div class="small" style="padding:8px;color:#b42318">Gagal memuat performa: '+escH(e?.message||e)+'</div>';

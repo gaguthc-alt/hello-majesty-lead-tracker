@@ -3684,24 +3684,21 @@ async function salesResult(id){
    box.classList.toggle('hidden',isPiutang);
    if(isPiutang){acc.value='';return;}
    const wanted=code==='CASH'?'CASH':'BANK';
-   const stock=rows.find(x=>String(x.id)===String($('ss')?.value||''));
-   const stockOutlet=String(stock?.outlet||'').trim();
-   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
-   const privileged=!!profile?.is_management||['FASILITATOR','DEVELOPER','DEVELOPER APLIKASI'].includes(role);
+   // Untuk pembayaran TUNAI, Kas mengikuti outlet/PIC yang sedang login.
+   // Tim Refill -> Kas MNG Majesty Refill; Tim Plaza -> Kas MNG Majesty Plaza.
+   const userOutlet=String(currentOutlet||'').trim();
    [...acc.options].forEach(o=>{
      if(!o.value){o.hidden=false;return;}
      const typeOk=o.dataset.accountType===wanted;
      const accountOutlet=String(o.dataset.accountOutlet||'').trim();
-     const outletOk=wanted!=='CASH'||privileged
-       ? (wanted!=='CASH'||!stockOutlet||accountOutlet===stockOutlet)
-       : (wanted!=='CASH'||(!stockOutlet?accountOutlet===currentOutlet:accountOutlet===stockOutlet));
+     const outletOk=wanted!=='CASH'||!userOutlet||accountOutlet===userOutlet;
      o.hidden=!(typeOk&&outletOk);
    });
    acc.value='';
    const visible=[...acc.options].some(o=>o.value&&!o.hidden);
    hint.textContent=visible
-     ? (wanted==='CASH'?'Pilih kas penerima sesuai outlet stock.':'Pilih rekening bank penerima untuk pembayaran non-tunai.')
-     : (wanted==='CASH'?'Kas outlet belum tersedia untuk stock ini.':'Pilih rekening bank penerima untuk pembayaran non-tunai.');
+     ? (wanted==='CASH'?'Kas otomatis mengikuti outlet tim yang login.':'Pilih rekening bank penerima untuk pembayaran non-tunai.')
+     : (wanted==='CASH'?'Kas untuk outlet tim ini belum tersedia.':'Pilih rekening bank penerima untuk pembayaran non-tunai.');
  };
  $('ss').onchange=()=>{updatePriceHint();updatePaymentAccount();};
  $('salePayment').onchange=updatePaymentAccount;

@@ -357,7 +357,12 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
   function isFinancePayment(){
     const s=document.getElementById('salePayment');
     const o=s?.selectedOptions?.[0];
-    return FIN_CODES.includes(String(o?.dataset?.code||'').toUpperCase());
+    const code=String(o?.dataset?.code||'').toUpperCase();
+    if(code==='PAY_LATER'){
+      const p=document.getElementById('payLaterProvider');
+      return FIN_CODES.includes(String(p?.selectedOptions?.[0]?.dataset?.code||'').toUpperCase());
+    }
+    return FIN_CODES.includes(code);
   }
   function escF(v){return String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
   function addFinanceFields(){
@@ -405,6 +410,13 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
         if(isFinancePayment()) addFinanceFields(); else removeFinanceFields();
         const a=document.getElementById('saleAccount');
         if(a) a.disabled=isFinancePayment() || pay.value==='PIUTANG';
+      });
+    }
+    const provider=document.getElementById('payLaterProvider');
+    if(provider && !provider.dataset.financeBound){
+      provider.dataset.financeBound='1';
+      provider.addEventListener('change',()=>{
+        if(isFinancePayment()) addFinanceFields(); else removeFinanceFields();
       });
     }
     if(isFinancePayment()) addFinanceFields();

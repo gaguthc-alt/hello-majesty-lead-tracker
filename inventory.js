@@ -210,7 +210,7 @@ async function openMyClosings(){
     const [leadA,leadB,stockA,stockB,walkA,walkB,salesA]=await Promise.all([
       sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_claimed_by',me).gte('updated_at',monthStartISO).lt('updated_at',nextMonthISO).order('updated_at',{ascending:false}).limit(100),
       sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_pic',me).gte('updated_at',monthStartISO).lt('updated_at',nextMonthISO).order('updated_at',{ascending:false}).limit(100),
-      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
+      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,sale_price,status,requested_at,reviewed_at,review_note,sale_id').eq('requested_by',uid).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
       sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,team_member_ids,sale_price,status,requested_at,reviewed_at,review_note').contains('team_member_ids',[uid]).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
       sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
       sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note,sale_id').contains('sales_user_ids',[uid]).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
@@ -229,7 +229,7 @@ async function openMyClosings(){
     const soldSales=salesA.data||[];
     const soldIds=new Set(soldSales.map(x=>x.id));
     const approvalRows=[...stockMap.values(),...walkMap.values()].filter(x=>!x.sale_id||!soldIds.has(x.sale_id));
-    const stockIds=[...new Set(approvalRows.map(x=>x.stock_unit_id).filter(Boolean))];
+    const stockIds=[...new Set([...approvalRows.map(x=>x.stock_unit_id),...soldSales.map(x=>x.stock_unit_id)].filter(Boolean))];
     const stocks=stockIds.length?(await sb.from('stock_units').select('id,product_id,outlet,color,status').in('id',stockIds)):{data:[],error:null};
     if(stocks.error)throw stocks.error;
     const pids=[...new Set((stocks.data||[]).map(x=>x.product_id).filter(Boolean))];

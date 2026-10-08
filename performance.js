@@ -83,25 +83,6 @@
     '</div>';
   }
 
-  async function getSharedFunnel(mode){
-    const start=monthStart(mode).toISOString(), end=monthEnd(mode).toISOString();
-    const name=String(profile?.name||'').trim();
-    let q=sb.from('lead_events').select('lead_id,event_type,employee_name').gte('event_at',start).lt('event_at',end);
-    if(!profile?.is_management && name)q=q.ilike('employee_name',name);
-    const e=await q;
-    if(e.error)throw e.error;
-    const rows=e.data||[];
-    const unique=(arr)=>new Set(arr.filter(Boolean)).size;
-    const handled=unique(rows.filter(r=>['CS_CLAIM','SALES_CLAIM'].includes(r.event_type)).map(r=>r.lead_id));
-    const qualified=unique(rows.filter(r=>r.event_type==='CS_QUALIFIED').map(r=>r.lead_id));
-    const handover=unique(rows.filter(r=>r.event_type==='SALES_CLAIM').map(r=>r.lead_id));
-    let st=sb.from('sales_transactions').select('id,sales_user_id,sales_closing,cs_closing').gte('sold_at',start).lt('sold_at',end);
-    const sx=await st;
-    if(sx.error)throw sx.error;
-    const soldRows=(sx.data||[]).filter(r=>profile?.is_management || String(r.sales_closing||'').trim().toLowerCase()===name.toLowerCase() || String(r.cs_closing||'').trim().toLowerCase()===name.toLowerCase() || String(r.sales_user_id||'')===String(profile?.user_id||''));
-    return {handled,qualified,handover,sold:soldRows.length};
-  }
-
   async function getFunnel(mode){
     const start=monthStart(mode).toISOString(), end=monthEnd(mode).toISOString();
     const x=await sb.rpc('team_lead_funnel_report',{p_start:start,p_end:end});
@@ -125,17 +106,30 @@
   }
   async function render(mode){
     const body=document.getElementById('perfBody'); if(!body)return;
-    body.innerHTML='<div class="small">⏳ Memuat funnel lead tim...</div>';
+    body.innerHTML='<div class="small">⏳ Memuat performa lead tim...</div>';
     try{
       const rows=await getFunnel(mode);
-      const shared=await getSharedFunnel(mode);
-      const totalSold=shared.sold; const total=shared;
-      let html='<div class="stats"><div class="stat"><div class="small">📲 Lead / Handle</div><div class="num">'+fmt(total.handled)+'</div></div><div class="stat"><div class="small">🔍 Qualified</div><div class="num">'+fmt(total.qualified)+'</div></div><div class="stat"><div class="small">🤝 Handover</div><div class="num">'+fmt(total.handover)+'</div></div><div class="stat"><div class="small">🏆 SOLD / Closing</div><div class="num">'+fmt(totalSold)+'</div></div></div>';
-      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 FUNNEL PERFORMA PER ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">CS dan Sales dipisahkan. Closing per orang bersumber dari transaksi SOLD; Walk-In tetap dihitung sebagai closing. Klik nama untuk detail.</div></div>';
-      html+='<div class="box" style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:8px">Nama</th><th>Fungsi</th><th>WA/Lead</th><th>Qualified</th><th>Handover</th><th>Closing</th><th>Conv.</th></tr></thead><tbody>';
-      rows.forEach(r=>html+='<tr style="cursor:pointer;border-top:1px solid #e5e7eb" onclick="window.perfPerson('+JSON.stringify(r.employee_name)+','+JSON.stringify(r.role)+','+JSON.stringify(mode)+')"><td style="padding:9px"><b>'+escP(r.employee_name)+'</b></td><td style="text-align:center"><span class="badge">'+escP(r.role)+'</span></td><td style="text-align:center">'+fmt(r.handled)+'</td><td style="text-align:center">'+fmt(r.qualified)+'</td><td style="text-align:center">'+fmt(r.handover)+'</td><td style="text-align:center"><b>'+fmt(r.closing)+'</b></td><td style="text-align:center">'+fmt(r.conversion)+'%</td></tr>');
-      html+='</tbody></table></div>'; body.innerHTML=html;
-    }catch(e){console.error('[HM] Funnel Performa',e);body.innerHTML='<div class="lead"><b>Gagal memuat Laporan Performa Tim</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';}
+      const total=rows.reduce((a,r)=>{
+        ['lead_in','handled','qualified','handover','follow_up','potential','lost','closing_lead'].forEach(k=>a[k]+=(Number(r[k])||0));
+        return a;
+      },{lead_in:0,handled:0,qualified:0,handover:0,follow_up:0,potential:0,lost:0,closing_lead:0});
+      let html='<div class="stats">'+
+        '<div class="stat"><div class="small">📲 Lead Masuk</div><div class="num">'+fmt(total.lead_in)+'</div></div>'+
+        '<div class="stat"><div class="small">💬 Handle</div><div class="num">'+fmt(total.handled)+'</div></div>'+
+        '<div class="stat"><div class="small">🔍 Qualified</div><div class="num">'+fmt(total.qualified)+'</div></div>'+
+        '<div class="stat"><div class="small">🤝 Handover</div><div class="num">'+fmt(total.handover)+'</div></div>'+
+      '</div>';
+      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div>'+
+        '<div class="small" style="margin-top:5px">Laporan ini khusus mengukur perjalanan lead. SOLD/Walk-In tidak dihitung sebagai performa lead.</div></div>';
+      html+='<div class="box" style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>'+
+        '<th style="text-align:left;padding:8px">Nama</th><th>Fungsi</th><th>Lead</th><th>Handle</th><th>Qualified</th><th>Handover</th><th>Follow-up</th><th>Potensial</th><th>Gagal</th><th>Closing Lead</th><th>Conv.</th>'+
+        '</tr></thead><tbody>';
+      rows.forEach(r=>html+='<tr style="cursor:pointer;border-top:1px solid #e5e7eb" onclick="window.perfPerson('+JSON.stringify(r.employee_name)+','+JSON.stringify(r.role)+','+JSON.stringify(mode)+')">'+
+        '<td style="padding:9px"><b>'+escP(r.employee_name)+'</b></td><td style="text-align:center"><span class="badge">'+escP(r.role)+'</span></td>'+
+        '<td style="text-align:center">'+fmt(r.lead_in)+'</td><td style="text-align:center">'+fmt(r.handled)+'</td><td style="text-align:center">'+fmt(r.qualified)+'</td><td style="text-align:center">'+fmt(r.handover)+'</td><td style="text-align:center">'+fmt(r.follow_up)+'</td><td style="text-align:center">'+fmt(r.potential)+'</td><td style="text-align:center">'+fmt(r.lost)+'</td><td style="text-align:center"><b>'+fmt(r.closing_lead)+'</b></td><td style="text-align:center">'+fmt(r.conversion)+'%</td></tr>');
+      html+='</tbody></table></div>';
+      body.innerHTML=html;
+    }catch(e){console.error('[HM] Lead Performance',e);body.innerHTML='<div class="lead"><b>Gagal memuat Laporan Performa Tim</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';}
   }
 
   window.openPerformance=async function(){

@@ -83,39 +83,39 @@
     '</div>';
   }
 
-  async function render(mode){
-    const body=document.getElementById('perfBody');
-    if(!body)return;
-    body.innerHTML='<div class="small">⏳ Memuat target dan realisasi...</div>';
+  async function getFunnel(mode){
+    const start=monthStart(mode).toISOString(), end=monthEnd(mode).toISOString();
+    const x=await sb.rpc('team_lead_funnel_report',{p_start:start,p_end:end});
+    if(x.error)throw x.error; return x.data||[];
+  }
+  async function showPerson(name,mode){
+    const body=document.getElementById('perfBody'); if(!body)return;
+    body.innerHTML='<div class="small">⏳ Memuat detail '+escP(name)+'...</div>';
     try{
-      const data=await getTargets(mode);
-      const sales=await getSales(mode);
-      let outlets=Array.isArray(data.outlets)?data.outlets:[];
-      if(!profile?.is_management && profile?.outlet)outlets=outlets.filter(o=>o.outlet===profile.outlet);
-
-      const total=outlets.reduce((a,o)=>{
-        const s=sales[o.outlet]||{};
-        a.targetUnit+=Number(o.closing_target||0);
-        a.actualUnit+=Number(s.units||0);
-        a.targetProfit+=Number(o.nominal_target||0);
-        a.actualProfit+=Number(s.profit||0);
-        a.omzet+=Number(s.omzet||0);
-        return a;
-      },{targetUnit:0,actualUnit:0,targetProfit:0,actualProfit:0,omzet:0});
-
-      let html='<div class="stats">'+
-        '<div class="stat"><div class="small">🏆 Closing</div><div class="num">'+fmt(total.actualUnit)+' / '+fmt(total.targetUnit)+'</div><div class="small">'+pct(total.actualUnit,total.targetUnit)+'% tercapai</div></div>'+
-        '<div class="stat"><div class="small">📈 Profit / Laba</div><div class="num">Rp'+nominal(total.actualProfit)+'</div><div class="small">Target Rp'+nominal(total.targetProfit)+' • '+pct(total.actualProfit,total.targetProfit)+'%</div></div>'+
-        '<div class="stat"><div class="small">💰 Omzet</div><div class="num">Rp'+nominal(total.omzet)+'</div><div class="small">Informasi penjualan • bukan KPI nominal</div></div>'+
-      '</div>';
-
-      html+='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><b>🏪 PERFORMA OUTLET</b><span class="small">'+escP(monthLabel(mode))+'</span></div></div>';
-      html+=outlets.length?outlets.map(o=>outletCard(o,sales[o.outlet]||{})).join(''):'<div class="lead"><b>Target belum tersedia</b><div class="small" style="margin-top:5px">Belum ada target outlet untuk periode ini.</div></div>';
-      body.innerHTML=html;
-    }catch(e){
-      console.error('[HM] Target & Performa',e);
-      body.innerHTML='<div class="lead"><b>Gagal memuat Target & Performa</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';
-    }
+      const x=await sb.rpc('team_lead_funnel_detail',{p_employee:name,p_start:monthStart(mode).toISOString(),p_end:monthEnd(mode).toISOString()});
+      if(x.error)throw x.error; const rows=x.data||[], counts={};
+      rows.forEach(r=>counts[r.event_type]=(counts[r.event_type]||0)+1);
+      let html='<div class="row" style="justify-content:space-between;align-items:center"><button class="secondary" type="button" onclick="window.perfShow(window.perfMyMode||\\'month\\')">← Kembali</button><b>👤 '+escP(name)+'</b></div>';
+      html+='<div class="box" style="margin-top:10px"><b>📌 Aktivitas</b><div class="stats" style="margin-top:8px">';
+      Object.entries(counts).forEach(([k,v])=>html+='<div class="stat"><div class="small">'+escP(k)+'</div><div class="num">'+fmt(v)+'</div></div>');
+      html+='</div></div><div class="box"><b>📋 Detail Lead</b>';
+      rows.slice(0,100).forEach(r=>html+='<div class="lead" style="margin-top:7px"><div class="row" style="justify-content:space-between"><b>'+escP(r.event_type)+'</b><span class="small">'+new Date(r.event_at).toLocaleString('id-ID')+'</span></div><div class="small" style="margin-top:4px">Lead: '+escP(r.lead_id||'-')+(r.customer?' • '+escP(r.customer):'')+'</div><div class="small">'+escP(r.product||'-')+'</div></div>');
+      if(!rows.length)html+='<div class="small" style="margin-top:7px">Belum ada aktivitas.</div>';
+      html+='</div>'; body.innerHTML=html;
+    }catch(e){body.innerHTML='<div class="lead"><b>Gagal memuat detail</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div></div>';}
+  }
+  async function render(mode){
+    const body=document.getElementById('perfBody'); if(!body)return;
+    body.innerHTML='<div class="small">⏳ Memuat funnel lead tim...</div>';
+    try{
+      const rows=await getFunnel(mode);
+      const total=rows.reduce((a,r)=>{a.handled+=+r.handled||0;a.qualified+=+r.qualified||0;a.handover+=+r.handover||0;a.closing+=+r.closing||0;return a;},{handled:0,qualified:0,handover:0,closing:0});
+      let html='<div class="stats"><div class="stat"><div class="small">📲 Lead / Handle</div><div class="num">'+fmt(total.handled)+'</div></div><div class="stat"><div class="small">🔍 Qualified</div><div class="num">'+fmt(total.qualified)+'</div></div><div class="stat"><div class="small">🤝 Handover</div><div class="num">'+fmt(total.handover)+'</div></div><div class="stat"><div class="small">🏆 Closing</div><div class="num">'+fmt(total.closing)+'</div></div></div>';
+      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 FUNNEL PERFORMA PER ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Klik nama untuk melihat detail lead.</div></div>';
+      html+='<div class="box" style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:8px">Nama</th><th>Lead</th><th>Qualified</th><th>Handover</th><th>Closing</th><th>Conv.</th></tr></thead><tbody>';
+      rows.forEach(r=>html+='<tr style="cursor:pointer;border-top:1px solid #e5e7eb" onclick="window.perfPerson('+JSON.stringify(r.employee)+','+JSON.stringify(mode)+')"><td style="padding:9px"><b>'+escP(r.employee)+'</b><div class="small">'+escP(r.role)+'</div></td><td style="text-align:center">'+fmt(r.handled)+'</td><td style="text-align:center">'+fmt(r.qualified)+'</td><td style="text-align:center">'+fmt(r.handover)+'</td><td style="text-align:center"><b>'+fmt(r.closing)+'</b></td><td style="text-align:center">'+fmt(r.conversion)+'%</td></tr>');
+      html+='</tbody></table></div>'; body.innerHTML=html;
+    }catch(e){console.error('[HM] Funnel Performa',e);body.innerHTML='<div class="lead"><b>Gagal memuat Laporan Performa Tim</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\\'month\\')">↻ Coba Lagi</button></div>';}
   }
 
   window.openPerformance=async function(){
@@ -128,8 +128,8 @@
       if(ws)ws.prepend(box);
     }
     box.classList.remove('hidden');
-    box.innerHTML='<h3 style="margin-top:0">🎯 TARGET & PERFORMA</h3>'+
-      '<div class="small" style="margin-bottom:10px">Closing dihitung dari transaksi penjualan yang sah; Walk-In dan Lead tidak dihitung dua kali. Target nominal adalah Profit/Laba.</div>'+
+    box.innerHTML='<h3 style="margin-top:0">📊 LAPORAN PERFORMA TIM</h3>'+
+      '<div class="small" style="margin-bottom:10px">Funnel lead per orang: WA/Lead yang ditangani → Qualified → Handover → Closing.</div>'+
       '<div class="row" style="flex-wrap:wrap">'+
         '<button class="secondary" id="perfMonth">📊 Bulan Ini</button>'+
         '<button class="secondary" id="perfLastMonth">↩️ Bulan Kemarin</button>'+
@@ -141,4 +141,5 @@
     await render('month');
   };
   window.perfShow=render;
+  window.perfPerson=showPerson;
 })();

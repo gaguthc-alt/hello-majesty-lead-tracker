@@ -3730,9 +3730,20 @@ function shareWalkinApprovalWA(stockId,salePrice){
  const product=sel?.selectedOptions?.[0]?.textContent?.replace(/\s*•\s*List.*$/,'').trim()||'Stock Walk-In';
  const outlet=profile?.outlet||'-';
  const sales=profile?.name||'Sales';
- const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 Sales User: '+sales,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty* → *Persetujuan Walk-In*.','','Status: *MENUNGGU PERSETUJUAN*','','— *HELLO MAJESTY*','_Built on Trust._'].join(nl);
+ const approvalLink=window.location.origin+window.location.pathname+'?open=walkin&approval='+encodeURIComponent(stockId||'');
+ const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 Sales: '+sales,'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','— *HELLO MAJESTY*','_Built on Trust._'].join(nl);
  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
+window.hmOpenWalkinFromLink=async function(){
+ try{
+   const p=new URLSearchParams(window.location.search);
+   if(p.get('open')!=='walkin')return;
+   if(!window.profile||typeof window.openWalkinApprovals!=='function'){setTimeout(window.hmOpenWalkinFromLink,800);return;}
+   window.history.replaceState({},document.title,window.location.pathname);
+   await window.openWalkinApprovals();
+ }catch(e){console.error('[HM] auto open Walk-In:',e);}
+};
+window.addEventListener('load',function(){setTimeout(window.hmOpenWalkinFromLink,900);});
 async function submitStockClosingApproval(id){
  const stockId=$('ss')?.value;
  if(!stockId)return alert('Untuk CLOSING, wajib pilih produk/stock yang laku.');

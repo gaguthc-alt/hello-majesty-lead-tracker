@@ -221,7 +221,7 @@ async function openMyClosings(){
 
     const approvalRows=[...stockMap.values(),...walkMap.values()];
     const stockIds=[...new Set(approvalRows.map(x=>x.stock_unit_id).filter(Boolean))];
-    const stocks=stockIds.length?(await sb.from('stock_units').select('id,product_id,outlet,color,variant,status').in('id',stockIds)):{data:[],error:null};
+    const stocks=stockIds.length?(await sb.from('stock_units').select('id,product_id,outlet,color,status').in('id',stockIds)):{data:[],error:null};
     if(stocks.error)throw stocks.error;
     const pids=[...new Set((stocks.data||[]).map(x=>x.product_id).filter(Boolean))];
     const products=pids.length?(await sb.from('product_master').select('id,product,variant').in('id',pids)):{data:[],error:null};

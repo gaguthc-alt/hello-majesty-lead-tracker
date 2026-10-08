@@ -2299,8 +2299,7 @@ async function hmRenderHomePerformance(){
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+
      section('PERFORMA SAYA',own,'Aktivitas akun ini')+
      section('TOTAL '+(isManagement?'SELURUH OUTLET':'OUTLET'),total,scopeLabel);
-   const menu=host.querySelector('.role-home-menu');
-   if(menu)host.insertBefore(block,menu);else host.appendChild(block);
+   host.appendChild(block);
  }catch(e){
    console.error('[HM] Home performance:',e);
    const block=document.createElement('section');

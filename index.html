@@ -1574,10 +1574,14 @@ function hmCloseMainMenu(){
  hmMenuActionSeq++;
  hmRestoreInlineViews();
  hmSetDashboardModulesVisible(false);
- ['performance','inventoryPanel','inventoryDashboardSection','hunterStockSection','targetBoard','contentPerformance'].forEach(id=>{
+ ['performance','inventoryPanel','inventoryDashboardSection','hunterStockSection','targetBoard','contentPerformance','inventorySection'].forEach(id=>{
   const e=document.getElementById(id);
   if(e)e.classList.add('hidden');
  });
+ // Product & Stock dipindahkan sementara ke panel menu. Saat ditutup,
+ // pastikan tidak ada panel kosong/duplikat yang tertinggal.
+ const invPanel=document.getElementById('inventoryPanel');
+ if(invPanel)invPanel.classList.add('hidden');
  const panel=document.getElementById('hmMenuPanel');
  if(panel){
   panel.classList.add('hidden');

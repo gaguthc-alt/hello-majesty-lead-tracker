@@ -95,7 +95,7 @@
       const x=await sb.rpc('team_lead_funnel_detail',{p_employee:name,p_start:monthStart(mode).toISOString(),p_end:monthEnd(mode).toISOString()});
       if(x.error)throw x.error; const rows=x.data||[], counts={};
       rows.forEach(r=>counts[r.event_type]=(counts[r.event_type]||0)+1);
-      let html='<div class="row" style="justify-content:space-between;align-items:center"><button class="secondary" type="button" onclick="window.perfShow(window.perfMyMode||\\'month\\')">← Kembali</button><b>👤 '+escP(name)+'</b></div>';
+      let html='<div class="row" style="justify-content:space-between;align-items:center"><button class="secondary" type="button" onclick="window.perfShow(window.perfMyMode||\'month\')">← Kembali</button><b>👤 '+escP(name)+'</b></div>';
       html+='<div class="box" style="margin-top:10px"><b>📌 Aktivitas</b><div class="stats" style="margin-top:8px">';
       Object.entries(counts).forEach(([k,v])=>html+='<div class="stat"><div class="small">'+escP(k)+'</div><div class="num">'+fmt(v)+'</div></div>');
       html+='</div></div><div class="box"><b>📋 Detail Lead</b>';
@@ -113,9 +113,9 @@
       let html='<div class="stats"><div class="stat"><div class="small">📲 Lead / Handle</div><div class="num">'+fmt(total.handled)+'</div></div><div class="stat"><div class="small">🔍 Qualified</div><div class="num">'+fmt(total.qualified)+'</div></div><div class="stat"><div class="small">🤝 Handover</div><div class="num">'+fmt(total.handover)+'</div></div><div class="stat"><div class="small">🏆 Closing</div><div class="num">'+fmt(total.closing)+'</div></div></div>';
       html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 FUNNEL PERFORMA PER ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Klik nama untuk melihat detail lead.</div></div>';
       html+='<div class="box" style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:8px">Nama</th><th>Lead</th><th>Qualified</th><th>Handover</th><th>Closing</th><th>Conv.</th></tr></thead><tbody>';
-      rows.forEach(r=>html+='<tr style="cursor:pointer;border-top:1px solid #e5e7eb" onclick="window.perfPerson('+JSON.stringify(r.employee)+','+JSON.stringify(mode)+')"><td style="padding:9px"><b>'+escP(r.employee)+'</b><div class="small">'+escP(r.role)+'</div></td><td style="text-align:center">'+fmt(r.handled)+'</td><td style="text-align:center">'+fmt(r.qualified)+'</td><td style="text-align:center">'+fmt(r.handover)+'</td><td style="text-align:center"><b>'+fmt(r.closing)+'</b></td><td style="text-align:center">'+fmt(r.conversion)+'%</td></tr>');
+      rows.forEach(r=>html+='<tr style="cursor:pointer;border-top:1px solid #e5e7eb" onclick="window.perfPerson('+JSON.stringify(r.employee_name)+','+JSON.stringify(mode)+')"><td style="padding:9px"><b>'+escP(r.employee)+'</b><div class="small">'+escP(r.role)+'</div></td><td style="text-align:center">'+fmt(r.handled)+'</td><td style="text-align:center">'+fmt(r.qualified)+'</td><td style="text-align:center">'+fmt(r.handover)+'</td><td style="text-align:center"><b>'+fmt(r.closing)+'</b></td><td style="text-align:center">'+fmt(r.conversion)+'%</td></tr>');
       html+='</tbody></table></div>'; body.innerHTML=html;
-    }catch(e){console.error('[HM] Funnel Performa',e);body.innerHTML='<div class="lead"><b>Gagal memuat Laporan Performa Tim</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\\'month\\')">↻ Coba Lagi</button></div>';}
+    }catch(e){console.error('[HM] Funnel Performa',e);body.innerHTML='<div class="lead"><b>Gagal memuat Laporan Performa Tim</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';}
   }
 
   window.openPerformance=async function(){

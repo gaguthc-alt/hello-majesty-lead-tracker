@@ -6,7 +6,7 @@
       const boxes=[...panel.querySelectorAll('.box')];
       const cashBox=boxes.find(x=>String(x.textContent||'').includes('Posisi Kas & Bank'));
       if(!cashBox)return;
-      const {data,error}=await sb.from('accounting_accounts').select('id,code,name,active').in('code',['1101','1102','1103','1104']);
+      const {data,error}=await sb.from('accounting_accounts').select('id,code,name,active').in('code',['1103','1104']);
       if(error)throw error;
       const ids=(data||[]).map(x=>x.id);if(!ids.length)return;
       const jr=await sb.from('journal_lines').select('account_id,debit,credit,journal_entries!inner(posted)').in('account_id',ids).eq('journal_entries.posted',true);

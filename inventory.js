@@ -75,6 +75,13 @@ async function loadWalkinApprovalCount(){
  if(!w.error&&!s.error)btn.textContent='🚶 Persetujuan Walk-In'+(count?' ('+count+')':'');
 }
 window.openWalkinApprovals=async function(){
+ // Walk-In selalu memakai satu panel inline; jangan buka modal lama bersamaan.
+ const legacyModal=document.getElementById('modal');
+ if(legacyModal)legacyModal.classList.add('hidden');
+ const walkinPanel=document.getElementById('hmMenuPanel');
+ const walkinBody=document.getElementById('hmMenuPanelBody');
+ if(walkinPanel)walkinPanel.classList.remove('hidden');
+ if(walkinBody)walkinBody.innerHTML='<div class="box" style="text-align:center">⏳ Memuat Persetujuan Walk-In...</div>';
  const role=inventoryReviewerRole();
  const isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
  const can=!!profile?.is_management||isDeveloper||role==='FASILITATOR';
@@ -84,8 +91,8 @@ window.openWalkinApprovals=async function(){
    sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false}),
    sb.from('stock_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false})
  ]);
- if(w.error)return alert(w.error.message);
- if(sale.error)return alert(sale.error.message);
+ if(w.error)return showWalkinApprovalError(w.error);
+ if(sale.error)return showWalkinApprovalError(sale.error);
 
  const rows=[
    ...(w.data||[]).map(x=>({...x,approval_kind:'WALKIN'})),
@@ -94,7 +101,7 @@ window.openWalkinApprovals=async function(){
 
  const ids=rows.map(x=>x.stock_unit_id).filter(Boolean);
  const s=ids.length?await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,cost,asking_price,status').in('id',ids):{data:[]};
- if(s.error)return alert(s.error.message);
+ if(s.error)return showWalkinApprovalError(s.error);
  const stocks=s.data||[];
  const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
  const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};
@@ -136,6 +143,16 @@ window.openWalkinApprovals=async function(){
    modal?.classList.remove('hidden');
  }
  if(modal)modal.classList.add('hidden');
+}
+function showWalkinApprovalError(err){
+ const msg=String(err?.message||err||'Terjadi kesalahan');
+ console.error('[HM] Persetujuan Walk-In:',err);
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
+ if(panel&&body){
+   body.innerHTML='<div class="box" style="color:#b42318"><b>Persetujuan Walk-In gagal dimuat</b><div style="margin-top:6px">'+esc(msg)+'</div></div>';
+   panel.classList.remove('hidden');
+   panel.scrollIntoView({behavior:'smooth',block:'start'});
+ }else alert(msg);
 }
 async function reviewUnifiedWalkin(id,kind,action){
  let note=null;

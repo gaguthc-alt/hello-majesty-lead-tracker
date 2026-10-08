@@ -3649,7 +3649,7 @@ async function salesResult(id){
  const salesOpts=salesTeam.map(x=>'<label style="display:flex!important;align-items:center;justify-content:flex-start;width:100%;gap:10px;margin:7px 0;box-sizing:border-box"><input type="checkbox" class="closingSalesMember" value="'+esc(x.user_id)+'" style="width:22px!important;min-width:22px!important;max-width:22px!important;height:22px;flex:0 0 22px;padding:0;margin:0"> <span style="display:block!important;flex:1;min-width:0;white-space:normal;word-break:normal;overflow-wrap:break-word">'+esc(x.name||'-')+'</span></label>').join('');
  const pm=await sb.from('payment_methods').select('id,code,name').eq('active',true).order('name');
  const fa=await sb.from('financial_accounts').select('id,code,name,account_type,outlet').eq('active',true).order('code');
- const accountRows=(fa.data||[]);
+ const currentOutlet=String(profile?.outlet||'').trim(); const accountRows=(fa.data||[]).filter(x=>x.account_type!=='CASH'||!x.outlet||x.outlet===currentOutlet);
  const accountOptsAll=accountRows.map(x=>'<option value="'+esc(x.id)+'" data-account-type="'+esc(x.account_type)+'">'+esc(x.name)+(x.outlet?' — '+esc(x.outlet):'')+'</option>').join('');
 
  const paymentMethods=[

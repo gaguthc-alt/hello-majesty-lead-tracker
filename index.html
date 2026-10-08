@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261009-home-performance-7"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261009-home-performance-8"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -2274,8 +2274,8 @@ async function hmRenderHomePerformance(){
  const empty={claim_cs:0,handover:0,cs_closing:0,sales_closing:0};
  try{
    const [perf,profiles] = await Promise.all([
-     sb.rpc('team_lead_performance_report',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString()}),
-     sb.from('team_profiles').select('name,outlet,active,is_management').eq('active',true)
+     db.rpc('team_lead_performance_report',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString()}),
+     db.from('team_profiles').select('name,outlet,active,is_management').eq('active',true)
    ]);
    if(perf.error)throw perf.error;
    if(profiles.error)throw profiles.error;

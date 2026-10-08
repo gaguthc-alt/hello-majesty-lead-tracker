@@ -95,14 +95,11 @@
     const handled=unique(rows.filter(r=>['CS_CLAIM','SALES_CLAIM'].includes(r.event_type)).map(r=>r.lead_id));
     const qualified=unique(rows.filter(r=>r.event_type==='CS_QUALIFIED').map(r=>r.lead_id));
     const handover=unique(rows.filter(r=>r.event_type==='SALES_CLAIM').map(r=>r.lead_id));
-    let st=sb.from('sales_transactions').select('id').gte('sold_at',start).lt('sold_at',end);
-    if(!profile?.is_management && name){
-      const ids=(window.__hmSalesUserIds||[]); 
-      if(ids.length) st=st.in('sales_user_id',ids);
-    }
+    let st=sb.from('sales_transactions').select('id,sales_closing,cs_closing').gte('sold_at',start).lt('sold_at',end);
     const sx=await st;
     if(sx.error)throw sx.error;
-    return {handled,qualified,handover,sold:(sx.data||[]).length};
+    const soldRows=(sx.data||[]).filter(r=>profile?.is_management || String(r.sales_closing||'').trim().toLowerCase()===name.toLowerCase() || String(r.cs_closing||'').trim().toLowerCase()===name.toLowerCase());
+    return {handled,qualified,handover,sold:soldRows.length};
   }
 
   async function getFunnel(mode){

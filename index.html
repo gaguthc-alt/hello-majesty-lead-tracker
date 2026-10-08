@@ -3709,7 +3709,7 @@ async function salesResult(id){
  const updateFinanceBox=()=>{
    const provider=$('payLaterProvider');
    const code=String(provider?.selectedOptions?.[0]?.dataset?.code||'').toUpperCase();
-   const isFinance=sel?.value==='PAY_LATER' && ['SPAYLATER','KREDIVO','AKULAKU'].includes(code);
+   const isFinance=$('salePayment')?.value==='PAY_LATER' && ['SPAYLATER','KREDIVO','AKULAKU'].includes(code);
    financeBox?.classList.toggle('hidden',!isFinance);
    if(!isFinance)return;
    const price=Number($('sap')?.value||0), fin=Number($('financeRequestedAmount')?.value||0), cash=Number($('financeCashPayment')?.value||0), cashout=Number($('financeCashoutAmount')?.value||0), fee=Math.max(Number($('financeEstimatedFee')?.value||0),0);

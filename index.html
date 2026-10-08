@@ -1414,7 +1414,8 @@ async function start(u,authClient){
   $('roleHome').classList.remove('hidden');
   try{
     renderRoleHome();
-    if(typeof hmRenderHomePerformance==='function')void hmRenderHomePerformance();
+    if(typeof hmEnsureHomePerformanceStyle==='function')hmEnsureHomePerformanceStyle();
+if(typeof hmRenderHomePerformance==='function')void hmRenderHomePerformance();
   }catch(homeErr){
     console.error('[HM] RoleHome initial render error:',homeErr);
     $('roleHome').innerHTML='<div class="box"><h3>Dashboard</h3><p class="small">Dashboard berhasil login, tetapi menu gagal dirender: '+esc(homeErr?.message||homeErr)+'</p></div>';
@@ -2247,21 +2248,11 @@ function hmRenderLeadTodayMain(){
    '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px">'+hasilRows.map(x=>box(x[0],x[1])).join('')+'</div>'+
    '</div>';
 }
-<style id="hm-home-performance-style">
-.hm-home-performance{margin:0 0 14px;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:20px;padding:14px;box-shadow:0 7px 22px rgba(7,17,31,.07)}
-.hm-home-perf-title{font-size:13px;font-weight:900;color:#344054;letter-spacing:.25px;margin:0 2px 10px}
-.hm-home-perf-section{margin-top:10px}
-.hm-home-perf-section:first-of-type{margin-top:0}
-.hm-home-perf-head{margin:0 2px 7px}
-.hm-home-perf-head b{display:block;font-size:13px;color:#101828}
-.hm-home-perf-head span{display:block;font-size:10.5px;color:#667085;margin-top:2px}
-.hm-home-perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
-.hm-home-perf-card{min-width:0;background:linear-gradient(145deg,#f8fafc,#eef3f2);border:1px solid rgba(15,23,42,.07);border-radius:13px;padding:9px 5px;text-align:center}
-.hm-home-perf-icon{font-size:15px;line-height:1}
-.hm-home-perf-label{font-size:9.5px;font-weight:700;color:#667085;line-height:1.15;margin-top:4px;min-height:22px;display:flex;align-items:center;justify-content:center}
-.hm-home-perf-value{font-size:20px;font-weight:900;color:#101828;line-height:1.1;margin-top:4px}
-@media(max-width:380px){.hm-home-performance{padding:11px}.hm-home-perf-grid{gap:5px}.hm-home-perf-card{padding:8px 3px}.hm-home-perf-label{font-size:8.5px}.hm-home-perf-value{font-size:18px}}
-</style>
+
+function hmEnsureHomePerformanceStyle(){
+ if(document.getElementById('hm-home-performance-style'))return;
+ document.head.insertAdjacentHTML('beforeend',"<style id=\"hm-home-performance-style\">\n.hm-home-performance{margin:0 0 14px;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:20px;padding:14px;box-shadow:0 7px 22px rgba(7,17,31,.07)}\n.hm-home-perf-title{font-size:13px;font-weight:900;color:#344054;letter-spacing:.25px;margin:0 2px 10px}\n.hm-home-perf-section{margin-top:10px}.hm-home-perf-section:first-of-type{margin-top:0}\n.hm-home-perf-head{margin:0 2px 7px}.hm-home-perf-head b{display:block;font-size:13px;color:#101828}.hm-home-perf-head span{display:block;font-size:10.5px;color:#667085;margin-top:2px}\n.hm-home-perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}\n.hm-home-perf-card{min-width:0;background:linear-gradient(145deg,#f8fafc,#eef3f2);border:1px solid rgba(15,23,42,.07);border-radius:13px;padding:9px 5px;text-align:center}\n.hm-home-perf-icon{font-size:15px;line-height:1}.hm-home-perf-label{font-size:9.5px;font-weight:700;color:#667085;line-height:1.15;margin-top:4px;min-height:22px;display:flex;align-items:center;justify-content:center}.hm-home-perf-value{font-size:20px;font-weight:900;color:#101828;line-height:1.1;margin-top:4px}\n@media(max-width:380px){.hm-home-performance{padding:11px}.hm-home-perf-grid{gap:5px}.hm-home-perf-card{padding:8px 3px}.hm-home-perf-label{font-size:8.5px}.hm-home-perf-value{font-size:18px}}\n</style>");
+}
 async function hmRenderHomePerformance(){
  const host=document.getElementById('roleHome');
  if(!host||!window.sb||!profile)return;

@@ -3724,6 +3724,15 @@ function salesResultMessage(l){
  return ['❌ *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: GAGAL*','📱 Produk: '+product,'📝 Alasan: '+(l.objection||'-'),'','Lead dinyatakan gagal setelah proses konsultasi dan follow-up oleh '+pic+'.','','— HELLO MAJESTY','Built on Trust.'].join(nl);
 }
 function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
+function shareWalkinApprovalWA(stockId,salePrice){
+ const nl=String.fromCharCode(10);
+ const sel=document.getElementById('ss');
+ const product=sel?.selectedOptions?.[0]?.textContent?.replace(/\s*•\s*List.*$/,'').trim()||'Stock Walk-In';
+ const outlet=profile?.outlet||'-';
+ const sales=profile?.name||'Sales';
+ const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 Sales User: '+sales,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty* → *Persetujuan Walk-In*.','','Status: *MENUNGGU PERSETUJUAN*','','— *HELLO MAJESTY*','_Built on Trust._'].join(nl);
+ window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
 async function submitStockClosingApproval(id){
  const stockId=$('ss')?.value;
  if(!stockId)return alert('Untuk CLOSING, wajib pilih produk/stock yang laku.');
@@ -3744,7 +3753,8 @@ async function submitStockClosingApproval(id){
  const temp=window.hmStockClosingTempLeadId;
  if(temp){leads=leads.filter(l=>String(l.lead_id)!==String(temp));window.hmStockClosingTempLeadId=null;}
  window.hmStockClosingApprovalMode=false;
- alert('Closing berhasil diajukan. Status: MENUNGGU PERSETUJUAN.');
+ const shareNow=confirm('Closing berhasil diajukan.\n\nStatus: MENUNGGU PERSETUJUAN.\n\nBagikan ke WhatsApp dengan keterangan MOHON PERSETUJUAN WALK-IN?');
+ if(shareNow)shareWalkinApprovalWA(stockId,salePrice);
  closeModal();
  if(typeof renderInventory==='function')await renderInventory();
 }

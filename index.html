@@ -2002,7 +2002,7 @@ function hmOpenLeadTracker(){
 function hmOpenLeadHandover(){
   const t=document.getElementById('mt'),b=document.getElementById('mb');
   if(!t||!b)return;
-  const rows=leads.filter(viewerLead).filter(l=>l.status_lead==='QUALIFIED'||l.sales_claimed_by);
+  const rows=leads.filter(viewerLead).filter(l=>{const st=String(l.status_lead||'').toUpperCase();const q=String(l.qualification_result||'').toUpperCase();const sc=String(l.sales_claimed_by||'').trim();const sat=l.sales_claimed_at;return q==='QUALIFIED'||q==='POTENSIAL'||st==='QUALIFIED'||!!sc||!!sat;});
   t.textContent='🤝 Lead Handover';
   b.innerHTML='<div class="small" style="margin-bottom:10px">Khusus proses serah-terima CS → Sales. Tampilkan lead yang sudah qualified atau sedang ditangani Sales.</div>'+
     (rows.map(l=>card(l)).join('')||'<div class="small">Belum ada lead yang siap untuk handover.</div>');

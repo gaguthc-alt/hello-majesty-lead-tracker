@@ -3650,8 +3650,11 @@ async function salesResult(id){
  const salesOpts=salesTeam.map(x=>'<label style="display:flex!important;align-items:center;justify-content:flex-start;width:100%;gap:10px;margin:7px 0;box-sizing:border-box"><input type="checkbox" class="closingSalesMember" value="'+esc(x.user_id)+'" style="width:22px!important;min-width:22px!important;max-width:22px!important;height:22px;flex:0 0 22px;padding:0;margin:0"> <span style="display:block!important;flex:1;min-width:0;white-space:normal;word-break:normal;overflow-wrap:break-word">'+esc(x.name||'-')+'</span></label>').join('');
  const pm=await sb.from('payment_methods').select('id,code,name').eq('active',true).order('name');
  const fa=await sb.from('financial_accounts').select('id,code,name,account_type,outlet').eq('active',true).order('code');
- const currentOutlet=String(profile?.outlet||'').trim(); const accountRows=(fa.data||[]).filter(x=>x.account_type!=='CASH'||!x.outlet||x.outlet===currentOutlet);
- const accountOptsAll=accountRows.map(x=>'<option value="'+esc(x.id)+'" data-account-type="'+esc(x.account_type)+'">'+esc(x.name)+(x.outlet?' — '+esc(x.outlet):'')+'</option>').join('');
+ const currentOutlet=String(profile?.outlet||'').trim();
+ // Tampilkan seluruh akun aktif di awal. Penyaringan Kas dilakukan setelah stock dipilih,
+ // berdasarkan outlet stock (atau outlet user untuk user non-management).
+ const accountRows=(fa.data||[]);
+ const accountOptsAll=accountRows.map(x=>'<option value="'+esc(x.id)+'" data-account-type="'+esc(x.account_type)+'" data-account-outlet="'+esc(x.outlet||'')+'">'+esc(x.name)+(x.outlet?' — '+esc(x.outlet):'')+'</option>').join('');
 
  const paymentMethods=[
   {id:'fe4f8c57-36f8-42d5-970f-d264e592fc5f',code:'CASH',name:'Tunai'},
@@ -3672,7 +3675,6 @@ async function salesResult(id){
  mt.textContent='Hasil Sales';
  mb.innerHTML='<label>Hasil</label><select id="sr"><option value="CLOSING">CLOSING</option><option value="POTENSIAL">POTENSIAL</option><option value="GAGAL">GAGAL</option></select><div id="stockBox"><label>📦 Produk / Stock yang Laku <span style="color:#b91c1c">*wajib untuk CLOSING</span></label><select id="ss"><option value="">— Pilih Stock READY —</option>'+opts+'</select><div class="small">Harga List hanya sebagai referensi. Harga Jual Aktual diisi sesuai harga transaksi customer.</div><label>💰 Harga Jual Aktual <span style="color:#b91c1c">*wajib untuk CLOSING</span></label><input id="sap" type="number" min="1" step="1000" placeholder="Contoh: 2100000"><div id="salePriceHint" class="small"></div><label>💳 Pembayaran</label><select id="salePayment">'+paymentOpts+'</select><div id="payLaterBox" class="hidden"><label>🛍️ Provider Pay Later <span style="color:#b91c1c">*wajib</span></label><select id="payLaterProvider">'+payLaterOpts+'</select></div><div id="saleAccountBox" class="hidden"><label>🏦 Kas / Bank Penerima <span style="color:#b91c1c">*wajib</span></label><select id="saleAccount"><option value="">— Pilih Kas / Bank Penerima —</option>'+accountOptsAll+'</select><div id="saleAccountHint" class="small"></div></div><div style="margin-top:14px;padding-top:12px;border-top:1px solid #eee"><b>👥 SALES TERLIBAT</b><div class="small" style="margin:5px 0 8px">Apakah kamu akan menyertakan Sales lain?</div><div class="row"><button type="button" id="closingSalesNo" class="secondary">Tidak</button><button type="button" id="closingSalesYes" class="secondary">Ya, pilih Sales</button></div><div id="closingSalesPicker" class="hidden" style="margin-top:10px;padding:10px;border:1px solid #ddd;border-radius:10px">'+(salesOpts||'<div class="small">Belum ada Sales lain yang tersedia di outlet ini.</div>')+'</div></div></div><div id="sdb" class="hidden"><label>Follow-up</label><input id="sd" type="date"></div><div id="sob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="sreason" placeholder="Contoh: budget tidak cocok, customer memilih produk lain..."></textarea></div><button id="saveSBtn" class="success">Simpan</button>';
  const updatePriceHint=()=>{const s=rows.find(x=>x.id===$('ss')?.value);if($('salePriceHint'))$('salePriceHint').textContent=s?'Harga List: Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+' • Harga Aktual dapat berbeda.':''};
- $('ss').onchange=updatePriceHint;
  const updatePaymentAccount=()=>{
    const sel=$('salePayment'), box=$('saleAccountBox'), acc=$('saleAccount'), hint=$('saleAccountHint'), plBox=$('payLaterBox');
    if(!sel||!box||!acc)return;
@@ -3682,10 +3684,26 @@ async function salesResult(id){
    box.classList.toggle('hidden',isPiutang);
    if(isPiutang){acc.value='';return;}
    const wanted=code==='CASH'?'CASH':'BANK';
-   [...acc.options].forEach(o=>{if(o.value)o.hidden=o.dataset.accountType!==wanted;});
+   const stock=rows.find(x=>String(x.id)===String($('ss')?.value||''));
+   const stockOutlet=String(stock?.outlet||'').trim();
+   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+   const privileged=!!profile?.is_management||['FASILITATOR','DEVELOPER','DEVELOPER APLIKASI'].includes(role);
+   [...acc.options].forEach(o=>{
+     if(!o.value){o.hidden=false;return;}
+     const typeOk=o.dataset.accountType===wanted;
+     const accountOutlet=String(o.dataset.accountOutlet||'').trim();
+     const outletOk=wanted!=='CASH'||privileged
+       ? (wanted!=='CASH'||!stockOutlet||accountOutlet===stockOutlet)
+       : (wanted!=='CASH'||(!stockOutlet?accountOutlet===currentOutlet:accountOutlet===stockOutlet));
+     o.hidden=!(typeOk&&outletOk);
+   });
    acc.value='';
-   hint.textContent=wanted==='CASH'?'Pilih kas penerima untuk pembayaran tunai.':'Pilih rekening bank penerima untuk pembayaran non-tunai.';
+   const visible=[...acc.options].some(o=>o.value&&!o.hidden);
+   hint.textContent=visible
+     ? (wanted==='CASH'?'Pilih kas penerima sesuai outlet stock.':'Pilih rekening bank penerima untuk pembayaran non-tunai.')
+     : (wanted==='CASH'?'Kas outlet belum tersedia untuk stock ini.':'Pilih rekening bank penerima untuk pembayaran non-tunai.');
  };
+ $('ss').onchange=()=>{updatePriceHint();updatePaymentAccount();};
  $('salePayment').onchange=updatePaymentAccount;
  updatePaymentAccount();
  $('closingSalesNo').onclick=()=>{document.querySelectorAll('.closingSalesMember').forEach(x=>x.checked=false);$('closingSalesPicker').classList.add('hidden');$('closingSalesNo').classList.remove('secondary');$('closingSalesYes').classList.add('secondary')};

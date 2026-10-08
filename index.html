@@ -2256,8 +2256,9 @@ function hmEnsureHomePerformanceStyle(){
 async function hmRenderHomePerformance(){
  const host=document.getElementById('roleHome');
  if(!host||!window.sb||!profile)return;
- const old=document.getElementById('hmHomePerformance');
- if(old)old.remove();
+ let block=document.getElementById('hmHomePerformance');
+ if(!block){ block=document.createElement('section'); block.id='hmHomePerformance'; host.appendChild(block); }
+ block.className='hm-home-performance';
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
  const isManagement=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI';
@@ -2293,18 +2294,12 @@ async function hmRenderHomePerformance(){
    const section=(title,data,sub)=>'<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+title+'</b><span>'+sub+'</span></div></div><div class="hm-home-perf-grid">'+
       card('Claim CS',data.claim_cs,'📲')+card('Handover CS',data.handover,'🤝')+card('CS Closing',data.cs_closing,'🎯')+card('Sales Closing',data.sales_closing,'🏆')+
       '</div></div>';
-   const block=document.createElement('section');
-   block.id='hmHomePerformance';
-   block.className='hm-home-performance';
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+
      section('PERFORMA SAYA',own,'Aktivitas akun ini')+
      section('TOTAL '+(isManagement?'SELURUH OUTLET':'OUTLET'),total,scopeLabel);
    host.appendChild(block);
  }catch(e){
    console.error('[HM] Home performance:',e);
-   const block=document.createElement('section');
-   block.id='hmHomePerformance';
-   block.className='hm-home-performance';
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA</div><div class="small" style="padding:8px;color:#b42318">Gagal memuat performa: '+escH(e?.message||e)+'</div>';
    host.appendChild(block);
  }
@@ -2645,7 +2640,7 @@ function renderRoleHome(){
    :'<div class="role-home-kpi"><div class="kpi"><strong>Hari Ini</strong><span>Aktivitas</span></div><div class="kpi"><strong>Target</strong><span>Progress</span></div><div class="kpi"><strong>Team</strong><span>Workspace</span></div></div>';
 
  const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
- host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div><div id="hmLeadTodayMain"></div>'+kpis+'<div class="role-home-tools"><button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><div class="role-home-section">MENU UTAMA</div><div class="role-home-categories">'+visibleGroups+'</div><div id="hmMenuPanel" class="box hidden hm-menu-panel-bottom" style="margin:12px 0 0;padding:16px"><div class="hm-menu-panel-head"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800"></div><button type="button" class="secondary hm-menu-panel-close" onclick="hmCloseMainMenu()" aria-label="Tutup panel">✕ Tutup</button></div><div id="hmMenuPanelBody"></div></div>';
+ host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div><div id="hmHomePerformance" class="hm-home-performance"></div><div id="hmLeadTodayMain"></div>'+kpis+'<div class="role-home-tools"><button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><div class="role-home-section">MENU UTAMA</div><div class="role-home-categories">'+visibleGroups+'</div><div id="hmMenuPanel" class="box hidden hm-menu-panel-bottom" style="margin:12px 0 0;padding:16px"><div class="hm-menu-panel-head"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800"></div><button type="button" class="secondary hm-menu-panel-close" onclick="hmCloseMainMenu()" aria-label="Tutup panel">✕ Tutup</button></div><div id="hmMenuPanelBody"></div></div>';
  host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
    // Satu tombol = satu tujuan. Gunakan onclick property agar tidak ada
    // listener lama/duplikat yang dapat mengarahkan ke menu lain.

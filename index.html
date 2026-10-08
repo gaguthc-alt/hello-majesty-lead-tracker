@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261009-home-performance-12"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261009-home-performance-stable"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -2241,71 +2241,7 @@ function hmRenderLeadTodayMain(){
  const scopeLabel=isTeam?'Lead saya':isFacilitator?('Tim outlet • '+(profile?.outlet||'-')):(isDivisi||isDeveloper||isMgmt)?'Seluruh outlet':'Lead saya';
  const box=(key,label)=>{const n=today.filter(l=>bucket(l)===key).length;return '<button type="button" class="role-home-submenu-item" style="min-height:72px;justify-content:center;text-align:center;cursor:pointer" onclick="hmOpenLeadTracker()"><b>'+label+'</b><span style="font-size:20px;font-weight:800">'+n+'</span></button>';};
  host.innerHTML='<div class="hm-lead-today-main" style="margin:14px 0 18px;padding:14px;border:1px solid #d0d5dd;border-radius:16px;background:#fff;box-shadow:0 4px 14px #0000000a">'+
-   ''<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b style="font-size:16px">📅 LEAD HARI INI</b><div class="small" style="margin-top:3px">'+esc(scopeLabel)+'</div></div><span class="small">'+today.length+' aktivitas</span></div>'+
-   '<div class="small" style="margin-top:10px;font-weight:700">PERJALANAN LEAD</div>'+
-   '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px">'+journey.map(x=>box(x[0],x[1])).join('')+'</div>'+
-   '<div class="small" style="margin-top:10px;font-weight:700">HASIL / FOLLOW-UP HARI INI</div>'+
-   '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px">'+hasilRows.map(x=>box(x[0],x[1])).join('')+'</div>'+
-   '</div>';
-}
-
-function hmEnsureHomePerformanceStyle(){
- if(document.getElementById('hm-home-performance-style'))return;
- document.head.insertAdjacentHTML('beforeend',"<style id=\"hm-home-performance-style\">\n.hm-home-performance{margin:0 0 14px;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:20px;padding:14px;box-shadow:0 7px 22px rgba(7,17,31,.07)}\n.hm-home-perf-title{font-size:13px;font-weight:900;color:#344054;letter-spacing:.25px;margin:0 2px 10px}\n.hm-home-perf-section{margin-top:10px}.hm-home-perf-section:first-of-type{margin-top:0}\n.hm-home-perf-head{margin:0 2px 7px}.hm-home-perf-head b{display:block;font-size:13px;color:#101828}.hm-home-perf-head span{display:block;font-size:10.5px;color:#667085;margin-top:2px}\n.hm-home-perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}\n.hm-home-perf-card{min-width:0;background:linear-gradient(145deg,#f8fafc,#eef3f2);border:1px solid rgba(15,23,42,.07);border-radius:13px;padding:9px 5px;text-align:center}\n.hm-home-perf-icon{font-size:15px;line-height:1}.hm-home-perf-label{font-size:9.5px;font-weight:700;color:#667085;line-height:1.15;margin-top:4px;min-height:22px;display:flex;align-items:center;justify-content:center}.hm-home-perf-value{font-size:20px;font-weight:900;color:#101828;line-height:1.1;margin-top:4px}\n@media(max-width:380px){.hm-home-performance{padding:11px}.hm-home-perf-grid{gap:5px}.hm-home-perf-card{padding:8px 3px}.hm-home-perf-label{font-size:8.5px}.hm-home-perf-value{font-size:18px}}\n</style>");
-}
-async function hmRenderHomePerformance(){
- const host=document.getElementById('roleHome');
- if(!host)return;
- let block=document.getElementById('hmHomePerformance');
- if(!block){ block=document.createElement('section'); block.id='hmHomePerformance'; host.appendChild(block); }
- block.className='hm-home-performance';
- const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
- if(!db||!profile){
-   block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA</div><div class="small">Menyiapkan data performa...</div>';
-   return;
- }
- const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
- const isManagement=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI';
- const monthStart=new Date(new Date().getFullYear(),new Date().getMonth(),1);
- const monthEnd=new Date(new Date().getFullYear(),new Date().getMonth()+1,1);
- const fmt=n=>Number(n||0).toLocaleString('id-ID');
- const escH=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
- const empty={claim_cs:0,handover:0,cs_closing:0,sales_closing:0};
- try{
-   const [perf,profiles] = await Promise.all([
-     db.rpc('team_lead_performance_report',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString()}),
-     db.from('team_profiles').select('name,outlet,active,is_management').eq('active',true)
-   ]);
-   if(perf.error)throw perf.error;
-   if(profiles.error)throw profiles.error;
-   const rows=Array.isArray(perf.data)?perf.data:[];
-   const people=Array.isArray(profiles.data)?profiles.data:[];
-   const outletByName={};
-   people.forEach(p=>{outletByName[String(p.name||'').trim()]=p.outlet||'';});
-   const ownRow=rows.find(r=>String(r.employee_name||'').trim().toLowerCase()===String(profile.name||'').trim().toLowerCase())||empty;
-   const own={
-     claim_cs:Number(ownRow.claim_cs||0),handover:Number(ownRow.handover||0),
-     cs_closing:Number(ownRow.cs_closing||0),sales_closing:Number(ownRow.sales_closing||0)
-   };
-   const scopeRows=isManagement?rows:rows.filter(r=>String(outletByName[String(r.employee_name||'').trim()]||'')===String(profile.outlet||''));
-   const total=scopeRows.reduce((a,r)=>{
-     a.claim_cs+=Number(r.claim_cs||0);a.handover+=Number(r.handover||0);
-     a.cs_closing+=Number(r.cs_closing||0);a.sales_closing+=Number(r.sales_closing||0);return a;
-   },{...empty});
-   const period=monthStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
-   const scopeLabel=isManagement?'Seluruh outlet':('Outlet • '+(profile.outlet||'-'));
-   const card=(label,value,icon)=>'<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(value)+'</div></div>';
-   const section=(title,data,sub)=>'<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+title+'</b><span>'+sub+'</span></div></div><div class="hm-home-perf-grid">'+
-      card('Claim CS',data.claim_cs,'📲')+card('Handover CS',data.handover,'🤝')+card('CS Closing',data.cs_closing,'🎯')+card('Sales Closing',data.sales_closing,'🏆')+
-      '</div></div>';
-   block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+
-     section('PERFORMA SAYA',own,'Aktivitas akun ini')+
-     section('TOTAL '+(isManagement?'SELURUH OUTLET':'OUTLET'),total,scopeLabel);
-   host.appendChild(block);
- }catch(e){
-   console.error('[HM] Home performance:',e);
-   block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA</div><div class="small" style="padding:8px;color:#b42318">Gagal memuat performa: '+escH(e?.message||e)+'</div>';
+   '<div id="hmHomePerformance" class="hm-home-performance"><div class="hm-home-perf-title">📊 PERFORMA SAYA</div><div class="hm-home-perf-grid"><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover CS</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS · Total</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover · Total</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing · Total</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing · Total</div><div class="hm-home-perf-value">—</div></div></div></div>'+'</div>';
    host.appendChild(block);
  }
 }
@@ -2645,7 +2581,7 @@ function renderRoleHome(){
    :'<div class="role-home-kpi"><div class="kpi"><strong>Hari Ini</strong><span>Aktivitas</span></div><div class="kpi"><strong>Target</strong><span>Progress</span></div><div class="kpi"><strong>Team</strong><span>Workspace</span></div></div>';
 
  const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
- host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div>'+kpis+'<div class="role-home-tools"><button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><section id="hmHomePerformance" class="hm-home-performance" style="margin:14px 0"><div class="hm-home-perf-title">📊 PERFORMA</div><div class="hm-home-perf-section"><div class="hm-home-perf-head"><b>PERFORMA SAYA</b><span>Aktivitas akun ini</span></div><div class="hm-home-perf-grid"><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover CS</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing</div><div class="hm-home-perf-value">—</div></div></div></div><div class="hm-home-perf-section"><div class="hm-home-perf-head"><b>TOTAL '+(mg ? "SELURUH OUTLET" : "OUTLET")+'</b><span>'+(mg ? "Seluruh outlet" : (profile?.outlet || "Outlet ini"))+'</span></div><div class="hm-home-perf-grid"><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover CS</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing</div><div class="hm-home-perf-value">—</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing</div><div class="hm-home-perf-value">—</div></div></div></div></section><div class="role-home-section">MENU UTAMA</div><div class="role-home-categories">'+visibleGroups+'</div><div id="hmMenuPanel" class="box hidden hm-menu-panel-bottom" style="margin:12px 0 0;padding:16px"><div class="hm-menu-panel-head"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800"></div><button type="button" class="secondary hm-menu-panel-close" onclick="hmCloseMainMenu()" aria-label="Tutup panel">✕ Tutup</button></div><div id="hmMenuPanelBody"></div></div>';
+ host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div><div id="hmLeadTodayMain"></div>'+kpis+'<div class="role-home-tools"><button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><div class="role-home-section">MENU UTAMA</div><div class="role-home-categories">'+visibleGroups+'</div><div id="hmMenuPanel" class="box hidden hm-menu-panel-bottom" style="margin:12px 0 0;padding:16px"><div class="hm-menu-panel-head"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800"></div><button type="button" class="secondary hm-menu-panel-close" onclick="hmCloseMainMenu()" aria-label="Tutup panel">✕ Tutup</button></div><div id="hmMenuPanelBody"></div></div>';
  host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
    // Satu tombol = satu tujuan. Gunakan onclick property agar tidak ada
    // listener lama/duplikat yang dapat mengarahkan ke menu lain.
@@ -3168,6 +3104,10 @@ function applyRoleVisibility(){
  if(finance){finance.classList.add('hidden');if(cellFinance){finance.textContent='🤝 Finance Majesty Cell';finance.onclick=()=>window.openPartnerSettlement()}else{finance.textContent='💰 Finance';finance.onclick=()=>window.openFinance()}}
  toggle('cellFinanceReportBtn',false);
  try{renderRoleHome();}catch(e){console.error('[HM] RoleHome render error:',e);const host=$('roleHome');if(host)host.innerHTML='<div class="box"><h3>Role Home</h3><p class="small">Menu gagal dirender. Silakan refresh aplikasi.</p></div>';}
+ // LEAD HARI INI harus dirender SETELAH Role Home dibuat.
+ // Sebelumnya fungsi ini dipanggil terlalu awal dari render(), lalu renderRoleHome()
+ // mengganti innerHTML sehingga kotak Lead Hari Ini hilang.
+ try{hmRenderLeadTodayMain();}catch(e){console.error('[HM] Lead Hari Ini render error:',e);}
  // Performa harus dirender setelah Role Home final dibuat.
  try{hmEnsureHomePerformanceStyle();}catch(e){console.warn('[HM] performance style',e);}
  try{void hmRenderHomePerformance();}catch(e){console.warn('[HM] performance render',e);}

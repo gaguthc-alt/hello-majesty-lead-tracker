@@ -110,14 +110,14 @@
     try{
       const rows=await getFunnel(mode);
       let html='<style>.perf-list{display:block}.perf-person-card{border:1px solid #e5e7eb;background:#fff}.perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.perf-grid>div{background:#f8fafc;border-radius:10px;padding:10px;text-align:center}.perf-grid span{display:block;font-size:11px;color:#64748b}.perf-grid b{display:block;font-size:19px;margin-top:3px}@media(max-width:600px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>';
-      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Satu baris per orang. SOLD/Walk-In tidak dihitung.</div></div>';
+      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Handover dihitung dari CS yang menyerahkan lead ke Sales. Sales Closing mencakup semua transaksi sah, termasuk dari Lead dan Walk-In.</div></div>';
       html+='<div class="perf-list">';
       rows.forEach(r=>{
         html+='<div class="lead perf-person-card" style="margin-top:10px">'+
           '<div class="row" style="justify-content:space-between;align-items:center"><b style="font-size:17px">'+escP(r.employee_name)+'</b></div>'+
           '<div class="perf-grid" style="margin-top:10px">'+
           '<div><span>📲 Claim CS</span><b>'+fmt(r.claim_cs)+'</b></div>'+
-          '<div><span>🤝 Handover</span><b>'+fmt(r.handover)+'</b></div>'+
+          '<div><span>🤝 Handover CS → Sales</span><b>'+fmt(r.handover)+'</b></div>'+
           '<div><span>🎯 CS Closing</span><b>'+fmt(r.cs_closing)+'</b></div>'+
           '<div><span>🏆 Sales Closing</span><b>'+fmt(r.sales_closing)+'</b></div>'+
           '</div></div>';

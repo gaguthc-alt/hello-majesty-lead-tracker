@@ -206,7 +206,33 @@ window.openFinance=async function(){
     const [start,end]=hmDateRange('month');
     const x=await sb.rpc('finance_management_dashboard',{p_start_date:start,p_end_date:end});
     if(x.error)throw x.error;
-    const d=x.data||{},accounts=d.accounts||[],money=v=>hmRp(v);
+    const d=x.data||{};
+    // Kas Finance mengikuti akun MNG aktif: 1103 Refill dan 1104 Plaza.
+    // RPC lama masih mengenal 1101/1102, jadi Finance menormalkan daftar akun di sini
+    // tanpa mengubah jurnal historis.
+    const {data:cashAccounts,error:cashErr}=await sb.from('accounting_accounts').select('id,code,name,account_type').eq('active',true).in('code',['1103','1104','1110','1111','1112','1113','1114']).order('code');
+    if(cashErr)throw cashErr;
+    const ids=(cashAccounts||[]).map(a=>a.id);
+    let cashLines=[];
+    if(ids.length){
+      const jr=await sb.from('journal_lines').select('account_id,debit,credit,journal_id,journal_entries!inner(journal_date,posted)').in('account_id',ids).eq('journal_entries.posted',true);
+      if(jr.error)throw jr.error;
+      cashLines=jr.data||[];
+    }
+    const endExclusive=new Date(String(end)+'T23:59:59.999Z');
+    const startInclusive=new Date(String(start)+'T00:00:00.000Z');
+    const accounts=(cashAccounts||[]).map(a=>{
+      const lines=cashLines.filter(l=>String(l.account_id)===String(a.id));
+      const balance=lines.reduce((s,l)=>s+Number(l.debit||0)-Number(l.credit||0),0);
+      return {...a,balance};
+    });
+    const periodLines=cashLines.filter(l=>{const dt=new Date(l.journal_entries?.journal_date);return dt>=startInclusive&&dt<=endExclusive;});
+    d.cash_bank=accounts.reduce((s,a)=>s+Number(a.balance||0),0);
+    d.cash_in=periodLines.reduce((s,l)=>s+Number(l.debit||0),0);
+    d.cash_out=periodLines.reduce((s,l)=>s+Number(l.credit||0),0);
+    d.net_cashflow=Number(d.cash_in||0)-Number(d.cash_out||0);
+    d.accounts=accounts;
+    const money=v=>hmRp(v);
     const cards=[['💵 Kas & Bank',d.cash_bank],['💰 Uang Masuk',d.cash_in],['💸 Uang Keluar',d.cash_out],['📊 Net Cashflow',d.net_cashflow],['🤝 Hutang Supplier',d.payable_supplier],['👤 Piutang Customer',d.receivable_customer]];
     body.innerHTML='<div class="row" style="margin-bottom:10px"><button class="secondary" type="button" onclick="hmCloseMainMenu()">✖ Tutup</button><button class="primary" type="button" onclick="window.openFinance()">🔄 Refresh</button></div>'+
       '<div class="small">Finance • periode '+start+' s/d '+end+'</div>'+

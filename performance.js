@@ -119,15 +119,30 @@
         '<div class="stat"><div class="small">🔍 Qualified</div><div class="num">'+fmt(total.qualified)+'</div></div>'+
         '<div class="stat"><div class="small">🤝 Handover</div><div class="num">'+fmt(total.handover)+'</div></div>'+
       '</div>';
-      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div>'+
+      html+='<style>.perf-list{display:block}.perf-person-card{border:1px solid #e5e7eb;background:#fff}.perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.perf-grid>div{background:#f8fafc;border-radius:10px;padding:8px;text-align:center}.perf-grid span{display:block;font-size:11px;color:#64748b}.perf-grid b{display:block;font-size:17px;margin-top:2px}@media(max-width:600px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.perf-person-card{padding:12px!important}.perf-person-card .row{align-items:flex-start!important}.perf-person-card .badge{white-space:nowrap}.perf-list{margin-left:-2px;margin-right:-2px}}</style>';      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div>'+
         '<div class="small" style="margin-top:5px">Laporan ini khusus mengukur perjalanan lead. SOLD/Walk-In tidak dihitung sebagai performa lead.</div></div>';
-      html+='<div class="box" style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>'+
-        '<th style="text-align:left;padding:8px">Nama</th><th>Fungsi</th><th>Lead</th><th>Handle</th><th>Qualified</th><th>Handover</th><th>Follow-up</th><th>Potensial</th><th>Gagal</th><th>Closing Lead</th><th>Conv.</th>'+
-        '</tr></thead><tbody>';
-      rows.forEach(r=>html+='<tr style="cursor:pointer;border-top:1px solid #e5e7eb" onclick="window.perfPerson('+JSON.stringify(r.employee_name)+','+JSON.stringify(r.role)+','+JSON.stringify(mode)+')">'+
-        '<td style="padding:9px"><b>'+escP(r.employee_name)+'</b></td><td style="text-align:center"><span class="badge">'+escP(r.role)+'</span></td>'+
-        '<td style="text-align:center">'+fmt(r.lead_in)+'</td><td style="text-align:center">'+fmt(r.handled)+'</td><td style="text-align:center">'+fmt(r.qualified)+'</td><td style="text-align:center">'+fmt(r.handover)+'</td><td style="text-align:center">'+fmt(r.follow_up)+'</td><td style="text-align:center">'+fmt(r.potential)+'</td><td style="text-align:center">'+fmt(r.lost)+'</td><td style="text-align:center"><b>'+fmt(r.closing_lead)+'</b></td><td style="text-align:center">'+fmt(r.conversion)+'%</td></tr>');
-      html+='</tbody></table></div>';
+      html+='<div class="perf-list">';
+      rows.forEach(r=>{
+        const conv=Number(r.conversion||0);
+        html+='<div class="lead perf-person-card" onclick="window.perfPerson('+JSON.stringify(r.employee_name)+','+JSON.stringify(r.role)+','+JSON.stringify(mode)+')" style="cursor:pointer;margin-top:10px">'+
+          '<div class="row" style="justify-content:space-between;align-items:center;gap:8px">'+
+            '<div><b style="font-size:17px">'+escP(r.employee_name)+'</b><div class="small">'+escP(r.role)+'</div></div>'+
+            '<span class="badge">'+conv+'% Conv.</span>'+
+          '</div>'+
+          '<div class="perf-grid" style="margin-top:10px">'+
+            '<div><span>📲 Lead</span><b>'+fmt(r.lead_in)+'</b></div>'+
+            '<div><span>💬 Handle</span><b>'+fmt(r.handled)+'</b></div>'+
+            '<div><span>🔍 Qualified</span><b>'+fmt(r.qualified)+'</b></div>'+
+            '<div><span>🤝 Handover</span><b>'+fmt(r.handover)+'</b></div>'+
+            '<div><span>🔄 Follow-up</span><b>'+fmt(r.follow_up)+'</b></div>'+
+            '<div><span>🎯 Potensial</span><b>'+fmt(r.potential)+'</b></div>'+
+            '<div><span>❌ Gagal</span><b>'+fmt(r.lost)+'</b></div>'+
+            '<div><span>🏆 Closing Lead</span><b>'+fmt(r.closing_lead)+'</b></div>'+
+          '</div>'+
+          '<div class="small" style="margin-top:8px;text-align:center">👆 Ketuk untuk melihat detail lead</div>'+
+        '</div>';
+      });
+      html+='</div>';
       body.innerHTML=html;
     }catch(e){console.error('[HM] Lead Performance',e);body.innerHTML='<div class="lead"><b>Gagal memuat Laporan Performa Tim</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';}
   }

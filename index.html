@@ -2306,8 +2306,7 @@ async function hmRenderHomePerformance(){
    block.id='hmHomePerformance';
    block.className='hm-home-performance';
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA</div><div class="small" style="padding:8px;color:#b42318">Gagal memuat performa: '+escH(e?.message||e)+'</div>';
-   const menu=host.querySelector('.role-home-menu');
-   if(menu)host.insertBefore(block,menu);else host.appendChild(block);
+   host.appendChild(block);
  }
 }
 function renderRoleHome(){
@@ -3173,6 +3172,9 @@ function applyRoleVisibility(){
  // Sebelumnya fungsi ini dipanggil terlalu awal dari render(), lalu renderRoleHome()
  // mengganti innerHTML sehingga kotak Lead Hari Ini hilang.
  try{hmRenderLeadTodayMain();}catch(e){console.error('[HM] Lead Hari Ini render error:',e);}
+ // Performa harus dirender setelah Role Home final dibuat.
+ try{hmEnsureHomePerformanceStyle();}catch(e){console.warn('[HM] performance style',e);}
+ try{void hmRenderHomePerformance();}catch(e){console.warn('[HM] performance render',e);}
 }
 window.hmStartApp=start;
 async function logout(){
@@ -3218,6 +3220,7 @@ async function refreshAppTotal(btn){
 
   // Bangun ulang Role Home supaya menu/UI ikut di-refresh.
   if(typeof renderRoleHome==='function')renderRoleHome();
+  try{hmEnsureHomePerformanceStyle();void hmRenderHomePerformance();}catch(e){console.warn('[HM] performance refresh',e);}
 
   // Pastikan kembali ke posisi paling atas dashboard.
   window.scrollTo({top:0,behavior:'smooth'});

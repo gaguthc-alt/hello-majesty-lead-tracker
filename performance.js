@@ -85,7 +85,7 @@
 
   async function getFunnel(mode){
     const start=monthStart(mode).toISOString(), end=monthEnd(mode).toISOString();
-    const x=await sb.rpc('team_lead_funnel_report',{p_start:start,p_end:end});
+    const x=await sb.rpc('team_lead_performance_report',{p_start:start,p_end:end});
     if(x.error)throw x.error; return x.data||[];
   }
   async function showPerson(name,role,mode){
@@ -109,42 +109,23 @@
     body.innerHTML='<div class="small">⏳ Memuat performa lead tim...</div>';
     try{
       const rows=await getFunnel(mode);
-      const total=rows.reduce((a,r)=>{
-        ['lead_in','handled','qualified','handover','follow_up','potential','lost','closing_lead'].forEach(k=>a[k]+=(Number(r[k])||0));
-        return a;
-      },{lead_in:0,handled:0,qualified:0,handover:0,follow_up:0,potential:0,lost:0,closing_lead:0});
-      let html='<div class="stats">'+
-        '<div class="stat"><div class="small">📲 Lead Masuk</div><div class="num">'+fmt(total.lead_in)+'</div></div>'+
-        '<div class="stat"><div class="small">💬 Handle</div><div class="num">'+fmt(total.handled)+'</div></div>'+
-        '<div class="stat"><div class="small">🔍 Qualified</div><div class="num">'+fmt(total.qualified)+'</div></div>'+
-        '<div class="stat"><div class="small">🤝 Handover</div><div class="num">'+fmt(total.handover)+'</div></div>'+
-      '</div>';
-      html+='<style>.perf-list{display:block}.perf-person-card{border:1px solid #e5e7eb;background:#fff}.perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.perf-grid>div{background:#f8fafc;border-radius:10px;padding:8px;text-align:center}.perf-grid span{display:block;font-size:11px;color:#64748b}.perf-grid b{display:block;font-size:17px;margin-top:2px}@media(max-width:600px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.perf-person-card{padding:12px!important}.perf-person-card .row{align-items:flex-start!important}.perf-person-card .badge{white-space:nowrap}.perf-list{margin-left:-2px;margin-right:-2px}}</style>';      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div>'+
-        '<div class="small" style="margin-top:5px">Laporan ini khusus mengukur perjalanan lead. SOLD/Walk-In tidak dihitung sebagai performa lead.</div></div>';
+      let html='<style>.perf-list{display:block}.perf-person-card{border:1px solid #e5e7eb;background:#fff}.perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.perf-grid>div{background:#f8fafc;border-radius:10px;padding:10px;text-align:center}.perf-grid span{display:block;font-size:11px;color:#64748b}.perf-grid b{display:block;font-size:19px;margin-top:3px}@media(max-width:600px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>';
+      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Satu baris per orang. SOLD/Walk-In tidak dihitung.</div></div>';
       html+='<div class="perf-list">';
       rows.forEach(r=>{
-        const conv=Number(r.conversion||0);
-        html+='<div class="lead perf-person-card" onclick=\'window.perfPerson('+JSON.stringify(r.employee_name).replace(/'/g,"&#39;")+','+JSON.stringify(r.role).replace(/'/g,"&#39;")+','+JSON.stringify(mode).replace(/'/g,"&#39;")+')\' style="cursor:pointer;margin-top:10px">'+
-          '<div class="row" style="justify-content:space-between;align-items:center;gap:8px">'+
-            '<div><b style="font-size:17px">'+escP(r.employee_name)+'</b><div class="small">'+escP(r.role)+'</div></div>'+
-            '<span class="badge">'+conv+'% Conv.</span>'+
-          '</div>'+
+        html+='<div class="lead perf-person-card" style="margin-top:10px">'+
+          '<div class="row" style="justify-content:space-between;align-items:center"><b style="font-size:17px">'+escP(r.employee_name)+'</b></div>'+
           '<div class="perf-grid" style="margin-top:10px">'+
-            '<div><span>📲 Lead</span><b>'+fmt(r.lead_in)+'</b></div>'+
-            '<div><span>💬 Handle</span><b>'+fmt(r.handled)+'</b></div>'+
-            '<div><span>🔍 Qualified</span><b>'+fmt(r.qualified)+'</b></div>'+
-            '<div><span>🤝 Handover</span><b>'+fmt(r.handover)+'</b></div>'+
-            '<div><span>🔄 Follow-up</span><b>'+fmt(r.follow_up)+'</b></div>'+
-            '<div><span>🎯 Potensial</span><b>'+fmt(r.potential)+'</b></div>'+
-            '<div><span>❌ Gagal</span><b>'+fmt(r.lost)+'</b></div>'+
-            '<div><span>🏆 Closing Lead</span><b>'+fmt(r.closing_lead)+'</b></div>'+
-          '</div>'+
-          '<div class="small" style="margin-top:8px;text-align:center">👆 Ketuk untuk melihat detail lead</div>'+
-        '</div>';
+          '<div><span>📲 Claim CS</span><b>'+fmt(r.claim_cs)+'</b></div>'+
+          '<div><span>🤝 Handover</span><b>'+fmt(r.handover)+'</b></div>'+
+          '<div><span>🎯 CS Closing</span><b>'+fmt(r.cs_closing)+'</b></div>'+
+          '<div><span>🏆 Sales Closing</span><b>'+fmt(r.sales_closing)+'</b></div>'+
+          '</div></div>';
       });
+      if(!rows.length)html+='<div class="lead">Belum ada aktivitas lead pada periode ini.</div>';
       html+='</div>';
       body.innerHTML=html;
-    }catch(e){console.error('[HM] Lead Performance',e);body.innerHTML='<div class="lead"><b>Gagal memuat Laporan Performa Tim</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';}
+    }catch(e){console.error('[HM] Team lead performance',e);body.innerHTML='<div class="lead"><b>Gagal memuat Laporan Performa Tim</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';}
   }
 
   window.openPerformance=async function(){

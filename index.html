@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261008-walkin-unified-fix-4"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261008-walkin-unified-fix-5"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -2626,7 +2626,7 @@ function renderRoleHome(){
        void Promise.resolve().then(()=>{
          if(typeof window.openInventoryApprovals==='function') return runReceive();
          const s=document.createElement('script');
-         s.src='inventory.js?v=20261008-walkin-unified-fix-4';
+         s.src='inventory.js?v=20261008-walkin-unified-fix-5';
          return new Promise((resolve,reject)=>{
            s.onload=()=>{try{resolve(runReceive())}catch(e){reject(e)}};
            s.onerror=()=>reject(new Error('Modul Inventory gagal dimuat.'));
@@ -2655,7 +2655,7 @@ function renderRoleHome(){
        void Promise.resolve().then(()=>{
          if(typeof window.openWalkinApprovals==='function') return runWalkin();
          const s=document.createElement('script');
-         s.src='inventory.js?v=20261008-walkin-unified-fix-4';
+         s.src='inventory.js?v=20261008-walkin-unified-fix-5';
          return new Promise((resolve,reject)=>{
            s.onload=()=>{try{resolve(runWalkin())}catch(e){reject(e)}};
            s.onerror=()=>reject(new Error('Modul Inventory gagal dimuat.'));
@@ -2849,7 +2849,7 @@ function renderRoleHome(){
              return;
            }
            const s=document.createElement('script');
-           s.src='inventory.js?v=20261008-walkin-unified-fix-4';
+           s.src='inventory.js?v=20261008-walkin-unified-fix-5';
            s.onload=()=>{try{resolve(callApproval())}catch(e){reject(e)}};
            s.onerror=()=>reject(new Error('Modul Finance gagal dimuat.'));
            document.head.appendChild(s);

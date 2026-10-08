@@ -1989,7 +1989,7 @@ function hmOpenLeadTracker(){
   const statuses=[['AVAILABLE','AVAILABLE'],['CS LOCK','CS LOCK'],['POTENSIAL','POTENSIAL'],['QUALIFIED','QUALIFIED'],['HANDLE','HANDLE'],['CLOSING','CLOSING']];
   const todayBoard='<div class="box" style="margin-bottom:14px;border:1px solid #d0d5dd;background:#fff">'+
     '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">📅 LEAD HARI INI</h3><span class="small">'+todayRows.length+' aktivitas</span></div>'+
-    '<div style="display:grid;grid-template-columns:repeat(6,minmax(90px,1fr));gap:8px;margin-top:10px">'+
+    '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;width:100%">'+
     statuses.map(([key,label])=>{const n=todayRows.filter(l=>bucket(l)===key).length;return '<button type="button" class="stat" style="cursor:pointer;text-align:center;background:#f8fafc;color:#111827;border:1px solid #e5e7eb" onclick="hmShowLeadTodayStatus(\''+key+'\')"><div class="small">'+label+'</div><div class="num">'+n+'</div></button>';}).join('')+
     '</div></div>';
   t.textContent='👥 Lead Tracker — Data Lead';

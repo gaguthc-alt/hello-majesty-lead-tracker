@@ -95,10 +95,10 @@
     const handled=unique(rows.filter(r=>['CS_CLAIM','SALES_CLAIM'].includes(r.event_type)).map(r=>r.lead_id));
     const qualified=unique(rows.filter(r=>r.event_type==='CS_QUALIFIED').map(r=>r.lead_id));
     const handover=unique(rows.filter(r=>r.event_type==='SALES_CLAIM').map(r=>r.lead_id));
-    let st=sb.from('sales_transactions').select('id,sales_closing,cs_closing').gte('sold_at',start).lt('sold_at',end);
+    let st=sb.from('sales_transactions').select('id,sales_user_id,sales_closing,cs_closing').gte('sold_at',start).lt('sold_at',end);
     const sx=await st;
     if(sx.error)throw sx.error;
-    const soldRows=(sx.data||[]).filter(r=>profile?.is_management || String(r.sales_closing||'').trim().toLowerCase()===name.toLowerCase() || String(r.cs_closing||'').trim().toLowerCase()===name.toLowerCase());
+    const soldRows=(sx.data||[]).filter(r=>profile?.is_management || String(r.sales_closing||'').trim().toLowerCase()===name.toLowerCase() || String(r.cs_closing||'').trim().toLowerCase()===name.toLowerCase() || String(r.sales_user_id||'')===String(profile?.user_id||''));
     return {handled,qualified,handover,sold:soldRows.length};
   }
 

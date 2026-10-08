@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261008-walkin-unified-fix-7"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261008-walkin-wa-fix-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -3732,7 +3732,7 @@ function shareWalkinApprovalWA(stockId,salePrice){
  const sales=profile?.name||'Sales';
  const approvalLink=window.location.origin+window.location.pathname+'?open=walkin&approval='+encodeURIComponent(stockId||'');
  const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 Sales: '+sales,'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','— *HELLO MAJESTY*','_Built on Trust._'].join(nl);
- window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+ window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
 }
 window.hmOpenWalkinFromLink=async function(){
  try{

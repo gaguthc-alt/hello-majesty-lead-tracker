@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261008-inventory-cs-hunter-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261008-walkin-sales-names-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -3730,12 +3730,25 @@ function salesResultMessage(l){
  return ['❌ *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: GAGAL*','📱 Produk: '+product,'📝 Alasan: '+(l.objection||'-'),'','Lead dinyatakan gagal setelah proses konsultasi dan follow-up oleh '+pic+'.','','— HELLO MAJESTY','Built on Trust.'].join(nl);
 }
 function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
-function shareWalkinApprovalWA(stockId,salePrice){
+async function shareWalkinApprovalWA(stockId,salePrice){
  const nl=String.fromCharCode(10);
  const sel=document.getElementById('ss');
  const product=sel?.selectedOptions?.[0]?.textContent?.replace(/\s*•\s*List.*$/,'').trim()||'Stock Walk-In';
  const outlet=profile?.outlet||'-';
- const sales=profile?.name||'Sales';
+ let salesNames=[];
+ try{
+   const a=await sb.from('stock_sale_approvals').select('team_member_ids').eq('stock_unit_id',stockId).eq('status','PENDING').order('requested_at',{ascending:false}).limit(1).maybeSingle();
+   const ids=Array.isArray(a?.data?.team_member_ids)?a.data.team_member_ids.filter(Boolean):[];
+   if(ids.length && typeof sb.rpc==='function'){
+     const n=await sb.rpc('get_team_profile_names',{p_user_ids:ids});
+     if(!n.error && Array.isArray(n.data)){
+       const map=new Map(n.data.map(x=>[String(x.user_id),x.name]));
+       salesNames=ids.map(id=>map.get(String(id))).filter(Boolean);
+     }
+   }
+ }catch(e){console.warn('[HM] gagal membaca sales Walk-In:',e);}
+ if(!salesNames.length)salesNames=[profile?.name||'Sales'];
+ const sales=salesNames.join(', ');
  const approvalLink=window.location.origin+window.location.pathname+'?open=walkin&approval='+encodeURIComponent(stockId||'');
  const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 Sales: '+sales,'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','— *HELLO MAJESTY*','_Built on Trust._'].join(nl);
  window.location.href='https://wa.me/?text='+encodeURIComponent(msg);

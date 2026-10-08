@@ -83,6 +83,28 @@
     '</div>';
   }
 
+  async function getSharedFunnel(mode){
+    const start=monthStart(mode).toISOString(), end=monthEnd(mode).toISOString();
+    const name=String(profile?.name||'').trim();
+    let q=sb.from('lead_events').select('lead_id,event_type,employee_name').gte('event_at',start).lt('event_at',end);
+    if(!profile?.is_management && name)q=q.ilike('employee_name',name);
+    const e=await q;
+    if(e.error)throw e.error;
+    const rows=e.data||[];
+    const unique=(arr)=>new Set(arr.filter(Boolean)).size;
+    const handled=unique(rows.filter(r=>['CS_CLAIM','SALES_CLAIM'].includes(r.event_type)).map(r=>r.lead_id));
+    const qualified=unique(rows.filter(r=>r.event_type==='CS_QUALIFIED').map(r=>r.lead_id));
+    const handover=unique(rows.filter(r=>r.event_type==='SALES_CLAIM').map(r=>r.lead_id));
+    let st=sb.from('sales_transactions').select('id').gte('sold_at',start).lt('sold_at',end);
+    if(!profile?.is_management && name){
+      const ids=(window.__hmSalesUserIds||[]); 
+      if(ids.length) st=st.in('sales_user_id',ids);
+    }
+    const sx=await st;
+    if(sx.error)throw sx.error;
+    return {handled,qualified,handover,sold:(sx.data||[]).length};
+  }
+
   async function getFunnel(mode){
     const start=monthStart(mode).toISOString(), end=monthEnd(mode).toISOString();
     const x=await sb.rpc('team_lead_funnel_report',{p_start:start,p_end:end});
@@ -109,7 +131,8 @@
     body.innerHTML='<div class="small">⏳ Memuat funnel lead tim...</div>';
     try{
       const rows=await getFunnel(mode);
-      const sales=await getSales(mode); const totalSold=Object.values(sales).reduce((a,s)=>a+(Number(s.units)||0),0); const total=rows.reduce((a,r)=>{a.handled+=+r.handled||0;a.qualified+=+r.qualified||0;a.handover+=+r.handover||0;return a;},{handled:0,qualified:0,handover:0});
+      const shared=await getSharedFunnel(mode);
+      const totalSold=shared.sold; const total=shared;
       let html='<div class="stats"><div class="stat"><div class="small">📲 Lead / Handle</div><div class="num">'+fmt(total.handled)+'</div></div><div class="stat"><div class="small">🔍 Qualified</div><div class="num">'+fmt(total.qualified)+'</div></div><div class="stat"><div class="small">🤝 Handover</div><div class="num">'+fmt(total.handover)+'</div></div><div class="stat"><div class="small">🏆 SOLD / Closing</div><div class="num">'+fmt(totalSold)+'</div></div></div>';
       html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 FUNNEL PERFORMA PER ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">CS dan Sales dipisahkan. Closing per orang bersumber dari transaksi SOLD; Walk-In tetap dihitung sebagai closing. Klik nama untuk detail.</div></div>';
       html+='<div class="box" style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:8px">Nama</th><th>Fungsi</th><th>WA/Lead</th><th>Qualified</th><th>Handover</th><th>Closing</th><th>Conv.</th></tr></thead><tbody>';

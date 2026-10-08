@@ -2274,8 +2274,8 @@ async function hmRenderHomePerformance(){
  const empty={claim_cs:0,handover:0,cs_closing:0,sales_closing:0};
  try{
    const [perf,profiles] = await Promise.all([
-     sb.rpc('team_lead_performance_report',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString()}),
-     sb.from('team_profiles').select('name,outlet,active,is_management').eq('active',true)
+     db.rpc('team_lead_performance_report',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString()}),
+     db.from('team_profiles').select('name,outlet,active,is_management').eq('active',true)
    ]);
    if(perf.error)throw perf.error;
    if(profiles.error)throw profiles.error;
@@ -2302,11 +2302,9 @@ async function hmRenderHomePerformance(){
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+
      section('PERFORMA SAYA',own,'Aktivitas akun ini')+
      section('TOTAL '+(isManagement?'SELURUH OUTLET':'OUTLET'),total,scopeLabel);
-   host.appendChild(block);
  }catch(e){
    console.error('[HM] Home performance:',e);
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA</div><div class="small" style="padding:8px;color:#b42318">Gagal memuat performa: '+escH(e?.message||e)+'</div>';
-   host.appendChild(block);
  }
 }
 function renderRoleHome(){

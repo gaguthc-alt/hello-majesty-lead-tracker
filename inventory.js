@@ -90,7 +90,7 @@ window.openWalkinApprovals=async function(){
 
  const [w,sale]=await Promise.all([
    sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false}),
-   sb.from('stock_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false})
+   sb.from('stock_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status,customer_phone').eq('status','PENDING').order('requested_at',{ascending:false})
  ]);
  if(w.error)return showWalkinApprovalError(w.error);
  if(sale.error)return showWalkinApprovalError(sale.error);

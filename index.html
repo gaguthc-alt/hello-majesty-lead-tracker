@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261008-walkin-wa-fix-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261008-closing-saya-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -2140,6 +2140,7 @@ function hmRunMainMenuAction(action){
   case "openInventorySection('sales')": return window.openInventorySection('sales');
   case "openInventorySection('stock')": return window.openInventorySection('stock');
   case "openInventorySection('products')": return window.openInventorySection('products');
+  case 'openMyClosings()': return (typeof window.openMyClosings==='function' ? window.openMyClosings() : hmLoadModule('inventory').then(()=>window.openMyClosings()));
   case 'openReceiveStock()': return openReceiveStock();
   case 'openWalkinApprovals()':
    return (typeof window.openWalkinApprovals==='function' ? window.openWalkinApprovals() : hmLoadModule('inventory').then(()=>window.openWalkinApprovals()));
@@ -2344,6 +2345,7 @@ function renderRoleHome(){
    add('👥','Lead Tracker','Lead tanggung jawab','hmOpenLeadTracker()');
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');
    add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');
+   add('📋','Closing Saya','Semua closing saya: Lead, Walk-In & Closing Stock','openMyClosings()');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
@@ -2419,6 +2421,7 @@ function renderRoleHome(){
    add('👥','Lead Tracker','Lead & follow-up customer','hmOpenLeadTracker()');
    add('📱','Lead Baru','Input lead customer','hmOpenLeadNewInline()');
    add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');
+   if(sales)add('📋','Closing Saya','Semua closing saya: Lead, Walk-In & Closing Stock','openMyClosings()');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
@@ -2742,7 +2745,7 @@ function renderRoleHome(){
      // Product & Stock / Laporan Penjualan / Komisi Tim memakai jalur inline
      // khusus agar tidak bergantung pada modal lama dan tidak tertutup oleh
      // hmCloseMainMenu()/sequence guard.
-     if(action==="openInventorySection('stock')" || action==="openInventorySection('products')" || action==="openInventorySection('sales')" || action==='openTeamCommission()'){
+     if(action==="openInventorySection('stock')" || action==="openInventorySection('products')" || action==="openInventorySection('sales')" || action==='openTeamCommission()' || action==='openMyClosings()'){
        if(hmActiveMainMenu===title){
          hmCloseMainMenu();
          return;
@@ -2756,8 +2759,9 @@ function renderRoleHome(){
          // Semua panel inline wajib melalui satu jalur agar tercatat
          // placeholder-nya dan dapat dikembalikan saat menu berikutnya dibuka.
          const isTeamCommission=action==='openTeamCommission()';
+         const isMyClosings=action==='openMyClosings()';
          const isSalesReport=action==="openInventorySection('sales')";
-         if(!isTeamCommission && menuBody)menuBody.innerHTML='';
+         if(!isTeamCommission && !isMyClosings && menuBody)menuBody.innerHTML='';
          if(isSalesReport){
            const inventoryBody=document.getElementById('inventoryBody');
            const inventoryPanel=document.getElementById('inventoryPanel');
@@ -2766,7 +2770,7 @@ function renderRoleHome(){
              menuBody.appendChild(inventoryBody);
            }
            if(inventoryPanel)inventoryPanel.classList.add('hidden');
-         }else if(!isTeamCommission){
+         }else if(!isTeamCommission && !isMyClosings){
            hmMoveViewsInline(action);
          }
          const modal=document.getElementById('modal');

@@ -2462,7 +2462,7 @@ function renderRoleHome(){
    const facDivItems=['Dashboard Inventory','Laporan Fasilitator','Master Produk','Barang Masuk','Persetujuan Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
    coreInventoryCards.forEach(item=>{
      const allowed=item[1]==='Stock Hunter'
-       ? (inventoryIsManagementLevel||inventoryHunterAccess)
+       ? true
        : (inventoryIsManagementLevel||allItems.includes(item[1])||(inventoryFacDivAccess&&facDivItems.includes(item[1])));
      if(allowed&&!cards.some(x=>x[1]===item[1]))cards.push(item);
    });

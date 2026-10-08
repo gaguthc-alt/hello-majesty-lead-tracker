@@ -201,13 +201,19 @@ async function openMyClosings(){
     if(!profile?.user_id)return alert('Profil belum siap. Silakan refresh aplikasi.');
     const me=String(profile.name||'').trim();
     const uid=String(profile.user_id||'');
+    // Default Closing Saya = bulan berjalan (berdasarkan tanggal pengajuan/closing).
+    const now=new Date();
+    const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+    const nextMonth=new Date(now.getFullYear(),now.getMonth()+1,1);
+    const monthStartISO=monthStart.toISOString();
+    const nextMonthISO=nextMonth.toISOString();
     const [leadA,leadB,stockA,stockB,walkA,walkB]=await Promise.all([
-      sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_claimed_by',me).order('updated_at',{ascending:false}).limit(100),
-      sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_pic',me).order('updated_at',{ascending:false}).limit(100),
-      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).order('requested_at',{ascending:false}).limit(100),
-      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,team_member_ids,sale_price,status,requested_at,reviewed_at,review_note').contains('team_member_ids',[uid]).order('requested_at',{ascending:false}).limit(100),
-      sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).order('requested_at',{ascending:false}).limit(100),
-      sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').contains('sales_user_ids',[uid]).order('requested_at',{ascending:false}).limit(100)
+      sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_claimed_by',me).gte('updated_at',monthStartISO).lt('updated_at',nextMonthISO).order('updated_at',{ascending:false}).limit(100),
+      sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_pic',me).gte('updated_at',monthStartISO).lt('updated_at',nextMonthISO).order('updated_at',{ascending:false}).limit(100),
+      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
+      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,team_member_ids,sale_price,status,requested_at,reviewed_at,review_note').contains('team_member_ids',[uid]).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
+      sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
+      sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').contains('sales_user_ids',[uid]).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100)
     ]);
     const errors=[leadA,leadB,stockA,stockB,walkA,walkB].map(x=>x.error).filter(Boolean);
     if(errors.length)throw errors[0];
@@ -259,7 +265,7 @@ async function openMyClosings(){
       return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><b>'+String(i+1).padStart(2,'0')+'. '+source+'</b><b>'+x.statusLabel+'</b></div><div style="margin-top:5px">📱 '+esc(x.product||'-')+'</div><div class="small">📍 '+esc(x.outlet||'-')+' • 🕒 '+esc(date)+'</div>'+money(x)+(x.note?'<div class="small" style="margin-top:5px">📝 Catatan: '+esc(x.note)+'</div>':'')+'</div>';
     }).join('');
 
-    $('mt').textContent='📋 Closing Saya ('+items.length+')';
+    $('mt').textContent='📋 Closing Saya — Bulan Ini ('+items.length+')';
     $('mb').innerHTML='<div class="stats" style="margin-bottom:10px"><div class="stat"><div class="small">🟠 Menunggu</div><div class="num">'+countPending+'</div></div><div class="stat"><div class="small">🟢 Disetujui / Closing</div><div class="num">'+countApproved+'</div></div><div class="stat"><div class="small">🔴 Ditolak</div><div class="num">'+countRejected+'</div></div></div>'+(cards||'<div class="box" style="text-align:center">Belum ada closing yang tercatat.</div>');
     const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle'),modal=document.getElementById('modal');
     if(panel&&body){

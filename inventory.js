@@ -67,38 +67,65 @@ async function loadWalkinApprovalCount(){
  const role=inventoryReviewerRole(), isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI', can=!!profile?.is_management||isDeveloper||role==='FASILITATOR';
  const btn=document.getElementById('walkinApprovalBtn');
  if(!can||!btn)return;
- const r=await sb.from('walkin_sale_approvals').select('id',{count:'exact',head:true}).eq('status','PENDING');
- if(!r.error)btn.textContent='🚶 Persetujuan Walk-In'+(r.count?' ('+r.count+')':'');
+ const [w,s]=await Promise.all([
+   sb.from('walkin_sale_approvals').select('id',{count:'exact',head:true}).eq('status','PENDING'),
+   sb.from('stock_sale_approvals').select('id',{count:'exact',head:true}).eq('status','PENDING')
+ ]);
+ const count=(w.count||0)+(s.count||0);
+ if(!w.error&&!s.error)btn.textContent='🚶 Persetujuan Walk-In'+(count?' ('+count+')':'');
 }
 window.openWalkinApprovals=async function(){
  const role=inventoryReviewerRole();
  const isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
  const can=!!profile?.is_management||isDeveloper||role==='FASILITATOR';
  if(!can)return alert('Persetujuan Walk-In hanya dapat dilakukan Management, Developer, atau Fasilitator.');
- const a=await sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false});
- if(a.error)return alert(a.error.message);
- const rows=a.data||[], ids=rows.map(x=>x.stock_unit_id);
+
+ const [w,sale]=await Promise.all([
+   sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false}),
+   sb.from('stock_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false})
+ ]);
+ if(w.error)return alert(w.error.message);
+ if(sale.error)return alert(sale.error.message);
+
+ const rows=[
+   ...(w.data||[]).map(x=>({...x,approval_kind:'WALKIN'})),
+   ...(sale.data||[]).map(x=>({...x,approval_kind:'STOCK'}))
+ ].sort((a,b)=>new Date(b.requested_at)-new Date(a.requested_at));
+
+ const ids=rows.map(x=>x.stock_unit_id).filter(Boolean);
  const s=ids.length?await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,cost,asking_price,status').in('id',ids):{data:[]};
- const stocks=s.data||[], pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
+ if(s.error)return alert(s.error.message);
+ const stocks=s.data||[];
+ const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
  const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};
  const products=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));
- const u=rows.length?await sb.from('team_profiles').select('user_id,name,role').in('user_id',rows.map(x=>x.requested_by)):{data:[]};
+ const u=rows.length?await sb.from('team_profiles').select('user_id,name,role').in('user_id',[...new Set(rows.map(x=>x.requested_by).filter(Boolean))]):{data:[]};
  const users=Object.fromEntries((u.data||[]).map(x=>[x.user_id,x]));
+
  const title=document.getElementById('hmMenuPanelTitle'), panel=document.getElementById('hmMenuPanel'), body=document.getElementById('hmMenuPanelBody');
  const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
  const heading='🚶 Persetujuan Walk-In ('+rows.length+')';
  if(title)title.textContent=heading;
+
  if(!rows.length){
    const html='<div class="box" style="text-align:center"><div style="font-size:28px">✅</div><b>Tidak ada Walk-In yang menunggu verifikasi.</b><div class="small" style="margin-top:6px">Semua pengajuan sudah diproses atau belum ada pengajuan baru.</div></div>';
    if(body){body.innerHTML=html;panel?.classList.remove('hidden');panel?.scrollIntoView({behavior:'smooth',block:'start'});}
    else if(mt&&mb){mt.textContent=heading;mb.innerHTML=html;modal?.classList.remove('hidden');}
    return;
  }
+
  const html=rows.map((a,i)=>{
    const st=stocks.find(x=>x.id===a.stock_unit_id)||{}, p=products[st.product_id]||{}, rq=users[a.requested_by]||{};
    const canReview=(!!profile?.is_management||role==='DEVELOPER'||role==='DEVELOPER APLIKASI'||role==='FASILITATOR')&&String(rq.user_id||'')!==String(profile?.user_id||'');
-   return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(st.outlet||'-')+'</b><br>🕒 Diajukan: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Diinput oleh: <b>'+esc(rq.name||'User')+'</b></div><div>Harga Walk-In: <b>Rp'+Number(a.sale_price||0).toLocaleString('id-ID')+'</b> • Modal: Rp'+Number(st.cost||0).toLocaleString('id-ID')+'</div><div class="small">Status: MENUNGGU VERIFIKASI</div>'+(canReview?'<div class="row" style="margin-top:8px"><button class="success" onclick="reviewWalkinSale(\''+a.id+'\',\'APPROVE\')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewWalkinSale(\''+a.id+'\',\'REJECT\')">✕ Tolak</button></div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi Fasilitator.</div>')+'</div>';
+   const isStock=a.approval_kind==='STOCK';
+   const sourceLabel=isStock?'📦 CLOSING STOCK SIAP JUAL':'🚶 WALK-IN';
+   const priceLabel=isStock?'Harga Closing':'Harga Walk-In';
+   const action=isStock
+     ? '<button class="success" onclick="reviewUnifiedWalkin(\\''+a.id+'\\',\\'STOCK\\',\\'APPROVE\\')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewUnifiedWalkin(\\''+a.id+'\\',\\'STOCK\\',\\'REJECT\\')">✕ Tolak</button>'
+     : '<button class="success" onclick="reviewUnifiedWalkin(\\''+a.id+'\\',\\'WALKIN\\',\\'APPROVE\\')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewUnifiedWalkin(\\''+a.id+'\\',\\'WALKIN\\',\\'REJECT\\')">✕ Tolak</button>';
+   return '<div class="lead"><div class="small" style="font-weight:800;margin-bottom:4px">'+sourceLabel+'</div><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(st.outlet||'-')+'</b><br>🕒 Diajukan: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Diinput oleh: <b>'+esc(rq.name||'User')+'</b></div><div>'+priceLabel+': <b>Rp'+Number(a.sale_price||0).toLocaleString('id-ID')+'</b> • Modal: Rp'+Number(st.cost||0).toLocaleString('id-ID')+'</div><div class="small">Status: MENUNGGU VERIFIKASI</div>'+(canReview?'<div class="row" style="margin-top:8px">'+action+'</div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi pihak yang berwenang.</div>')+'</div>';
  }).join('');
+
  if(mt)mt.textContent=heading;
  if(body){
    body.innerHTML=html;
@@ -110,6 +137,19 @@ window.openWalkinApprovals=async function(){
  }
  if(modal)modal.classList.add('hidden');
 }
+async function reviewUnifiedWalkin(id,kind,action){
+ let note=null;
+ if(action==='REJECT'){
+   note=prompt(kind==='STOCK'?'Alasan penolakan Closing Stock:':'Alasan penolakan Walk-In:')||'';
+   if(!note.trim())return alert('Alasan wajib diisi.');
+ }
+ const rpcName=kind==='STOCK'?'review_stock_sale_approval':'review_walkin_sale_approval';
+ const r=await sb.rpc(rpcName,{p_approval_id:id,p_action:action,p_note:note});
+ if(r.error)return alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+r.error.message);
+ alert(action==='APPROVE'?(kind==='STOCK'?'Closing Stock disetujui dan transaksi menjadi SOLD.':'Walk-In disetujui dan transaksi menjadi SOLD.'):(kind==='STOCK'?'Closing Stock ditolak.':'Walk-In ditolak.'));
+ closeModal(); await renderInventory();
+}
+
 async function reviewWalkinSale(id,action){
  let note=null;
  if(action==='REJECT'){note=prompt('Alasan penolakan Walk-In:')||'';if(!note.trim())return alert('Alasan wajib diisi.');}

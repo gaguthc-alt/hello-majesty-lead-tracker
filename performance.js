@@ -124,7 +124,7 @@
       html+='<div class="perf-list">';
       rows.forEach(r=>{
         const conv=Number(r.conversion||0);
-        html+='<div class="lead perf-person-card" onclick="window.perfPerson('+JSON.stringify(r.employee_name)+','+JSON.stringify(r.role)+','+JSON.stringify(mode)+')" style="cursor:pointer;margin-top:10px">'+
+        html+='<div class="lead perf-person-card" onclick=\'window.perfPerson('+JSON.stringify(r.employee_name).replace(/'/g,"&#39;")+','+JSON.stringify(r.role).replace(/'/g,"&#39;")+','+JSON.stringify(mode).replace(/'/g,"&#39;")+')\' style="cursor:pointer;margin-top:10px">'+
           '<div class="row" style="justify-content:space-between;align-items:center;gap:8px">'+
             '<div><b style="font-size:17px">'+escP(r.employee_name)+'</b><div class="small">'+escP(r.role)+'</div></div>'+
             '<span class="badge">'+conv+'% Conv.</span>'+

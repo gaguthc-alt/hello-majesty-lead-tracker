@@ -441,6 +441,11 @@ async function refreshMasterProductView(btn){
 }
 window.renderMasterProductView=renderMasterProductView;
 async function openInventorySection(view){
+ // Menutup panel overlay/menu lama agar tidak menutupi Product & Stock.
+ const stalePanel=document.getElementById('hmMenuPanel');
+ if(stalePanel) stalePanel.classList.add('hidden');
+ const staleModal=document.getElementById('modal');
+ if(staleModal) staleModal.classList.add('hidden');
  const dashSection=document.getElementById('inventoryDashboardSection');
  if(dashSection){dashSection.classList.add('hidden');dashSection.setAttribute('aria-hidden','true');}
  inventoryDashboardLock=false;

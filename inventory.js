@@ -113,7 +113,8 @@ window.openWalkinApprovals=async function(){
  const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
  const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};
  const products=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));
- const u=rows.length?await sb.from('team_profiles').select('user_id,name,role').in('user_id',[...new Set(rows.map(x=>x.requested_by).filter(Boolean))]):{data:[]};
+ const requesterIds=[...new Set(rows.map(x=>x.requested_by).filter(Boolean))];
+ const u=requesterIds.length?await sb.rpc('get_team_profile_names',{p_user_ids:requesterIds}):{data:[]};
  const users=Object.fromEntries((u.data||[]).map(x=>[x.user_id,x]));
 
  const title=document.getElementById('hmMenuPanelTitle'), panel=document.getElementById('hmMenuPanel'), body=document.getElementById('hmMenuPanelBody');
@@ -137,7 +138,7 @@ window.openWalkinApprovals=async function(){
    const action=isStock
      ? `<button class="success" onclick="reviewUnifiedWalkin('${a.id}','STOCK','APPROVE')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewUnifiedWalkin('${a.id}','STOCK','REJECT')">✕ Tolak</button>`
      : `<button class="success" onclick="reviewUnifiedWalkin('${a.id}','WALKIN','APPROVE')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewUnifiedWalkin('${a.id}','WALKIN','REJECT')">✕ Tolak</button>`;
-   return '<div class="lead"><div class="small" style="font-weight:800;margin-bottom:4px">'+sourceLabel+'</div><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(st.outlet||'-')+'</b><br>🕒 Diajukan: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Sales: <b>'+esc(rq.name||'User')+'</b></div><div>'+priceLabel+': <b>Rp'+Number(a.sale_price||0).toLocaleString('id-ID')+'</b> • Modal: Rp'+Number(st.cost||0).toLocaleString('id-ID')+'</div><div class="small">Status: MENUNGGU VERIFIKASI</div>'+(canReview?'<div class="row" style="margin-top:8px">'+action+'</div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi pihak yang berwenang.</div>')+'</div>';
+   return '<div class="lead"><div class="small" style="font-weight:800;margin-bottom:4px">'+sourceLabel+'</div><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(st.outlet||'-')+'</b><br>🕒 Diajukan: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Sales User: <b>'+esc(rq.name||'User')+'</b></div><div>'+priceLabel+': <b>Rp'+Number(a.sale_price||0).toLocaleString('id-ID')+'</b> • Modal: Rp'+Number(st.cost||0).toLocaleString('id-ID')+'</div><div class="small">Status: MENUNGGU VERIFIKASI</div>'+(canReview?'<div class="row" style="margin-top:8px">'+action+'</div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi pihak yang berwenang.</div>')+'</div>';
  }).join('');
 
  if(mt)mt.textContent=heading;

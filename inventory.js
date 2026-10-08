@@ -207,15 +207,16 @@ async function openMyClosings(){
     const nextMonth=new Date(now.getFullYear(),now.getMonth()+1,1);
     const monthStartISO=monthStart.toISOString();
     const nextMonthISO=nextMonth.toISOString();
-    const [leadA,leadB,stockA,stockB,walkA,walkB]=await Promise.all([
+    const [leadA,leadB,stockA,stockB,walkA,walkB,salesA]=await Promise.all([
       sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_claimed_by',me).gte('updated_at',monthStartISO).lt('updated_at',nextMonthISO).order('updated_at',{ascending:false}).limit(100),
       sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_pic',me).gte('updated_at',monthStartISO).lt('updated_at',nextMonthISO).order('updated_at',{ascending:false}).limit(100),
       sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
       sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,team_member_ids,sale_price,status,requested_at,reviewed_at,review_note').contains('team_member_ids',[uid]).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
       sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
-      sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').contains('sales_user_ids',[uid]).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100)
+      sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note,sale_id').contains('sales_user_ids',[uid]).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
+      sb.from('sales_transactions').select('id,stock_unit_id,outlet,sales_user_id,sales_closing,sold_at,sale_price,customer_name').eq('sales_closing',me).gte('sold_at',monthStartISO).lt('sold_at',nextMonthISO).order('sold_at',{ascending:false}).limit(100)
     ]);
-    const errors=[leadA,leadB,stockA,stockB,walkA,walkB].map(x=>x.error).filter(Boolean);
+    const errors=[leadA,leadB,stockA,stockB,walkA,walkB,salesA].map(x=>x.error).filter(Boolean);
     if(errors.length)throw errors[0];
 
     const leadsMap=new Map();
@@ -225,7 +226,9 @@ async function openMyClosings(){
     const walkMap=new Map();
     [...(walkA.data||[]),...(walkB.data||[])].forEach(x=>walkMap.set(x.id,x));
 
-    const approvalRows=[...stockMap.values(),...walkMap.values()];
+    const soldSales=salesA.data||[];
+    const soldIds=new Set(soldSales.map(x=>x.id));
+    const approvalRows=[...stockMap.values(),...walkMap.values()].filter(x=>!x.sale_id||!soldIds.has(x.sale_id));
     const stockIds=[...new Set(approvalRows.map(x=>x.stock_unit_id).filter(Boolean))];
     const stocks=stockIds.length?(await sb.from('stock_units').select('id,product_id,outlet,color,status').in('id',stockIds)):{data:[],error:null};
     if(stocks.error)throw stocks.error;
@@ -246,6 +249,7 @@ async function openMyClosings(){
         const rej=String(x.status||'').toUpperCase()==='REJECTED';
         return {source:'STOCK',date:x.reviewed_at||x.requested_at,customer:'-',product:(p.product||'Produk')+(p.variant?' — '+p.variant:''),outlet:x.outlet||s.outlet,status:x.status,statusLabel:ok?'🟢 DISETUJUI • SOLD':rej?'🔴 DITOLAK':'🟠 MENUNGGU PERSETUJUAN',price:x.sale_price,note:x.review_note,leadId:null};
       }),
+      ...soldSales.map(x=>{ const s=sm[x.stock_unit_id]||{},p=pm[s.product_id]||{}; return {source:'SOLD',date:x.sold_at,customer:x.customer_name||'-',product:(p.product||'Produk')+(p.variant?' — '+p.variant:''),outlet:x.outlet||s.outlet||'-',status:'APPROVED',statusLabel:'🟢 SOLD',price:x.sale_price,note:null,leadId:null}; }),
       ...[...walkMap.values()].map(x=>{
         const s=sm[x.stock_unit_id]||{},p=pm[s.product_id]||{};
         const ok=String(x.status||'').toUpperCase()==='APPROVED';
@@ -261,7 +265,7 @@ async function openMyClosings(){
     const money=x=>x.price==null?'':('<div style="margin-top:5px">💰 Harga Closing: <b>Rp'+Number(x.price||0).toLocaleString('id-ID')+'</b></div>');
     const cards=items.map((x,i)=>{
       const date=x.date?new Date(x.date).toLocaleString('id-ID'):'-';
-      const source=x.source==='LEAD'?'🏆 CLOSING LEAD':x.source==='WALKIN'?'🚶 WALK-IN':'📦 CLOSING STOCK SIAP JUAL';
+      const source=x.source==='LEAD'?'🏆 CLOSING LEAD':x.source==='WALKIN'?'🚶 WALK-IN':x.source==='SOLD'?'📦 PENJUALAN SOLD':'📦 CLOSING STOCK SIAP JUAL';
       return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><b>'+String(i+1).padStart(2,'0')+'. '+source+'</b><b>'+x.statusLabel+'</b></div><div style="margin-top:5px">📱 '+esc(x.product||'-')+'</div><div class="small">📍 '+esc(x.outlet||'-')+' • 🕒 '+esc(date)+'</div>'+money(x)+(x.note?'<div class="small" style="margin-top:5px">📝 Catatan: '+esc(x.note)+'</div>':'')+'</div>';
     }).join('');
 

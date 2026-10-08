@@ -116,10 +116,10 @@
         html+='<div class="lead perf-person-card" style="margin-top:10px">'+
           '<div class="row" style="justify-content:space-between;align-items:center"><b style="font-size:17px">'+escP(r.employee_name)+'</b></div>'+
           '<div class="perf-grid" style="margin-top:10px">'+
-          '<div><span>📲 Claim CS</span><b>'+fmt(r.claim_cs)+'</b></div>'+
-          '<div><span>🤝 Handover CS → Sales</span><b>'+fmt(r.handover)+'</b></div>'+
-          '<div><span>🎯 CS Closing</span><b>'+fmt(r.cs_closing)+'</b></div>'+
-          '<div><span>🏆 Sales Closing</span><b>'+fmt(r.sales_closing)+'</b></div>'+
+          '<div><span>📲 Claim CS</span><b>'+fmt(Number(r.claim_cs||0))+'</b></div>'+
+          '<div><span>🤝 Handover CS → Sales</span><b>'+fmt(Number(r.handover||0))+'</b></div>'+
+          '<div><span>🎯 CS Closing</span><b>'+fmt(Number(r.cs_closing||0))+'</b></div>'+
+          '<div><span>🏆 Sales Closing</span><b>'+fmt(Number(r.sales_closing||0))+'</b></div>'+
           '</div></div>';
       });
       if(!rows.length)html+='<div class="lead">Belum ada aktivitas lead pada periode ini.</div>';

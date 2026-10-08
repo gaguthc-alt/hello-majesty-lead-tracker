@@ -196,6 +196,88 @@ function canReviewInventoryReceive(requesterRole,isCell,requestedBy){const me=in
 async function loadInventoryApprovalCount(){const me=inventoryReviewerRole();const canApprove=!!profile?.is_management||me==='DEVELOPER'||me==='DEVELOPER APLIKASI'||me==='FASILITATOR'||me==='ADMIN FINANCE MAJESTY CELL';const btn=document.getElementById('inventoryApprovalBtn');if(!canApprove||!btn)return;const r=await sb.from('inventory_receive_approvals').select('id',{count:'exact',head:true}).eq('status','PENDING');if(!r.error)btn.textContent='🔔 Persetujuan Barang Masuk'+(r.count?' ('+r.count+')':'');}
 window.openInventoryApprovals=async function(){const me=inventoryReviewerRole(); console.log('[HM] openInventoryApprovals loaded v20261006-approval4');const canApprove=!!profile?.is_management||me==='DEVELOPER'||me==='DEVELOPER APLIKASI'||me==='FASILITATOR'||me==='ADMIN FINANCE MAJESTY CELL';if(!canApprove)return alert('Persetujuan Barang Masuk hanya dapat dilakukan Developer, Management, Fasilitator, atau Admin Finance Majesty Cell.');const a=await sb.from('inventory_receive_approvals').select('id,stock_unit_id,requested_by,requested_at,status,review_note').eq('status','PENDING').order('requested_at',{ascending:false});if(a.error)return alert(a.error.message);const rows=a.data||[];$('mt').textContent='🔔 Persetujuan Barang Masuk ('+rows.length+')';if(!rows.length){$('mb').innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">✅</div><b>Tidak ada Barang Masuk yang menunggu verifikasi.</b><div class="small" style="margin-top:6px">Semua pengajuan sudah diproses atau belum ada pengajuan baru.</div></div>';const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');if(panel&&body){if(title)title.textContent=$('mt').textContent;body.replaceChildren(...Array.from($('mb').childNodes));panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}else $('modal').classList.remove('hidden');return;}const ids=rows.map(x=>x.stock_unit_id);const s=await sb.from('stock_units').select('id,product_id,outlet,imei_1,cost,asking_price,partner_name,source_type,status').in('id',ids);if(s.error)return alert(s.error.message);const stocks=s.data||[];const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};const products=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));const u=await sb.from('team_profiles').select('user_id,name,role,is_management').in('user_id',rows.map(x=>x.requested_by));const users=Object.fromEntries((u.data||[]).map(x=>[x.user_id,x]));$('mb').innerHTML=rows.map((a,i)=>{const s=stocks.find(x=>x.id===a.stock_unit_id)||{},p=products[s.product_id]||{},rq=users[a.requested_by]||{},rqRole=String(rq.role||'').trim().toUpperCase().replace(/_/g,' '),isCell=String(s.source_type||'').toUpperCase()==='MAJESTY_CELL'||String(s.partner_name||'').toUpperCase()==='MAJESTY CELL',canReview=canReviewInventoryReceive(rqRole,isCell,a.requested_by);return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(s.outlet||'-')+'</b><br>🕒 Diinput: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Diinput oleh: <b>'+esc(rq.name||'User')+'</b></div><div>IMEI: '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+' • Modal: <b>Rp'+Number(s.cost||0).toLocaleString('id-ID')+'</b> • Jual: Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</div><div class="small">Partner: '+esc(s.partner_name||'-')+' • Status: MENUNGGU PERSETUJUAN</div>'+(canReview?'<div class="row" style="margin-top:8px"><button class="success" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'APPROVE\')">✓ Setujui & Masukkan ke Stock</button><button class="secondary" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'CHANGES_REQUESTED\')">✎ Minta Koreksi</button><button class="danger" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'REJECT\')">✕ Tolak</button></div>':'<div class="small" style="margin-top:8px;font-weight:700">⏳ Menunggu verifikasi dari pihak yang berwenang.</div>')+'</div>';}).join('');const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');if(panel&&body){if(title)title.textContent=$('mt').textContent||'🔔 Persetujuan Barang Masuk';body.replaceChildren(...Array.from($('mb').childNodes));panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}else $('modal').classList.remove('hidden');}
 async function reviewInventoryReceive(stockId,action){const label=action==='APPROVE'?'Setujui':action==='REJECT'?'Tolak':'Minta koreksi';let note='';if(action!=='APPROVE'){note=prompt(label+' Barang Masuk. Catatan wajib diisi:')||'';if(!note.trim())return alert('Catatan wajib diisi.');}const r=await sb.rpc('review_inventory_receive',{p_stock_unit_id:stockId,p_action:action,p_note:note||null});if(r.error)return alert(r.error.message);alert(action==='APPROVE'?'Barang Masuk disetujui dan menjadi Stock READY.':action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');closeModal();await renderInventory();}
+async function openMyClosings(){
+  try{
+    if(!profile?.user_id)return alert('Profil belum siap. Silakan refresh aplikasi.');
+    const me=String(profile.name||'').trim();
+    const uid=String(profile.user_id||'');
+    const [leadA,leadB,stockA,stockB,walkA,walkB]=await Promise.all([
+      sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_claimed_by',me).order('updated_at',{ascending:false}).limit(100),
+      sb.from('leads').select('lead_id,customer,outlet,product,sales_claimed_by,sales_result,updated_at,created_at').eq('sales_result','CLOSING').eq('sales_pic',me).order('updated_at',{ascending:false}).limit(100),
+      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).order('requested_at',{ascending:false}).limit(100),
+      sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,sale_price,status,requested_at,reviewed_at,review_note').contains('sales_user_ids',[uid]).order('requested_at',{ascending:false}).limit(100),
+      sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).order('requested_at',{ascending:false}).limit(100),
+      sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').contains('sales_user_ids',[uid]).order('requested_at',{ascending:false}).limit(100)
+    ]);
+    const errors=[leadA,leadB,stockA,stockB,walkA,walkB].map(x=>x.error).filter(Boolean);
+    if(errors.length)throw errors[0];
+
+    const leadsMap=new Map();
+    [...(leadA.data||[]),...(leadB.data||[])].forEach(x=>leadsMap.set(x.lead_id,x));
+    const stockMap=new Map();
+    [...(stockA.data||[]),...(stockB.data||[])].forEach(x=>stockMap.set(x.id,x));
+    const walkMap=new Map();
+    [...(walkA.data||[]),...(walkB.data||[])].forEach(x=>walkMap.set(x.id,x));
+
+    const approvalRows=[...stockMap.values(),...walkMap.values()];
+    const stockIds=[...new Set(approvalRows.map(x=>x.stock_unit_id).filter(Boolean))];
+    const stocks=stockIds.length?(await sb.from('stock_units').select('id,product_id,outlet,color,variant,status').in('id',stockIds)):{data:[],error:null};
+    if(stocks.error)throw stocks.error;
+    const pids=[...new Set((stocks.data||[]).map(x=>x.product_id).filter(Boolean))];
+    const products=pids.length?(await sb.from('product_master').select('id,product,variant').in('id',pids)):{data:[],error:null};
+    if(products.error)throw products.error;
+    const sm=Object.fromEntries((stocks.data||[]).map(x=>[x.id,x]));
+    const pm=Object.fromEntries((products.data||[]).map(x=>[x.id,x]));
+
+    const items=[
+      ...[...leadsMap.values()].map(x=>({
+        source:'LEAD',date:x.updated_at||x.created_at,customer:x.customer,product:x.product,outlet:x.outlet,
+        status:'APPROVED',statusLabel:'🟢 CLOSING',price:null,note:null,leadId:x.lead_id
+      })),
+      ...[...stockMap.values()].map(x=>{
+        const s=sm[x.stock_unit_id]||{},p=pm[s.product_id]||{};
+        const ok=String(x.status||'').toUpperCase()==='APPROVED';
+        const rej=String(x.status||'').toUpperCase()==='REJECTED';
+        return {source:'STOCK',date:x.reviewed_at||x.requested_at,customer:'-',product:(p.product||'Produk')+(p.variant?' — '+p.variant:''),outlet:x.outlet||s.outlet,status:x.status,statusLabel:ok?'🟢 DISETUJUI • SOLD':rej?'🔴 DITOLAK':'🟠 MENUNGGU PERSETUJUAN',price:x.sale_price,note:x.review_note,leadId:null};
+      }),
+      ...[...walkMap.values()].map(x=>{
+        const s=sm[x.stock_unit_id]||{},p=pm[s.product_id]||{};
+        const ok=String(x.status||'').toUpperCase()==='APPROVED';
+        const rej=String(x.status||'').toUpperCase()==='REJECTED';
+        return {source:'WALKIN',date:x.reviewed_at||x.requested_at,customer:'-',product:(p.product||'Produk')+(p.variant?' — '+p.variant:''),outlet:s.outlet||'-',status:x.status,statusLabel:ok?'🟢 DISETUJUI • SOLD':rej?'🔴 DITOLAK':'🟠 MENUNGGU PERSETUJUAN',price:x.sale_price,note:x.review_note,leadId:null};
+      })
+    ].sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+    const countPending=items.filter(x=>x.status==='PENDING').length;
+    const countApproved=items.filter(x=>x.source==='LEAD'||x.status==='APPROVED').length;
+    const countRejected=items.filter(x=>x.status==='REJECTED').length;
+
+    const money=x=>x.price==null?'':('<div style="margin-top:5px">💰 Harga Closing: <b>Rp'+Number(x.price||0).toLocaleString('id-ID')+'</b></div>');
+    const cards=items.map((x,i)=>{
+      const date=x.date?new Date(x.date).toLocaleString('id-ID'):'-';
+      const source=x.source==='LEAD'?'🏆 CLOSING LEAD':x.source==='WALKIN'?'🚶 WALK-IN':'📦 CLOSING STOCK SIAP JUAL';
+      return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><b>'+String(i+1).padStart(2,'0')+'. '+source+'</b><b>'+x.statusLabel+'</b></div><div style="margin-top:5px">📱 '+esc(x.product||'-')+'</div><div class="small">📍 '+esc(x.outlet||'-')+' • 🕒 '+esc(date)+'</div>'+money(x)+(x.note?'<div class="small" style="margin-top:5px">📝 Catatan: '+esc(x.note)+'</div>':'')+'</div>';
+    }).join('');
+
+    $('mt').textContent='📋 Closing Saya ('+items.length+')';
+    $('mb').innerHTML='<div class="stats" style="margin-bottom:10px"><div class="stat"><div class="small">🟠 Menunggu</div><div class="num">'+countPending+'</div></div><div class="stat"><div class="small">🟢 Disetujui / Closing</div><div class="num">'+countApproved+'</div></div><div class="stat"><div class="small">🔴 Ditolak</div><div class="num">'+countRejected+'</div></div></div>'+(cards||'<div class="box" style="text-align:center">Belum ada closing yang tercatat.</div>');
+    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle'),modal=document.getElementById('modal');
+    if(panel&&body){
+      if(title)title.textContent=$('mt').textContent;
+      body.replaceChildren(...Array.from($('mb').childNodes));
+      if(modal)modal.classList.add('hidden');
+      panel.classList.remove('hidden');
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
+    }else{
+      modal?.classList.remove('hidden');
+    }
+  }catch(e){
+    console.error('[HM] Closing Saya:',e);
+    alert('Closing Saya gagal dimuat: '+(e?.message||e));
+  }
+}
+window.openMyClosings=openMyClosings;
+
 function sendInventoryApprovalWA(stockId){const msg='🔔 *PERMOHONAN PERSETUJUAN BARANG MASUK*\\n\\nAda Barang Masuk *Majesty Cell* yang menunggu persetujuan Management/Facilitator.\\n\\nMohon cek aplikasi Hello Majesty → Product & Stock → Persetujuan Barang Masuk.\\n\\nStatus: *MENUNGGU PERSETUJUAN*';window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');}
 async function openMyInventoryReceiveStatus(){const a=await sb.from('inventory_receive_approvals').select('stock_unit_id,requested_at,status,reviewed_at,review_note').eq('requested_by',profile.user_id).order('requested_at',{ascending:false}).limit(20);if(a.error)return alert(a.error.message);const ids=(a.data||[]).map(x=>x.stock_unit_id);const s=ids.length?await sb.from('stock_units').select('id,product_id,status,imei_1').in('id',ids):{data:[]};const pids=[...new Set((s.data||[]).map(x=>x.product_id).filter(Boolean))];const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};const pm=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));$('mt').textContent='📦 Status Barang Masuk Saya';$('mb').innerHTML=(a.data||[]).map(x=>{const st=(s.data||[]).find(y=>y.id===x.stock_unit_id)||{},p=pm[st.product_id]||{};return '<div class="lead"><b>'+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">'+new Date(x.requested_at).toLocaleString('id-ID')+' • '+esc(x.status)+'</div>'+(x.review_note?'<div>Catatan: '+esc(x.review_note)+'</div>':'')+'</div>';}).join('')||'<div class="small">Belum ada pengajuan.</div>';$('modal').classList.remove('hidden');}
 

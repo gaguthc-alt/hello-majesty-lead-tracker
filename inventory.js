@@ -171,7 +171,13 @@ async function reviewUnifiedWalkin(id,kind,action){
  const rpcName=kind==='STOCK'?'review_stock_sale_approval':'review_walkin_sale_approval';
  const r=await sb.rpc(rpcName,{p_approval_id:id,p_action:action,p_note:note});
  if(r.error)return alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+r.error.message);
- alert(action==='APPROVE'?(kind==='STOCK'?'Closing Stock disetujui dan transaksi menjadi SOLD.':'Walk-In disetujui dan transaksi menjadi SOLD.'):(kind==='STOCK'?'Closing Stock ditolak.':'Walk-In ditolak.'));
+ if(action==='APPROVE'){
+   const msg=['✅ *WALK-IN DISETUJUI*','','Transaksi Walk-In sudah disetujui dan status menjadi *SOLD*.','','Silakan cek detail transaksi di aplikasi *Hello Majesty*.','','— *HELLO MAJESTY*','_Built on Trust._'].join(String.fromCharCode(10));
+   const sendWA=confirm((kind==='STOCK'?'Closing Stock':'Walk-In')+' sudah disetujui dan menjadi SOLD.\\n\\nKirim konfirmasi hasil persetujuan ke WhatsApp?');
+   if(sendWA)window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+ }else{
+   alert(kind==='STOCK'?'Closing Stock ditolak.':'Walk-In ditolak.');
+ }
  closeModal(); await renderInventory();
 }
 

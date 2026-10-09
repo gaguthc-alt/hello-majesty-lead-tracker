@@ -3470,8 +3470,8 @@ function waNumber(v){
 }
 function waShare(text){
  // Normalisasi newline sebelum dikirim ke WhatsApp.
- // Menangani dua kemungkinan: newline asli dan teks literal "\\n".
- const normalized=String(text??'').replace(/\\n/g,'\\n');
+ // Menangani newline asli dan teks literal "\\n".
+ const normalized=String(text??'').replace(/\\n/g,'\n');
  const url='https://wa.me/?text='+encodeURIComponent(normalized);
  window.open(url,'_blank');
 }

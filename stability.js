@@ -1,5 +1,5 @@
 /* HELLO MAJESTY — Frontend Stability Guard
- * Diagnostics only. No workflow/data/permission changes.
+ * Diagnostics only. UI polish added below; no workflow/data/permission changes.
  */
 (function(){
   'use strict';
@@ -30,6 +30,49 @@
     console.error('[HM unhandled rejection]',reason);
     showError(msg);
   });
+
+  /* HM DATA LEAD — MOBILE/UI POLISH: presentation only */
+  function polishLeadTrackerUI(){
+    if(document.getElementById('hmLeadTrackerPolish')) return;
+    var style=document.createElement('style');
+    style.id='hmLeadTrackerPolish';
+    style.textContent=
+      '#modal .box{box-sizing:border-box!important;}'+
+      '#modal .box > .stats{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;}'+
+      '#modal .box > .stats .stat{min-width:0!important;min-height:78px!important;padding:14px 10px!important;border-radius:18px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;text-align:center!important;box-sizing:border-box!important;}'+
+      '#modal .box > .stats .stat .small{line-height:1.25!important;white-space:normal!important;}'+
+      '#modal .box > .stats .stat .num{font-size:25px!important;line-height:1.05!important;margin-top:5px!important;}'+
+      '#modal #hmLeadTodayResults .box{border-radius:18px!important;padding:14px!important;}'+
+      '#modal #hmLeadAllResults{display:flex!important;flex-direction:column!important;gap:10px!important;}'+
+      '#modal #hmLeadAllResults > .box{margin:0!important;border-radius:18px!important;}'+
+      '@media(max-width:700px){'+
+        '#modal .box{width:100%!important;}'+
+        '#modal .box > .stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;}'+
+        '#modal .box > .stats .stat{min-height:72px!important;padding:12px 8px!important;}'+
+        '#modal .box > .stats .stat .num{font-size:23px!important;}'+
+        '#modal #hmLeadAllResults{gap:8px!important;}'+
+      '}'+
+      '#modal [style*="grid-template-columns:repeat(3,minmax(0,1fr))"]{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;}'+
+      '#modal [style*="grid-template-columns:repeat(3,minmax(0,1fr))"] .stat{min-width:0!important;min-height:76px!important;padding:12px 8px!important;border-radius:17px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;}'+
+      '#modal [style*="grid-template-columns:repeat(3,minmax(0,1fr))"] .stat .small{font-size:12px!important;line-height:1.15!important;white-space:nowrap!important;}'+
+      '#modal [style*="grid-template-columns:repeat(3,minmax(0,1fr))"] .stat .num{font-size:23px!important;margin-top:5px!important;}'+
+      '@media(max-width:700px){'+
+        '#modal [style*="grid-template-columns:repeat(3,minmax(0,1fr))"]{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;}'+
+        '#modal [style*="grid-template-columns:repeat(3,minmax(0,1fr))"] .stat{min-height:70px!important;padding:11px 6px!important;}'+
+        '#modal [style*="grid-template-columns:repeat(3,minmax(0,1fr))"] .stat .small{font-size:11px!important;}'+
+        '#modal [style*="grid-template-columns:repeat(3,minmax(0,1fr))"] .stat .num{font-size:22px!important;}'+
+      '}'+
+      '@media(max-width:380px){'+
+        '#modal [style*="grid-template-columns:repeat(3,minmax(0,1fr))"] .stat .small{font-size:10.5px!important;}'+
+      '}';
+    (document.head||document.documentElement).appendChild(style);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',polishLeadTrackerUI,{once:true});
+  }else{
+    polishLeadTrackerUI();
+  }
 
   window.hmDiagnostics=function(){
     var ids={};

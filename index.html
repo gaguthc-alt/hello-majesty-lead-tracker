@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261009-commission-total-fix-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261009-paylater-account-fix-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -3709,8 +3709,8 @@ async function salesResult(id){
    const code=sel.selectedOptions?.[0]?.dataset?.code||'';
    const isPiutang=sel.value==='PIUTANG', isPayLater=sel.value==='PAY_LATER';
    plBox?.classList.toggle('hidden',!isPayLater);
-   box.classList.toggle('hidden',isPiutang);
-   if(isPiutang){acc.value='';return;}
+   box.classList.toggle('hidden',isPiutang||isPayLater);
+   if(isPiutang||isPayLater){acc.value='';return;}
    const wanted=code==='CASH'?'CASH':'BANK';
    // Untuk pembayaran TUNAI, Kas mengikuti outlet/PIC yang sedang login.
    // Tim Refill -> Kas MNG Majesty Refill; Tim Plaza -> Kas MNG Majesty Plaza.

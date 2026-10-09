@@ -3469,7 +3469,10 @@ function waNumber(v){
  return d;
 }
 function waShare(text){
- const url='https://wa.me/?text='+encodeURIComponent(text);
+ // Normalisasi newline sebelum dikirim ke WhatsApp.
+ // Menangani dua kemungkinan: newline asli dan teks literal "\\n".
+ const normalized=String(text??'').replace(/\\n/g,'\\n');
+ const url='https://wa.me/?text='+encodeURIComponent(normalized);
  window.open(url,'_blank');
 }
 function rupiahReport(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}

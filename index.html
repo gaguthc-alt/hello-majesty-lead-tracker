@@ -1161,7 +1161,7 @@ main{
     <p id="loginErr" class="login-error"></p>
     <div class="login-trust"><span>●</span> Secure access &nbsp;•&nbsp; Built on Trust</div>
   </div>
-  <div class="login-footer">HELLO MAJESTY <span>•</span> Workspace Terintegrasi</div>
+  <div class="login-footer">Hello Majesty<br>Management System<br>Built on Trust</div>
 </div>
 </section>
 <!-- HM LOGIN: single source of truth is login-v9.js -->
@@ -1680,7 +1680,7 @@ function hmOpenTradeInline(){
  '<label>16. Tipe HP</label><input id="hmtt_wanted" placeholder="Contoh: iPhone 17 256 GB">'+
  '<label>17. Estimasi Budget / Tambah Dana</label><input id="hmtt_budget" placeholder="Contoh: tambah Rp5.000.000">'+
  '<div class="small" style="margin-top:12px">Silakan isi langsung pada form di atas lalu kirim kembali. Setelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.</div>'+
- '<div style="margin-top:12px;font-weight:700">— HELLO MAJESTY<br><span style="font-weight:400;font-style:italic">Built on Trust.</span></div>'+
+ '<div style="margin-top:12px;font-weight:700">Hello Majesty<br>Management System<br>Built on Trust</div>'+
  '<button id="hmtt_wa" style="width:100%;margin-top:8px" type="button" onclick="sendTradeInlineWA()">📤 Share ke WhatsApp</button>'+
  '<p id="hmtt_msg" class="small"></p></div>';
  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
@@ -1712,7 +1712,7 @@ function sendFollowupTemplateWA(type){
   after:['❤️ *AFTER SALES*','*HELLO MAJESTY*','','Halo Kak 👋','Bagaimana dengan HP-nya? Semoga sudah nyaman digunakan ya 😊','','Kalau ada kendala atau ada yang ingin ditanyakan, silakan chat saya kapan saja.']
  };
  const arr=templates[String(type)]||templates.potensial;
- const msg=arr.concat(['','— *HELLO MAJESTY*','_Built on Trust._']).join(nl);
+ const msg=arr.concat(['','*Hello Majesty*','*Management System*','*Built on Trust*']).join(nl);
  location.href='https://api.whatsapp.com/send?text='+encodeURIComponent(msg);
 }
 function hmOpenSellPhoneInline(){
@@ -1740,7 +1740,7 @@ function hmOpenSellPhoneInline(){
  '<label>14. Charging</label><input id="hmsj_charging" placeholder="Normal / Bermasalah">'+
  '<label>15. Lama Pemakaian</label><input id="hmsj_usage" placeholder="Contoh: ±2 tahun">'+
  '<div class="small" style="margin-top:12px">Setelah data diterima, tim Sales akan membantu pengecekan kondisi dan memberikan estimasi harga beli.</div>'+
- '<div style="margin-top:12px;font-weight:700">— HELLO MAJESTY<br><span style="font-weight:400;font-style:italic">Built on Trust.</span></div>'+
+ '<div style="margin-top:12px;font-weight:700">Hello Majesty<br>Management System<br>Built on Trust</div>'+
  '<button id="hmsj_wa" style="width:100%;margin-top:8px" type="button" onclick="sendSellPhoneInlineWA()">📤 Share ke WhatsApp</button>'+
  '</div>';
  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Form Data Jual HP');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
@@ -1754,7 +1754,7 @@ function sendSellPhoneInlineWA(){
  'Silakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏','',
  'Setelah data kami terima, tim Sales akan bantu cek kondisi dan koordinasi untuk estimasi harga beli HP.',
  '',
- '— *HELLO MAJESTY*','_Built on Trust._'
+ '*Hello Majesty*','*Management System*','*Built on Trust*'
  ].join(String.fromCharCode(10));
  location.href='https://api.whatsapp.com/send?text='+encodeURIComponent(msg);
 }
@@ -1767,7 +1767,7 @@ function sendTradeInlineWA(){
  '*HP YANG DIINGINKAN*','16. Tipe HP :','17. Estimasi budget / tambah dana :','',
  'Silakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏','',
  'Setelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.','',
- '— *HELLO MAJESTY*','_Built on Trust._'
+ '*Hello Majesty*','*Management System*','*Built on Trust*'
  ].join(String.fromCharCode(10));
  const url='https://api.whatsapp.com/send?text='+encodeURIComponent(msg);
  location.href=url;
@@ -3573,7 +3573,7 @@ function stockReportText(d){
    }
  });
  if(!rows.length)t+='Belum ada stock READY.\n';
- t+='*— HELLO MAJESTY*\n_Built on Trust._';
+ t+='*Hello Majesty*\n*Management System*\n*Built on Trust*';
  return t;
 }
 async function shareFacilitatorReport(period,withStock){
@@ -3827,8 +3827,9 @@ Mohon tim tidak melakukan follow up pada lead yang sama tanpa koordinasi dengan 
 
 ━━━━━━━━━━━━━━
 
-— *HELLO MAJESTY*
-*Built on Trust.*`;
+*Hello Majesty*
+*Management System*
+*Built on Trust*`;
 }
 function shareSalesClaim(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesClaimMessage(l));}
 async function handoverSales(id){ const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'}); if(x.error)return alert(x.error.message); await loadLeads(); openUrl(); }
@@ -3852,7 +3853,7 @@ function share(id){
  }else{
   lines.push('Produk: '+(l.product||'-'),'Budget: '+(l.budget||'-'));
  }
- lines.push('','Outlet: '+(l.outlet||'-'),'CS: '+(l.cs_claimed_by||'-'),'','📌 Buka link untuk melihat detail dan CLAIM:',link,'','— HELLO MAJESTY','Built on Trust.');
+ lines.push('','Outlet: '+(l.outlet||'-'),'CS: '+(l.cs_claimed_by||'-'),'','📌 Buka link untuk melihat detail dan CLAIM:',link,'','Hello Majesty','Management System','Built on Trust');
  const msg=lines.join(nl);
  navigator.clipboard?.writeText(msg).catch(()=>{});
  location.href='https://wa.me/?text='+encodeURIComponent(msg);
@@ -3965,13 +3966,13 @@ function salesResultMessage(l){
  const product=l.product||'-';
  const nl=String.fromCharCode(10);
  if(result==='CLOSING'){
-  return ['🏆 *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: CLOSING*','📱 Produk: '+product,'','Lead berhasil closing dan ditangani oleh '+pic+'.','','— HELLO MAJESTY','Built on Trust.'].join(nl);
+  return ['🏆 *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: CLOSING*','📱 Produk: '+product,'','Lead berhasil closing dan ditangani oleh '+pic+'.','','Hello Majesty','Management System','Built on Trust'].join(nl);
  }
  if(result==='POTENSIAL'){
   const follow=l.sales_follow_up_date?new Date(l.sales_follow_up_date+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'-';
-  return ['📢 *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: POTENSIAL*','📱 Produk: '+product,'📅 Follow-up: '+follow,'','Lead masih dalam proses follow-up oleh '+pic+'.','Mohon koordinasi dengan PIC untuk lead ini dan tidak melakukan follow-up tanpa koordinasi.','','— HELLO MAJESTY','Built on Trust.'].join(nl);
+  return ['📢 *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: POTENSIAL*','📱 Produk: '+product,'📅 Follow-up: '+follow,'','Lead masih dalam proses follow-up oleh '+pic+'.','Mohon koordinasi dengan PIC untuk lead ini dan tidak melakukan follow-up tanpa koordinasi.','','Hello Majesty','Management System','Built on Trust'].join(nl);
  }
- return ['❌ *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: GAGAL*','📱 Produk: '+product,'📝 Alasan: '+(l.objection||'-'),'','Lead dinyatakan gagal setelah proses konsultasi dan follow-up oleh '+pic+'.','','— HELLO MAJESTY','Built on Trust.'].join(nl);
+ return ['❌ *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: GAGAL*','📱 Produk: '+product,'📝 Alasan: '+(l.objection||'-'),'','Lead dinyatakan gagal setelah proses konsultasi dan follow-up oleh '+pic+'.','','Hello Majesty','Management System','Built on Trust'].join(nl);
 }
 function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
 async function shareWalkinApprovalWA(stockId,salePrice){
@@ -3994,7 +3995,7 @@ async function shareWalkinApprovalWA(stockId,salePrice){
  if(!salesNames.length)salesNames=[profile?.name||'Sales'];
  const sales=salesNames.join(', ');
  const approvalLink=window.location.origin+window.location.pathname+'?open=walkin&approval='+encodeURIComponent(stockId||'');
- const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 Sales: '+sales,'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','— *HELLO MAJESTY*','_Built on Trust._'].join(nl);
+ const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 Sales: '+sales,'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
  window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
 }
 window.hmOpenWalkinFromLink=async function(){
@@ -4164,8 +4165,9 @@ Silakan isi langsung di bawah pertanyaan tersebut dan kirim kembali ya 🙏
 
 Setelah data kami terima, tim Sales akan bantu cek dan koordinasi untuk estimasi tukar tambah.
 
-— *HELLO MAJESTY*
-_Built on Trust._`;
+*Hello Majesty*
+*Management System*
+*Built on Trust*`;
 }
 async function openTradeForm(){
  const msg=tradeWaMessage();

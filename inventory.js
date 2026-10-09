@@ -327,7 +327,8 @@ async function renderStandaloneHunterStock(){
       const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;
       return '<div class="lead" style="margin-bottom:12px">'+img+
        '<b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b>'+
-       '<div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div>'+\n       '<div class="small">🏹 Hunter: <b>'+esc(x.hunter_name||'-')+'</b></div>'+
+       '<div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div>'+
+       '<div class="small">🏹 Hunter: <b>'+esc(x.hunter_name||'-')+'</b></div>'+
        '<div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div>'+
        '<div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div>'+
        '<div class="small" style="margin-top:5px">🟢 READY — belum laku</div></div>';

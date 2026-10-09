@@ -3481,7 +3481,7 @@ async function getFacilitatorReport(period){
  if(x.error)throw x.error;
  return x.data||{};
 }
-function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow,achievementStats){
+function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow,achievementStats,financeStats){
  const rows=d.sales_rows||[];
  const outlet=d.outlet||profile?.outlet||'Semua Outlet';
  const closingCount=Number(d.sales_count||rows.length||0);
@@ -3517,12 +3517,17 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  t+='- Apple Second :  *( '+cats['Apple Second']+' )*+\\n';
  t+='- Android New : *( '+cats['Android New']+' )* +\\n';
  t+='- Android Second : *( '+cats['Android Second']+' )*+\\n\\n';
+ const fin=financeStats||{};
+ const finRows=[
+   ['Tunai','CASH'],['Transfer Bank','TRANSFER'],['QRIS','QRIS'],['Debit','DEBIT'],
+   ['Credit Card','CREDIT_CARD'],['Akulaku','AKULAKU'],['Kredivo','KREDIVO'],['SPayLater','SPAYLATER'],['Other','OTHER']
+ ];
  t+=' *FINANCE* : \\n';
- t+='• *Shoope :* +\\n';
- t+='• *Kredivo :* +\\n';
- t+='• *Akulaku :* +\\n';
- t+='• *Blibli instore :* +\\n';
- t+='• *Other :* +\\n\\n';
+ finRows.forEach(([name,code])=>{
+   const x=fin[code]||{count:0,amount:0};
+   t+='• *'+name+' :* '+Number(x.count||0)+' transaksi — '+rup(x.amount)+'\\n';
+ });
+ t+='\\n';
  t+='Yok Bisa Team Fokus REWARD';
  return t;
 }
@@ -3608,6 +3613,33 @@ async function shareFacilitatorReport(period,withStock){
    const profitRes=await profitQuery;
    if(profitRes.error)throw profitRes.error;
    profitActual=(profitRes.data||[]).reduce((sum,row)=>sum+Number(row.gross_profit||0),0);
+   // FINANCE: nominal dan jumlah transaksi ditarik langsung dari sales_transactions.
+   // Periode mengikuti laporan dan outlet yang dipilih. Nominal = harga jual - diskon.
+   const financeStats={};
+   const financeMap={
+     'fe4f8c57-36f8-42d5-970f-d264e592fc5f':'CASH',
+     '39b34cd3-28bd-4e4a-a32b-d62726ec6750':'TRANSFER',
+     'eb7f8d5c-ea8b-4f4a-aa79-3bb22337abe8':'QRIS',
+     '03414c7d-8a0d-4f6d-8b3d-551f79a170ec':'DEBIT',
+     '7ef6a30b-dc44-43a0-af1c-ba9c7e94d8fb':'CREDIT_CARD',
+     '34d4364e-13ca-49bb-ba11-773315981a95':'AKULAKU',
+     '6dec1be8-f4f1-457a-b780-d9c9f7422488':'KREDIVO',
+     '90fe46a9-0516-4e98-9190-0b9b227b9bcc':'SPAYLATER',
+     'b33f0ca5-bc96-4b17-9e59-0429643ef4e8':'OTHER'
+   };
+   let financeQ=sb.from('sales_transactions')
+     .select('finance_payment_method_id,sale_price,discount,sold_at,outlet')
+     .gte('sold_at',startISO).lt('sold_at',endISO);
+   if(d.outlet&&d.outlet!=='Semua Outlet')financeQ=financeQ.eq('outlet',d.outlet);
+   const financeRes=await financeQ;
+   if(financeRes.error)throw financeRes.error;
+   (financeRes.data||[]).forEach(row=>{
+     const code=financeMap[String(row.finance_payment_method_id||'')];
+     if(!code)return;
+     if(!financeStats[code])financeStats[code]={count:0,amount:0};
+     financeStats[code].count++;
+     financeStats[code].amount+=Number(row.sale_price||0)-Number(row.discount||0);
+   });
    const closingStats={leadBeforeToday:0,leadToday:0,walkinBeforeToday:0,walkinToday:0,freelanceBeforeToday:0,freelanceToday:0};
    // Angka (bulan ini sebelum hari ini) + (hari ini) selalu dihitung dari
    // 1 haribulan 00:00 WITA sampai besok 00:00 WITA, terlepas report yang dipilih.
@@ -3703,7 +3735,7 @@ async function shareFacilitatorReport(period,withStock){
      const key=apple?(second?'Apple Second':'Apple New'):(second?'Android Second':'Android New');
      achievementStats[key]++;
    });
-   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow,achievementStats);
+   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow,achievementStats,financeStats);
    if(withStock){const stock=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(stock)}
    waShare(text);
  }catch(e){alert('Laporan error: '+(e?.message||e));}

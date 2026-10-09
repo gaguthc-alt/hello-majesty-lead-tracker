@@ -3596,13 +3596,17 @@ async function shareFacilitatorReport(period,withStock){
        rewardAmount=same?first.amount:0;
      }
    }
-   // Hitung laba aktual dari gross_profit transaksi, bukan dari omzet.
+   // Hitung laba aktual dari gross_profit. sales_transactions menyimpan sold_at dalam UTC,
+   // sedangkan laporan mengikuti tanggal Bali (WITA, UTC+8).
    const now=new Date();
-   const dateKey=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
-   const start=period==='TODAY'?new Date(now.getFullYear(),now.getMonth(),now.getDate()):new Date(now.getFullYear(),now.getMonth(),1);
-   const end=period==='TODAY'?new Date(now.getFullYear(),now.getMonth(),now.getDate()+1):new Date(now.getFullYear(),now.getMonth()+1,1);
+   const baliDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Makassar',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+   const [yy,mm,dd]=baliDate.split('-').map(Number);
+   const startLocal=period==='TODAY'?new Date(yy,mm-1,dd):new Date(yy,mm-1,1);
+   const endLocal=period==='TODAY'?new Date(yy,mm-1,dd+1):new Date(yy,mm,1);
+   const startISO=new Date(startLocal.getTime()-8*60*60*1000).toISOString();
+   const endISO=new Date(endLocal.getTime()-8*60*60*1000).toISOString();
    let profitActual=0;
-   let profitQuery=sb.from('sales_transactions').select('gross_profit,outlet,sold_at').gte('sold_at',dateKey(start)+'T00:00:00').lt('sold_at',dateKey(end)+'T00:00:00');
+   let profitQuery=sb.from('sales_transactions').select('gross_profit,outlet,sold_at').gte('sold_at',startISO).lt('sold_at',endISO);
    if(d.outlet&&d.outlet!=='Semua Outlet')profitQuery=profitQuery.eq('outlet',d.outlet);
    const profitRes=await profitQuery;
    if(profitRes.error)throw profitRes.error;

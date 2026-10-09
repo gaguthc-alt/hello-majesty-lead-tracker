@@ -3665,12 +3665,26 @@ async function shareFacilitatorReport(period,withStock){
    const receivedSet=new Set(receivedIds);
    units.filter(u=>receivedSet.has(u.id)).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.inSecond:stockFlow.inNew));
    (soldRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.outSecond:stockFlow.outNew));
+   // PENCAPAIAN = seluruh penjualan bulan berjalan: tanggal 1 00:00 WITA sampai besok 00:00 WITA.
+   // Dengan demikian otomatis = pencapaian sampai kemarin + pencapaian hari ini.
    const achievementStats={'Apple New':0,'Apple Second':0,'Android New':0,'Android Second':0};
-   // Pencapaian bulan berjalan: dari 00:00 WITA tanggal 1 sampai 00:00 WITA besok.
-   // Ini secara eksplisit = pencapaian sampai kemarin + pencapaian hari ini.
-   const achievementUnits=(soldRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet);
+   const achievementQ=sb.from('stock_units')
+     .select('id,product_id,outlet,sold_at,grade,battery_health')
+     .gte('sold_at',monthStartUTC?new Date(monthStartUTC).toISOString():startISO)
+     .lt('sold_at',tomorrowStartUTC?new Date(tomorrowStartUTC).toISOString():endISO);
+   const achievementRes=await achievementQ;
+   if(achievementRes.error)throw achievementRes.error;
+   const achievementUnits=(achievementRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet);
+   const achievementPids=[...new Set(achievementUnits.map(u=>u.product_id).filter(Boolean))];
+   let achievementProducts=[];
+   if(achievementPids.length){
+     const aq=await sb.from('product_master').select('id,category,product,variant,grade').in('id',achievementPids);
+     if(aq.error)throw aq.error;
+     achievementProducts=aq.data||[];
+   }
+   const achievementPm=new Map(achievementProducts.map(p=>[p.id,p]));
    achievementUnits.forEach(u=>{
-     const p=pm.get(u.product_id)||{};
+     const p=achievementPm.get(u.product_id)||{};
      const s=(String(p.category||'')+' '+String(p.product||'')+' '+String(p.variant||'')).toUpperCase();
      const apple=/IPHONE|APPLE/.test(s);
      const second=/SECOND|GRADE|BH/.test(s)||u.grade!=null||u.battery_health!=null;

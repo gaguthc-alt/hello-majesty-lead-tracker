@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261009-home-performance-7"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261009-commission-total-fix-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -1195,7 +1195,7 @@ async function openTeamCommission(){
  if(r.error)throw new Error('Komisi Tim: '+r.error.message);
  const rows=r.data||[];
  const commissionKeys=['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'];
- const rowTotal=x=>commissionKeys.reduce((s,k)=>s+Math.round(Number(x[k]||0)),0);
+ const rowTotal=x=>Math.round(Number(x.total_commission||0));
  const total=()=>rows.reduce((s,x)=>s+rowTotal(x),0);
  const labels=[
   ['cs_commission','CS • Komisi Performa'],

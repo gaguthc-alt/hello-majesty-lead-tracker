@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261009-paylater-account-fix-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261009-team-commission-summary-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -1191,12 +1191,25 @@ function renderCommissionActions(){
 async function openTeamCommission(){
  const monthStart=new Date().toISOString().slice(0,7)+'-01';
  const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
- const r=await sb.rpc('management_team_commission_report',{p_month_start:monthStart});
+ const [r,profitRes]=await Promise.all([
+   sb.rpc('management_team_commission_report',{p_month_start:monthStart}),
+   sb.from('sales_transactions').select('gross_profit').gte('sold_at',monthStart).lt('sold_at',new Date(new Date(monthStart).setMonth(new Date(monthStart).getMonth()+1)).toISOString())
+ ]);
  if(r.error)throw new Error('Komisi Tim: '+r.error.message);
+ if(profitRes.error)throw new Error('Laba Komisi Tim: '+profitRes.error.message);
  const rows=r.data||[];
- const commissionKeys=['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'];
  const rowTotal=x=>Math.round(Number(x.total_commission||0));
  const total=()=>rows.reduce((s,x)=>s+rowTotal(x),0);
+ const totalProfit=(profitRes.data||[]).reduce((s,x)=>s+Number(x.gross_profit||0),0);
+ const commissionSummary=[
+   ['CS Handover',rows.reduce((s,x)=>s+Math.max(Number(x.cs_commission||0)-Number(x.cs_closing_commission||0),0),0)],
+   ['CS Closing',rows.reduce((s,x)=>s+Number(x.cs_closing_commission||0),0)],
+   ['Sales',rows.reduce((s,x)=>s+Number(x.sales_commission||0),0)],
+   ['Hunter',rows.reduce((s,x)=>s+Number(x.hunter_commission||0),0)],
+   ['Content Creator',rows.reduce((s,x)=>s+Number(x.content_creator_commission||0),0)],
+   ['Fasilitator',rows.reduce((s,x)=>s+Number(x.facilitator_commission||0),0)]
+ ];
+ const pct=v=>totalProfit>0?(v/totalProfit*100).toFixed(2).replace('.',',')+'%':'0,00%';
  const labels=[
   ['cs_commission','CS • Komisi Performa'],
   ['cs_closing_commission','CS Closing'],
@@ -1210,7 +1223,12 @@ async function openTeamCommission(){
  $('mt').textContent='📊 Komisi Tim';
  $('mb').innerHTML=
    '<div class="box"><h3 style="margin-top:0">Periode '+new Date(monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</h3>'+
-   '<div class="stats">'+invStat('Tim',rows.length)+' '+invStat('Total Komisi',rp(total()))+'</div></div>'+
+   '<div class="stats">'+invStat('Tim',rows.length)+' '+invStat('Total Komisi',rp(total()))+' '+invStat('Laba',rp(totalProfit))+'</div></div>'+
+   '<div class="box"><h3>Rekap Komisi Tim</h3>'+
+   '<div class="small" style="margin-bottom:10px">Persentase dihitung terhadap laba penjualan pada periode yang sama.</div>'+
+   '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:8px 4px">Jenis Komisi</th><th style="text-align:right;padding:8px 4px">Nominal</th><th style="text-align:right;padding:8px 4px">% terhadap Laba</th></tr></thead><tbody>'+
+   commissionSummary.map(([label,value])=>'<tr><td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.08)">'+esc(label)+'</td><td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.08);text-align:right"><b>'+rp(value)+'</b></td><td style="padding:7px 4px;border-top:1px solid rgba(255,255,255,.08);text-align:right">'+pct(value)+'</td></tr>').join('')+
+   '<tr><td style="padding:9px 4px;border-top:2px solid rgba(255,255,255,.18)"><b>TOTAL KOMISI</b></td><td style="padding:9px 4px;border-top:2px solid rgba(255,255,255,.18);text-align:right"><b>'+rp(total())+'</b></td><td style="padding:9px 4px;border-top:2px solid rgba(255,255,255,.18);text-align:right"><b>'+pct(total())+'</b></td></tr></tbody></table></div></div>'+
    '<div class="box"><h3>Rincian Komisi Seluruh Tim</h3>'+
    (rows.length?rows.map(x=>{
      const parts=labels.filter(([k])=>Number(x[k]||0)!==0).map(([k,l])=>'<div class="small" style="margin-top:4px">'+esc(l)+': <b>'+rp(x[k])+'</b></div>').join('');

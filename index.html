@@ -3606,10 +3606,12 @@ async function shareFacilitatorReport(period,withStock){
    const now=new Date();
    const baliDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Makassar',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
    const [yy,mm,dd]=baliDate.split('-').map(Number);
-   const startLocal=period==='TODAY'?new Date(yy,mm-1,dd):new Date(yy,mm-1,1);
-   const endLocal=period==='TODAY'?new Date(yy,mm-1,dd+1):new Date(yy,mm,1);
-   const startISO=new Date(startLocal.getTime()-8*60*60*1000).toISOString();
-   const endISO=new Date(endLocal.getTime()-8*60*60*1000).toISOString();
+   const dayStartUTC=Date.UTC(yy,mm-1,dd)-8*60*60*1000;
+   const tomorrowStartUTC=Date.UTC(yy,mm-1,dd+1)-8*60*60*1000;
+   const monthStartUTC=Date.UTC(yy,mm-1,1)-8*60*60*1000;
+   const nextMonthStartUTC=Date.UTC(yy,mm,1)-8*60*60*1000;
+   const startISO=new Date(period==='TODAY'?dayStartUTC:monthStartUTC).toISOString();
+   const endISO=new Date(period==='TODAY'?tomorrowStartUTC:nextMonthStartUTC).toISOString();
    let profitActual=0;
    let profitQuery=sb.from('sales_transactions').select('gross_profit,outlet,sold_at').gte('sold_at',startISO).lt('sold_at',endISO);
    if(d.outlet&&d.outlet!=='Semua Outlet')profitQuery=profitQuery.eq('outlet',d.outlet);
@@ -3617,14 +3619,16 @@ async function shareFacilitatorReport(period,withStock){
    if(profitRes.error)throw profitRes.error;
    profitActual=(profitRes.data||[]).reduce((sum,row)=>sum+Number(row.gross_profit||0),0);
    const closingStats={leadBeforeToday:0,leadToday:0,walkinBeforeToday:0,walkinToday:0,freelanceBeforeToday:0,freelanceToday:0};
-   const statsQuery=sb.from('sales_transactions').select('sold_at,customer_source,closing_capacity').gte('sold_at',startISO).lt('sold_at',endISO);
+   // Angka (bulan ini sebelum hari ini) + (hari ini) selalu dihitung dari
+   // 1 haribulan 00:00 WITA sampai besok 00:00 WITA, terlepas report yang dipilih.
+   const statsStartISO=new Date(monthStartUTC).toISOString();
+   const statsEndISO=new Date(tomorrowStartUTC).toISOString();
+   const statsQuery=sb.from('sales_transactions').select('sold_at,customer_source,closing_capacity').gte('sold_at',statsStartISO).lt('sold_at',statsEndISO);
    if(d.outlet&&d.outlet!=='Semua Outlet')statsQuery.eq('outlet',d.outlet);
    const statsRes=await statsQuery;
    if(statsRes.error)throw statsRes.error;
    const rowsStats=statsRes.data||[];
-   const todayStart=Date.UTC(yy,mm-1,dd)-8*60*60*1000;
-   const todayStartISO=new Date(todayStart).toISOString();
-   const isTodayRow=r=>new Date(r.sold_at).getTime()>=todayStart;
+   const isTodayRow=r=>new Date(r.sold_at).getTime()>=dayStartUTC;
    rowsStats.forEach(r=>{
      const src=String(r.customer_source||'').toUpperCase();
      const cap=String(r.closing_capacity||'').toUpperCase();

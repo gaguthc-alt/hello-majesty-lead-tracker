@@ -144,18 +144,17 @@
         localStorage.setItem('hm_auth_session',packed);
       }catch(e){console.warn('[HM] save auth session',e);}
 
-      // AUTH SUKSES = buka shell dashboard langsung.
-      // Jangan menggantungkan perpindahan layar pada finance.js/start().
+      // Jangan sembunyikan halaman LOGIN sebelum modul dashboard benar-benar siap.
+      // Jika starter gagal dimuat, user tetap melihat pesan error dan tidak mendapat layar blank.
       const loginPage=document.getElementById('login');
       const appPage=document.getElementById('app');
-      const workspacePage=document.getElementById('workspace');
       const roleHome=document.getElementById('roleHome');
+      if(err)err.textContent='Login berhasil. Menyiapkan dashboard...';
+
+      const starter=await waitForAppStarter();
       if(loginPage)loginPage.classList.add('hidden');
       if(appPage)appPage.classList.remove('hidden');
       if(roleHome)roleHome.classList.remove('hidden');
-      if(err)err.textContent='Workspace dibuka. Memuat data akun...';
-
-      const starter=await waitForAppStarter();
 
       // start() mengurus perpindahan layar sendiri. Jangan menunggu loadLeads()
       // karena modul data tidak boleh membuat layar login terlihat macet.

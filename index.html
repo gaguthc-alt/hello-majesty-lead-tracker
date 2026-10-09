@@ -3481,12 +3481,12 @@ async function getFacilitatorReport(period){
  if(x.error)throw x.error;
  return x.data||{};
 }
-function salesReportText(d,label,target){
+function salesReportText(d,label,target,targetNominal,profitActual){
  const rows=d.sales_rows||[];
  const outlet=d.outlet||profile?.outlet||'Semua Outlet';
  const closingCount=Number(d.sales_count||rows.length||0);
  const closingTarget=Number(target||0);
- const dateText=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}).toUpperCase();
+ const nominalTarget=Number(targetNominal||0);
  const monthShort=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long'}).toUpperCase();
  const rup=v=>rupiahReport(v);
  const productName=r=>[r.product,r.variant,r.color].filter(Boolean).join(' ');
@@ -3504,7 +3504,9 @@ function salesReportText(d,label,target){
  t+='Report Daily Penjualan\\n';
  t+='*'+monthShort+' - '+new Date().getFullYear()+'*\\n\\n';
  t+='Total Unit/Target :  *'+closingCount+' unit/'+(closingTarget||'-')+' Unit*\\n';
- t+='Profit : *'+rup(d.sales_value)+'*\\n';
+ t+='Omzet : *'+rup(d.sales_value)+'*\\n';
+ t+='Profit : *'+rup(profitActual)+'*\\n';
+ t+='Target Bulanan : *'+(closingTarget||'-')+' Unit / '+rup(nominalTarget)+'*\\n';
  t+='REWARD : *LIBURAN 5JT*\\n';
  t+='🏖🏝🏞🏢\\n\\n';
  t+='1.*Sale Int: ('+closingCount+')* +'+(closingCount||0)+'\\n';
@@ -3575,22 +3577,30 @@ function stockReportText(d){
 async function shareFacilitatorReport(period,withStock){
  try{
    const d=await getFacilitatorReport(period);
-   // Target Unit selalu mengambil target Closing bulanan yang aktif.
-   // Untuk "Semua Outlet", target adalah penjumlahan target seluruh outlet.
-   let target=0;
+   let target=0,targetNominal=0;
    const tx=await sb.rpc('dashboard_target_summary');
    if(!tx.error){
      const outlets=tx.data?.outlets||[];
      const outletName=String(d.outlet||'').trim();
-     if(outletName && outletName!=='Semua Outlet'){
-       const outlet=outlets.find(o=>String(o.outlet||'').trim()===outletName);
-       target=Number(outlet?.closing_target||0);
-     }else{
-       target=outlets.reduce((sum,o)=>sum+Number(o.closing_target||0),0);
-     }
+     const selected=(outletName&&outletName!=='Semua Outlet')
+       ?outlets.filter(o=>String(o.outlet||'').trim()===outletName)
+       :outlets;
+     target=selected.reduce((sum,o)=>sum+Number(o.closing_target||0),0);
+     targetNominal=selected.reduce((sum,o)=>sum+Number(o.nominal_target||0),0);
    }
-   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target);
-   if(withStock){const s=await getFacilitatorReport(period);text+='\n\n'+stockReportText(s)}
+   // Hitung laba aktual dari gross_profit transaksi, bukan dari omzet.
+   const now=new Date();
+   const dateKey=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
+   const start=period==='TODAY'?new Date(now.getFullYear(),now.getMonth(),now.getDate()):new Date(now.getFullYear(),now.getMonth(),1);
+   const end=period==='TODAY'?new Date(now.getFullYear(),now.getMonth(),now.getDate()+1):new Date(now.getFullYear(),now.getMonth()+1,1);
+   let profitActual=0;
+   let profitQuery=sb.from('sales_transactions').select('gross_profit,outlet,sold_at').gte('sold_at',dateKey(start)+'T00:00:00').lt('sold_at',dateKey(end)+'T00:00:00');
+   if(d.outlet&&d.outlet!=='Semua Outlet')profitQuery=profitQuery.eq('outlet',d.outlet);
+   const profitRes=await profitQuery;
+   if(profitRes.error)throw profitRes.error;
+   profitActual=(profitRes.data||[]).reduce((sum,row)=>sum+Number(row.gross_profit||0),0);
+   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual);
+   if(withStock){const stock=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(stock)}
    waShare(text);
  }catch(e){alert('Laporan error: '+(e?.message||e));}
 }

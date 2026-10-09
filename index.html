@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261009-paylater-account-fix-2"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261010-freelance-commission-ui-1"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -1207,6 +1207,7 @@ async function openTeamCommission(){
    ['CS Handover',rows.reduce((s,x)=>s+Math.max(Number(x.cs_commission||0)-Number(x.cs_closing_commission||0),0),0)],
    ['CS Closing',rows.reduce((s,x)=>s+Number(x.cs_closing_commission||0),0)],
    ['Sales',rows.reduce((s,x)=>s+Number(x.sales_commission||0),0)],
+   ['Freelance Internal',rows.reduce((s,x)=>s+Number(x.freelance_internal_commission||0),0)],
    ['Hunter',rows.reduce((s,x)=>s+Number(x.hunter_commission||0),0)],
    ['Content Creator',rows.reduce((s,x)=>s+Number(x.content_creator_commission||0),0)],
    ['Fasilitator',rows.reduce((s,x)=>s+Number(x.facilitator_commission||0),0)]
@@ -1216,6 +1217,7 @@ async function openTeamCommission(){
   ['cs_commission','CS • Komisi Performa'],
   ['cs_closing_commission','CS Closing'],
   ['sales_commission','Sales Closing'],
+  ['freelance_internal_commission','Freelance Internal'],
   ['hunter_commission','Hunter'],
   ['content_creator_commission','Content Creator'],
   ['facilitator_commission','Fasilitator']

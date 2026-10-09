@@ -3481,7 +3481,7 @@ async function getFacilitatorReport(period){
  if(x.error)throw x.error;
  return x.data||{};
 }
-function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,rewardAmount){
+function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats){
  const rows=d.sales_rows||[];
  const outlet=d.outlet||profile?.outlet||'Semua Outlet';
  const closingCount=Number(d.sales_count||rows.length||0);
@@ -3513,9 +3513,9 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  const leadClosingToday=rows.filter(r=>{const z=new Date(r.sold_at);const now=new Date();return z.getFullYear()===now.getFullYear()&&z.getMonth()===now.getMonth()&&z.getDate()===now.getDate();}).length;
  const walkInClosing=rows.filter(r=>String(r.customer_name||'').trim().toUpperCase()==='WALK-IN').length;
  const freelanceInt=rows.filter(r=>String(r.sales_type||r.source||r.closing_type||'').toUpperCase().includes('FREELANCE')).length;
- t+='1.*Lead Closing: ('+leadClosingMonth+')* +'+leadClosingToday+'\\n';
- t+='2.*Walk-In Closing: ('+walkInClosing+')* +\\n';
- t+='3.*Freelance Int: ('+freelanceInt+')* +\\n\\n';
+ t+='1.*Lead Closing: ('+Number(closingStats?.leadBeforeToday||0)+')* +'+Number(closingStats?.leadToday||0)+'\\n';
+ t+='2.*Walk-In Closing: ('+Number(closingStats?.walkinBeforeToday||0)+')* +'+Number(closingStats?.walkinToday||0)+'\\n';
+ t+='3.*Freelance Int: ('+Number(closingStats?.freelanceBeforeToday||0)+')* +'+Number(closingStats?.freelanceToday||0)+'\\n\\n';
  t+='*IN NEW*\\n   1. -\\n';
  t+='*OUT NEW*\\n'+(linesByCat['Apple New'].length||linesByCat['Android New'].length
    ? [...linesByCat['Apple New'],...linesByCat['Android New']].map((x,i)=>'   '+(i+1)+'. '+x).join('\\n'):'   1. -')+'\\n';
@@ -3616,7 +3616,24 @@ async function shareFacilitatorReport(period,withStock){
    const profitRes=await profitQuery;
    if(profitRes.error)throw profitRes.error;
    profitActual=(profitRes.data||[]).reduce((sum,row)=>sum+Number(row.gross_profit||0),0);
-   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount);
+   const closingStats={leadBeforeToday:0,leadToday:0,walkinBeforeToday:0,walkinToday:0,freelanceBeforeToday:0,freelanceToday:0};
+   const statsQuery=sb.from('sales_transactions').select('sold_at,customer_source,closing_capacity').gte('sold_at',startISO).lt('sold_at',endISO);
+   if(d.outlet&&d.outlet!=='Semua Outlet')statsQuery.eq('outlet',d.outlet);
+   const statsRes=await statsQuery;
+   if(statsRes.error)throw statsRes.error;
+   const rowsStats=statsRes.data||[];
+   const todayStart=Date.UTC(yy,mm-1,dd)-8*60*60*1000;
+   const todayStartISO=new Date(todayStart).toISOString();
+   const isTodayRow=r=>new Date(r.sold_at).getTime()>=todayStart;
+   rowsStats.forEach(r=>{
+     const src=String(r.customer_source||'').toUpperCase();
+     const cap=String(r.closing_capacity||'').toUpperCase();
+     const today=isTodayRow(r);
+     if(src==='DIGITAL'&&cap!=='FREELANCE_INTERNAL') today?closingStats.leadToday++:closingStats.leadBeforeToday++;
+     if(src==='WALK-IN') today?closingStats.walkinToday++:closingStats.walkinBeforeToday++;
+     if(cap==='FREELANCE_INTERNAL') today?closingStats.freelanceToday++:closingStats.freelanceBeforeToday++;
+   });
+   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats);
    if(withStock){const stock=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(stock)}
    waShare(text);
  }catch(e){alert('Laporan error: '+(e?.message||e));}

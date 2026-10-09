@@ -3481,10 +3481,11 @@ async function getFacilitatorReport(period){
 function salesReportText(d,label,target){
  const rows=d.sales_rows||[];
  let t='📊 *LAPORAN PENJUALAN '+label+'*\\n';
- t+='🏪 *Outlet:* '+(d.outlet||'-')+'\\n';
+ t+='🏪 *Outlet:* '+(d.outlet||profile?.outlet||'Semua Outlet')+'\\n';
  t+='📅 *Periode:* '+label+'\\n';
  t+='━━━━━━━━━━━━━━━━━━\\n';
- t+='🛒 *TOTAL CLOSING:* '+Number(d.sales_count||0)+' / '+Number(target||0)+' unit\\n';
+ const closingCount=Number(d.sales_count||0), closingTarget=Number(target||0);
+ t+='🛒 *TOTAL CLOSING:* '+(closingTarget>0?closingCount+' / '+closingTarget+' unit':closingCount+' unit')+'\\n';
  t+='💰 *TOTAL PENJUALAN:* '+rupiahReport(d.sales_value)+'\\n';
  t+='━━━━━━━━━━━━━━━━━━\\n\\n';
  if(rows.length){

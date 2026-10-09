@@ -3509,8 +3509,13 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  t+='Target Bulanan : *'+(closingTarget||'-')+' Unit / '+rup(nominalTarget)+'*\\n';
  t+='REWARD : *'+(rewardLabel||'-')+(Number(rewardAmount)>0?' '+rup(rewardAmount):'')+'*\\n';
  t+='🏖🏝🏞🏢\\n\\n';
- t+='1.*Sale Int: ('+closingCount+')* +'+(closingCount||0)+'\\n';
- t+='2.*Frlc ext: (0)* +\\n\\n';
+ const leadClosingMonth=closingCount;
+ const leadClosingToday=rows.filter(r=>{const z=new Date(r.sold_at);const now=new Date();return z.getFullYear()===now.getFullYear()&&z.getMonth()===now.getMonth()&&z.getDate()===now.getDate();}).length;
+ const walkInClosing=rows.filter(r=>String(r.customer_name||'').trim().toUpperCase()==='WALK-IN').length;
+ const freelanceInt=rows.filter(r=>String(r.sales_type||r.source||r.closing_type||'').toUpperCase().includes('FREELANCE')).length;
+ t+='1.*Lead Closing: ('+leadClosingMonth+')* +'+leadClosingToday+'\\n';
+ t+='2.*Walk-In Closing: ('+walkInClosing+')* +\\n';
+ t+='3.*Freelance Int: ('+freelanceInt+')* +\\n\\n';
  t+='*IN NEW*\\n   1. -\\n';
  t+='*OUT NEW*\\n'+(linesByCat['Apple New'].length||linesByCat['Android New'].length
    ? [...linesByCat['Apple New'],...linesByCat['Android New']].map((x,i)=>'   '+(i+1)+'. '+x).join('\\n'):'   1. -')+'\\n';

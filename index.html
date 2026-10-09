@@ -3481,7 +3481,7 @@ async function getFacilitatorReport(period){
  if(x.error)throw x.error;
  return x.data||{};
 }
-function salesReportText(d,label,target,targetNominal,profitActual){
+function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,rewardAmount){
  const rows=d.sales_rows||[];
  const outlet=d.outlet||profile?.outlet||'Semua Outlet';
  const closingCount=Number(d.sales_count||rows.length||0);
@@ -3507,7 +3507,7 @@ function salesReportText(d,label,target,targetNominal,profitActual){
  t+='Omzet : *'+rup(d.sales_value)+'*\\n';
  t+='Profit : *'+rup(profitActual)+'*\\n';
  t+='Target Bulanan : *'+(closingTarget||'-')+' Unit / '+rup(nominalTarget)+'*\\n';
- t+='REWARD : *LIBURAN 5JT*\\n';
+ t+='REWARD : *'+(rewardLabel||'-')+(Number(rewardAmount)>0?' '+rup(rewardAmount):'')+'*\\n';
  t+='🏖🏝🏞🏢\\n\\n';
  t+='1.*Sale Int: ('+closingCount+')* +'+(closingCount||0)+'\\n';
  t+='2.*Frlc ext: (0)* +\\n\\n';
@@ -3577,7 +3577,7 @@ function stockReportText(d){
 async function shareFacilitatorReport(period,withStock){
  try{
    const d=await getFacilitatorReport(period);
-   let target=0,targetNominal=0;
+   let target=0,targetNominal=0,rewardLabel='',rewardAmount=0;
    const tx=await sb.rpc('dashboard_target_summary');
    if(!tx.error){
      const outlets=tx.data?.outlets||[];
@@ -3587,6 +3587,14 @@ async function shareFacilitatorReport(period,withStock){
        :outlets;
      target=selected.reduce((sum,o)=>sum+Number(o.closing_target||0),0);
      targetNominal=selected.reduce((sum,o)=>sum+Number(o.nominal_target||0),0);
+     // Reward mengikuti konfigurasi database; jika Semua Outlet, gunakan reward yang sama bila konsisten.
+     const rewards=selected.map(o=>({label:o.bonus_label||'',amount:Number(o.bonus_amount||0)}));
+     if(rewards.length){
+       const first=rewards[0];
+       const same=rewards.every(x=>x.label===first.label&&x.amount===first.amount);
+       rewardLabel=same?first.label:'Reward sesuai outlet';
+       rewardAmount=same?first.amount:0;
+     }
    }
    // Hitung laba aktual dari gross_profit transaksi, bukan dari omzet.
    const now=new Date();
@@ -3599,7 +3607,7 @@ async function shareFacilitatorReport(period,withStock){
    const profitRes=await profitQuery;
    if(profitRes.error)throw profitRes.error;
    profitActual=(profitRes.data||[]).reduce((sum,row)=>sum+Number(row.gross_profit||0),0);
-   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual);
+   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount);
    if(withStock){const stock=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(stock)}
    waShare(text);
  }catch(e){alert('Laporan error: '+(e?.message||e));}

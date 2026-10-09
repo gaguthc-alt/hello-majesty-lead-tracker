@@ -3575,12 +3575,18 @@ function stockReportText(d){
 async function shareFacilitatorReport(period,withStock){
  try{
    const d=await getFacilitatorReport(period);
+   // Target Unit selalu mengambil target Closing bulanan yang aktif.
+   // Untuk "Semua Outlet", target adalah penjumlahan target seluruh outlet.
    let target=0;
-   if(period==='MONTH'){
-     const tx=await sb.rpc('dashboard_target_summary');
-     if(!tx.error){
-       const outlet=(tx.data?.outlets||[]).find(o=>o.outlet===d.outlet);
+   const tx=await sb.rpc('dashboard_target_summary');
+   if(!tx.error){
+     const outlets=tx.data?.outlets||[];
+     const outletName=String(d.outlet||'').trim();
+     if(outletName && outletName!=='Semua Outlet'){
+       const outlet=outlets.find(o=>String(o.outlet||'').trim()===outletName);
        target=Number(outlet?.closing_target||0);
+     }else{
+       target=outlets.reduce((sum,o)=>sum+Number(o.closing_target||0),0);
      }
    }
    let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target);

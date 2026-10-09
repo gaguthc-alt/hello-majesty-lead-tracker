@@ -3666,6 +3666,8 @@ async function shareFacilitatorReport(period,withStock){
    units.filter(u=>receivedSet.has(u.id)).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.inSecond:stockFlow.inNew));
    (soldRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.outSecond:stockFlow.outNew));
    const achievementStats={'Apple New':0,'Apple Second':0,'Android New':0,'Android Second':0};
+   // Pencapaian bulan berjalan: dari 00:00 WITA tanggal 1 sampai 00:00 WITA besok.
+   // Ini secara eksplisit = pencapaian sampai kemarin + pencapaian hari ini.
    const achievementUnits=(soldRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet);
    achievementUnits.forEach(u=>{
      const p=pm.get(u.product_id)||{};

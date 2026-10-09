@@ -574,7 +574,7 @@ function renderInventoryDashboardBody(){
  if(!canViewInventoryDashboard()){inventoryView='stock';renderInventoryBody();return;}
  const isManagement=!!profile?.is_management;
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),isAdminFinance=role==='ADMIN FINANCE';
- const roleCost=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const canViewCost=roleCost==='FASILITATOR'||roleCost==='DIVISI'||inventoryCanFacilitator;
+ const roleCost=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const canViewCost=isManagement||roleCost==='FASILITATOR'||roleCost==='DIVISI'||inventoryCanFacilitator;
  const outletSel=isAdminFinance?(profile?.outlet||''):($('invDashOutlet')?.value||''),catSel=$('invDashCat')?.value||'';
  const rows=inventoryStock.filter(s=>(!outletSel||s.outlet===outletSel)&&(!catSel||s.category===catSel));
  const ready=rows.filter(s=>s.status==='READY'),sold=rows.filter(s=>s.status==='SOLD'),reserved=rows.filter(s=>s.status==='RESERVED'),returned=rows.filter(s=>s.status==='RETURN'),missing=rows.filter(s=>s.status==='MISSING');

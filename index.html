@@ -3665,20 +3665,32 @@ async function shareFacilitatorReport(period,withStock){
    const receivedSet=new Set(receivedIds);
    units.filter(u=>receivedSet.has(u.id)).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.inSecond:stockFlow.inNew));
    (soldRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.outSecond:stockFlow.outNew));
-   // PENCAPAIAN = seluruh penjualan bulan berjalan: tanggal 1 00:00 WITA sampai besok 00:00 WITA.
-   // Dengan demikian otomatis = pencapaian sampai kemarin + pencapaian hari ini.
+   // PENCAPAIAN = penjualan bulan berjalan dari sales_transactions:
+   // tanggal 1 00:00 WITA sampai besok 00:00 WITA = sampai kemarin + hari ini.
    const achievementStats={'Apple New':0,'Apple Second':0,'Android New':0,'Android Second':0};
-   const achievementQ=sb.from('stock_units')
-     .select('id,product_id,outlet,sold_at,grade,battery_health')
-     .gte('sold_at',monthStartUTC?new Date(monthStartUTC).toISOString():startISO)
-     .lt('sold_at',tomorrowStartUTC?new Date(tomorrowStartUTC).toISOString():endISO);
-   const achievementRes=await achievementQ;
-   if(achievementRes.error)throw achievementRes.error;
-   const achievementUnits=(achievementRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet);
+   let achievementTxQ=sb.from('sales_transactions')
+     .select('stock_unit_id,outlet,sold_at')
+     .gte('sold_at',new Date(monthStartUTC).toISOString())
+     .lt('sold_at',new Date(tomorrowStartUTC).toISOString());
+   if(d.outlet&&d.outlet!=='Semua Outlet')achievementTxQ=achievementTxQ.eq('outlet',d.outlet);
+   const achievementTxRes=await achievementTxQ;
+   if(achievementTxRes.error)throw achievementTxRes.error;
+   const achievementTx=achievementTxRes.data||[];
+   const achievementUnitIds=[...new Set(achievementTx.map(x=>x.stock_unit_id).filter(Boolean))];
+   let achievementUnits=[];
+   if(achievementUnitIds.length){
+     const au=await sb.from('stock_units')
+       .select('id,product_id,grade,battery_health')
+       .in('id',achievementUnitIds);
+     if(au.error)throw au.error;
+     achievementUnits=au.data||[];
+   }
    const achievementPids=[...new Set(achievementUnits.map(u=>u.product_id).filter(Boolean))];
    let achievementProducts=[];
    if(achievementPids.length){
-     const aq=await sb.from('product_master').select('id,category,product,variant,grade').in('id',achievementPids);
+     const aq=await sb.from('product_master')
+       .select('id,category,product,variant,grade')
+       .in('id',achievementPids);
      if(aq.error)throw aq.error;
      achievementProducts=aq.data||[];
    }

@@ -3481,7 +3481,7 @@ async function getFacilitatorReport(period){
  if(x.error)throw x.error;
  return x.data||{};
 }
-function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats){
+function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow){
  const rows=d.sales_rows||[];
  const outlet=d.outlet||profile?.outlet||'Semua Outlet';
  const closingCount=Number(d.sales_count||rows.length||0);
@@ -3516,12 +3516,12 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  t+='1.*Lead Closing: ('+Number(closingStats?.leadBeforeToday||0)+')* +'+Number(closingStats?.leadToday||0)+'\\n';
  t+='2.*Walk-In Closing: ('+Number(closingStats?.walkinBeforeToday||0)+')* +'+Number(closingStats?.walkinToday||0)+'\\n';
  t+='3.*Freelance Int: ('+Number(closingStats?.freelanceBeforeToday||0)+')* +'+Number(closingStats?.freelanceToday||0)+'\\n\\n';
- t+='*IN NEW*\\n   1. -\\n';
- t+='*OUT NEW*\\n'+(linesByCat['Apple New'].length||linesByCat['Android New'].length
-   ? [...linesByCat['Apple New'],...linesByCat['Android New']].map((x,i)=>'   '+(i+1)+'. '+x).join('\\n'):'   1. -')+'\\n';
- t+='*IN SECOND*\\n1. -\\n';
- t+='*OUT SECOND*\\n'+(linesByCat['Apple Second'].length||linesByCat['Android Second'].length
-   ? [...linesByCat['Apple Second'],...linesByCat['Android Second']].map((x,i)=>'   '+(i+1)+'. '+x).join('\\n'):'   1. -')+'\\n\\n';
+ const flow=stockFlow||{inNew:[],outNew:[],inSecond:[],outSecond:[]};
+ const flowLines=a=>a.length?a.map((x,i)=>'   '+(i+1)+'. '+x).join('\\n'):'   1. -';
+ t+='*IN NEW*\\n'+flowLines(flow.inNew)+'\\n';
+ t+='*OUT NEW*\\n'+flowLines(flow.outNew)+'\\n';
+ t+='*IN SECOND*\\n'+flowLines(flow.inSecond)+'\\n';
+ t+='*OUT SECOND*\\n'+flowLines(flow.outSecond)+'\\n\\n';
  t+=' *PENCAPAIAN :*\\n';
  t+='- Apple New : *( '+cats['Apple New']+' )* +\\n';
  t+='- Apple Second :  *( '+cats['Apple Second']+' )*+\\n';
@@ -3637,7 +3637,45 @@ async function shareFacilitatorReport(period,withStock){
      if(src==='WALK-IN') today?closingStats.walkinToday++:closingStats.walkinBeforeToday++;
      if(cap==='FREELANCE_INTERNAL') today?closingStats.freelanceToday++:closingStats.freelanceBeforeToday++;
    });
-   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats);
+   const stockFlow={inNew:[],outNew:[],inSecond:[],outSecond:[]};
+   const flowStartISO=startISO, flowEndISO=endISO;
+   const sm=await sb.from('stock_movements').select('stock_unit_id,created_at,movement_type').eq('movement_type','RECEIVED').gte('created_at',flowStartISO).lt('created_at',flowEndISO);
+   if(sm.error)throw sm.error;
+   const receivedIds=[...new Set((sm.data||[]).map(x=>x.stock_unit_id).filter(Boolean))];
+   const soldQ=sb.from('stock_units').select('id,product_id,outlet,received_at,sold_at,status,grade,battery_health,color');
+   const soldRes=await soldQ.gte('sold_at',flowStartISO).lt('sold_at',flowEndISO);
+   if(soldRes.error)throw soldRes.error;
+   let unitIds=[...receivedIds,...(soldRes.data||[]).map(x=>x.id).filter(Boolean)];
+   unitIds=[...new Set(unitIds)];
+   let units=[];
+   if(unitIds.length){
+     const uq=await sb.from('stock_units').select('id,product_id,outlet,received_at,sold_at,status,grade,battery_health,color').in('id',unitIds);
+     if(uq.error)throw uq.error; units=uq.data||[];
+   }
+   if(d.outlet&&d.outlet!=='Semua Outlet'){
+     const allowed=new Set(units.filter(u=>u.outlet===d.outlet).map(u=>u.id));
+     units=units.filter(u=>allowed.has(u.id));
+   }
+   const pids=[...new Set(units.map(u=>u.product_id).filter(Boolean))];
+   let products=[];
+   if(pids.length){
+     const pq=await sb.from('product_master').select('id,category,product,variant,grade').in('id',pids);
+     if(pq.error)throw pq.error; products=pq.data||[];
+   }
+   const pm=new Map(products.map(p=>[p.id,p]));
+   const fmtUnit=u=>{
+     const p=pm.get(u.product_id)||{};
+     const base=[p.product,p.variant,u.color].filter(Boolean).join(' ');
+     const second=/SECOND|IPHONE\\s*\\d|GRADE|BH/i.test(String(p.category||'')+' '+base);
+     const bh=u.battery_health!=null?' BH '+u.battery_health+'%':'';
+     const grade=u.grade||p.grade?(' Grade '+(u.grade||p.grade)):'';
+     return (base||'-')+grade+bh;
+   };
+   const bucket=(u,arr)=>{const p=pm.get(u.product_id)||{};const s=(String(p.category||'')+' '+String(p.product||'')).toUpperCase(); const second=/SECOND|GRADE|BH/.test(s); arr.push(fmtUnit(u));};
+   const receivedSet=new Set(receivedIds);
+   units.filter(u=>receivedSet.has(u.id)).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.inSecond:stockFlow.inNew));
+   (soldRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.outSecond:stockFlow.outNew));
+   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow);
    if(withStock){const stock=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(stock)}
    waShare(text);
  }catch(e){alert('Laporan error: '+(e?.message||e));}

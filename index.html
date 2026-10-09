@@ -3512,7 +3512,7 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  t+='*OUT NEW*\\n'+flowLines(flow.outNew)+'\\n';
  t+='*IN SECOND*\\n'+flowLines(flow.inSecond)+'\\n';
  t+='*OUT SECOND*\\n'+flowLines(flow.outSecond)+'\\n\\n';
- t+=' *PENCAPAIAN :*\\n';
+ t+='*PENCAPAIAN :*\\n';
  t+='- Apple New : *( '+cats['Apple New']+' )* +\\n';
  t+='- Apple Second :  *( '+cats['Apple Second']+' )*+\\n';
  t+='- Android New : *( '+cats['Android New']+' )* +\\n';
@@ -3522,13 +3522,13 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
    ['Tunai','CASH'],['Transfer Bank','TRANSFER'],['QRIS','QRIS'],['Debit','DEBIT'],
    ['Credit Card','CREDIT_CARD'],['Akulaku','AKULAKU'],['Kredivo','KREDIVO'],['SPayLater','SPAYLATER'],['Other','OTHER']
  ];
- t+=' *FINANCE* : \\n';
+ t+='*FINANCE* :\\n';
  finRows.forEach(([name,code])=>{
    const x=fin[code]||{count:0,amount:0};
    t+='• *'+name+' :* '+Number(x.count||0)+' - '+rup(x.amount)+'\\n';
  });
  t+='\\n';
- t+='Yok Bisa Team Fokus REWARD\\n\\n';
+ t+='━━━━━━━━━━━━━━━━━━\\n';\n t+='*Yok Bisa Team Fokus REWARD*\\n\\n';
  t+='*Hello Majesty*\\n*Management System*\\n*Built on Trust*';
  return t;
 }

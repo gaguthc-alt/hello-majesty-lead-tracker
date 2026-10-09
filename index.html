@@ -3756,7 +3756,7 @@ async function salesResult(id){
    financeBox?.classList.toggle('hidden',!isFinance);
    if(!isFinance)return;
    const price=Number($('sap')?.value||0), fin=Number($('financeRequestedAmount')?.value||0), cash=Number($('financeCashPayment')?.value||0), cashout=Number($('financeCashoutAmount')?.value||0), fee=Math.max(Number($('financeEstimatedFee')?.value||0),0);
-   const balance=(fin+cash)-(price+cashout), st=$('financeSplitStatus');
+   const balance=(fin-fee+cash)-(price+cashout), st=$('financeSplitStatus');
    if(st)st.textContent=balance===0?'✅ Pembagian seimbang':(price||fin||cash||cashout?'⚠️ Selisih Rp'+Math.abs(balance).toLocaleString('id-ID'):'');
    const net=$('financeEstimatedNet'); if(net)net.textContent='Estimasi dana bersih Finance: Rp'+Math.max(fin-fee,0).toLocaleString('id-ID')+' • Menunggu Pencairan';
  };
@@ -3845,8 +3845,8 @@ async function submitStockClosingApproval(id){
  const notes=document.getElementById('financeNotes')?.value?.trim()||null;
  if(isFinance){
    if(!financeRequestedAmount)return alert('Nominal Finance wajib diisi.');
-   if(financeRequestedAmount+cashPayment!==salePrice+cashoutAmount)
-     return alert('Pembagian belum seimbang. Finance + Cash harus sama dengan Harga HP + Tarik Tunai.');
+   if(financeRequestedAmount-fee+cashPayment!==salePrice+cashoutAmount)
+     return alert('Pembagian belum seimbang. Finance setelah potongan + Cash harus sama dengan Harga HP + Tarik Tunai.');
    if(fee>financeRequestedAmount)return alert('Estimasi potongan tidak boleh melebihi nominal Finance.');
  }
  const x=await sb.rpc('submit_stock_sale_approval',{p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,p_payment_account_id:paymentAccount,p_payment_method_id:paymentMethod,p_pay_now:payNow,p_finance_estimated_fee:fee,p_finance_notes:notes,p_finance_requested_amount:financeRequestedAmount,p_finance_cash_payment:cashPayment,p_finance_cashout_amount:cashoutAmount,p_customer_phone:(document.getElementById('walkinCustomerPhone')?.value||'').trim()});

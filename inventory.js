@@ -399,10 +399,23 @@ async function renderStandaloneInventoryDashboard(){
 }
 async function openInventoryDashboard(){
  if(!canViewInventoryDashboard()){alert('Dashboard Inventory hanya dapat diakses Management dan Admin Finance.');return;}
+
+ // Dashboard Inventory adalah halaman/panel mandiri.
+ // Tutup overlay lama (mis. "Closing Saya — Bulan Ini") agar tidak terjadi
+ // modal bertumpuk dan header lama tidak tertinggal di belakang dashboard.
+ const staleModal=document.getElementById('modal');
+ if(staleModal)staleModal.classList.add('hidden');
+ const staleMenu=document.getElementById('hmMenuPanel');
+ if(staleMenu)staleMenu.classList.add('hidden');
+
  inventoryDashboardLock=true;
  const oldSection=document.getElementById('inventorySection'),dashSection=document.getElementById('inventoryDashboardSection');
  if(oldSection)oldSection.classList.add('hidden');
- if(dashSection){dashSection.classList.remove('hidden');dashSection.setAttribute('aria-hidden','false');}
+ if(dashSection){
+   dashSection.classList.remove('hidden');
+   dashSection.setAttribute('aria-hidden','false');
+   dashSection.scrollIntoView({behavior:'smooth',block:'start'});
+ }
  try{await renderStandaloneInventoryDashboard();}catch(e){console.error('[HM] Inventory dashboard open error',e);}
 }
 window.refreshHunterLauncher=async function(){

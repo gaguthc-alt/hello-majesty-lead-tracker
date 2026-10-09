@@ -3483,29 +3483,50 @@ async function getFacilitatorReport(period){
 }
 function salesReportText(d,label,target){
  const rows=d.sales_rows||[];
- let t='📊 *LAPORAN PENJUALAN '+label+'*\n';
- t+='🏪 *Outlet:* '+(d.outlet||profile?.outlet||'Semua Outlet')+'\n';
- t+='📅 *Periode:* '+label+'\n';
- t+='━━━━━━━━━━━━━━━━━━\n';
- const closingCount=Number(d.sales_count||0), closingTarget=Number(target||0);
- t+='🛒 *TOTAL CLOSING:* '+(closingTarget>0?closingCount+' / '+closingTarget+' unit':closingCount+' unit')+'\n';
- t+='💰 *TOTAL PENJUALAN:* '+rupiahReport(d.sales_value)+'\n';
- t+='━━━━━━━━━━━━━━━━━━\n\n';
- if(rows.length){
-   t+='📦 *DETAIL PRODUK TERJUAL*\n\n';
-   rows.forEach((r,i)=>{
-     const product=[r.product,r.variant,r.color].filter(Boolean).join(' ');
-     t+='*'+(i+1)+'. '+product+'*\n';
-     t+='   💵 Harga: '+rupiahReport(r.sale_price)+'\n';
-     t+='   👤 Customer: '+(r.customer_name||'Customer')+'\n';
-     t+='\n';
-   });
-   t+='━━━━━━━━━━━━━━━━━━\n';
-   t+='📌 *'+rows.length+' transaksi tercatat*';
- } else {
-   t+='📦 *DETAIL PRODUK TERJUAL*\n';
-   t+='Belum ada transaksi penjualan pada periode ini.';
- }
+ const outlet=d.outlet||profile?.outlet||'Semua Outlet';
+ const closingCount=Number(d.sales_count||rows.length||0);
+ const closingTarget=Number(target||0);
+ const dateText=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}).toUpperCase();
+ const monthShort=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long'}).toUpperCase();
+ const rup=v=>rupiahReport(v);
+ const productName=r=>[r.product,r.variant,r.color].filter(Boolean).join(' ');
+ const classify=r=>{
+   const p=productName(r).toUpperCase();
+   const apple=/IPHONE|APPLE/.test(p);
+   const second=/SECOND|BH\\s*\\d|GRADE/.test(p);
+   return apple?(second?'Apple Second':'Apple New'):(second?'Android Second':'Android New');
+ };
+ const cats={'Apple New':0,'Apple Second':0,'Android New':0,'Android Second':0};
+ rows.forEach(r=>{cats[classify(r)]++;});
+ const linesByCat={'Apple New':[],'Apple Second':[],'Android New':[],'Android Second':[]};
+ rows.forEach(r=>linesByCat[classify(r)].push(productName(r)||'-'));
+ let t='💚 *'+outlet.toUpperCase()+'* 💚\\n';
+ t+='Report Daily Penjualan\\n';
+ t+='*'+monthShort+' - '+new Date().getFullYear()+'*\\n\\n';
+ t+='Total Unit/Target :  *'+closingCount+' unit/'+(closingTarget||'-')+' Unit*\\n';
+ t+='Profit : *'+rup(d.sales_value)+'*\\n';
+ t+='REWARD : *LIBURAN 5JT*\\n';
+ t+='🏖🏝🏞🏢\\n\\n';
+ t+='1.*Sale Int: ('+closingCount+')* +'+(closingCount||0)+'\\n';
+ t+='2.*Frlc ext: (0)* +\\n\\n';
+ t+='*IN NEW*\\n   1. -\\n';
+ t+='*OUT NEW*\\n'+(linesByCat['Apple New'].length||linesByCat['Android New'].length
+   ? [...linesByCat['Apple New'],...linesByCat['Android New']].map((x,i)=>'   '+(i+1)+'. '+x).join('\\n'):'   1. -')+'\\n';
+ t+='*IN SECOND*\\n1. -\\n';
+ t+='*OUT SECOND*\\n'+(linesByCat['Apple Second'].length||linesByCat['Android Second'].length
+   ? [...linesByCat['Apple Second'],...linesByCat['Android Second']].map((x,i)=>'   '+(i+1)+'. '+x).join('\\n'):'   1. -')+'\\n\\n';
+ t+=' *PENCAPAIAN :*\\n';
+ t+='- Apple New : *( '+cats['Apple New']+' )* +\\n';
+ t+='- Apple Second :  *( '+cats['Apple Second']+' )*+\\n';
+ t+='- Android New : *( '+cats['Android New']+' )* +\\n';
+ t+='- Android Second : *( '+cats['Android Second']+' )*+\\n\\n';
+ t+=' *FINANCE* : \\n';
+ t+='• *Shoope :* +\\n';
+ t+='• *Kredivo :* +\\n';
+ t+='• *Akulaku :* +\\n';
+ t+='• *Blibli instore :* +\\n';
+ t+='• *Other :* +\\n\\n';
+ t+='Yok Bisa Team Fokus REWARD';
  return t;
 }
 function stockReportText(d){

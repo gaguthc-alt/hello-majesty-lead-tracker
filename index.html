@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261009-team-commission-ui-fix-2"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261009-paylater-account-fix-2"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -3835,7 +3835,7 @@ async function submitStockClosingApproval(id){
  if(paymentMode==='PAY_LATER'&&!$('payLaterProvider')?.value)return alert('Untuk Pay Later, wajib pilih provider.');
  const paymentMethod=payNow?(paymentMode==='PAY_LATER'?$('payLaterProvider').value:paymentMode):null;
  if(payNow&&!paymentMethod)return alert('Metode pembayaran wajib dipilih.');
- if(payNow&&!paymentAccount)return alert('Untuk pembayaran ini, wajib pilih Kas/Bank penerima.');
+ if(payNow&&paymentMode!=='PAY_LATER'&&!paymentAccount)return alert('Untuk pembayaran ini, wajib pilih Kas/Bank penerima.');
  const fee=Math.max(Number(document.getElementById('financeEstimatedFee')?.value||0),0);
  const financeRequestedAmount=Math.max(Number(document.getElementById('financeRequestedAmount')?.value||0),0);
  const cashPayment=Math.max(Number(document.getElementById('financeCashPayment')?.value||0),0);
@@ -3876,7 +3876,7 @@ async function saveS(id){
    const payNow=paymentMode!=='PIUTANG';
    const paymentAccount=payNow?($('saleAccount')?.value||null):null;
    if(paymentMode==='PAY_LATER'&&!$('payLaterProvider')?.value)return alert('Untuk Pay Later, wajib pilih provider.');
-   if(payNow&&!paymentAccount)return alert('Untuk pembayaran ini, wajib pilih Kas/Bank penerima.');
+   if(payNow&&paymentMode!=='PAY_LATER'&&!paymentAccount)return alert('Untuk pembayaran ini, wajib pilih Kas/Bank penerima.');
    const paymentMethod=payNow?(paymentMode==='PAY_LATER'?$('payLaterProvider').value:paymentMode):null;
    const x=await sb.rpc('set_sales_closing_with_payment',{
      p_lead_id:leadId,p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,

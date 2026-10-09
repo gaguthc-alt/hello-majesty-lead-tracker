@@ -3525,7 +3525,7 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  t+=' *FINANCE* : \\n';
  finRows.forEach(([name,code])=>{
    const x=fin[code]||{count:0,amount:0};
-   t+='• *'+name+' :* '+Number(x.count||0)+' transaksi — '+rup(x.amount)+'\\n';
+   t+='• *'+name+' :* '+Number(x.count||0)+' - '+rup(x.amount)+'\\n';
  });
  t+='\\n';
  t+='Yok Bisa Team Fokus REWARD';

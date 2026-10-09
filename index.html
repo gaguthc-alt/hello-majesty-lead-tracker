@@ -3481,7 +3481,7 @@ async function getFacilitatorReport(period){
  if(x.error)throw x.error;
  return x.data||{};
 }
-function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow){
+function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow,achievementStats){
  const rows=d.sales_rows||[];
  const outlet=d.outlet||profile?.outlet||'Semua Outlet';
  const closingCount=Number(d.sales_count||rows.length||0);
@@ -3489,17 +3489,7 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  const nominalTarget=Number(targetNominal||0);
  const monthShort=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long'}).toUpperCase();
  const rup=v=>rupiahReport(v);
- const productName=r=>[r.product,r.variant,r.color].filter(Boolean).join(' ');
- const classify=r=>{
-   const p=productName(r).toUpperCase();
-   const apple=/IPHONE|APPLE/.test(p);
-   const second=/SECOND|BH\\s*\\d|GRADE/.test(p);
-   return apple?(second?'Apple Second':'Apple New'):(second?'Android Second':'Android New');
- };
- const cats={'Apple New':0,'Apple Second':0,'Android New':0,'Android Second':0};
- rows.forEach(r=>{cats[classify(r)]++;});
- const linesByCat={'Apple New':[],'Apple Second':[],'Android New':[],'Android Second':[]};
- rows.forEach(r=>linesByCat[classify(r)].push(productName(r)||'-'));
+ const cats=achievementStats||{'Apple New':0,'Apple Second':0,'Android New':0,'Android Second':0};
  let t='💚 *'+outlet.toUpperCase()+'* 💚\\n';
  t+='Report Daily Penjualan\\n';
  t+='*'+monthShort+' - '+new Date().getFullYear()+'*\\n\\n';
@@ -3675,7 +3665,17 @@ async function shareFacilitatorReport(period,withStock){
    const receivedSet=new Set(receivedIds);
    units.filter(u=>receivedSet.has(u.id)).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.inSecond:stockFlow.inNew));
    (soldRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet).forEach(u=>bucket(u,/SECOND|GRADE|BH/i.test(String((pm.get(u.product_id)||{}).category||''))?stockFlow.outSecond:stockFlow.outNew));
-   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow);
+   const achievementStats={'Apple New':0,'Apple Second':0,'Android New':0,'Android Second':0};
+   const achievementUnits=(soldRes.data||[]).filter(u=>!d.outlet||d.outlet==='Semua Outlet'||u.outlet===d.outlet);
+   achievementUnits.forEach(u=>{
+     const p=pm.get(u.product_id)||{};
+     const s=(String(p.category||'')+' '+String(p.product||'')+' '+String(p.variant||'')).toUpperCase();
+     const apple=/IPHONE|APPLE/.test(s);
+     const second=/SECOND|GRADE|BH/.test(s)||u.grade!=null||u.battery_health!=null;
+     const key=apple?(second?'Apple Second':'Apple New'):(second?'Android Second':'Android New');
+     achievementStats[key]++;
+   });
+   let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow,achievementStats);
    if(withStock){const stock=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(stock)}
    waShare(text);
  }catch(e){alert('Laporan error: '+(e?.message||e));}

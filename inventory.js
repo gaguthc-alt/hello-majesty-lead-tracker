@@ -879,18 +879,42 @@ function normalizeSearch(q){return String(q||'').toLowerCase().trim().replace(/\
 function searchHaystack(value,q){const hay=normalizeSearch(value),needle=normalizeSearch(q);if(!needle)return true;return hay.includes(needle)||hay.replace(/\s+/g,'').includes(needle.replace(/\s+/g,''))}
 async function filterReceiveProducts(){
  const q=($('stprodsearch')?.value||'').trim();
- const sel=$('stprod'),cat=$('stcategory')?.value||'';
+ const sel=$('stprod'),cat=String($('stcategory')?.value||'').trim().toUpperCase();
  if(!sel)return;
  const current=sel.value;
- const matches=inventoryProducts.filter(p=>{
-   const categoryOk=!cat||receiveProductCategory(p)===cat;
-   const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ');
-   return categoryOk&&(!q||searchHaystack(hay,q));
+ const categoryMatches=p=>{
+  const pc=receiveProductCategory(p);
+  if(pc===cat)return true;
+  const name=String(p?.product||'').trim().toUpperCase();
+  if(cat==='IPHONE_NEW')return /^IPHONE\\b/.test(name)&&/\\bNEW\\b/.test(name);
+  if(cat==='IPHONE_SECOND')return /^IPHONE\\b/.test(name)&&/\\bSECOND\\b/.test(name);
+  if(cat==='ANDROID_NEW')return /^(ANDROID|SAMSUNG|XIAOMI|OPPO|VIVO|REALME|HONOR|GOOGLE PIXEL|INFINIX|TECNO|ITEL)\\b/.test(name)&&/\\bNEW\\b/.test(name);
+  if(cat==='ANDROID_SECOND')return /^(ANDROID|SAMSUNG|XIAOMI|OPPO|VIVO|REALME|HONOR|GOOGLE PIXEL|INFINIX|TECNO|ITEL)\\b/.test(name)&&/\\bSECOND\\b/.test(name);
+  return false;
+ };
+ let matches=inventoryProducts.filter(p=>categoryMatches(p));
+ // If the in-memory catalogue is empty or category labels differ, fetch active master
+ // products directly and normalize them before rebuilding the native Android select.
+ if(cat&&matches.length===0){
+  const r=await sb.from('product_master').select('*').eq('active',true).order('product');
+  if(!r.error&&Array.isArray(r.data)){
+   const byId=new Map(inventoryProducts.map(p=>[p.id,p]));
+   r.data.forEach(p=>byId.set(p.id,p));
+   inventoryProducts=Array.from(byId.values());
+   matches=inventoryProducts.filter(p=>categoryMatches(p));
+  }else if(r.error){
+   console.error('[HM] Product list fallback failed:',r.error);
+   sel.innerHTML='<option value="">Produk gagal dimuat — coba tutup dan buka lagi</option>';
+   return;
+  }
+ }
+ matches=matches.filter(p=>{
+  const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ');
+  return !q||searchHaystack(hay,q);
  });
- // Rebuild option list instead of hiding <option>. Android Chrome can fail to select
- // hidden options inside a native <select>.
- sel.innerHTML='<option value="">Pilih produk...</option>'+
+ sel.innerHTML='<option value="">'+(matches.length?'Pilih produk...':'Tidak ada produk aktif pada kategori ini')+'</option>'+
    matches.map(p=>'<option value="'+esc(p.id)+'">'+esc(masterProductLabel(p))+'</option>').join('');
+ sel.disabled=!cat;
  if(current&&matches.some(p=>p.id===current))sel.value=current;
  else if(q&&matches.length===1)sel.value=matches[0].id;
  if(sel.value)sel.dispatchEvent(new Event('change',{bubbles:true}));

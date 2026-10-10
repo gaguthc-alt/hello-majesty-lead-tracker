@@ -1134,7 +1134,7 @@ main{
   }
 }
 .hm-menu-panel-bottom{position:fixed!important;top:72px;left:50%;transform:translateX(-50%);width:min(calc(100vw - 24px),900px)!important;max-height:calc(100vh - 88px);overflow:auto;box-sizing:border-box;z-index:30000!important;margin:0!important;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.28)}.hm-menu-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;position:sticky!important;top:0!important;z-index:50!important;background:#fff!important;padding:10px 0!important;box-shadow:0 2px 8px rgba(16,24,40,.08)}.hm-menu-panel-close{flex:0 0 auto;white-space:nowrap}.role-home-grid{margin-bottom:0!important}.role-home:after{pointer-events:none!important}.role-home-grid,.role-home-menu,.role-home-tools{position:relative;z-index:9999;pointer-events:auto!important}.role-home-card{position:relative!important;z-index:10000!important}.role-home-card,.role-home-function,.role-home-submenu-item,.role-home-tools button{pointer-events:auto!important;cursor:pointer!important}
-</style><script defer src="stability.js?v=20261005-stability-1"></script><script defer src="performance.js?v=20261010-direct-buyback-3"></script></head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
+</style><script defer src="stability.js?v=20261005-stability-1"></script><script defer src="performance.js?v=20261010-direct-buyback-3-commission-max"></script></head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
 <div class="login-shell">
   <div class="login-brand">
     <div class="login-logo">HM</div>
@@ -1213,6 +1213,15 @@ async function openTeamCommission(){
    ['Fasilitator',rows.reduce((s,x)=>s+Number(x.facilitator_commission||0),0)]
  ];
  const pct=v=>totalProfit>0?(v/totalProfit*100).toFixed(2).replace('.',',')+'%':'0,00%';
+ const maxPct={
+   'CS Handover':'10%',
+   'CS Closing':'5%',
+   'Sales':'10%',
+   'Freelance Internal':'30%',
+   'Hunter':'—',
+   'Content Creator':'10%',
+   'Fasilitator':'10%'
+ };
  const labels=[
   ['cs_commission','CS • Komisi Performa'],
   ['cs_closing_commission','CS Closing'],
@@ -1230,9 +1239,9 @@ async function openTeamCommission(){
    '<div class="stats hm-commission-stats">'+invStat('Tim',rows.length)+' '+invStat('Total Komisi',rp(total()))+' '+invStat('Laba',rp(totalProfit))+'</div></div>'+
    '<div class="box"><h3>Rekap Komisi Tim</h3>'+
    '<div class="small" style="margin-bottom:10px">Persentase dihitung terhadap laba penjualan pada periode yang sama.</div>'+
-   '<div style="overflow-x:auto"><table class="hm-commission-table"><colgroup><col style="width:44%"><col style="width:29%"><col style="width:27%"></colgroup><thead><tr><th>Jenis Komisi</th><th>Nominal</th><th>% terhadap Laba</th></tr></thead><tbody>'+
-   commissionSummary.map(([label,value])=>'<tr><td>'+esc(label)+'</td><td class="hm-money"><b>'+rp(value)+'</b></td><td class="hm-percent">'+pct(value)+'</td></tr>').join('')+
-   '<tr><td><b>TOTAL KOMISI</b></td><td class="hm-money"><b>'+rp(total())+'</b></td><td class="hm-percent"><b>'+pct(total())+'</b></td></tr></tbody></table></div></div>'+
+   '<div style="overflow-x:auto"><table class="hm-commission-table"><colgroup><col style="width:38%"><col style="width:25%"><col style="width:22%"><col style="width:15%"></colgroup><thead><tr><th>Jenis Komisi</th><th>Nominal</th><th>% terhadap Laba</th><th>% Max</th></tr></thead><tbody>'+
+   commissionSummary.map(([label,value])=>'<tr><td>'+esc(label)+'</td><td class="hm-money"><b>'+rp(value)+'</b></td><td class="hm-percent">'+pct(value)+'</td><td class="hm-percent">'+(maxPct[label]||'—')+'</td></tr>').join('')+
+   '<tr><td><b>TOTAL KOMISI</b></td><td class="hm-money"><b>'+rp(total())+'</b></td><td class="hm-percent"><b>'+pct(total())+'</b></td><td class="hm-percent"><b>—</b></td></tr></tbody></table></div></div>'+
    '<div class="box"><h3>Rincian Komisi Seluruh Tim</h3>'+
    (rows.length?rows.map(x=>{
      const parts=labels.filter(([k])=>Number(x[k]||0)!==0).map(([k,l])=>'<div class="small" style="margin-top:4px">'+esc(l)+': <b>'+rp(x[k])+'</b></div>').join('');

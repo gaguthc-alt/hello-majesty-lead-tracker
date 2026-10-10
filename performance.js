@@ -126,7 +126,8 @@
           '<div><span>📲 Claim CS</span><b>'+fmt(Number(r.claim_cs||0))+'</b></div>'+
           '<div><span>🤝 Handover CS → Sales</span><b>'+fmt(Number(r.handover||0))+'</b></div>'+
           '<div><span>🎯 CS Closing</span><b>'+fmt(Number(r.cs_closing||0))+'</b></div>'+
-          '<div><span>🏆 Sales Closing</span><b>'+fmt(Number(r.sales_closing||0))+'</b></div>'+\n          '<div><span>🏹 Hunter Closing</span><b>'+fmt(Number(r.hunter_closing||0))+'</b></div>'+
+          '<div><span>🏆 Sales Closing</span><b>'+fmt(Number(r.sales_closing||0))+'</b></div>'+
+          '<div><span>🏹 Hunter Closing</span><b>'+fmt(Number(r.hunter_closing||0))+'</b></div>'+
           '</div></div>';
       });
       if(!rows.length)html+='<div class="lead">Belum ada aktivitas lead pada periode ini.</div>';

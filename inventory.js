@@ -894,13 +894,14 @@ function toggleReceiveFields(){
  if($('stcategory') && p && $('stcategory').value!==p.category)$('stcategory').value=p.category;
  if($('stvariant'))$('stvariant').value=p?.variant||'';
  const hasProduct=!!p;
- // Jangan tampilkan form lama sebelum kategori/produk dipilih.
+ const showNew=hasProduct&&isNew,showSecond=hasProduct&&isSecond,showAndroidNew=hasProduct&&isAndroidNew,showAndroidSecond=hasProduct&&isAndroidSecond;
+ // Setelah kategori dipilih, tetap tunggu produk. Field detail baru muncul setelah produk dipilih.
  $('standardReceiveFields')?.classList.toggle('hidden',!hasProduct||isNew||isSecond||isAndroidNew||isAndroidSecond);
  $('standardPriceFields')?.classList.toggle('hidden',!hasProduct||isNew||isSecond||isAndroidNew||isAndroidSecond);
- $('iphoneNewFields')?.classList.toggle('hidden',!isNew);
- $('iphoneSecondFields')?.classList.toggle('hidden',!isSecond);
- $('androidNewFields')?.classList.toggle('hidden',!isAndroidNew);
- $('androidSecondFields')?.classList.toggle('hidden',!isAndroidSecond);
+ $('iphoneNewFields')?.classList.toggle('hidden',!showNew);
+ $('iphoneSecondFields')?.classList.toggle('hidden',!showSecond);
+ $('androidNewFields')?.classList.toggle('hidden',!showAndroidNew);
+ $('androidSecondFields')?.classList.toggle('hidden',!showAndroidSecond);
  const source=$('stsource');if(source)source.onchange=()=>{$('hunterBox')?.classList.toggle('hidden',source.value!=='HUNTER')};
 }
 async function saveStock(){

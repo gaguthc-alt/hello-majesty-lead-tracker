@@ -90,10 +90,22 @@
     const rows=x.data||[];
     const h=await sb.from('lead_events').select('employee_name,outlet').eq('event_type','BUYBACK_CLOSING').gte('event_at',start).lt('event_at',end);
     if(h.error)throw h.error;
-    const hm={}; (h.data||[]).forEach(e=>{const k=String(e.employee_name||'')+'|'+String(e.outlet||'');hm[k]=(hm[k]||0)+1;});
+    let hunterRows=(h.data||[]).slice();
+    // Pengajuan langsung tanpa Lead: hitung sebagai Hunter Closing dari stok yang diajukan.
+    // Jika akses baca stock_units dibatasi oleh RLS, laporan utama tetap berjalan.
+    try{
+      const direct=await sb.from('stock_units').select('hunter_user_id,outlet').eq('source_type','HUNTER').eq('received_source_note','Customer Buyback / Walk-In tanpa Lead').gte('created_at',start).lt('created_at',end);
+      if(!direct.error&&(direct.data||[]).length){
+        const ids=[...new Set(direct.data.map(x=>x.hunter_user_id).filter(Boolean))];
+        const prof=ids.length?await sb.from('team_profiles').select('user_id,name').in('user_id',ids):{data:[]};
+        const names=new Map((prof.data||[]).map(p=>[String(p.user_id),p.name]));
+        direct.data.forEach(x=>hunterRows.push({employee_name:names.get(String(x.hunter_user_id))||'-',outlet:x.outlet||'-'}));
+      }
+    }catch(ex){console.warn('[HM] Direct buyback performance unavailable',ex);}
+    const hm={}; hunterRows.forEach(e=>{const k=String(e.employee_name||'')+'|'+String(e.outlet||'');hm[k]=(hm[k]||0)+1;});
     const merged=rows.map(r=>({...r,hunter_closing:Number(hm[String(r.employee_name||'')+'|'+String(r.outlet||'')]||0)}));
     const known=new Set(merged.map(r=>String(r.employee_name||'')+'|'+String(r.outlet||'')));
-    (h.data||[]).forEach(e=>{
+    hunterRows.forEach(e=>{
       const key=String(e.employee_name||'')+'|'+String(e.outlet||'');
       if(!known.has(key)){merged.push({employee_name:e.employee_name||'-',outlet:e.outlet||'-',claim_cs:0,handover:0,cs_closing:0,sales_closing:0,hunter_closing:Number(hm[key]||0)});known.add(key);}
     });

@@ -880,22 +880,20 @@ async function filterReceiveProducts(){
  const q=($('stprodsearch')?.value||'').trim();
  const sel=$('stprod'),cat=$('stcategory')?.value||'';
  if(!sel)return;
- const matches=[];
- Array.from(sel.options).forEach(o=>{
-   const p=inventoryProducts.find(x=>x.id===o.value);
-   if(!p){o.hidden=false;return;}
+ const current=sel.value;
+ const matches=inventoryProducts.filter(p=>{
    const categoryOk=!cat||receiveProductCategory(p)===cat;
    const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ');
-   const ok=categoryOk&&(!q||searchHaystack(hay,q));
-   o.hidden=!ok;
-   if(ok)matches.push(p);
+   return categoryOk&&(!q||searchHaystack(hay,q));
  });
- if(q&&matches.length===1){
-   sel.value=matches[0].id;
-   sel.dispatchEvent(new Event('change',{bubbles:true}));
- }else{
-   toggleReceiveFields();
- }
+ // Rebuild option list instead of hiding <option>. Android Chrome can fail to select
+ // hidden options inside a native <select>.
+ sel.innerHTML='<option value="">Pilih produk...</option>'+
+   matches.map(p=>'<option value="'+esc(p.id)+'">'+esc(masterProductLabel(p))+'</option>').join('');
+ if(current&&matches.some(p=>p.id===current))sel.value=current;
+ else if(q&&matches.length===1)sel.value=matches[0].id;
+ if(sel.value)sel.dispatchEvent(new Event('change',{bubbles:true}));
+ else toggleReceiveFields();
 }
 async function openReceiveStock(){
  if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management, Fasilitator, dan Admin Finance Majesty Cell.');return;}

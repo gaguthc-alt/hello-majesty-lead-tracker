@@ -169,40 +169,40 @@
       (b.claim+b.handover+b.cs)-(a.claim+a.handover+a.cs)
     );
     const salesRows=rows.filter(r=>r.sales).sort((a,b)=>b.sales-a.sales);
-    let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*\\n';
-    message+='📅 Periode: *'+monthLabel(mode)+'*\\n\\n';
-    message+='*📌 TOTAL PERFORMA*\\n';
-    message+='📲 Claim CS: *'+fmt(totals.claim)+'*\\n';
-    message+='🤝 Handover CS → Sales: *'+fmt(totals.handover)+'*\\n';
-    message+='🎯 CS Closing: *'+fmt(totals.cs)+'*\\n';
-    message+='🏆 Sales Closing: *'+fmt(totals.sales)+'*\\n\\n';
+    let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*\n';
+    message+='📅 Periode: *'+monthLabel(mode)+'*\n\n';
+    message+='*📌 TOTAL PERFORMA*\n';
+    message+='📲 Claim CS: *'+fmt(totals.claim)+'*\n';
+    message+='🤝 Handover CS → Sales: *'+fmt(totals.handover)+'*\n';
+    message+='🎯 CS Closing: *'+fmt(totals.cs)+'*\n';
+    message+='🏆 Sales Closing: *'+fmt(totals.sales)+'*\n\n';
 
     if(leadRows.length){
-      message+='*👥 PERFORMA LEAD*\\n';
+      message+='*👥 PERFORMA LEAD*\n';
       leadRows.forEach(r=>{
-        message+='\\n👤 *'+r.name+'*\\n';
+        message+='\n👤 *'+r.name+'*\n';
         message+='📲 Claim: '+fmt(r.claim)+' | 🤝 Handover: '+fmt(r.handover);
         if(r.cs)message+=' | 🎯 CS Closing: '+fmt(r.cs);
-        message+='\\n';
+        message+='\n';
       });
-      message+='\\n';
+      message+='\n';
     }
 
     if(salesRows.length){
-      message+='*🏆 SALES CLOSING*\\n';
+      message+='*🏆 SALES CLOSING*\n';
       salesRows.forEach(r=>{
-        message+='👤 *'+r.name+'* — '+fmt(r.sales)+' Closing\\n';
+        message+='👤 *'+r.name+'* — '+fmt(r.sales)+' Closing\n';
       });
-      message+='\\n🏆 *TOTAL SALES CLOSING: '+fmt(totals.sales)+' UNIT*\\n';
+      message+='\n🏆 *TOTAL SALES CLOSING: '+fmt(totals.sales)+' UNIT*\n';
     }
 
     if(!leadRows.length&&!salesRows.length){
-      message+='Belum ada aktivitas pada periode ini.\\n';
+      message+='Belum ada aktivitas pada periode ini.\n';
     }
 
-    message+='\\n━━━━━━━━━━━━━━\\n';
-    message+='*Hello Majesty*\\n';
-    message+='*Management System*\\n';
+    message+='\n━━━━━━━━━━━━━━\n';
+    message+='*Hello Majesty*\n';
+    message+='*Management System*\n';
     message+='*Built on Trust*';
 
     const url='https://wa.me/?text='+encodeURIComponent(message);

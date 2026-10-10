@@ -155,24 +155,56 @@
   };
   window.perfShare=function(){
     const mode=window.perfMyMode||'month';
-    const rows=lastPerformanceRows||[];
+    const rows=(lastPerformanceRows||[]).map(r=>({
+      name:String(r.employee_name||'-'),
+      claim:Number(r.claim_cs||0),
+      handover:Number(r.handover||0),
+      cs:Number(r.cs_closing||0),
+      sales:Number(r.sales_closing||0)
+    }));
     const totals=rows.reduce((a,r)=>{
-      a.claim+=Number(r.claim_cs||0); a.handover+=Number(r.handover||0);
-      a.cs+=Number(r.cs_closing||0); a.sales+=Number(r.sales_closing||0); return a;
+      a.claim+=r.claim; a.handover+=r.handover; a.cs+=r.cs; a.sales+=r.sales; return a;
     },{claim:0,handover:0,cs:0,sales:0});
+    const leadRows=rows.filter(r=>r.claim||r.handover||r.cs).sort((a,b)=>
+      (b.claim+b.handover+b.cs)-(a.claim+a.handover+a.cs)
+    );
+    const salesRows=rows.filter(r=>r.sales).sort((a,b)=>b.sales-a.sales);
     let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*\\n';
-    message+='Periode: *'+monthLabel(mode)+'*\\n\\n';
-    message+='📲 Claim CS: '+fmt(totals.claim)+'\\n';
-    message+='🤝 Handover CS → Sales: '+fmt(totals.handover)+'\\n';
-    message+='🎯 CS Closing: '+fmt(totals.cs)+'\\n';
-    message+='🏆 Sales Closing: '+fmt(totals.sales)+'\\n\\n';
-    message+='*Rincian per anggota tim*\\n';
-    if(!rows.length) message+='Belum ada aktivitas pada periode ini.\\n';
-    rows.forEach(r=>{
-      message+='\\n👤 *'+String(r.employee_name||'-')+'*\\n';
-      message+='Claim CS: '+fmt(r.claim_cs)+' | Handover: '+fmt(r.handover)+'\\n';
-      message+='CS Closing: '+fmt(r.cs_closing)+' | Sales Closing: '+fmt(r.sales_closing)+'\\n';
-    });
+    message+='📅 Periode: *'+monthLabel(mode)+'*\\n\\n';
+    message+='*📌 TOTAL PERFORMA*\\n';
+    message+='📲 Claim CS: *'+fmt(totals.claim)+'*\\n';
+    message+='🤝 Handover CS → Sales: *'+fmt(totals.handover)+'*\\n';
+    message+='🎯 CS Closing: *'+fmt(totals.cs)+'*\\n';
+    message+='🏆 Sales Closing: *'+fmt(totals.sales)+'*\\n\\n';
+
+    if(leadRows.length){
+      message+='*👥 PERFORMA LEAD*\\n';
+      leadRows.forEach(r=>{
+        message+='\\n👤 *'+r.name+'*\\n';
+        message+='📲 Claim: '+fmt(r.claim)+' | 🤝 Handover: '+fmt(r.handover);
+        if(r.cs)message+=' | 🎯 CS Closing: '+fmt(r.cs);
+        message+='\\n';
+      });
+      message+='\\n';
+    }
+
+    if(salesRows.length){
+      message+='*🏆 SALES CLOSING*\\n';
+      salesRows.forEach(r=>{
+        message+='👤 *'+r.name+'* — '+fmt(r.sales)+' Closing\\n';
+      });
+      message+='\\n🏆 *TOTAL SALES CLOSING: '+fmt(totals.sales)+' UNIT*\\n';
+    }
+
+    if(!leadRows.length&&!salesRows.length){
+      message+='Belum ada aktivitas pada periode ini.\\n';
+    }
+
+    message+='\\n━━━━━━━━━━━━━━\\n';
+    message+='*Hello Majesty*\\n';
+    message+='*Management System*\\n';
+    message+='*Built on Trust*';
+
     const url='https://wa.me/?text='+encodeURIComponent(message);
     window.open(url,'_blank','noopener');
   };

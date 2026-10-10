@@ -169,7 +169,7 @@
       (b.claim+b.handover+b.cs)-(a.claim+a.handover+a.cs)
     );
     const salesRows=rows.filter(r=>r.sales).sort((a,b)=>b.sales-a.sales);
-    let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*\n';
+    const NL=String.fromCharCode(10);\n    let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*'+NL;
     message+='📅 Periode: *'+monthLabel(mode)+'*\n\n';
     message+='*📌 TOTAL PERFORMA*\n';
     message+='📲 Claim CS: *'+fmt(totals.claim)+'*\n';
@@ -180,10 +180,10 @@
     if(leadRows.length){
       message+='*👥 PERFORMA LEAD*\n';
       leadRows.forEach(r=>{
-        message+='\n👤 *'+r.name+'*\n';
+        message+=NL+'👤 *'+r.name+'*'+NL;
         message+='📲 Claim: '+fmt(r.claim)+' | 🤝 Handover: '+fmt(r.handover);
         if(r.cs)message+=' | 🎯 CS Closing: '+fmt(r.cs);
-        message+='\n';
+        message+=NL;
       });
       message+='\n';
     }
@@ -197,10 +197,10 @@
     }
 
     if(!leadRows.length&&!salesRows.length){
-      message+='Belum ada aktivitas pada periode ini.\n';
+      message+='Belum ada aktivitas pada periode ini.'+NL;
     }
 
-    message+='\n━━━━━━━━━━━━━━\n';
+    message+=NL+'━━━━━━━━━━━━━━'+NL;
     message+='*Hello Majesty*\n';
     message+='*Management System*\n';
     message+='*Built on Trust*';

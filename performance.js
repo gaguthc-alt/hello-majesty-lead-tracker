@@ -91,7 +91,13 @@
     const h=await sb.from('lead_events').select('employee_name,outlet').eq('event_type','BUYBACK_CLOSING').gte('event_at',start).lt('event_at',end);
     if(h.error)throw h.error;
     const hm={}; (h.data||[]).forEach(e=>{const k=String(e.employee_name||'')+'|'+String(e.outlet||'');hm[k]=(hm[k]||0)+1;});
-    return rows.map(r=>({...r,hunter_closing:Number(hm[String(r.employee_name||'')+'|'+String(r.outlet||'')]||0)}));
+    const merged=rows.map(r=>({...r,hunter_closing:Number(hm[String(r.employee_name||'')+'|'+String(r.outlet||'')]||0)}));
+    const known=new Set(merged.map(r=>String(r.employee_name||'')+'|'+String(r.outlet||'')));
+    (h.data||[]).forEach(e=>{
+      const key=String(e.employee_name||'')+'|'+String(e.outlet||'');
+      if(!known.has(key)){merged.push({employee_name:e.employee_name||'-',outlet:e.outlet||'-',claim_cs:0,handover:0,cs_closing:0,sales_closing:0,hunter_closing:Number(hm[key]||0)});known.add(key);}
+    });
+    return merged;
   }
   async function showPerson(name,role,mode){
     const body=document.getElementById('perfBody'); if(!body)return;
@@ -116,8 +122,8 @@
     try{
       const rows=await getFunnel(mode);
       lastPerformanceRows=rows;
-      let html='<style>.perf-list{display:block}.perf-person-card{border:1px solid #e5e7eb;background:#fff}.perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.perf-grid>div{background:#f8fafc;border-radius:10px;padding:10px;text-align:center}.perf-grid span{display:block;font-size:11px;color:#64748b}.perf-grid b{display:block;font-size:19px;margin-top:3px}@media(max-width:600px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>';
-      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Handover dihitung dari CS yang menyerahkan lead ke Sales. Sales Closing mencakup semua transaksi sah, termasuk dari Lead dan Walk-In.</div></div>';
+      let html='<style>.perf-list{display:block}.perf-person-card{border:1px solid #e5e7eb;background:#fff}.perf-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.perf-grid>div{background:#f8fafc;border-radius:10px;padding:10px;text-align:center}.perf-grid span{display:block;font-size:11px;color:#64748b}.perf-grid b{display:block;font-size:19px;margin-top:3px}@media(max-width:900px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>';
+      html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Handover dihitung dari CS yang menyerahkan lead ke Sales. Sales Closing = HP keluar. Hunter Closing = customer jual HP ke Majesty; komisinya terpisah dari Sales Closing.</div></div>';
       html+='<div class="perf-list">';
       rows.forEach(r=>{
         html+='<div class="lead perf-person-card" style="margin-top:10px">'+

@@ -986,7 +986,8 @@ async function saveStock(){
  let data;
  if(isIphoneNew){
   const imei1=$('stimei1new').value.trim(),cost=$('stcostnew').value,price=$('stpricenew').value;
-  if(!imei1||cost===''||price==='')return alert('Untuk iPhone New, IMEI 1, Harga Beli dan Harga Jual wajib diisi.');
+  const color=$('stcolornew').value.trim();
+  if(!imei1||!color||cost===''||price==='')return alert('Untuk iPhone New, IMEI 1, Warna, Harga Beli dan Harga Jual wajib diisi.');
   data={product_id:$('stprod').value,imei_1:imei1,imei_2:$('stimei2new').value.trim()||null,color:$('stcolornew').value.trim()||null,grade:null,condition:null,battery_health:null,completeness:null,minus:null,source_type:source,hunter_user_id:hunter,partner_name:source==='MAJESTY_CELL'?partnerName:null,cost:Number(cost),asking_price:Number(price),supplier:$('stsupplier').value.trim()||null,notes:$('stnotesnew').value.trim()||null,receipt_ref:null,received_source_note:source==='MAJESTY_CELL'?'Majesty Cell':'Management',outlet:inventoryReceiveOutlet()};
  }else if(isIphoneSecond){
   const imei1=$('stimei1second').value.trim(),color=$('stcolorsecond').value.trim(),grade=$('stgradesecond').value,bh=$('stbhsecond').value,condition=$('stconditionsecond').value.trim(),complete=$('stcompletesecond').value.trim(),cost=$('stcostsecond').value,price=$('stpricesec').value;
@@ -1043,7 +1044,9 @@ function openEditStock(id){
  const area=(label,id,value)=>'<label>'+label+'</label><textarea id="'+id+'">'+esc(value||'')+'</textarea>';
  f+=input('IMEI 1','esimei1',s.imei_1||'','text','inputmode="numeric"');
  f+=input('IMEI 2','esimei2',s.imei_2||'','text','inputmode="numeric"');
- if(c==='IPHONE_SECOND'){
+ if(c==='IPHONE_NEW'){
+  f+=input('Warna','escolor',s.color||'');
+}else if(c==='IPHONE_SECOND'){
   f+=input('Warna','escolor',s.color||'');
   f+='<label>Grade</label><select id="esgrade"><option value="">-</option><option '+(s.grade==='A'?'selected':'')+'>A</option><option '+(s.grade==='B'?'selected':'')+'>B</option><option '+(s.grade==='C'?'selected':'')+'>C</option></select>';
   f+=input('Kondisi','escondition',s.condition||'');
@@ -1084,7 +1087,9 @@ async function saveEditStock(id){
   if(duplicate)return alert('IMEI/EID '+duplicate.imei+' sudah terdaftar pada stock lain. Perubahan dibatalkan.');
  }catch(e){return alert(e.message||e);}
  const data={imei_1:imei1||null,imei_2:imei2,asking_price:Number($('esprice').value||0),cost:Number($('escost').value||0),supplier:$('essupplier').value.trim()||null,notes:$('esnotes').value.trim()||null,updated_at:new Date().toISOString()};
- if(c==='IPHONE_SECOND'){
+ if(c==='IPHONE_NEW'){
+  data.color=$('escolor').value.trim()||null;
+}else if(c==='IPHONE_SECOND'){
   data.color=$('escolor').value.trim()||null;
   data.grade=$('esgrade').value||null;
   data.condition=$('escondition').value.trim()||null;

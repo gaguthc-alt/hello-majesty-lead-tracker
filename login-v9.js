@@ -149,19 +149,42 @@
       const loginPage=document.getElementById('login');
       const appPage=document.getElementById('app');
       const roleHome=document.getElementById('roleHome');
-      if(err)err.textContent='Login berhasil. Menyiapkan dashboard...';
+      if(err)err.textContent='Login berhasil. Membuka dashboard...';
 
-      const starter=await waitForAppStarter();
+      // Pindahkan layar segera setelah autentikasi berhasil agar halaman login tidak macet.
       if(loginPage)loginPage.classList.add('hidden');
       if(appPage)appPage.classList.remove('hidden');
-      if(roleHome)roleHome.classList.remove('hidden');
+      if(roleHome){
+        roleHome.classList.remove('hidden');
+        roleHome.replaceChildren();
+        const card=document.createElement('div');card.className='box';
+        const heading=document.createElement('h3');heading.textContent='Menyiapkan dashboard…';
+        const note=document.createElement('p');note.className='small';note.textContent='Login berhasil. Memuat modul aplikasi.';
+        card.append(heading,note);roleHome.appendChild(card);
+      }
+      const identity=el('identity');
+      if(identity)identity.textContent='Login berhasil • Memuat dashboard…';
 
-      // start() mengurus perpindahan layar sendiri. Jangan menunggu loadLeads()
-      // karena modul data tidak boleh membuat layar login terlihat macet.
-      Promise.resolve(starter(session.user,sb)).catch(ex=>{
-        console.error('[HM] Dashboard start error:',ex);
-        if(err)err.textContent=ex?.message||'Dashboard gagal dibuka.';
-      });
+      const showBootError=(title,message)=>{
+        if(identity)identity.textContent=title;
+        if(!roleHome)return;
+        roleHome.replaceChildren();
+        const card=document.createElement('div');card.className='box';
+        const heading=document.createElement('h3');heading.textContent=title;
+        const note=document.createElement('p');note.className='small';note.textContent=message;
+        const button=document.createElement('button');button.textContent='Muat ulang aplikasi';button.onclick=()=>location.reload();
+        card.append(heading,note,button);roleHome.appendChild(card);
+      };
+      try{
+        const starter=await waitForAppStarter();
+        Promise.resolve(starter(session.user,sb)).catch(ex=>{
+          console.error('[HM] Dashboard start error:',ex);
+          showBootError('Dashboard gagal dibuka.',ex?.message||'Terjadi kesalahan saat memulai dashboard.');
+        });
+      }catch(bootError){
+        console.error('[HM] Dashboard starter unavailable:',bootError);
+        showBootError('Modul dashboard tidak termuat.',(bootError?.message||'Fungsi dashboard tidak tersedia.')+' Periksa apakah pembaruan aplikasi sudah terbit.');
+      }
       return;
     }catch(ex){
       console.error('[HM] Login bootstrap error:',ex);

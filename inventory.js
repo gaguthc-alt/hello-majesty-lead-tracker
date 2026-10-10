@@ -870,7 +870,7 @@ async function openReceiveStock(){
  '<div id="iphoneNewFields" class="hidden"><label>IMEI 1</label><input id="stimei1new"><label>IMEI 2 / EID (opsional)</label><input id="stimei2new"><label>Harga Beli</label><input id="stcostnew" type="number"><label>Harga Jual</label><input id="stpricenew" type="number"><label>Supplier / Dealer (opsional)</label><input id="stsupplier" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="stnotesnew"></textarea></div>'+
  '<div id="iphoneSecondFields" class="hidden"><label>IMEI 1</label><input id="stimei1second"><label>IMEI 2 / EID (opsional)</label><input id="stimei2second"><label>Grade</label><select id="stgradesecond"><option value="">Pilih Grade</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select><label>Battery Health</label><input id="stbhsecond" type="number" min="0" max="100" placeholder="89"><label>Kondisi</label><input id="stconditionsecond" placeholder="Contoh: Mulus / 95%"><label>Kelengkapan</label><input id="stcompletesecond" placeholder="Unit + Box + Cable"><label>Minus (opsional)</label><textarea id="stminusseconde"></textarea><label>Harga Beli</label><input id="stcostsecond" type="number"><label>Harga Jual</label><input id="stpricesec" type="number"><label>Supplier / Dealer (opsional)</label><input id="stsuppliersecond" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="stnotessecond"></textarea></div>'+
  '<div id="androidNewFields" class="hidden"><label>Warna</label><input id="standroidcolor" placeholder="Contoh: Violet"><label>IMEI 1</label><input id="standroidimei1"><label>IMEI 2 (opsional)</label><input id="standroidimei2"><label>Harga Beli</label><input id="standroidcost" type="number"><label>Harga Jual</label><input id="standroidprice" type="number"><label>Supplier / Dealer (opsional)</label><input id="standroidsupplier" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="standroidnotes"></textarea></div>'+
- '<div id="androidSecondFields" class="hidden"><label>Warna</label><input id="standroidsecondcolor" placeholder="Contoh: Black"><label>IMEI 1</label><input id="standroidsecondimei1"><label>IMEI 2 (opsional)</label><input id="standroidsecondimei2"><label>Kondisi</label><input id="standroidsecondcondition" placeholder="Contoh: Mulus / 90%"><label>Kelengkapan</label><input id="standroidsecondcomplete" placeholder="Unit + Box + Cable"><label>Minus (opsional)</label><textarea id="standroidsecondminus"></textarea><label>Harga Beli</label><input id="standroidsecondcost" type="number"><label>Harga Jual</label><input id="standroidsecondprice" type="number"><label>Supplier / Dealer (opsional)</label><input id="standroidsecondsupplier" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="standroidsecondnotes"></textarea></div><div id="standardPriceFields"><label>Harga Modal</label><input id="stcost" type="number"><label>Harga Jual</label><input id="stprice" type="number"><label>Referensi Barang Masuk</label><input id="stref" placeholder="Invoice / nota / kode hunter"><label>Catatan</label><textarea id="stnotes"></textarea></div><button class="success" onclick="saveStock()">Simpan Stock Ready</button>';
+ '<div id="androidSecondFields" class="hidden"><label>Warna</label><input id="standroidsecondcolor" placeholder="Contoh: Black"><label>IMEI 1</label><input id="standroidsecondimei1"><label>IMEI 2 (opsional)</label><input id="standroidsecondimei2"><label>Kondisi</label><input id="standroidsecondcondition" placeholder="Contoh: Mulus / 90%"><label>Kelengkapan</label><input id="standroidsecondcomplete" placeholder="Unit + Box + Cable"><label>Minus (opsional)</label><textarea id="standroidsecondminus"></textarea><label>Harga Beli</label><input id="standroidsecondcost" type="number"><label>Harga Jual</label><input id="standroidsecondprice" type="number"><label>Supplier / Dealer (opsional)</label><input id="standroidsecondsupplier" placeholder="Nama dealer / supplier"><label>Catatan (opsional)</label><textarea id="standroidsecondnotes"></textarea></div><div id="standardPriceFields"><label>Harga Modal</label><input id="stcost" type="number"><label>Harga Jual</label><input id="stprice" type="number"><label>Referensi Barang Masuk</label><input id="stref" placeholder="Invoice / nota / kode hunter"><label>Catatan</label><textarea id="stnotes"></textarea></div><button id="saveStockBtn" class="success" type="button" onclick="saveStock()">Simpan Stock Ready</button>';
  toggleReceiveFields();
  $('modal').classList.remove('hidden');
  const receiveRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');if(receiveRole==='ADMIN FINANCE MAJESTY CELL'){if($('stsource')){$('stsource').value='MAJESTY_CELL';$('stsource').disabled=true;}if($('stpartner')){$('stpartner').value='Majesty Cell';$('stpartner').disabled=true;}togglePartnerFields();const saveBtn=$('mb').querySelector('button.success[onclick="saveStock()"]');if(saveBtn)saveBtn.textContent='Kirim untuk Persetujuan';$('mb').insertAdjacentHTML('afterbegin','<div class="notice"><b>Barang Masuk Majesty Cell</b><br>Setelah disimpan, barang akan <b>MENUNGGU PERSETUJUAN</b> Management/Facilitator sebelum menjadi Stock READY.</div><button class="secondary" style="margin-bottom:8px" onclick="openMyInventoryReceiveStatus()">📋 Status Pengajuan Saya</button>');}
@@ -917,18 +917,29 @@ async function saveStock(){
  }else{
   data={product_id:$('stprod').value,imei_1:$('stimei1').value.trim()||null,imei_2:$('stimei2').value.trim()||null,grade:selectedProduct?.grade||null,condition:$('stcondition').value.trim()||null,battery_health:$('stbh').value?Number($('stbh').value):null,completeness:$('stcomplete').value.trim()||null,minus:$('stminus').value.trim()||null,source_type:source,hunter_user_id:hunter,partner_name:source==='MAJESTY_CELL'?partnerName:null,cost:Number($('stcost').value||0),asking_price:Number($('stprice').value||0),notes:$('stnotes').value.trim()||null,receipt_ref:$('stref')?.value.trim()||null,received_source_note:source==='HUNTER'?'Hunter':'Management',outlet:inventoryReceiveOutlet()};
  }
- const x=await sb.from('stock_units').insert(data);
- if(x.error)return alert(x.error.message);
- const stockId=x.data?.[0]?.id;
- if(!stockId)return alert('Barang masuk tersimpan tetapi ID stock tidak ditemukan.');
- const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
- if(ap.error){
+ const saveBtn=document.getElementById('saveStockBtn');
+ if(window.hmSavingStock)return;
+ window.hmSavingStock=true;
+ if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ Menyimpan...';}
+ try{
+  const x=await sb.from('stock_units').insert(data).select('id').single();
+  if(x.error)throw new Error(x.error.message);
+  const stockId=x.data?.id;
+  if(!stockId)throw new Error('ID stock tidak dikembalikan oleh database.');
+  const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
+  if(ap.error){
    await sb.from('stock_units').delete().eq('id',stockId);
-   return alert('Barang masuk gagal dikirim untuk verifikasi: '+ap.error.message);
+   throw new Error('Barang masuk gagal dikirim untuk verifikasi: '+ap.error.message);
+  }
+  closeModal();
+  alert('Barang Masuk tersimpan sebagai MENUNGGU VERIFIKASI. Hanya Fasilitator atau Admin Finance Majesty Cell yang dapat menyetujui.');
+  await renderInventory();
+ }catch(e){
+  alert(e?.message||e);
+ }finally{
+  window.hmSavingStock=false;
+  if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='Simpan Stock Ready';}
  }
- closeModal();
- alert('Barang Masuk tersimpan sebagai MENUNGGU VERIFIKASI. Hanya Fasilitator atau Admin Finance Majesty Cell yang dapat menyetujui.');
- await renderInventory();
 
 }
 async function openEditStockPhotos(id){if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres maksimal ±700 KB/foto • resolusi hingga 1600 px.</div>';$('modal').classList.remove('hidden')}

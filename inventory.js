@@ -887,11 +887,16 @@ async function openReceiveStock(){
  filterHunterOptions();
 }
 function toggleReceiveFields(){
- const p=inventoryProducts.find(x=>x.id===$('stprod')?.value),isNew=p?.category==='IPHONE_NEW',isSecond=p?.category==='IPHONE_SECOND',isAndroidNew=p?.category==='ANDROID_NEW',isAndroidSecond=p?.category==='ANDROID_SECOND';
+ const p=inventoryProducts.find(x=>x.id===$('stprod')?.value);
+ const selectedCategory=String($('stcategory')?.value||'').trim();
+ const category=p?.category||selectedCategory;
+ const isNew=category==='IPHONE_NEW',isSecond=category==='IPHONE_SECOND',isAndroidNew=category==='ANDROID_NEW',isAndroidSecond=category==='ANDROID_SECOND';
  if($('stcategory') && p && $('stcategory').value!==p.category)$('stcategory').value=p.category;
  if($('stvariant'))$('stvariant').value=p?.variant||'';
- $('standardReceiveFields')?.classList.toggle('hidden',isNew||isSecond||isAndroidNew||isAndroidSecond);
- $('standardPriceFields')?.classList.toggle('hidden',isNew||isSecond||isAndroidNew||isAndroidSecond);
+ const hasProduct=!!p;
+ // Jangan tampilkan form lama sebelum kategori/produk dipilih.
+ $('standardReceiveFields')?.classList.toggle('hidden',!hasProduct||isNew||isSecond||isAndroidNew||isAndroidSecond);
+ $('standardPriceFields')?.classList.toggle('hidden',!hasProduct||isNew||isSecond||isAndroidNew||isAndroidSecond);
  $('iphoneNewFields')?.classList.toggle('hidden',!isNew);
  $('iphoneSecondFields')?.classList.toggle('hidden',!isSecond);
  $('androidNewFields')?.classList.toggle('hidden',!isAndroidNew);

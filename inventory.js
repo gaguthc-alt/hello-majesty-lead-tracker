@@ -1018,13 +1018,25 @@ async function saveStock(){
   if(x.error)throw new Error(x.error.message);
   const stockId=x.data?.id;
   if(!stockId)throw new Error('ID stock tidak dikembalikan oleh database.');
-  const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
-  if(ap.error){
-   await sb.from('stock_units').delete().eq('id',stockId);
-   throw new Error('Barang masuk gagal dikirim untuk verifikasi: '+ap.error.message);
+  // Hanya stok yang bersumber dari Majesty Cell yang wajib menunggu persetujuan.
+  // Sumber Management/Hunter/Fasilitator langsung masuk sebagai Stock READY.
+  if(String(source).toUpperCase()==='MAJESTY_CELL'){
+   const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
+   if(ap.error){
+    // Jika respons RPC bermasalah, cek dulu apakah pengajuan sebenarnya sudah tercatat.
+    const verify=await sb.from('inventory_receive_approvals').select('id,status').eq('stock_unit_id',stockId).maybeSingle();
+    if(!verify.data){
+     await sb.from('stock_units').delete().eq('id',stockId);
+     throw new Error('Barang masuk Majesty Cell belum berhasil dikirim untuk persetujuan: '+ap.error.message);
+    }
+   }
   }
   closeModal();
-  alert('Barang Masuk tersimpan sebagai MENUNGGU VERIFIKASI. Hanya Fasilitator atau Admin Finance Majesty Cell yang dapat menyetujui.');
+  if(String(source).toUpperCase()==='MAJESTY_CELL'){
+   alert('Barang Masuk Majesty Cell berhasil diajukan dan menunggu persetujuan Management/Fasilitator.');
+  }else{
+   alert('Barang Masuk berhasil disimpan. Status stock: READY. Tidak memerlukan persetujuan tambahan.');
+  }
   await renderInventory();
  }catch(e){
   alert(e?.message||e);

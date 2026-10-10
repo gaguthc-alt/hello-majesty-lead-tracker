@@ -91,7 +91,7 @@
     const h=await sb.from('lead_events').select('employee_name,outlet').eq('event_type','BUYBACK_CLOSING').gte('event_at',start).lt('event_at',end);
     if(h.error)throw h.error;
     const hm={}; (h.data||[]).forEach(e=>{const k=String(e.employee_name||'')+'|'+String(e.outlet||'');hm[k]=(hm[k]||0)+1;});
-    return rows.map(r=>({...r,hunter_closing:Number(hm[String(r.employee_name||'')+'|'+String(r.outlet||'')]||0)});
+    return rows.map(r=>({...r,hunter_closing:Number(hm[String(r.employee_name||'')+'|'+String(r.outlet||'')]||0)}));
   }
   async function showPerson(name,role,mode){
     const body=document.getElementById('perfBody'); if(!body)return;

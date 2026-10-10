@@ -104,11 +104,13 @@
       html+='</div>'; body.innerHTML=html;
     }catch(e){body.innerHTML='<div class="lead"><b>Gagal memuat detail</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div></div>';}
   }
+  let lastPerformanceRows=[];
   async function render(mode){
     const body=document.getElementById('perfBody'); if(!body)return;
     body.innerHTML='<div class="small">⏳ Memuat performa lead tim...</div>';
     try{
       const rows=await getFunnel(mode);
+      lastPerformanceRows=rows;
       let html='<style>.perf-list{display:block}.perf-person-card{border:1px solid #e5e7eb;background:#fff}.perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.perf-grid>div{background:#f8fafc;border-radius:10px;padding:10px;text-align:center}.perf-grid span{display:block;font-size:11px;color:#64748b}.perf-grid b{display:block;font-size:19px;margin-top:3px}@media(max-width:600px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>';
       html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Handover dihitung dari CS yang menyerahkan lead ke Sales. Sales Closing mencakup semua transaksi sah, termasuk dari Lead dan Walk-In.</div></div>';
       html+='<div class="perf-list">';
@@ -143,12 +145,36 @@
       '<div class="row" style="flex-wrap:wrap">'+
         '<button class="secondary" id="perfMonth">📊 Bulan Ini</button>'+
         '<button class="secondary" id="perfLastMonth">↩️ Bulan Kemarin</button>'+
-      '</div>'+
+        '<button class="success" id="perfShare" type="button" onclick="window.perfShare()">📲 Share ke WhatsApp</button>'+
+      '</div>' +
       '<div id="perfBody" style="margin-top:10px"></div>';
     document.getElementById('perfMonth').onclick=function(){window.perfMyMode='month';render('month');};
     document.getElementById('perfLastMonth').onclick=function(){window.perfMyMode='last_month';render('last_month');};
     window.perfMyMode='month';
     await render('month');
+  };
+  window.perfShare=function(){
+    const mode=window.perfMyMode||'month';
+    const rows=lastPerformanceRows||[];
+    const totals=rows.reduce((a,r)=>{
+      a.claim+=Number(r.claim_cs||0); a.handover+=Number(r.handover||0);
+      a.cs+=Number(r.cs_closing||0); a.sales+=Number(r.sales_closing||0); return a;
+    },{claim:0,handover:0,cs:0,sales:0});
+    let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*\\n';
+    message+='Periode: *'+monthLabel(mode)+'*\\n\\n';
+    message+='📲 Claim CS: '+fmt(totals.claim)+'\\n';
+    message+='🤝 Handover CS → Sales: '+fmt(totals.handover)+'\\n';
+    message+='🎯 CS Closing: '+fmt(totals.cs)+'\\n';
+    message+='🏆 Sales Closing: '+fmt(totals.sales)+'\\n\\n';
+    message+='*Rincian per anggota tim*\\n';
+    if(!rows.length) message+='Belum ada aktivitas pada periode ini.\\n';
+    rows.forEach(r=>{
+      message+='\\n👤 *'+String(r.employee_name||'-')+'*\\n';
+      message+='Claim CS: '+fmt(r.claim_cs)+' | Handover: '+fmt(r.handover)+'\\n';
+      message+='CS Closing: '+fmt(r.cs_closing)+' | Sales Closing: '+fmt(r.sales_closing)+'\\n';
+    });
+    const url='https://wa.me/?text='+encodeURIComponent(message);
+    window.open(url,'_blank','noopener');
   };
   window.perfShow=render;
   window.perfPerson=showPerson;

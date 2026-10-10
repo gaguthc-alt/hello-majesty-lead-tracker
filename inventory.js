@@ -876,7 +876,27 @@ function filterReceiveCategory(){
 }
 function normalizeSearch(q){return String(q||'').toLowerCase().trim().replace(/\bip\s*(?=\d)/g,'iphone ').replace(/\biph\s*(?=\d)/g,'iphone ').replace(/\bpm\b/g,'pro max').replace(/\s+/g,' ')}
 function searchHaystack(value,q){const hay=normalizeSearch(value),needle=normalizeSearch(q);if(!needle)return true;return hay.includes(needle)||hay.replace(/\s+/g,'').includes(needle.replace(/\s+/g,''))}
-async function filterReceiveProducts(){const q=($('stprodsearch')?.value||'').trim().toLowerCase();const sel=$('stprod');if(!sel)return;const current=sel.value;Array.from(sel.options).forEach(o=>{const p=inventoryProducts.find(x=>x.id===o.value);if(!p){o.hidden=false;return;}const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ').toLowerCase();o.hidden=!!q&&!searchHaystack(hay,q);});if(current&&!sel.querySelector('option[value="'+CSS.escape(current)+'"]')?.hidden)sel.value=current;toggleReceiveFields();}
+async function filterReceiveProducts(){
+ const q=($('stprodsearch')?.value||'').trim();
+ const sel=$('stprod'),cat=$('stcategory')?.value||'';
+ if(!sel)return;
+ const matches=[];
+ Array.from(sel.options).forEach(o=>{
+   const p=inventoryProducts.find(x=>x.id===o.value);
+   if(!p){o.hidden=false;return;}
+   const categoryOk=!cat||receiveProductCategory(p)===cat;
+   const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ');
+   const ok=categoryOk&&(!q||searchHaystack(hay,q));
+   o.hidden=!ok;
+   if(ok)matches.push(p);
+ });
+ if(q&&matches.length===1){
+   sel.value=matches[0].id;
+   sel.dispatchEvent(new Event('change',{bubbles:true}));
+ }else{
+   toggleReceiveFields();
+ }
+}
 async function openReceiveStock(){
  if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management, Fasilitator, dan Admin Finance Majesty Cell.');return;}
  const teams=await sb.from('team_directory').select('*').order('name');if(teams.error)return alert(teams.error.message);

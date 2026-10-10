@@ -85,7 +85,7 @@
 
   async function getFunnel(mode){
     const start=monthStart(mode).toISOString(), end=monthEnd(mode).toISOString();
-    const x=await sb.rpc('team_lead_performance_report',{p_start:start,p_end:end});
+    const x=await sb.rpc('team_lead_performance_report_by_outlet',{p_start:start,p_end:end});
     if(x.error)throw x.error; return x.data||[];
   }
   async function showPerson(name,role,mode){

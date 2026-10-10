@@ -936,6 +936,17 @@ function toggleReceiveFields(){
  $('androidSecondFields')?.classList.toggle('hidden',!showAndroidSecond);
  const source=$('stsource');if(source)source.onchange=()=>{$('hunterBox')?.classList.toggle('hidden',source.value!=='HUNTER')};
 }
+async function hmCheckDuplicateImeis(imei1,imei2,excludeId){
+ const tokens=[...new Set([imei1,imei2].map(v=>String(v||'').trim()).filter(v=>/^(?:\d{15}|\d{32})$/.test(v)))];
+ for(const token of tokens){
+  let q=sb.from('stock_units').select('id,imei_1,imei_2,outlet').or('imei_1.eq.'+token+',imei_2.eq.'+token).limit(5);
+  if(excludeId)q=q.neq('id',excludeId);
+  const r=await q;
+  if(r.error)throw new Error('Gagal memeriksa IMEI duplikat: '+r.error.message);
+  if((r.data||[]).length)return {imei:token,stock:r.data[0]};
+ }
+ return null;
+}
 async function saveStock(){
  const source=$('stsource')?.value||'MANAGEMENT';
  if(!canReceiveStock(source)){alert('Admin Finance Majesty Cell hanya dapat input Barang Masuk sumber Majesty Cell.');return;}
@@ -945,6 +956,7 @@ async function saveStock(){
  if(source==='HUNTER'&&!hunter)return alert('Hunter wajib dipilih.');
  if(source==='MAJESTY_CELL'&&!partnerName)return alert('Partner wajib dipilih.');
  if(!receiveOutlet)return alert('Outlet tujuan barang masuk wajib dipilih.');
+
  const selectedProduct=inventoryProducts.find(p=>p.id===$('stprod')?.value),selectedCategory=receiveProductCategory(selectedProduct),isIphoneNew=selectedCategory==='IPHONE_NEW',isIphoneSecond=selectedCategory==='IPHONE_SECOND',isAndroidNew=selectedCategory==='ANDROID_NEW',isAndroidSecond=selectedCategory==='ANDROID_SECOND';
  let data;
  if(isIphoneNew){
@@ -971,6 +983,11 @@ async function saveStock(){
  window.hmSavingStock=true;
  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ Menyimpan...';}
  try{
+  const imei1=String(data.imei_1||'').trim(),imei2=String(data.imei_2||'').trim();
+  if(imei1&&!/^\d{15}$/.test(imei1))throw new Error('IMEI 1 harus 15 digit angka.');
+  if(imei2&&!/^(?:\d{15}|\d{32})$/.test(imei2))throw new Error('IMEI 2 harus 15 digit angka atau EID 32 digit.');
+  const duplicate=await hmCheckDuplicateImeis(imei1,imei2,null);
+  if(duplicate)throw new Error('IMEI/EID '+duplicate.imei+' sudah terdaftar pada stock lain. Barang masuk dibatalkan agar tidak tercatat ganda.');
   const x=await sb.from('stock_units').insert(data).select('id').single();
   if(x.error)throw new Error(x.error.message);
   const stockId=x.data?.id;
@@ -1034,7 +1051,11 @@ async function saveEditStock(id){
  const c=s.category;
  const imei1=$('esimei1').value.trim(),imei2=$('esimei2').value.trim()||null;
  if(imei1&&!/^\d{15}$/.test(imei1))return alert('IMEI 1 harus berupa 15 digit angka.');
- if(imei2&&!/^\d{15}$/.test(imei2))return alert('IMEI 2 harus berupa 15 digit angka.');
+ if(imei2&&!/^(?:\d{15}|\d{32})$/.test(imei2))return alert('IMEI 2 harus 15 digit angka atau EID 32 digit.');
+ try{
+  const duplicate=await hmCheckDuplicateImeis(imei1,imei2,id);
+  if(duplicate)return alert('IMEI/EID '+duplicate.imei+' sudah terdaftar pada stock lain. Perubahan dibatalkan.');
+ }catch(e){return alert(e.message||e);}
  const data={imei_1:imei1||null,imei_2:imei2,asking_price:Number($('esprice').value||0),cost:Number($('escost').value||0),supplier:$('essupplier').value.trim()||null,notes:$('esnotes').value.trim()||null,updated_at:new Date().toISOString()};
  if(c==='IPHONE_SECOND'){
   data.grade=$('esgrade').value||null;

@@ -86,7 +86,12 @@
   async function getFunnel(mode){
     const start=monthStart(mode).toISOString(), end=monthEnd(mode).toISOString();
     const x=await sb.rpc('team_lead_performance_report_by_outlet',{p_start:start,p_end:end});
-    if(x.error)throw x.error; return x.data||[];
+    if(x.error)throw x.error;
+    const rows=x.data||[];
+    const h=await sb.from('lead_events').select('employee_name,outlet').eq('event_type','BUYBACK_CLOSING').gte('event_at',start).lt('event_at',end);
+    if(h.error)throw h.error;
+    const hm={}; (h.data||[]).forEach(e=>{const k=String(e.employee_name||'')+'|'+String(e.outlet||'');hm[k]=(hm[k]||0)+1;});
+    return rows.map(r=>({...r,hunter_closing:Number(hm[String(r.employee_name||'')+'|'+String(r.outlet||'')]||0)});
   }
   async function showPerson(name,role,mode){
     const body=document.getElementById('perfBody'); if(!body)return;
@@ -121,7 +126,7 @@
           '<div><span>📲 Claim CS</span><b>'+fmt(Number(r.claim_cs||0))+'</b></div>'+
           '<div><span>🤝 Handover CS → Sales</span><b>'+fmt(Number(r.handover||0))+'</b></div>'+
           '<div><span>🎯 CS Closing</span><b>'+fmt(Number(r.cs_closing||0))+'</b></div>'+
-          '<div><span>🏆 Sales Closing</span><b>'+fmt(Number(r.sales_closing||0))+'</b></div>'+
+          '<div><span>🏆 Sales Closing</span><b>'+fmt(Number(r.sales_closing||0))+'</b></div>'+\n          '<div><span>🏹 Hunter Closing</span><b>'+fmt(Number(r.hunter_closing||0))+'</b></div>'+
           '</div></div>';
       });
       if(!rows.length)html+='<div class="lead">Belum ada aktivitas lead pada periode ini.</div>';
@@ -161,20 +166,21 @@
       claim:Number(r.claim_cs||0),
       handover:Number(r.handover||0),
       cs:Number(r.cs_closing||0),
-      sales:Number(r.sales_closing||0)
+      sales:Number(r.sales_closing||0),
+      hunter:Number(r.hunter_closing||0)
     }));
     const NL=String.fromCharCode(10);
     const totals=rows.reduce((a,r)=>{
-      a.claim+=r.claim; a.handover+=r.handover; a.cs+=r.cs; a.sales+=r.sales; return a;
-    },{claim:0,handover:0,cs:0,sales:0});
+      a.claim+=r.claim; a.handover+=r.handover; a.cs+=r.cs; a.sales+=r.sales; a.hunter+=r.hunter; return a;
+    },{claim:0,handover:0,cs:0,sales:0,hunter:0});
 
     const outletNames=[...new Set(rows.map(r=>r.outlet).filter(x=>x&&x!=='-'))];
     const sections=outletNames.map(outlet=>{
       const rs=rows.filter(r=>r.outlet===outlet);
       return {outlet,rows:rs,totals:rs.reduce((a,r)=>{
-        a.claim+=r.claim; a.handover+=r.handover; a.cs+=r.cs; a.sales+=r.sales; return a;
-      },{claim:0,handover:0,cs:0,sales:0})};
-    }).filter(s=>s.totals.claim||s.totals.handover||s.totals.cs||s.totals.sales);
+        a.claim+=r.claim; a.handover+=r.handover; a.cs+=r.cs; a.sales+=r.sales; a.hunter+=r.hunter; return a;
+      },{claim:0,handover:0,cs:0,sales:0,hunter:0})};
+    }).filter(s=>s.totals.claim||s.totals.handover||s.totals.cs||s.totals.sales||s.totals.hunter);
 
     let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*'+NL;
     message+='📅 Periode: *'+monthLabel(mode)+'*'+NL+NL;
@@ -186,12 +192,14 @@
         message+='📲 Claim CS: *'+fmt(section.totals.claim)+'*'+NL;
         message+='🤝 Handover CS → Sales: *'+fmt(section.totals.handover)+'*'+NL;
         message+='🎯 CS Closing: *'+fmt(section.totals.cs)+'*'+NL;
-        message+='🏆 Sales Closing: *'+fmt(section.totals.sales)+'*'+NL+NL;
+        message+='🏆 Sales Closing: *'+fmt(section.totals.sales)+'*'+NL;
+        message+='🏹 Hunter Closing (Jual HP): *'+fmt(section.totals.hunter)+'*'+NL+NL;
 
         const leadRows=section.rows.filter(r=>r.claim||r.handover||r.cs).sort((a,b)=>
           (b.claim+b.handover+b.cs)-(a.claim+a.handover+a.cs)
         );
         const salesRows=section.rows.filter(r=>r.sales).sort((a,b)=>b.sales-a.sales);
+        const hunterRows=section.rows.filter(r=>r.hunter).sort((a,b)=>b.hunter-a.hunter);
 
         if(leadRows.length){
           message+='👥 *PERFORMA LEAD*'+NL;
@@ -210,6 +218,8 @@
           });
         }
 
+        if(hunterRows.length){message+=NL+'🏹 *HUNTER CLOSING — JUAL HP*'+NL;hunterRows.forEach(r=>{message+='👤 *'+r.name+'* — '+fmt(r.hunter)+' Closing Jual HP'+NL;});}
+
         if(index<sections.length-1)message+=NL+'━━━━━━━━━━━━━━'+NL+NL;
         else message+=NL;
       });
@@ -221,7 +231,8 @@
     message+='📲 Claim CS: *'+fmt(totals.claim)+'*'+NL;
     message+='🤝 Handover CS → Sales: *'+fmt(totals.handover)+'*'+NL;
     message+='🎯 CS Closing: *'+fmt(totals.cs)+'*'+NL;
-    message+='🏆 Sales Closing: *'+fmt(totals.sales)+'*'+NL+NL;
+    message+='🏆 Sales Closing: *'+fmt(totals.sales)+'*'+NL;
+    message+='🏹 Hunter Closing (Jual HP): *'+fmt(totals.hunter)+'*'+NL+NL;
     message+='━━━━━━━━━━━━━━'+NL;
     message+='*Hello Majesty*'+NL;
     message+='*Management System*'+NL;

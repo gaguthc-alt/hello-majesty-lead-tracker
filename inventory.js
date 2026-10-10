@@ -713,6 +713,19 @@ async function openSellStock(stockId){
 }
 
 function invCategory(c){return ({IPHONE_NEW:'iPhone New',IPHONE_SECOND:'iPhone Second',ANDROID_NEW:'Android New',ANDROID_SECOND:'Android Second',STOCK_NEW_MAJESTY_CELL:'Stock New Pusat',STOCK_SECOND_MAJESTY_CELL:'Stock Second Pusat'})[c]||c}
+function receiveProductCategory(p){
+ const c=String(p?.category||'').trim().toUpperCase();
+ const name=String(p?.product||'').trim().toUpperCase();
+ if(c==='STOCK_NEW_MAJESTY_CELL'){
+  if(/^IPHONE\b/.test(name))return 'IPHONE_NEW';
+  if(/^ANDROID\b/.test(name)||/SAMSUNG|XIAOMI|OPPO|VIVO|REALME|HONOR|GOOGLE PIXEL/.test(name))return 'ANDROID_NEW';
+ }
+ if(c==='STOCK_SECOND_MAJESTY_CELL'){
+  if(/^IPHONE\b/.test(name))return 'IPHONE_SECOND';
+  if(/^ANDROID\b/.test(name)||/SAMSUNG|XIAOMI|OPPO|VIVO|REALME|HONOR|GOOGLE PIXEL/.test(name))return 'ANDROID_SECOND';
+ }
+ return c;
+}
 function masterProductLabel(p){const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();return [product,variant,p.color,suffix].filter(Boolean).join(' — ')}
 function stockCard(s){
  const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',canViewCost=management||facilitator,ready=s.status==='READY',roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),sales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')),c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
@@ -858,7 +871,7 @@ function filterReceiveCategory(){
  sel.disabled=!cat;
  if(search)search.disabled=!cat;
  sel.value='';
- Array.from(sel.options).forEach(o=>{if(!o.value){o.hidden=false;return;}o.hidden=!!cat&&o.dataset.category!==cat;o.hidden=!cat||o.dataset.category!==cat;});
+ Array.from(sel.options).forEach(o=>{if(!o.value){o.hidden=false;return;}o.hidden=!cat||receiveProductCategory(inventoryProducts.find(x=>x.id===o.value))!==cat;});
  toggleReceiveFields();
 }
 function normalizeSearch(q){return String(q||'').toLowerCase().trim().replace(/\bip\s*(?=\d)/g,'iphone ').replace(/\biph\s*(?=\d)/g,'iphone ').replace(/\bpm\b/g,'pro max').replace(/\s+/g,' ')}
@@ -870,7 +883,8 @@ async function openReceiveStock(){
  const receiveCategories=[['IPHONE_NEW','iPhone New'],['IPHONE_SECOND','iPhone Second'],['ANDROID_NEW','Android New'],['ANDROID_SECOND','Android Second']];
  const products='<option value="">Pilih produk setelah memilih kategori</option>'+inventoryProducts.map(p=>'<option value="'+p.id+'" data-category="'+esc(p.category||'')+'">'+esc(masterProductLabel(p))+'</option>').join('');
  const selected=inventoryProducts.find(p=>p.id===$('stprod')?.value);
- const isIphoneNew=selected?.category==='IPHONE_NEW',isIphoneSecond=selected?.category==='IPHONE_SECOND',isAndroidNew=selected?.category==='ANDROID_NEW';
+ const selectedCategory=receiveProductCategory(selected);
+ const isIphoneNew=selectedCategory==='IPHONE_NEW',isIphoneSecond=selectedCategory==='IPHONE_SECOND',isAndroidNew=selectedCategory==='ANDROID_NEW';
  const teamRows=teams.data||[]; const profs=await sb.from('team_profiles').select('user_id,name,is_management'); if(profs.error)return alert(profs.error.message); const mgmtIds=new Set((profs.data||[]).filter(x=>x.is_management).map(x=>x.user_id)); const perm=await sb.from('team_permissions').select('name,outlet,can_hunter,active').eq('active',true).eq('can_hunter',true); if(perm.error)return alert(perm.error.message); const allowed=perm.data||[]; const hunters=teamRows.filter(t=>!mgmtIds.has(t.user_id)&&allowed.some(x=>String(x.name).trim().toLowerCase()===String(t.name).trim().toLowerCase()&&String(x.outlet).trim().toLowerCase()===String(t.outlet||'').trim().toLowerCase())).map(t=>'<option value="'+t.user_id+'" data-hunter-outlet="'+esc(t.outlet||'')+'">'+esc(t.name)+'</option>').join('');
  const isMgmt=!!profile?.is_management;const hunterOptions=hunters;
  $('mt').textContent='📦 Barang Masuk';
@@ -889,9 +903,9 @@ async function openReceiveStock(){
 function toggleReceiveFields(){
  const p=inventoryProducts.find(x=>x.id===$('stprod')?.value);
  const selectedCategory=String($('stcategory')?.value||'').trim();
- const category=p?.category||selectedCategory;
+ const category=receiveProductCategory(p)||selectedCategory;
  const isNew=category==='IPHONE_NEW',isSecond=category==='IPHONE_SECOND',isAndroidNew=category==='ANDROID_NEW',isAndroidSecond=category==='ANDROID_SECOND';
- if($('stcategory') && p && $('stcategory').value!==p.category)$('stcategory').value=p.category;
+ if($('stcategory') && p && $('stcategory').value!==category)$('stcategory').value=category;
  if($('stvariant'))$('stvariant').value=p?.variant||'';
  const hasProduct=!!p;
  const showNew=hasProduct&&isNew,showSecond=hasProduct&&isSecond,showAndroidNew=hasProduct&&isAndroidNew,showAndroidSecond=hasProduct&&isAndroidSecond;
@@ -913,7 +927,7 @@ async function saveStock(){
  if(source==='HUNTER'&&!hunter)return alert('Hunter wajib dipilih.');
  if(source==='MAJESTY_CELL'&&!partnerName)return alert('Partner wajib dipilih.');
  if(!receiveOutlet)return alert('Outlet tujuan barang masuk wajib dipilih.');
- const selectedProduct=inventoryProducts.find(p=>p.id===$('stprod')?.value),isIphoneNew=selectedProduct?.category==='IPHONE_NEW',isIphoneSecond=selectedProduct?.category==='IPHONE_SECOND',isAndroidNew=selectedProduct?.category==='ANDROID_NEW',isAndroidSecond=selectedProduct?.category==='ANDROID_SECOND';
+ const selectedProduct=inventoryProducts.find(p=>p.id===$('stprod')?.value),selectedCategory=receiveProductCategory(selectedProduct),isIphoneNew=selectedCategory==='IPHONE_NEW',isIphoneSecond=selectedCategory==='IPHONE_SECOND',isAndroidNew=selectedCategory==='ANDROID_NEW',isAndroidSecond=selectedCategory==='ANDROID_SECOND';
  let data;
  if(isIphoneNew){
   const imei1=$('stimei1new').value.trim(),cost=$('stcostnew').value,price=$('stpricenew').value;

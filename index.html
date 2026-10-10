@@ -2277,7 +2277,7 @@ function hmRenderLeadTodayMain(){
 
 function hmEnsureHomePerformanceStyle(){
  if(document.getElementById('hm-home-performance-style'))return;
- document.head.insertAdjacentHTML('beforeend',"<style id=\"hm-home-performance-style\">\n.hm-home-performance{margin:0 0 14px;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:20px;padding:14px;box-shadow:0 7px 22px rgba(7,17,31,.07)}\n.hm-home-perf-title{font-size:13px;font-weight:900;color:#344054;letter-spacing:.25px;margin:0 2px 10px}\n.hm-home-perf-section{margin-top:10px}.hm-home-perf-section:first-of-type{margin-top:0}\n.hm-home-perf-head{margin:0 2px 7px}.hm-home-perf-head b{display:block;font-size:13px;color:#101828}.hm-home-perf-head span{display:block;font-size:10.5px;color:#667085;margin-top:2px}\n.hm-home-perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}\n.hm-home-perf-card{min-width:0;background:linear-gradient(145deg,#f8fafc,#eef3f2);border:1px solid rgba(15,23,42,.07);border-radius:13px;padding:9px 5px;text-align:center}\n.hm-home-perf-icon{font-size:15px;line-height:1}.hm-home-perf-label{font-size:9.5px;font-weight:700;color:#667085;line-height:1.15;margin-top:4px;min-height:22px;display:flex;align-items:center;justify-content:center}.hm-home-perf-value{font-size:20px;font-weight:900;color:#101828;line-height:1.1;margin-top:4px}\n@media(max-width:380px){.hm-home-performance{padding:11px}.hm-home-perf-grid{gap:5px}.hm-home-perf-card{padding:8px 3px}.hm-home-perf-label{font-size:8.5px}.hm-home-perf-value{font-size:18px}}\n</style><style>
+ document.head.insertAdjacentHTML('beforeend',`<style id=\"hm-home-performance-style\">\n.hm-home-performance{margin:0 0 14px;background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:20px;padding:14px;box-shadow:0 7px 22px rgba(7,17,31,.07)}\n.hm-home-perf-title{font-size:13px;font-weight:900;color:#344054;letter-spacing:.25px;margin:0 2px 10px}\n.hm-home-perf-section{margin-top:10px}.hm-home-perf-section:first-of-type{margin-top:0}\n.hm-home-perf-head{margin:0 2px 7px}.hm-home-perf-head b{display:block;font-size:13px;color:#101828}.hm-home-perf-head span{display:block;font-size:10.5px;color:#667085;margin-top:2px}\n.hm-home-perf-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}\n.hm-home-perf-card{min-width:0;background:linear-gradient(145deg,#f8fafc,#eef3f2);border:1px solid rgba(15,23,42,.07);border-radius:13px;padding:9px 5px;text-align:center}\n.hm-home-perf-icon{font-size:15px;line-height:1}.hm-home-perf-label{font-size:9.5px;font-weight:700;color:#667085;line-height:1.15;margin-top:4px;min-height:22px;display:flex;align-items:center;justify-content:center}.hm-home-perf-value{font-size:20px;font-weight:900;color:#101828;line-height:1.1;margin-top:4px}\n@media(max-width:380px){.hm-home-performance{padding:11px}.hm-home-perf-grid{gap:5px}.hm-home-perf-card{padding:8px 3px}.hm-home-perf-label{font-size:8.5px}.hm-home-perf-value{font-size:18px}}\n</style><style>
 /* Barang Masuk: tombol simpan selalu terlihat di bawah modal saat form panjang */
 .modal>.box #saveStockBtn{
   position:sticky!important;
@@ -2289,7 +2289,7 @@ function hmEnsureHomePerformanceStyle(){
   margin-bottom:0!important;
   box-shadow:0 -6px 14px rgba(16,24,40,.10)!important;
 }
-</style>");
+</style>`);
 }
 async function hmRenderHomePerformance(){
  const host=document.getElementById('roleHome');

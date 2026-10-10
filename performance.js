@@ -157,51 +157,72 @@
     const mode=window.perfMyMode||'month';
     const rows=(lastPerformanceRows||[]).map(r=>({
       name:String(r.employee_name||'-'),
+      outlet:String(r.outlet||r.outlet_name||'-'),
       claim:Number(r.claim_cs||0),
       handover:Number(r.handover||0),
       cs:Number(r.cs_closing||0),
       sales:Number(r.sales_closing||0)
     }));
+    const NL=String.fromCharCode(10);
     const totals=rows.reduce((a,r)=>{
       a.claim+=r.claim; a.handover+=r.handover; a.cs+=r.cs; a.sales+=r.sales; return a;
     },{claim:0,handover:0,cs:0,sales:0});
-    const leadRows=rows.filter(r=>r.claim||r.handover||r.cs).sort((a,b)=>
-      (b.claim+b.handover+b.cs)-(a.claim+a.handover+a.cs)
-    );
-    const salesRows=rows.filter(r=>r.sales).sort((a,b)=>b.sales-a.sales);
-    const NL=String.fromCharCode(10);
+
+    const outletNames=[...new Set(rows.map(r=>r.outlet).filter(x=>x&&x!=='-'))];
+    const sections=outletNames.map(outlet=>{
+      const rs=rows.filter(r=>r.outlet===outlet);
+      return {outlet,rows:rs,totals:rs.reduce((a,r)=>{
+        a.claim+=r.claim; a.handover+=r.handover; a.cs+=r.cs; a.sales+=r.sales; return a;
+      },{claim:0,handover:0,cs:0,sales:0})};
+    }).filter(s=>s.totals.claim||s.totals.handover||s.totals.cs||s.totals.sales);
+
     let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*'+NL;
     message+='📅 Periode: *'+monthLabel(mode)+'*'+NL+NL;
-    message+='*📌 TOTAL PERFORMA*'+NL;
+
+    if(sections.length){
+      sections.forEach((section,index)=>{
+        message+='🏪 *'+section.outlet.toUpperCase()+'*'+NL;
+        message+='📌 *TOTAL PERFORMA*'+NL;
+        message+='📲 Claim CS: *'+fmt(section.totals.claim)+'*'+NL;
+        message+='🤝 Handover CS → Sales: *'+fmt(section.totals.handover)+'*'+NL;
+        message+='🎯 CS Closing: *'+fmt(section.totals.cs)+'*'+NL;
+        message+='🏆 Sales Closing: *'+fmt(section.totals.sales)+'*'+NL+NL;
+
+        const leadRows=section.rows.filter(r=>r.claim||r.handover||r.cs).sort((a,b)=>
+          (b.claim+b.handover+b.cs)-(a.claim+a.handover+a.cs)
+        );
+        const salesRows=section.rows.filter(r=>r.sales).sort((a,b)=>b.sales-a.sales);
+
+        if(leadRows.length){
+          message+='👥 *PERFORMA LEAD*'+NL;
+          leadRows.forEach(r=>{
+            message+=NL+'👤 *'+r.name+'*'+NL;
+            message+='📲 Claim: '+fmt(r.claim)+' | 🤝 Handover: '+fmt(r.handover);
+            if(r.cs)message+=' | 🎯 CS Closing: '+fmt(r.cs);
+            message+=NL;
+          });
+        }
+
+        if(salesRows.length){
+          message+=NL+'🏆 *SALES CLOSING*'+NL;
+          salesRows.forEach(r=>{
+            message+='👤 *'+r.name+'* — '+fmt(r.sales)+' Closing'+NL;
+          });
+        }
+
+        if(index<sections.length-1)message+=NL+'━━━━━━━━━━━━━━'+NL+NL;
+        else message+=NL;
+      });
+    }else{
+      message+='Belum ada aktivitas pada periode ini.'+NL+NL;
+    }
+
+    message+='📊 *TOTAL SEMUA OUTLET*'+NL;
     message+='📲 Claim CS: *'+fmt(totals.claim)+'*'+NL;
     message+='🤝 Handover CS → Sales: *'+fmt(totals.handover)+'*'+NL;
     message+='🎯 CS Closing: *'+fmt(totals.cs)+'*'+NL;
     message+='🏆 Sales Closing: *'+fmt(totals.sales)+'*'+NL+NL;
-
-    if(leadRows.length){
-      message+='*👥 PERFORMA LEAD*'+NL;
-      leadRows.forEach(r=>{
-        message+=NL+'👤 *'+r.name+'*'+NL;
-        message+='📲 Claim: '+fmt(r.claim)+' | 🤝 Handover: '+fmt(r.handover);
-        if(r.cs)message+=' | 🎯 CS Closing: '+fmt(r.cs);
-        message+=NL;
-      });
-      message+=NL;
-    }
-
-    if(salesRows.length){
-      message+='*🏆 SALES CLOSING*'+NL;
-      salesRows.forEach(r=>{
-        message+='👤 *'+r.name+'* — '+fmt(r.sales)+' Closing'+NL;
-      });
-      message+=NL+'🏆 *TOTAL SALES CLOSING: '+fmt(totals.sales)+' UNIT*'+NL;
-    }
-
-    if(!leadRows.length&&!salesRows.length){
-      message+='Belum ada aktivitas pada periode ini.'+NL;
-    }
-
-    message+=NL+'━━━━━━━━━━━━━━'+NL;
+    message+='━━━━━━━━━━━━━━'+NL;
     message+='*Hello Majesty*'+NL;
     message+='*Management System*'+NL;
     message+='*Built on Trust*';

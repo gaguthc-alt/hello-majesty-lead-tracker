@@ -2632,6 +2632,10 @@ function renderRoleHome(){
    // Developer tetap melihat seluruh kelompok menu.
    if(!forceVisible && !developer && !isAccountingGroup && gi>1 && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
    let allowed=(forceVisible || isAccountingGroup) ? g[2] : g[2].filter(item=>cards.some(x=>x[1]===item[1]));
+   if(g[1]==='SALES & PENJUALAN'){
+     const directBuyback=g[2].find(item=>item[1]==='Barang Masuk — Jual HP');
+     if(directBuyback&&!allowed.some(item=>item[1]===directBuyback[1]))allowed=[...allowed,directBuyback];
+   }
    // Laporan Performa Tim wajib tampil untuk Management/Developer di LEAD TRACKER.
    if(g[1]==='LEAD TRACKER' && (mg || developer) && !allowed.some(item=>item[1]==='Laporan Performa Tim')){
      const perfItem=g[2].find(item=>item[1]==='Laporan Performa Tim');

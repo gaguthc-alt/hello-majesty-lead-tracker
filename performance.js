@@ -159,6 +159,7 @@
           '<div class="perf-grid" style="margin-top:10px">'+
           '<div><span>📲 Claim CS</span><b>'+fmt(Number(r.claim_cs||0))+'</b></div>'+
           '<div><span>🤝 Handover CS → Sales</span><b>'+fmt(Number(r.handover||0))+'</b></div>'+
+          '<div><span>📥 Claim Sales</span><b>'+fmt(Number(r.claim_sales||0))+'</b></div>'+
           '<div><span>🎯 CS Closing</span><b>'+fmt(Number(r.cs_closing||0))+'</b></div>'+
           '<div><span>🏆 Sales Closing</span><b>'+fmt(Number(r.sales_closing||0))+'</b></div>'+
           '<div><span>🏹 Hunter Closing</span><b>'+fmt(Number(r.hunter_closing||0))+'</b></div>'+

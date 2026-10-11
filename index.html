@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261010-direct-buyback-3"><meta name="hm-ui-build" content="premium-command-center-20261006-2"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261010-direct-buyback-3"><meta name="hm-ui-build" content="lead-type-badge-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -3779,6 +3779,7 @@ window.openFacilitatorReports=openFacilitatorReports;
 window.shareFacilitatorReport=shareFacilitatorReport;
 window.shareFacilitatorStock=shareFacilitatorStock;
 
+function leadTypeLabel(l){const t=String(l.need_type||'').trim().toUpperCase();const m={'PEMBELIAN':'🛒 PEMBELIAN','SERVICE':'🔧 SERVICE','TUKAR TAMBAH':'🔄 TUKAR TAMBAH','KREDIT/CICILAN':'💳 CICILAN','CICILAN':'💳 CICILAN','INFORMASI':'ℹ️ INFORMASI'};return m[t]||'❓ BELUM DITENTUKAN'}
 function card(l){
  const mg=profile?.is_management;
  const available=l.status_lead==='AVAILABLE';
@@ -3793,6 +3794,7 @@ function card(l){
  const limited=(l.status_lead==='CS LOCK'&&!q&&!mg)||(l.status_lead==='HANDLE'&&!own&&!mg);
  const displayStatus=l.sales_result==='CLOSING'?'HASIL • CLOSING':l.sales_result==='GAGAL'?'HASIL • GAGAL':l.qualification_result==='GAGAL'?'HASIL • GAGAL':l.qualification_result==='POTENSIAL'?'POTENSIAL • FOLLOW-UP':l.status_lead==='HASIL'?'HASIL':l.status_lead==='QUALIFIED'?'QUALIFIED':l.status_lead;
  return '<div class="lead" data-lead-id="'+esc(l.lead_id)+'"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(displayStatus)+'</span></h3>'+
+ '<div style="margin:7px 0 6px"><span class="badge" style="font-size:13px;background:#eef6ff;border:1px solid #b8d7ff;color:#145da0">'+esc(leadTypeLabel(l))+'</span></div>'+
  '<div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+(l.content_creator?' • Content: '+esc(l.content_creator):'')+'</div>'+
  '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+' • Sales: '+esc(l.sales_claimed_by||'-')+'</div>'+
  (limited?'<p class="small">Lead sedang ditangani oleh owner lain. Detail tidak tersedia.</p>':

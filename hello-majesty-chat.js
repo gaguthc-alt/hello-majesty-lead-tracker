@@ -98,6 +98,10 @@ async function sendCustomer(){
 
 function renderDemoCustomer(){const box=el('hmCustomerMessages');box.innerHTML='';demoState.messages.forEach(m=>addBubble(box,m));if(demoState.messages.length)el('hmWelcome').classList.add('hm-hidden');}
 
+async function requestChatNotifications(){try{if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();}catch(_e){}}
+function showChatNotification(c){try{if(!('Notification' in window)||Notification.permission!=='granted')return;const n=new Notification('💬 Chat Customer Baru',{body:(c?.customer_name||'Customer')+' mengirim pesan baru.',tag:'hm-chat-'+c.id});n.onclick=()=>{window.focus();openCsConversation(c.id)}}catch(e){console.warn('[HM Chat notification]',e)}}
+async function subscribeChatNotifications(){try{await ensureClient();const {data:{session}}=await sb.auth.getSession();if(!session?.user||session.user.is_anonymous)return;const r=await sb.from('team_profiles').select('role,active').eq('user_id',session.user.id).maybeSingle();const role=String(r.data?.role||'').toUpperCase().replace(/_/g,' ');if(!r.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;await requestChatNotifications();sb.channel('hm-chat-new-'+session.user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},p=>showChatNotification(p.new)).subscribe()}catch(e){console.warn('[HM Chat realtime]',e)}}
+
 async function loadCsInbox(){
   await ensureClient();
   const {data:{session}}=await sb.auth.getSession();
@@ -182,6 +186,7 @@ document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{el('hmCustom
       el('hmCsView').classList.remove('hm-hidden');
       el('hmChatSubtitle').textContent='CS Inbox';
       await loadCsInbox();
+      await subscribeChatNotifications();
     }
   }catch(e){
     console.warn('[HM Chat]',e);

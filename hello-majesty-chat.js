@@ -22,6 +22,8 @@ let csInboxPollTimer=null;
 let csKnownAvailableIds=new Set();
 let csInboxNotificationReady=false;
 let subscribedConversationId=null;
+let csRealtimeWatchdog=null;
+let csRealtimeTokenTimer=null;
 
 function el(id){return document.getElementById(id);}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
@@ -162,7 +164,38 @@ function renderDemoCustomer(){const box=el('hmCustomerMessages');box.innerHTML='
 async function requestChatNotifications(){try{if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();}catch(_e){}}
 function showInAppChatAlert(c){const box=document.getElementById('hmChatAlert'),txt=document.getElementById('hmChatAlertText'),btn=document.getElementById('hmChatAlertBtn');if(!box)return;if(txt)txt.textContent='Lead baru dari '+(c?.customer_name||'Customer')+' menunggu di-claim.';if(btn)btn.onclick=()=>{box.classList.add('hm-hidden');openCsConversation(c.id)};box.classList.remove('hm-hidden');try{document.title='🔔 Chat Baru • Hello Majesty'}catch(_e){}}
 function showChatNotification(c){if(c?.claimed_by||c?.status!=='AVAILABLE')return;showInAppChatAlert(c);try{if(!('Notification' in window)||Notification.permission!=='granted')return;const n=new Notification('🔔 Lead Baru Menunggu Claim',{body:(c?.customer_name||'Customer')+' masuk dari Hello Majesty Chat. Silakan CLAIM.',tag:'hm-chat-'+c.id});n.onclick=()=>{window.focus();openCsConversation(c.id)}}catch(e){console.warn('[HM Chat notification]',e)}}
-async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;}if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}csMessageChannel=null;}if(csNotificationChannel){try{await sb.removeChannel(csNotificationChannel)}catch(_e){}csNotificationChannel=null;}stopCsInboxPolling();subscribedConversationId=null;}
+function stopCsRealtimeWatchdog(){
+  if(csRealtimeWatchdog){clearInterval(csRealtimeWatchdog);csRealtimeWatchdog=null;}
+  if(csRealtimeTokenTimer){clearInterval(csRealtimeTokenTimer);csRealtimeTokenTimer=null;}
+}
+async function refreshCsRealtimeAuth(){
+  if(customerOnly||!sb?.realtime?.setAuth)return;
+  try{
+    const session=await getMainAuth();
+    await sb.realtime.setAuth(session.access_token);
+  }catch(e){console.warn('[HM Chat CS realtime auth refresh]',e);}
+}
+function startCsRealtimeWatchdog(){
+  if(customerOnly||csRealtimeWatchdog)return;
+  // Keep the websocket authorized and recover silently after mobile sleep,
+  // network changes, or an expired access token.
+  refreshCsRealtimeAuth();
+  csRealtimeTokenTimer=setInterval(refreshCsRealtimeAuth,4*60*1000);
+  csRealtimeWatchdog=setInterval(async()=>{
+    try{
+      const active=csMessageChannel?.state;
+      if(active&&active!=='joined'&&active!=='joining'){
+        await refreshCsRealtimeAuth();
+        if(activeConversation?.id)await subscribeCsConversationRealtime(activeConversation.id);
+      }
+      if(csNotificationChannel?.state&&csNotificationChannel.state!=='joined'&&csNotificationChannel.state!=='joining'){
+        await refreshCsRealtimeAuth();
+        await subscribeChatNotifications();
+      }
+    }catch(e){console.warn('[HM Chat CS realtime watchdog]',e);}
+  },5000);
+}
+async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;}if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}csMessageChannel=null;}if(csNotificationChannel){try{await sb.removeChannel(csNotificationChannel)}catch(_e){}csNotificationChannel=null;}stopCsInboxPolling();subscribedConversationId=null;stopCsRealtimeWatchdog();}
 async function subscribeConversationRealtime(conversationId, targetBoxId, channelPrefix){
   await ensureClient();
   if(!conversationId)return;
@@ -311,6 +344,7 @@ async function openCsConversation(cid){
     const msgs=await sb.from('chat_messages').select('*').eq('conversation_id',cid).order('created_at',{ascending:true});
     if(msgs.error)throw msgs.error;(msgs.data||[]).forEach(m=>addBubble(box,m));
     await subscribeCsConversationRealtime(cid);
+    startCsRealtimeWatchdog();
     startCsInboxPolling();
   }catch(e){console.error(e);alert(e.message||'Chat gagal dibuka.');}
 }
@@ -372,6 +406,7 @@ try{
       el('hmChatSubtitle').textContent='CS Inbox';
       await loadCsInbox();
       await subscribeChatNotifications();
+      startCsRealtimeWatchdog();
       startCsInboxPolling();
       if(requestedConversationId)await openCsConversation(requestedConversationId);
     }

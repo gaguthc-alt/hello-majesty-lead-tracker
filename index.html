@@ -3904,9 +3904,10 @@ function share(id){
  navigator.clipboard?.writeText(msg).catch(()=>{});
  location.href='https://wa.me/?text='+encodeURIComponent(msg);
 }
-function openUrl(){
+async function openUrl(){
  const id=new URLSearchParams(location.search).get('claim');
- const l=id?leads.find(x=>String(x.lead_id)===String(id)):null;
+ let l=id?leads.find(x=>String(x.lead_id)===String(id)):null;
+ if(id&&!l&&sb){const r=await sb.from('leads').select('lead_id,need_type,outlet,cs_claimed_by,service_pic,sales_claimed_by').eq('lead_id',id).maybeSingle();if(!r.error&&r.data){l=r.data;leads.push(r.data);}}
  const isService=String(l?.need_type||'').trim().toUpperCase()==='SERVICE';
  if(id&&profile&&!profile.is_management){
    $('mt').textContent=isService?'Lead Service':'Lead Qualified';

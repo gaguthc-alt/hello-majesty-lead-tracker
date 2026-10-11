@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#075e54">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Hello Majesty Chat</title>
+<link rel="stylesheet" href="hello-majesty-chat.css">
+</head>
+<body>
+<div id="hmChatApp" class="hm-chat-app">
+  <header class="hm-chat-header">
+    <div class="hm-avatar">HM</div>
+    <div class="hm-header-copy">
+      <b>Hello Majesty</b>
+      <span id="hmChatSubtitle">Customer Service</span>
+    </div>
+    <button id="hmModeBtn" class="hm-icon-btn" type="button" aria-label="Ganti tampilan">⋮</button>
+  </header>
+
+  <main class="hm-chat-main">
+    <section id="hmCustomerView" class="hm-view">
+      <div id="hmWelcome" class="hm-welcome">
+        <div class="hm-welcome-icon">👋</div>
+        <h1>Halo 👋</h1>
+        <p>Ada yang bisa kami bantu?</p>
+        <div class="hm-quick-row">
+          <button data-quick="Cari HP">📱 Cari HP</button>
+          <button data-quick="Accessories">🎧 Accessories</button>
+          <button data-quick="Kredit / Cicilan">💳 Kredit / Cicilan</button>
+          <button data-quick="Cek Outlet">📍 Cek Outlet</button>
+        </div>
+      </div>
+      <div id="hmCustomerMessages" class="hm-messages" aria-live="polite"></div>
+      <div class="hm-compose">
+        <textarea id="hmCustomerInput" rows="1" placeholder="Ketik pesan..." autocomplete="off"></textarea>
+        <button id="hmCustomerSend" class="hm-send" type="button" aria-label="Kirim">➤</button>
+      </div>
+    </section>
+
+    <section id="hmCsView" class="hm-view hm-hidden">
+      <div class="hm-inbox-toolbar">
+        <div><b>Lead Chat</b><span id="hmInboxCount">0 lead baru</span></div>
+        <button id="hmResetDemo" class="hm-small-btn" type="button">Reset Demo</button>
+      </div>
+      <div id="hmChatAlert" class="hm-chat-alert hm-hidden">🔔 <b>Chat customer baru</b><span id="hmChatAlertText">Ada customer baru masuk.</span><button id="hmChatAlertBtn" type="button">Lihat</button></div><div id="hmInbox" class="hm-inbox"></div>
+      <div id="hmCsConversation" class="hm-cs-conversation hm-hidden">
+        <div class="hm-conversation-top">
+          <button id="hmBackInbox" type="button">‹</button>
+          <div><b id="hmCsCustomerName">Customer</b><span id="hmCsOwnership">Belum di-claim</span></div>
+        </div>
+        <div id="hmCsMessages" class="hm-messages"></div>
+        <div class="hm-compose">
+          <textarea id="hmCsInput" rows="1" placeholder="Balas customer..." autocomplete="off"></textarea>
+          <button id="hmCsSend" class="hm-send" type="button">➤</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="hello-majesty-chat.js"></script>
+</body>
+</html>

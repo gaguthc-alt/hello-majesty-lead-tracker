@@ -66,6 +66,10 @@ async function ensureClient(){
   }else{
     const session=await getMainAuth();
     sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{headers:{Authorization:'Bearer '+session.access_token}}});
+    // The REST client uses the Authorization header above, but Supabase Realtime
+    // authenticates its websocket separately. Explicitly pass the same CS token
+    // so postgres_changes events are authorized for the logged-in CS user.
+    if(sb.realtime?.setAuth) await sb.realtime.setAuth(session.access_token);
   }
   return sb;
 }

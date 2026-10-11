@@ -19,12 +19,39 @@ function loadDemo(){try{return JSON.parse(localStorage.getItem(DEMO_KEY))||{mess
 function saveDemo(){localStorage.setItem(DEMO_KEY,JSON.stringify(demoState));}
 function addBubble(box,m){const d=document.createElement('div');d.className='hm-bubble '+(m.sender_type==='CUSTOMER'||m.from==='customer'?'customer':'cs');d.innerHTML=esc(m.message??m.text)+'<span class="hm-time">'+esc(time(m.created_at||m.at))+'</span>';box.appendChild(d);box.scrollTop=box.scrollHeight;}
 
+async function getMainAuth(){
+  try{
+    const raw=localStorage.getItem('hm_auth_session');
+    const s=raw?JSON.parse(raw):null;
+    if(!s?.access_token||!s?.user)throw new Error('Sesi login Hello Majesty tidak tersedia.');
+    const now=Math.floor(Date.now()/1000);
+    if(Number(s.expires_at||0)>now+90)return s;
+    if(!s.refresh_token)throw new Error('Sesi login Hello Majesty sudah kedaluwarsa. Silakan login kembali.');
+    const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
+    const data=await res.json().catch(()=>null);
+    if(!res.ok||!data?.access_token)throw new Error(data?.error_description||data?.msg||'Sesi login Hello Majesty sudah kedaluwarsa.');
+    const next={...s,...data,user:data.user||s.user,expires_at:data.expires_at||Math.floor(Date.now()/1000)+Number(data.expires_in||3600)};
+    localStorage.setItem('hm_auth_session',JSON.stringify(next));
+    return next;
+  }catch(e){throw new Error(e?.message||'Sesi login Hello Majesty tidak tersedia.');}
+}
 async function ensureClient(){
   if(sb)return sb;
-  if(window.sb){sb=window.sb;return sb;}
   if(!window.supabase?.createClient)throw new Error('Library Supabase belum termuat.');
-  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  if(customerOnly){
+    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  }else{
+    const session=await getMainAuth();
+    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{headers:{Authorization:'Bearer '+session.access_token}}});
+  }
   return sb;
+}
+async function getMainUser(){
+  const session=await getMainAuth();
+  const res=await fetch(SUPABASE_URL+'/auth/v1/user',{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token}});
+  const data=await res.json().catch(()=>null);
+  if(!res.ok||!data?.id)throw new Error('Sesi CS tidak tersedia. Silakan login Hello Majesty terlebih dahulu.');
+  return data;
 }
 
 async function ensureCustomer(){
@@ -101,13 +128,12 @@ function renderDemoCustomer(){const box=el('hmCustomerMessages');box.innerHTML='
 async function requestChatNotifications(){try{if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();}catch(_e){}}
 function showInAppChatAlert(c){const box=document.getElementById('hmChatAlert'),txt=document.getElementById('hmChatAlertText'),btn=document.getElementById('hmChatAlertBtn');if(!box)return;if(txt)txt.textContent=(c?.customer_name||'Customer')+' mengirim chat baru.';if(btn)btn.onclick=()=>{box.classList.add('hm-hidden');openCsConversation(c.id)};box.classList.remove('hm-hidden');try{document.title='🔔 Chat Baru • Hello Majesty'}catch(_e){}}
 function showChatNotification(c){showInAppChatAlert(c);try{if(!('Notification' in window)||Notification.permission!=='granted')return;const n=new Notification('💬 Chat Customer Baru',{body:(c?.customer_name||'Customer')+' mengirim pesan baru.',tag:'hm-chat-'+c.id});n.onclick=()=>{window.focus();openCsConversation(c.id)}}catch(e){console.warn('[HM Chat notification]',e)}}
-async function subscribeChatNotifications(){try{await ensureClient();const {data:{session}}=await sb.auth.getSession();if(!session?.user||session.user.is_anonymous)return;const r=await sb.from('team_profiles').select('role,active').eq('user_id',session.user.id).maybeSingle();const role=String(r.data?.role||'').toUpperCase().replace(/_/g,' ');if(!r.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;await requestChatNotifications();sb.channel('hm-chat-new-'+session.user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},p=>showChatNotification(p.new)).subscribe()}catch(e){console.warn('[HM Chat realtime]',e)}}
+async function subscribeChatNotifications(){try{await ensureClient();if(customerOnly)return;const user=await getMainUser();if(!user?.id)return;const r=await sb.from('team_profiles').select('role,active').eq('user_id',user.id).maybeSingle();const role=String(r.data?.role||'').toUpperCase().replace(/_/g,' ');if(!r.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;await requestChatNotifications();sb.channel('hm-chat-new-'+user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},p=>showChatNotification(p.new)).subscribe()}catch(e){console.warn('[HM Chat realtime]',e)}}
 
 async function loadCsInbox(){
   await ensureClient();
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session?.user)throw new Error('Sesi CS tidak tersedia. Silakan login Hello Majesty terlebih dahulu.');
-  if(session.user.is_anonymous)throw new Error('Sesi customer terdeteksi. Buka Chat dari akun CS di perangkat/browser CS.');
+  if(customerOnly)throw new Error('Mode customer aktif.');
+  await getMainUser();
   const {data,error}=await sb.from('chat_conversations').select('*').order('created_at',{ascending:false}).limit(100);
   if(error)throw error;
   renderInbox(data||[]);
@@ -147,9 +173,8 @@ async function sendCs(){
   const input=el('hmCsInput');const text=input.value.trim();if(!text||!activeConversation)return;
   input.value='';
   try{
-    const {data:userData}=await sb.auth.getUser();
-    if(!userData?.user)throw new Error('Sesi CS tidak tersedia.');
-    const {error}=await sb.from('chat_messages').insert({conversation_id:activeConversation.id,sender_type:'CS',sender_user_id:userData.user.id,message:text});
+    const userData=await getMainUser();
+    const {error}=await sb.from('chat_messages').insert({conversation_id:activeConversation.id,sender_type:'CS',sender_user_id:userData.id,message:text});
     if(error)throw error;
     await openCsConversation(activeConversation.id);
   }catch(e){console.error(e);alert(e.message||'Pesan CS gagal dikirim.');}

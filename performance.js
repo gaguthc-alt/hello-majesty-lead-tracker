@@ -109,10 +109,23 @@
       const key=String(e.employee_name||'')+'|'+String(e.outlet||'');
       if(!known.has(key)){merged.push({employee_name:e.employee_name||'-',outlet:e.outlet||'-',claim_cs:0,handover:0,cs_closing:0,sales_closing:0,hunter_closing:Number(hm[key]||0)});known.add(key);}
     });
-    // Akun yang bukan bagian dari tim performa operasional tidak ikut dihitung.
-    // Agnes Pradita adalah orang yang sama dengan Agnes, sedangkan Atmadita adalah fungsi Finance.
-    const excludedNames=new Set(['agnes pradita','atmadita']);
-    return merged.filter(r=>!excludedNames.has(String(r.employee_name||'').trim().toLowerCase()));
+    // Normalisasi identitas performa: Agnes Pradita = Agnes.
+    // Atmadita tidak dihitung sebagai performa tim operasional.
+    // Gabungkan nama Agnes Pradita ke Agnes sebelum agregasi/render.
+    const normalized=merged.map(r=>{
+      const n=String(r.employee_name||'').trim().toLowerCase();
+      return n==='agnes pradita'?{...r,employee_name:'Agnes'}:r;
+    }).filter(r=>String(r.employee_name||'').trim().toLowerCase()!=='atmadita');
+    const byPerson=new Map();
+    normalized.forEach(r=>{
+      const key=String(r.employee_name||'').trim().toLowerCase()+'|'+String(r.outlet||'').trim().toLowerCase();
+      if(!byPerson.has(key))byPerson.set(key,{...r});
+      else{
+        const x=byPerson.get(key);
+        ['claim_cs','handover','cs_closing','sales_closing','hunter_closing'].forEach(k=>x[k]=Number(x[k]||0)+Number(r[k]||0));
+      }
+    });
+    return [...byPerson.values()];
   }
   async function showPerson(name,role,mode){
     const body=document.getElementById('perfBody'); if(!body)return;

@@ -122,7 +122,7 @@
       if(!byPerson.has(key))byPerson.set(key,{...r});
       else{
         const x=byPerson.get(key);
-        ['claim_cs','handover','cs_closing','sales_closing','hunter_closing'].forEach(k=>x[k]=Number(x[k]||0)+Number(r[k]||0));
+        ['claim_cs','handover','claim_sales','cs_closing','sales_closing','hunter_closing'].forEach(k=>x[k]=Number(x[k]||0)+Number(r[k]||0));
       }
     });
     return [...byPerson.values()];
@@ -150,7 +150,7 @@
     try{
       const rows=await getFunnel(mode);
       lastPerformanceRows=rows;
-      let html='<style>.perf-list{display:block}.perf-person-card{border:1px solid #e5e7eb;background:#fff}.perf-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.perf-grid>div{background:#f8fafc;border-radius:10px;padding:10px;text-align:center}.perf-grid span{display:block;font-size:11px;color:#64748b}.perf-grid b{display:block;font-size:19px;margin-top:3px}@media(max-width:900px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>';
+      let html='<style>.perf-list{display:block}.perf-person-card{border:1px solid #e5e7eb;background:#fff}.perf-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.perf-grid>div{background:#f8fafc;border-radius:10px;padding:10px;text-align:center}.perf-grid span{display:block;font-size:11px;color:#64748b}.perf-grid b{display:block;font-size:19px;margin-top:3px}@media(max-width:900px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>';
       html+='<div class="box"><div class="row" style="justify-content:space-between"><b>📊 PERFORMA LEAD MASING-MASING ORANG</b><span class="small">'+escP(monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Handover dihitung dari CS yang menyerahkan lead ke Sales. Sales Closing = HP keluar. Hunter Closing = customer jual HP ke Majesty; komisinya terpisah dari Sales Closing.</div></div>';
       html+='<div class="perf-list">';
       rows.forEach(r=>{
@@ -200,13 +200,14 @@
       outlet:String(r.outlet||r.outlet_name||'-'),
       claim:Number(r.claim_cs||0),
       handover:Number(r.handover||0),
+      claimSales:Number(r.claim_sales||0),
       cs:Number(r.cs_closing||0),
       sales:Number(r.sales_closing||0),
       hunter:Number(r.hunter_closing||0)
     }));
     const NL=String.fromCharCode(10);
     const totals=rows.reduce((a,r)=>{
-      a.claim+=r.claim; a.handover+=r.handover; a.cs+=r.cs; a.sales+=r.sales; a.hunter+=r.hunter; return a;
+      a.claim+=r.claim; a.handover+=r.handover; a.claimSales+=r.claimSales; a.cs+=r.cs; a.sales+=r.sales; a.hunter+=r.hunter; return a;
     },{claim:0,handover:0,cs:0,sales:0,hunter:0});
 
     const outletNames=[...new Set(rows.map(r=>r.outlet).filter(x=>x&&x!=='-'))];
@@ -226,12 +227,13 @@
         message+='📌 *TOTAL PERFORMA*'+NL;
         message+='📲 Claim CS: *'+fmt(section.totals.claim)+'*'+NL;
         message+='🤝 Handover CS → Sales: *'+fmt(section.totals.handover)+'*'+NL;
+        message+='📥 Claim Sales: *'+fmt(section.totals.claimSales)+'*'+NL;
         message+='🎯 CS Closing: *'+fmt(section.totals.cs)+'*'+NL;
         message+='🏆 Sales Closing: *'+fmt(section.totals.sales)+'*'+NL;
         message+='🏹 Hunter Closing (Jual HP): *'+fmt(section.totals.hunter)+'*'+NL+NL;
 
-        const leadRows=section.rows.filter(r=>r.claim||r.handover||r.cs).sort((a,b)=>
-          (b.claim+b.handover+b.cs)-(a.claim+a.handover+a.cs)
+        const leadRows=section.rows.filter(r=>r.claim||r.handover||r.claimSales||r.cs).sort((a,b)=>
+          (b.claim+b.handover+b.claimSales+b.cs)-(a.claim+a.handover+a.claimSales+a.cs)
         );
         const salesRows=section.rows.filter(r=>r.sales).sort((a,b)=>b.sales-a.sales);
         const hunterRows=section.rows.filter(r=>r.hunter).sort((a,b)=>b.hunter-a.hunter);
@@ -240,7 +242,7 @@
           message+='👥 *PERFORMA LEAD*'+NL;
           leadRows.forEach(r=>{
             message+=NL+'👤 *'+r.name+'*'+NL;
-            message+='📲 Claim: '+fmt(r.claim)+' | 🤝 Handover: '+fmt(r.handover);
+            message+='📲 Claim CS: '+fmt(r.claim)+' | 🤝 Handover: '+fmt(r.handover)+' | 📥 Claim Sales: '+fmt(r.claimSales);
             if(r.cs)message+=' | 🎯 CS Closing: '+fmt(r.cs);
             message+=NL;
           });
@@ -265,6 +267,7 @@
     message+='📊 *TOTAL SEMUA OUTLET*'+NL;
     message+='📲 Claim CS: *'+fmt(totals.claim)+'*'+NL;
     message+='🤝 Handover CS → Sales: *'+fmt(totals.handover)+'*'+NL;
+    message+='📥 Claim Sales: *'+fmt(totals.claimSales)+'*'+NL;
     message+='🎯 CS Closing: *'+fmt(totals.cs)+'*'+NL;
     message+='🏆 Sales Closing: *'+fmt(totals.sales)+'*'+NL;
     message+='🏹 Hunter Closing (Jual HP): *'+fmt(totals.hunter)+'*'+NL+NL;

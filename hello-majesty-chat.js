@@ -162,62 +162,65 @@ async function requestChatNotifications(){try{if('Notification' in window&&Notif
 function showInAppChatAlert(c){const box=document.getElementById('hmChatAlert'),txt=document.getElementById('hmChatAlertText'),btn=document.getElementById('hmChatAlertBtn');if(!box)return;if(txt)txt.textContent='Lead baru dari '+(c?.customer_name||'Customer')+' menunggu di-claim.';if(btn)btn.onclick=()=>{box.classList.add('hm-hidden');openCsConversation(c.id)};box.classList.remove('hm-hidden');try{document.title='🔔 Chat Baru • Hello Majesty'}catch(_e){}}
 function showChatNotification(c){if(c?.claimed_by||c?.status!=='AVAILABLE')return;showInAppChatAlert(c);try{if(!('Notification' in window)||Notification.permission!=='granted')return;const n=new Notification('🔔 Lead Baru Menunggu Claim',{body:(c?.customer_name||'Customer')+' masuk dari Hello Majesty Chat. Silakan CLAIM.',tag:'hm-chat-'+c.id});n.onclick=()=>{window.focus();openCsConversation(c.id)}}catch(e){console.warn('[HM Chat notification]',e)}}
 async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;}if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}csMessageChannel=null;}stopCsInboxPolling();subscribedConversationId=null;}
-async function subscribeCsConversationRealtime(conversationId){
+async function subscribeConversationRealtime(conversationId, targetBoxId, channelPrefix){
   await ensureClient();
-  if(customerOnly||!conversationId)return;
+  if(!conversationId)return;
   if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}}
-  const channelName='hm-cs-conversation-live-'+conversationId;
-  csMessageChannel=sb.channel(channelName)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'conversation_id=eq.'+conversationId},p=>{
+  if(realtimeChannel && channelPrefix!=='hm-customer-chat-'){
+    try{await sb.removeChannel(realtimeChannel)}catch(_e){}
+    realtimeChannel=null;
+  }
+  const box=el(targetBoxId);
+  if(!box)return;
+  const channel=sb.channel(channelPrefix+conversationId)
+    .on('postgres_changes',{
+      event:'INSERT',
+      schema:'public',
+      table:'chat_messages',
+      filter:'conversation_id=eq.'+conversationId
+    },p=>{
       try{
-        if(activeConversation?.id!==conversationId)return;
-        addBubble(el('hmCsMessages'),p.new);
-      }catch(e){console.warn('[HM Chat CS message realtime]',e)}
+        addBubble(box,p.new);
+        if(targetBoxId==='hmCustomerMessages')el('hmWelcome').classList.add('hm-hidden');
+      }catch(e){console.warn('[HM Chat message realtime]',e)}
     })
     .subscribe(async(status)=>{
-      console.log('[HM Chat CS message realtime]',status);
+      console.log('[HM Chat message realtime]',channelPrefix,status);
       if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
-        setTimeout(()=>{if(activeConversation?.id===conversationId)subscribeCsConversationRealtime(conversationId)},1500);
+        setTimeout(()=>{
+          if(targetBoxId==='hmCsMessages'&&activeConversation?.id===conversationId){
+            subscribeConversationRealtime(conversationId,targetBoxId,channelPrefix);
+          }else if(targetBoxId==='hmCustomerMessages'&&subscribedConversationId===conversationId){
+            subscribeConversationRealtime(conversationId,targetBoxId,channelPrefix);
+          }
+        },1500);
       }
     });
+  if(targetBoxId==='hmCustomerMessages'){
+    realtimeChannel=channel;
+    subscribedConversationId=conversationId;
+  }else{
+    csMessageChannel=channel;
+  }
+}
+async function subscribeCsConversationRealtime(conversationId){
+  if(customerOnly||!conversationId)return;
+  return subscribeConversationRealtime(conversationId,'hmCsMessages','hm-cs-chat-');
 }
 async function subscribeCustomerRealtime(conversationId){
-  await ensureClient();
   if(!customerOnly||!conversationId||subscribedConversationId===conversationId)return;
   await stopRealtime();
-  subscribedConversationId=conversationId;
-  realtimeChannel=sb.channel('hm-customer-chat-'+conversationId)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'conversation_id=eq.'+conversationId},p=>{
-      try{addBubble(el('hmCustomerMessages'),p.new);el('hmWelcome').classList.add('hm-hidden');}
-      catch(e){console.warn('[HM Chat customer realtime]',e)}
-    })
-    .subscribe(async(status)=>{
-      console.log('[HM Chat customer realtime]',status);
-      if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
-        setTimeout(()=>{if(subscribedConversationId===conversationId)subscribeCustomerRealtime(conversationId)},1500);
-      }
-    });
+  return subscribeConversationRealtime(conversationId,'hmCustomerMessages','hm-customer-chat-');
 }
 function stopCsInboxPolling(){if(csInboxPollTimer){clearInterval(csInboxPollTimer);csInboxPollTimer=null;}}
-async function refreshActiveCsMessages(){
-  if(customerOnly||!activeConversation)return;
-  try{
-    const box=el('hmCsMessages');
-    const {data,error}=await sb.from('chat_messages').select('*').eq('conversation_id',activeConversation.id).order('created_at',{ascending:true});
-    if(error)throw error;
-    (data||[]).forEach(m=>addBubble(box,m));
-  }catch(e){console.warn('[HM Chat CS active message fallback]',e);}
-}
 function startCsInboxPolling(){
   if(customerOnly||csInboxPollTimer)return;
-  // Realtime is primary. Poll both inbox state and the currently open conversation
-  // so a missed websocket event never leaves a customer message visually stuck.
+  // Realtime is the primary path. Polling is only an inbox safety net for
+  // missed websocket events; the active conversation itself is not reloaded.
   csInboxPollTimer=setInterval(async()=>{
-    try{
-      await loadCsInbox();
-      await refreshActiveCsMessages();
-    }catch(e){console.warn('[HM Chat CS fallback]',e);}
-  },2000);
+    try{await loadCsInbox();}
+    catch(e){console.warn('[HM Chat CS inbox fallback]',e);}
+  },3000);
 }
 
 async function subscribeChatNotifications(){
@@ -321,7 +324,15 @@ async function sendCs(){
     const userData=await getMainUser();
     const {error}=await sb.from('chat_messages').insert({conversation_id:activeConversation.id,sender_type:'CS',sender_user_id:userData.id,message:text});
     if(error)throw error;
-    await openCsConversation(activeConversation.id);
+    // The realtime subscription renders the inserted message immediately.
+    // Re-open is no longer needed and could make the UI appear delayed.
+    addBubble(el('hmCsMessages'),{
+      id:'local-cs-'+Date.now()+'-'+Math.random(),
+      conversation_id:activeConversation.id,
+      sender_type:'CS',
+      message:text,
+      created_at:new Date().toISOString()
+    });
   }catch(e){console.error(e);alert(e.message||'Pesan CS gagal dikirim.');}
 }
 

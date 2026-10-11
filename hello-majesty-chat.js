@@ -351,6 +351,46 @@ function renderInbox(rows){
   });
 }
 
+
+async function loadActiveLeadPhone(){
+  const input=el('hmLeadPhone'),status=el('hmLeadDataStatus'),hint=el('hmLeadPhoneHint');
+  if(!input||!status||!hint)return;
+  input.value='';status.textContent='';hint.textContent='Nomor HP akan disimpan ke lead aktif.';
+  const leadId=activeConversation?.lead_id;
+  if(!leadId){hint.textContent='Chat ini belum terhubung ke lead aktif.';input.disabled=true;el('hmLeadPhoneSave').disabled=true;return;}
+  input.disabled=false;el('hmLeadPhoneSave').disabled=false;
+  try{
+    const {data,error}=await sb.from('leads').select('whatsapp').eq('id',leadId).single();
+    if(error)throw error;
+    input.value=data?.whatsapp||activeConversation?.customer_phone||'';
+  }catch(e){
+    console.warn('[HM Chat lead phone load]',e);
+    hint.textContent='Nomor belum tersedia. Silakan isi nomor HP lalu simpan.';
+  }
+}
+async function saveActiveLeadPhone(){
+  const input=el('hmLeadPhone'),status=el('hmLeadDataStatus'),hint=el('hmLeadPhoneHint');
+  if(!activeConversation?.lead_id)return alert('Chat ini belum terhubung ke lead aktif.');
+  const userData=await getMainUser();
+  if(activeConversation.claimed_by&&activeConversation.claimed_by!==userData.id)return alert('Hanya PIC yang claim chat ini yang dapat mengubah data lead.');
+  const phone=String(input.value||'').trim();
+  if(!phone)return alert('Nomor HP wajib diisi.');
+  const normalized=phone.replace(/[\s().-]/g,'');
+  if(!/^\+?[0-9]{8,15}$/.test(normalized))return alert('Format nomor HP belum benar. Contoh: 081234567890 atau +6281234567890.');
+  try{
+    await ensureClient();
+    const {error}=await sb.from('leads').update({whatsapp:phone}).eq('id',activeConversation.lead_id);
+    if(error)throw error;
+    activeConversation.customer_phone=phone;
+    status.textContent='✓ Tersimpan';
+    hint.textContent='Nomor HP lead sudah diperbarui.';
+    setTimeout(()=>{if(status)status.textContent='';},2200);
+  }catch(e){
+    console.error('[HM Chat lead phone save]',e);
+    alert('Nomor HP belum tersimpan. '+(e?.message||'Silakan coba lagi.'));
+  }
+}
+
 async function openCsConversation(cid){
   try{
     const {data,error}=await sb.from('chat_conversations').select('*').eq('id',cid).single();
@@ -362,6 +402,7 @@ async function openCsConversation(cid){
     }else activeConversation=data;
     const c=activeConversation;
     el('hmInbox').classList.add('hm-hidden');el('hmCsConversation').classList.remove('hm-hidden');el('hmCsCustomerName').textContent=c.customer_name||'Customer';el('hmCsOwnership').textContent='🔒 PIC: '+(c.claimed_name||'CS');
+    await loadActiveLeadPhone();
     const box=el('hmCsMessages');box.innerHTML='';
     const msgs=await sb.from('chat_messages').select('*').eq('conversation_id',cid).order('created_at',{ascending:true});
     if(msgs.error)throw msgs.error;(msgs.data||[]).forEach(m=>addBubble(box,m));
@@ -398,6 +439,7 @@ async function switchMode(){
 }
 
 el('hmCustomerSend').onclick=sendCustomer;el('hmCsSend').onclick=sendCs;
+el('hmLeadPhoneSave').onclick=saveActiveLeadPhone;
 if(customerOnly){
   el('hmModeBtn').classList.add('hm-hidden');
   el('hmCsView').classList.add('hm-hidden');

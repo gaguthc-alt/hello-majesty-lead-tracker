@@ -156,7 +156,7 @@ function renderDemoCustomer(){const box=el('hmCustomerMessages');box.innerHTML='
 async function requestChatNotifications(){try{if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();}catch(_e){}}
 function showInAppChatAlert(c){const box=document.getElementById('hmChatAlert'),txt=document.getElementById('hmChatAlertText'),btn=document.getElementById('hmChatAlertBtn');if(!box)return;if(txt)txt.textContent='Lead baru dari '+(c?.customer_name||'Customer')+' menunggu di-claim.';if(btn)btn.onclick=()=>{box.classList.add('hm-hidden');openCsConversation(c.id)};box.classList.remove('hm-hidden');try{document.title='🔔 Chat Baru • Hello Majesty'}catch(_e){}}
 function showChatNotification(c){if(c?.claimed_by||c?.status!=='AVAILABLE')return;showInAppChatAlert(c);try{if(!('Notification' in window)||Notification.permission!=='granted')return;const n=new Notification('🔔 Lead Baru Menunggu Claim',{body:(c?.customer_name||'Customer')+' masuk dari Hello Majesty Chat. Silakan CLAIM.',tag:'hm-chat-'+c.id});n.onclick=()=>{window.focus();openCsConversation(c.id)}}catch(e){console.warn('[HM Chat notification]',e)}}
-async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;}if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}csMessageChannel=null;}subscribedConversationId=null;}
+async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;}if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}csMessageChannel=null;}stopCsInboxPolling();subscribedConversationId=null;}
 async function subscribeCsConversationRealtime(conversationId){
   await ensureClient();
   if(customerOnly||!conversationId)return;
@@ -195,25 +195,9 @@ async function subscribeCustomerRealtime(conversationId){
 }
 function stopCsInboxPolling(){if(csInboxPollTimer){clearInterval(csInboxPollTimer);csInboxPollTimer=null;}}
 function startCsInboxPolling(){
-  stopCsInboxPolling();
-  csInboxNotificationReady=false;
-  csInboxPollTimer=setInterval(async()=>{
-    try{
-      if(customerOnly||!el('hmCsView')||el('hmCsView').classList.contains('hm-hidden'))return;
-      if(el('hmCsConversation')&&!el('hmCsConversation').classList.contains('hm-hidden'))return;
-      const rows=await loadCsInbox();
-      const available=(rows||[]).filter(x=>x.status==='AVAILABLE'&&!x.claimed_by);
-      const ids=new Set(available.map(x=>x.id));
-      if(csInboxNotificationReady){
-        for(const row of available){
-          if(!csKnownAvailableIds.has(row.id))showChatNotification(row);
-        }
-      }
-      csKnownAvailableIds=ids;
-      csInboxNotificationReady=true;
-    }catch(e){console.warn('[HM Chat CS inbox fallback]',e)}
-  },2000);
+  // Deprecated: CS Inbox now uses direct Supabase Realtime on chat_messages.
 }
+
 async function subscribeChatNotifications(){
   try{
     await ensureClient();
@@ -224,24 +208,42 @@ async function subscribeChatNotifications(){
     const role=String(r.data?.role||'').toUpperCase().replace(/_/g,' ');
     if(!r.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;
     await requestChatNotifications();
+
     if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}}
-    const channelName='hm-cs-inbox-live-'+user.id+'-'+Date.now();
-    realtimeChannel=sb.channel(channelName,{config:{broadcast:{self:false}}})
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},p=>{
-        console.log('[HM Chat CS inbox INSERT]',p.new);
-        showChatNotification(p.new);
-        loadCsInbox().then(rows=>{csKnownAvailableIds=new Set((rows||[]).filter(x=>x.status==='AVAILABLE'&&!x.claimed_by).map(x=>x.id));csInboxNotificationReady=true;}).catch(e=>console.warn('[HM Chat inbox realtime]',e));
+    const channelName='hm-cs-direct-chat-'+user.id+'-'+Date.now();
+    realtimeChannel=sb.channel(channelName)
+      // Primary signal: exactly the same table/event used by Customer Chat.
+      // A new customer message means the CS inbox must be checked immediately.
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},async p=>{
+        try{
+          const cid=p.new?.conversation_id;
+          if(!cid)return;
+          const {data:conv,error}=await sb.from('chat_conversations').select('*').eq('id',cid).single();
+          if(error)throw error;
+          if(conv.status==='AVAILABLE'&&!conv.claimed_by){
+            showChatNotification(conv);
+            await loadCsInbox();
+          }
+        }catch(e){console.warn('[HM Chat CS direct message realtime]',e)}
       })
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_conversations'},p=>{
-        console.log('[HM Chat CS inbox UPDATE]',p.new);
-        loadCsInbox().then(rows=>{csKnownAvailableIds=new Set((rows||[]).filter(x=>x.status==='AVAILABLE'&&!x.claimed_by).map(x=>x.id));csInboxNotificationReady=true;}).catch(e=>console.warn('[HM Chat inbox update]',e));
-        if(p.new?.status==='AVAILABLE'&&!p.new?.claimed_by)showChatNotification(p.new);
+      // Keep conversation INSERT/UPDATE as a secondary signal for inbox state.
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},async p=>{
+        try{
+          if(p.new?.status==='AVAILABLE'&&!p.new?.claimed_by){
+            showChatNotification(p.new);
+            await loadCsInbox();
+          }
+        }catch(e){console.warn('[HM Chat CS conversation realtime]',e)}
       })
-      .subscribe(async(status)=>{
-        console.log('[HM Chat CS inbox realtime]',status);
-        if(status==='SUBSCRIBED')startCsInboxPolling();
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_conversations'},async p=>{
+        try{
+          await loadCsInbox();
+          if(p.new?.status==='AVAILABLE'&&!p.new?.claimed_by)showChatNotification(p.new);
+        }catch(e){console.warn('[HM Chat CS conversation update realtime]',e)}
+      })
+      .subscribe(status=>{
+        console.log('[HM Chat CS direct realtime]',status);
         if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
-          startCsInboxPolling();
           setTimeout(()=>subscribeChatNotifications(),1500);
         }
       });

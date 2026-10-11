@@ -17,6 +17,7 @@ if(customerOnly)mode='customer';
 let demoState={messages:[]};
 let realtimeChannel=null;
 let csMessageChannel=null;
+let csNotificationChannel=null;
 let csInboxPollTimer=null;
 let csKnownAvailableIds=new Set();
 let csInboxNotificationReady=false;
@@ -161,15 +162,12 @@ function renderDemoCustomer(){const box=el('hmCustomerMessages');box.innerHTML='
 async function requestChatNotifications(){try{if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();}catch(_e){}}
 function showInAppChatAlert(c){const box=document.getElementById('hmChatAlert'),txt=document.getElementById('hmChatAlertText'),btn=document.getElementById('hmChatAlertBtn');if(!box)return;if(txt)txt.textContent='Lead baru dari '+(c?.customer_name||'Customer')+' menunggu di-claim.';if(btn)btn.onclick=()=>{box.classList.add('hm-hidden');openCsConversation(c.id)};box.classList.remove('hm-hidden');try{document.title='🔔 Chat Baru • Hello Majesty'}catch(_e){}}
 function showChatNotification(c){if(c?.claimed_by||c?.status!=='AVAILABLE')return;showInAppChatAlert(c);try{if(!('Notification' in window)||Notification.permission!=='granted')return;const n=new Notification('🔔 Lead Baru Menunggu Claim',{body:(c?.customer_name||'Customer')+' masuk dari Hello Majesty Chat. Silakan CLAIM.',tag:'hm-chat-'+c.id});n.onclick=()=>{window.focus();openCsConversation(c.id)}}catch(e){console.warn('[HM Chat notification]',e)}}
-async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;}if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}csMessageChannel=null;}stopCsInboxPolling();subscribedConversationId=null;}
+async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;}if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}csMessageChannel=null;}if(csNotificationChannel){try{await sb.removeChannel(csNotificationChannel)}catch(_e){}csNotificationChannel=null;}stopCsInboxPolling();subscribedConversationId=null;}
 async function subscribeConversationRealtime(conversationId, targetBoxId, channelPrefix){
   await ensureClient();
   if(!conversationId)return;
   if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}}
-  if(realtimeChannel && channelPrefix!=='hm-customer-chat-'){
-    try{await sb.removeChannel(realtimeChannel)}catch(_e){}
-    realtimeChannel=null;
-  }
+  
   const box=el(targetBoxId);
   if(!box)return;
   const channel=sb.channel(channelPrefix+conversationId)
@@ -234,9 +232,9 @@ async function subscribeChatNotifications(){
     if(!r.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;
     await requestChatNotifications();
 
-    if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}}
+    if(csNotificationChannel){try{await sb.removeChannel(csNotificationChannel)}catch(_e){}}
     const channelName='hm-cs-direct-chat-'+user.id+'-'+Date.now();
-    realtimeChannel=sb.channel(channelName)
+    csNotificationChannel=sb.channel(channelName)
       // Primary signal: exactly the same table/event used by Customer Chat.
       // A new customer message means the CS inbox must be checked immediately.
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},async p=>{
@@ -322,17 +320,11 @@ async function sendCs(){
   input.value='';
   try{
     const userData=await getMainUser();
-    const {error}=await sb.from('chat_messages').insert({conversation_id:activeConversation.id,sender_type:'CS',sender_user_id:userData.id,message:text});
+    const {data:sent,error}=await sb.from('chat_messages').insert({conversation_id:activeConversation.id,sender_type:'CS',sender_user_id:userData.id,message:text}).select().single();
     if(error)throw error;
-    // The realtime subscription renders the inserted message immediately.
-    // Re-open is no longer needed and could make the UI appear delayed.
-    addBubble(el('hmCsMessages'),{
-      id:'local-cs-'+Date.now()+'-'+Math.random(),
-      conversation_id:activeConversation.id,
-      sender_type:'CS',
-      message:text,
-      created_at:new Date().toISOString()
-    });
+    // Render immediately from the exact inserted row. Realtime will deliver
+    // the same row too, and addBubble deduplicates it by message id.
+    addBubble(el('hmCsMessages'),sent);
   }catch(e){console.error(e);alert(e.message||'Pesan CS gagal dikirim.');}
 }
 

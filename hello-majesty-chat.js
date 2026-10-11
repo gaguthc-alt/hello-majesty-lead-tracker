@@ -56,6 +56,11 @@ async function getMainUser(){
 
 async function ensureCustomer(){
   await ensureClient();
+  if(!customerOnly){
+    const user=await getMainUser();
+    customerUser=user;
+    return customerUser;
+  }
   const {data:{session}}=await sb.auth.getSession();
   if(session?.user){customerUser=session.user;return customerUser;}
   const {data,error}=await sb.auth.signInAnonymously();

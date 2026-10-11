@@ -14,6 +14,8 @@ const forceNewCustomer=customerOnly&&customerParams.get('new')==='1';
 const forceNewSessionKey='hm_chat_force_new_done_'+location.pathname;
 if(customerOnly)mode='customer';
 let demoState={messages:[]};
+let realtimeChannel=null;
+let subscribedConversationId=null;
 
 function el(id){return document.getElementById(id);}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
@@ -136,7 +138,40 @@ function renderDemoCustomer(){const box=el('hmCustomerMessages');box.innerHTML='
 async function requestChatNotifications(){try{if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();}catch(_e){}}
 function showInAppChatAlert(c){const box=document.getElementById('hmChatAlert'),txt=document.getElementById('hmChatAlertText'),btn=document.getElementById('hmChatAlertBtn');if(!box)return;if(txt)txt.textContent='Lead baru dari '+(c?.customer_name||'Customer')+' menunggu di-claim.';if(btn)btn.onclick=()=>{box.classList.add('hm-hidden');openCsConversation(c.id)};box.classList.remove('hm-hidden');try{document.title='🔔 Chat Baru • Hello Majesty'}catch(_e){}}
 function showChatNotification(c){if(c?.claimed_by||c?.status!=='AVAILABLE')return;showInAppChatAlert(c);try{if(!('Notification' in window)||Notification.permission!=='granted')return;const n=new Notification('🔔 Lead Baru Menunggu Claim',{body:(c?.customer_name||'Customer')+' masuk dari Hello Majesty Chat. Silakan CLAIM.',tag:'hm-chat-'+c.id});n.onclick=()=>{window.focus();openCsConversation(c.id)}}catch(e){console.warn('[HM Chat notification]',e)}}
-async function subscribeChatNotifications(){try{await ensureClient();if(customerOnly)return;const user=await getMainUser();if(!user?.id)return;const r=await sb.from('team_profiles').select('role,active').eq('user_id',user.id).maybeSingle();const role=String(r.data?.role||'').toUpperCase().replace(/_/g,' ');if(!r.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;await requestChatNotifications();sb.channel('hm-chat-new-'+user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},p=>showChatNotification(p.new)).subscribe()}catch(e){console.warn('[HM Chat realtime]',e)}}
+async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;subscribedConversationId=null;}}
+async function subscribeCustomerRealtime(conversationId){
+  await ensureClient();
+  if(!customerOnly||!conversationId||subscribedConversationId===conversationId)return;
+  await stopRealtime();
+  subscribedConversationId=conversationId;
+  realtimeChannel=sb.channel('hm-customer-chat-'+conversationId)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'conversation_id=eq.'+conversationId},async p=>{
+      try{await renderCustomerFromDb(conversationId)}catch(e){console.warn('[HM Chat customer realtime]',e)}
+    })
+    .subscribe((status)=>console.log('[HM Chat customer realtime]',status));
+}
+async function subscribeChatNotifications(){
+  try{
+    await ensureClient();
+    if(customerOnly)return;
+    const user=await getMainUser();
+    if(!user?.id)return;
+    const r=await sb.from('team_profiles').select('role,active').eq('user_id',user.id).maybeSingle();
+    const role=String(r.data?.role||'').toUpperCase().replace(/_/g,' ');
+    if(!r.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;
+    await requestChatNotifications();
+    await stopRealtime();
+    realtimeChannel=sb.channel('hm-chat-live-'+user.id)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},async p=>{
+        showChatNotification(p.new);
+        try{await loadCsInbox()}catch(e){console.warn('[HM Chat inbox realtime]',e)}
+      })
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_conversations'},async p=>{
+        try{await loadCsInbox()}catch(e){console.warn('[HM Chat inbox update]',e)}
+      })
+      .subscribe((status)=>console.log('[HM Chat inbox realtime]',status));
+  }catch(e){console.warn('[HM Chat realtime]',e)}
+}
 
 async function loadCsInbox(){
   await ensureClient();
@@ -194,7 +229,7 @@ async function switchMode(){
   cv.classList.toggle('hm-hidden',showingCustomer);cs.classList.toggle('hm-hidden',!showingCustomer);
   el('hmChatSubtitle').textContent=showingCustomer?'CS Inbox':'Customer';
   if(showingCustomer){mode='cs';el('hmModeBtn').textContent='‹';try{await loadCsInbox();}catch(e){el('hmInbox').innerHTML='<div class="hm-lead-card">'+esc(e.message||'CS belum login.')+'</div>';}}
-  else{mode='customer';el('hmModeBtn').textContent='⋮';try{await ensureCustomer();const c=await getCustomerConversation();if(c)await renderCustomerFromDb(c.id);else{el('hmCustomerMessages').innerHTML='';el('hmWelcome').classList.remove('hm-hidden');}}catch(e){console.error('[HM Chat customer view]',e);alert(e.message||'Chat customer gagal dimuat.');}}
+  else{mode='customer';el('hmModeBtn').textContent='⋮';try{await ensureCustomer();const c=await getCustomerConversation();if(c){await renderCustomerFromDb(c.id);await subscribeCustomerRealtime(c.id);}else{el('hmCustomerMessages').innerHTML='';el('hmWelcome').classList.remove('hm-hidden');}}catch(e){console.error('[HM Chat customer view]',e);alert(e.message||'Chat customer gagal dimuat.');}}
 }
 
 el('hmCustomerSend').onclick=sendCustomer;el('hmCsSend').onclick=sendCs;

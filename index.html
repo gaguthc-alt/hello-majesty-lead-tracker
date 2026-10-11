@@ -2354,6 +2354,9 @@ function renderRoleHome(){
   if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
  };
 
+ if(cs && !mg && !developer){
+   add('💬','Hello Majesty Chat','Inbox chat customer • claim & balas customer','hmOpenHelloMajestyChat()');
+ }
  if(mg || developer){
    add('📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()');
    add('💬','Hello Majesty Chat','Chat customer → lead otomatis → claim CS','hmOpenHelloMajestyChat()');

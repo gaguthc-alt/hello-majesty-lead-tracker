@@ -5,7 +5,7 @@
 const HM_CHAT_URL='hello-majesty-chat.html';
 const HM_CHAT_SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
 const HM_CHAT_SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
-let hmChatGlobalClient=null,hmChatGlobalChannel=null,hmChatReady=false;
+let hmChatGlobalClient=null,hmChatGlobalChannel=null,hmChatReady=false,hmChatGlobalStarting=false;
 function hmChatSession(){
   try{
     const raw=localStorage.getItem('hm_auth_session');
@@ -39,9 +39,11 @@ function hmChatNotify(c){
   try{window.dispatchEvent(new CustomEvent('hm-chat-global-new',{detail:c}));}catch(_e){}
 }
 async function hmStartChatGlobalWatch(){
+  if(hmChatGlobalStarting||hmChatGlobalChannel)return;
+  hmChatGlobalStarting=true;
   try{
-    const s=hmChatSession();if(!s)return;
-    if(!window.supabase?.createClient)return setTimeout(hmStartChatGlobalWatch,1000);
+    const s=hmChatSession();if(!s){hmChatGlobalStarting=false;return;}
+    if(!window.supabase?.createClient){hmChatGlobalStarting=false;return setTimeout(hmStartChatGlobalWatch,1000);}
     hmChatGlobalClient=window.supabase.createClient(HM_CHAT_SUPABASE_URL,HM_CHAT_SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{headers:{Authorization:'Bearer '+s.access_token}}});
     if(hmChatGlobalClient.realtime?.setAuth)await hmChatGlobalClient.realtime.setAuth(s.access_token);
     const u=s.user;
@@ -66,7 +68,12 @@ async function hmStartChatGlobalWatch(){
         }
       });
     hmChatReady=true;
-  }catch(e){console.warn('[HM global chat init]',e);setTimeout(hmStartChatGlobalWatch,3000);}
+    hmChatGlobalStarting=false;
+  }catch(e){
+    hmChatGlobalStarting=false;
+    console.warn('[HM global chat init]',e);
+    setTimeout(hmStartChatGlobalWatch,3000);
+  }
 }
 window.addEventListener('hm-chat-global-new',()=>{});
 hmStartChatGlobalWatch();

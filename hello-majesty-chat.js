@@ -17,6 +17,8 @@ let demoState={messages:[]};
 let realtimeChannel=null;
 let csMessageChannel=null;
 let csInboxPollTimer=null;
+let csKnownAvailableIds=new Set();
+let csInboxNotificationReady=false;
 let subscribedConversationId=null;
 
 function el(id){return document.getElementById(id);}
@@ -194,11 +196,21 @@ async function subscribeCustomerRealtime(conversationId){
 function stopCsInboxPolling(){if(csInboxPollTimer){clearInterval(csInboxPollTimer);csInboxPollTimer=null;}}
 function startCsInboxPolling(){
   stopCsInboxPolling();
+  csInboxNotificationReady=false;
   csInboxPollTimer=setInterval(async()=>{
     try{
       if(customerOnly||!el('hmCsView')||el('hmCsView').classList.contains('hm-hidden'))return;
       if(el('hmCsConversation')&&!el('hmCsConversation').classList.contains('hm-hidden'))return;
-      await loadCsInbox();
+      const rows=await loadCsInbox();
+      const available=(rows||[]).filter(x=>x.status==='AVAILABLE'&&!x.claimed_by);
+      const ids=new Set(available.map(x=>x.id));
+      if(csInboxNotificationReady){
+        for(const row of available){
+          if(!csKnownAvailableIds.has(row.id))showChatNotification(row);
+        }
+      }
+      csKnownAvailableIds=ids;
+      csInboxNotificationReady=true;
     }catch(e){console.warn('[HM Chat CS inbox fallback]',e)}
   },2000);
 }
@@ -218,11 +230,11 @@ async function subscribeChatNotifications(){
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},p=>{
         console.log('[HM Chat CS inbox INSERT]',p.new);
         showChatNotification(p.new);
-        loadCsInbox().catch(e=>console.warn('[HM Chat inbox realtime]',e));
+        loadCsInbox().then(rows=>{csKnownAvailableIds=new Set((rows||[]).filter(x=>x.status==='AVAILABLE'&&!x.claimed_by).map(x=>x.id));csInboxNotificationReady=true;}).catch(e=>console.warn('[HM Chat inbox realtime]',e));
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_conversations'},p=>{
         console.log('[HM Chat CS inbox UPDATE]',p.new);
-        loadCsInbox().catch(e=>console.warn('[HM Chat inbox update]',e));
+        loadCsInbox().then(rows=>{csKnownAvailableIds=new Set((rows||[]).filter(x=>x.status==='AVAILABLE'&&!x.claimed_by).map(x=>x.id));csInboxNotificationReady=true;}).catch(e=>console.warn('[HM Chat inbox update]',e));
         if(p.new?.status==='AVAILABLE'&&!p.new?.claimed_by)showChatNotification(p.new);
       })
       .subscribe(async(status)=>{
@@ -243,6 +255,7 @@ async function loadCsInbox(){
   const {data,error}=await sb.from('chat_conversations').select('*').order('created_at',{ascending:false}).limit(100);
   if(error)throw error;
   renderInbox(data||[]);
+  return data||[];
 }
 
 function renderInbox(rows){

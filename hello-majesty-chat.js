@@ -224,6 +224,9 @@ async function subscribeChatNotifications(){
     const role=String(r.data?.role||'').toUpperCase().replace(/_/g,' ');
     if(!r.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;
     await requestChatNotifications();
+    // Start the fallback immediately. Do not wait for Realtime to reach SUBSCRIBED:
+    // if Realtime itself is the part that is failing, waiting for SUBSCRIBED leaves CS needing refresh.
+    startCsInboxPolling();
     if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}}
     const channelName='hm-cs-inbox-live-'+user.id+'-'+Date.now();
     realtimeChannel=sb.channel(channelName,{config:{broadcast:{self:false}}})

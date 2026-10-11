@@ -200,7 +200,12 @@ async function subscribeCustomerRealtime(conversationId){
 }
 function stopCsInboxPolling(){if(csInboxPollTimer){clearInterval(csInboxPollTimer);csInboxPollTimer=null;}}
 function startCsInboxPolling(){
-  // Deprecated: CS Inbox now uses direct Supabase Realtime on chat_messages.
+  if(customerOnly||csInboxPollTimer)return;
+  // Realtime is primary. This lightweight fallback keeps the inbox correct
+  // when a browser/websocket temporarily misses an event (mobile sleep, network handoff, etc.).
+  csInboxPollTimer=setInterval(async()=>{
+    try{await loadCsInbox();}catch(e){console.warn('[HM Chat CS inbox fallback]',e);}
+  },2000);
 }
 
 async function subscribeChatNotifications(){
@@ -280,7 +285,6 @@ function renderInbox(rows){
 
 async function openCsConversation(cid){
   try{
-    stopCsInboxPolling();
     const {data,error}=await sb.from('chat_conversations').select('*').eq('id',cid).single();
     if(error)throw error;
     if(!data.claimed_by){
@@ -294,6 +298,7 @@ async function openCsConversation(cid){
     const msgs=await sb.from('chat_messages').select('*').eq('conversation_id',cid).order('created_at',{ascending:true});
     if(msgs.error)throw msgs.error;(msgs.data||[]).forEach(m=>addBubble(box,m));
     await subscribeCsConversationRealtime(cid);
+    startCsInboxPolling();
   }catch(e){console.error(e);alert(e.message||'Chat gagal dibuka.');}
 }
 
@@ -327,6 +332,16 @@ el('hmBackInbox').onclick=async()=>{activeConversation=null;el('hmCsConversation
 el('hmModeBtn').onclick=switchMode;
 el('hmResetDemo').onclick=()=>{localStorage.removeItem(DEMO_KEY);demoState={messages:[]};renderDemoCustomer();};
 document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{el('hmCustomerInput').value=b.dataset.quick;sendCustomer();});
+/* Receive the main dashboard's global chat signal while this page is open. */
+try{
+  const bc='BroadcastChannel' in window?new BroadcastChannel('hm-chat-global'):null;
+  if(bc)bc.onmessage=async e=>{if(!customerOnly&&e.data?.type==='NEW_CHAT')try{await loadCsInbox();}catch(_e){}};
+  window.addEventListener('storage',async e=>{
+    if(customerOnly||e.key!=='hm_chat_global_event'||!e.newValue)return;
+    try{await loadCsInbox();}catch(_e){}
+  });
+}catch(_e){}
+
 ['hmCustomerInput','hmCsInput'].forEach(id0=>el(id0).addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();id0==='hmCustomerInput'?sendCustomer():sendCs();}}));
 
 (async()=>{
@@ -342,6 +357,7 @@ document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{el('hmCustom
       el('hmChatSubtitle').textContent='CS Inbox';
       await loadCsInbox();
       await subscribeChatNotifications();
+      startCsInboxPolling();
       if(requestedConversationId)await openCsConversation(requestedConversationId);
     }
   }catch(e){

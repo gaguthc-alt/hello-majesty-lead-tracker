@@ -1,4 +1,79 @@
 <html lang="id"><head><meta name="hm-build" content="20261010-direct-buyback-3"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+/* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
+(function(){
+'use strict';
+const HM_CHAT_URL='hello-majesty-chat.html';
+const HM_CHAT_SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
+const HM_CHAT_SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
+let hmChatGlobalClient=null,hmChatGlobalChannel=null,hmChatReady=false;
+function hmChatSession(){
+  try{
+    const raw=localStorage.getItem('hm_auth_session');
+    const s=raw?JSON.parse(raw):null;
+    return s?.access_token&&s?.user?s:null;
+  }catch(_e){return null;}
+}
+function hmChatToast(c){
+  let box=document.getElementById('hmGlobalChatAlert');
+  if(!box){
+    box=document.createElement('div');box.id='hmGlobalChatAlert';
+    box.style.cssText='position:fixed;right:14px;bottom:18px;z-index:999999;max-width:360px;width:calc(100% - 28px);background:#07111f;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:14px;box-shadow:0 16px 45px rgba(0,0,0,.28);display:none;cursor:pointer';
+    document.body.appendChild(box);
+  }
+  box.innerHTML='<div style="font-weight:800;font-size:14px">🔔 Chat Customer Baru</div><div style="font-size:12px;color:#cbd5e1;margin-top:4px">'+String(c?.customer_name||'Customer').replace(/[&<>"]/g,'')+' mengirim pesan. Buka Chat untuk merespons.</div>';
+  box.style.display='block';
+  box.onclick=()=>{box.style.display='none';window.open(HM_CHAT_URL+'?conversation='+encodeURIComponent(c.id),'_blank','noopener');};
+  clearTimeout(box._hmTimer);box._hmTimer=setTimeout(()=>box.style.display='none',10000);
+}
+function hmChatNotify(c){
+  if(!c?.id||c.status!=='AVAILABLE'||c.claimed_by)return;
+  hmChatToast(c);
+  try{
+    if('Notification' in window&&Notification.permission==='granted'){
+      const n=new Notification('🔔 Chat Customer Baru',{body:(c.customer_name||'Customer')+' mengirim pesan. Silakan buka Chat.',tag:'hm-global-chat-'+c.id});
+      n.onclick=()=>{window.focus();window.open(HM_CHAT_URL+'?conversation='+encodeURIComponent(c.id),'_blank','noopener');};
+    }
+  }catch(_e){}
+  try{localStorage.setItem('hm_chat_global_event',JSON.stringify({id:c.id,at:Date.now()}));}catch(_e){}
+  try{if('BroadcastChannel' in window){const bc=new BroadcastChannel('hm-chat-global');bc.postMessage({type:'NEW_CHAT',conversation_id:c.id});bc.close();}}catch(_e){}
+  try{window.dispatchEvent(new CustomEvent('hm-chat-global-new',{detail:c}));}catch(_e){}
+}
+async function hmStartChatGlobalWatch(){
+  try{
+    const s=hmChatSession();if(!s)return;
+    if(!window.supabase?.createClient)return setTimeout(hmStartChatGlobalWatch,1000);
+    hmChatGlobalClient=window.supabase.createClient(HM_CHAT_SUPABASE_URL,HM_CHAT_SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{headers:{Authorization:'Bearer '+s.access_token}}});
+    if(hmChatGlobalClient.realtime?.setAuth)await hmChatGlobalClient.realtime.setAuth(s.access_token);
+    const u=s.user;
+    const p=await hmChatGlobalClient.from('team_profiles').select('role,active').eq('user_id',u.id).maybeSingle();
+    const role=String(p.data?.role||'').toUpperCase().replace(/_/g,' ');
+    if(!p.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;
+    hmChatGlobalChannel=hmChatGlobalClient.channel('hm-global-cs-chat-'+u.id+'-'+Date.now())
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},async payload=>{
+        try{
+          if(String(payload.new?.sender_type||'').toUpperCase()!=='CUSTOMER')return;
+          const cid=payload.new?.conversation_id;if(!cid)return;
+          const q=await hmChatGlobalClient.from('chat_conversations').select('*').eq('id',cid).single();
+          if(q.error)throw q.error;
+          hmChatNotify(q.data);
+        }catch(e){console.warn('[HM global chat]',e);}
+      })
+      .subscribe(status=>{
+        console.log('[HM global chat realtime]',status);
+        if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
+          try{hmChatGlobalClient.removeChannel(hmChatGlobalChannel);}catch(_e){}
+          hmChatGlobalChannel=null;setTimeout(hmStartChatGlobalWatch,2000);
+        }
+      });
+    hmChatReady=true;
+  }catch(e){console.warn('[HM global chat init]',e);setTimeout(hmStartChatGlobalWatch,3000);}
+}
+window.addEventListener('hm-chat-global-new',()=>{});
+hmStartChatGlobalWatch();
+// The dashboard may be opened before login. Re-check until the CS session exists.
+setInterval(()=>{if(!hmChatGlobalChannel)hmStartChatGlobalWatch();},3000);
+})();
+</script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');

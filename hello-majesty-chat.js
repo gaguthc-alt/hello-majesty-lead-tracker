@@ -62,17 +62,23 @@ async function getMainAuth(){
   }catch(e){throw new Error(e?.message||'Sesi login Hello Majesty tidak tersedia.');}
 }
 async function ensureClient(){
-  if(sb)return sb;
   if(!window.supabase?.createClient)throw new Error('Library Supabase belum termuat.');
   if(customerOnly){
-    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+    if(!sb)sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+    return sb;
+  }
+  // Use Supabase's accessToken callback instead of a fixed Authorization header.
+  // The callback refreshes the Hello Majesty session when needed and supplies the
+  // same current JWT to both PostgREST (RLS) and Realtime, avoiding stale-token
+  // inserts that fail with "new row violates row-level security policy".
+  if(!sb){
+    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
+      auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+      accessToken:async()=>{const session=await getMainAuth();return session.access_token;}
+    });
   }else{
     const session=await getMainAuth();
-    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{headers:{Authorization:'Bearer '+session.access_token}}});
-    // The REST client uses the Authorization header above, but Supabase Realtime
-    // authenticates its websocket separately. Explicitly pass the same CS token
-    // so postgres_changes events are authorized for the logged-in CS user.
-    if(sb.realtime?.setAuth) await sb.realtime.setAuth(session.access_token);
+    if(sb.realtime?.setAuth)await sb.realtime.setAuth(session.access_token);
   }
   return sb;
 }
@@ -353,7 +359,11 @@ async function sendCs(){
   const input=el('hmCsInput');const text=input.value.trim();if(!text||!activeConversation)return;
   input.value='';
   try{
+    await ensureClient();
     const userData=await getMainUser();
+    if(activeConversation.claimed_by&&activeConversation.claimed_by!==userData.id){
+      throw new Error('Chat ini ditangani '+(activeConversation.claimed_name||'CS lain')+'. Hanya PIC yang claim chat ini yang dapat membalas.');
+    }
     const {data:sent,error}=await sb.from('chat_messages').insert({conversation_id:activeConversation.id,sender_type:'CS',sender_user_id:userData.id,message:text}).select().single();
     if(error)throw error;
     // Render immediately from the exact inserted row. Realtime will deliver

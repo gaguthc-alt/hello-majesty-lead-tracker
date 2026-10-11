@@ -195,16 +195,25 @@ async function subscribeChatNotifications(){
     const role=String(r.data?.role||'').toUpperCase().replace(/_/g,' ');
     if(!r.data?.active||!(role==='CS'||role==='CUSTOMER SERVICE'))return;
     await requestChatNotifications();
-    await stopRealtime();
-    realtimeChannel=sb.channel('hm-chat-live-'+user.id)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},async p=>{
+    if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}}
+    const channelName='hm-cs-inbox-live-'+user.id+'-'+Date.now();
+    realtimeChannel=sb.channel(channelName,{config:{broadcast:{self:false}}})
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_conversations'},p=>{
+        console.log('[HM Chat CS inbox INSERT]',p.new);
         showChatNotification(p.new);
-        try{await loadCsInbox()}catch(e){console.warn('[HM Chat inbox realtime]',e)}
+        loadCsInbox().catch(e=>console.warn('[HM Chat inbox realtime]',e));
       })
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_conversations'},async p=>{
-        try{await loadCsInbox()}catch(e){console.warn('[HM Chat inbox update]',e)}
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_conversations'},p=>{
+        console.log('[HM Chat CS inbox UPDATE]',p.new);
+        loadCsInbox().catch(e=>console.warn('[HM Chat inbox update]',e));
+        if(p.new?.status==='AVAILABLE'&&!p.new?.claimed_by)showChatNotification(p.new);
       })
-      .subscribe((status)=>console.log('[HM Chat inbox realtime]',status));
+      .subscribe(async(status)=>{
+        console.log('[HM Chat CS inbox realtime]',status);
+        if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
+          setTimeout(()=>subscribeChatNotifications(),1500);
+        }
+      });
   }catch(e){console.warn('[HM Chat realtime]',e)}
 }
 

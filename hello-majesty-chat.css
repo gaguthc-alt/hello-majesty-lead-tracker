@@ -42,3 +42,5 @@ button{cursor:pointer}
 
 @supports not (height:100dvh){.hm-chat-app{height:100vh;min-height:100vh}.hm-chat-main{height:calc(100vh - 64px)}}
 @media(max-width:680px){.hm-chat-header{position:relative}.hm-compose{padding-bottom:max(8px,env(safe-area-inset-bottom));background:#f0f2f5}.hm-compose textarea{min-height:43px;line-height:21px}.hm-cs-conversation{min-height:0;flex:1;display:flex;flex-direction:column;overflow:hidden}.hm-cs-conversation .hm-messages{min-height:0}}
+
+.hm-lead-data{background:#fff;padding:9px 12px;border-bottom:1px solid #ddd}.hm-lead-data-title{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#17202a}.hm-lead-data-title span{color:#128c7e;font-size:11px}.hm-phone-row{display:flex;gap:7px;margin-top:7px}.hm-phone-row input{min-width:0;flex:1;border:1px solid #d6d3d1;border-radius:9px;padding:9px 10px;outline:none}.hm-phone-row button{border:0;border-radius:9px;background:#128c7e;color:#fff;padding:9px 12px;font-weight:700}.hm-phone-row button:disabled{opacity:.5}.hm-lead-data small{display:block;color:#667085;font-size:10px;margin-top:5px}

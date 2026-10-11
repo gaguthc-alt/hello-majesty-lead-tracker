@@ -2646,7 +2646,7 @@ function renderRoleHome(){
      if(directBuyback&&!allowed.some(item=>item[1]===directBuyback[1]))allowed=[...allowed,directBuyback];
    }
    // Laporan Performa Tim wajib tampil untuk Management/Developer/Fasilitator di LEAD TRACKER.
-   if(g[1]==='LEAD TRACKER' && (mg || developer || isFacilitator) && !allowed.some(item=>item[1]==='Laporan Performa Tim')){
+   if(g[1]==='LEAD TRACKER' && (mg || developer || facilitator) && !allowed.some(item=>item[1]==='Laporan Performa Tim')){
      const perfItem=g[2].find(item=>item[1]==='Laporan Performa Tim');
      if(perfItem) allowed=[...allowed,perfItem];
    }

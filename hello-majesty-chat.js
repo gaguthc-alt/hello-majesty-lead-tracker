@@ -15,6 +15,7 @@ const forceNewSessionKey='hm_chat_force_new_done_'+location.pathname;
 if(customerOnly)mode='customer';
 let demoState={messages:[]};
 let realtimeChannel=null;
+let csMessageChannel=null;
 let subscribedConversationId=null;
 
 function el(id){return document.getElementById(id);}
@@ -126,6 +127,7 @@ async function sendCustomer(){
     let c=await getCustomerConversation();
     if(!c)c=await createConversation(text);else await sendCustomerMessage(c.id,text,false);
     await renderCustomerFromDb(c.id);
+    await subscribeCustomerRealtime(c.id);
   }catch(e){
     console.error('[HM Chat customer send]',e);
     const msg=String(e?.message||'Chat gagal dikirim.');
@@ -138,7 +140,17 @@ function renderDemoCustomer(){const box=el('hmCustomerMessages');box.innerHTML='
 async function requestChatNotifications(){try{if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();}catch(_e){}}
 function showInAppChatAlert(c){const box=document.getElementById('hmChatAlert'),txt=document.getElementById('hmChatAlertText'),btn=document.getElementById('hmChatAlertBtn');if(!box)return;if(txt)txt.textContent='Lead baru dari '+(c?.customer_name||'Customer')+' menunggu di-claim.';if(btn)btn.onclick=()=>{box.classList.add('hm-hidden');openCsConversation(c.id)};box.classList.remove('hm-hidden');try{document.title='🔔 Chat Baru • Hello Majesty'}catch(_e){}}
 function showChatNotification(c){if(c?.claimed_by||c?.status!=='AVAILABLE')return;showInAppChatAlert(c);try{if(!('Notification' in window)||Notification.permission!=='granted')return;const n=new Notification('🔔 Lead Baru Menunggu Claim',{body:(c?.customer_name||'Customer')+' masuk dari Hello Majesty Chat. Silakan CLAIM.',tag:'hm-chat-'+c.id});n.onclick=()=>{window.focus();openCsConversation(c.id)}}catch(e){console.warn('[HM Chat notification]',e)}}
-async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;subscribedConversationId=null;}}
+async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;}if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}csMessageChannel=null;}subscribedConversationId=null;}
+async function subscribeCsConversationRealtime(conversationId){
+  await ensureClient();
+  if(customerOnly||!conversationId)return;
+  if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}}
+  csMessageChannel=sb.channel('hm-cs-conversation-live-'+conversationId)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'conversation_id=eq.'+conversationId},async()=>{
+      try{await openCsConversation(conversationId)}catch(e){console.warn('[HM Chat CS message realtime]',e)}
+    })
+    .subscribe((status)=>console.log('[HM Chat CS message realtime]',status));
+}
 async function subscribeCustomerRealtime(conversationId){
   await ensureClient();
   if(!customerOnly||!conversationId||subscribedConversationId===conversationId)return;
@@ -209,6 +221,7 @@ async function openCsConversation(cid){
     const box=el('hmCsMessages');box.innerHTML='';
     const msgs=await sb.from('chat_messages').select('*').eq('conversation_id',cid).order('created_at',{ascending:true});
     if(msgs.error)throw msgs.error;(msgs.data||[]).forEach(m=>addBubble(box,m));
+    await subscribeCsConversationRealtime(cid);
   }catch(e){console.error(e);alert(e.message||'Chat gagal dibuka.');}
 }
 
@@ -250,7 +263,7 @@ document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{el('hmCustom
     if(customerOnly){
       await ensureCustomer();
       const c=await getCustomerConversation();
-      if(c)await renderCustomerFromDb(c.id);else{el('hmCustomerMessages').innerHTML='';el('hmWelcome').classList.remove('hm-hidden');}
+      if(c){await renderCustomerFromDb(c.id);await subscribeCustomerRealtime(c.id);}else{el('hmCustomerMessages').innerHTML='';el('hmWelcome').classList.remove('hm-hidden');}
     }else{
       el('hmCustomerView').classList.add('hm-hidden');
       el('hmCsView').classList.remove('hm-hidden');

@@ -103,12 +103,12 @@ function sendCustomer(){
 }
 function switchMode(){
   const cv=document.getElementById('hmCustomerView'),cs=document.getElementById('hmCsView');
-  const customer=!cs.classList.contains('hm-hidden');
-  cs.classList.toggle('hm-hidden',customer);
-  cv.classList.toggle('hm-hidden',!customer);
-  document.getElementById('hmChatSubtitle').textContent=customer?'Customer Service':'Customer';
-  if(customer){document.getElementById('hmModeBtn').textContent='⋮';renderInbox();}
-  else{document.getElementById('hmModeBtn').textContent='‹';renderCustomer();}
+  const showingCustomer=!cv.classList.contains('hm-hidden');
+  cv.classList.toggle('hm-hidden',showingCustomer);
+  cs.classList.toggle('hm-hidden',!showingCustomer);
+  document.getElementById('hmChatSubtitle').textContent=showingCustomer?'CS Inbox':'Customer';
+  if(showingCustomer){document.getElementById('hmModeBtn').textContent='‹';renderInbox();}
+  else{document.getElementById('hmModeBtn').textContent='⋮';renderCustomer();}
 }
 document.getElementById('hmCustomerSend').onclick=sendCustomer;
 document.getElementById('hmCsSend').onclick=sendCs;

@@ -16,6 +16,7 @@ if(customerOnly)mode='customer';
 let demoState={messages:[]};
 let realtimeChannel=null;
 let csMessageChannel=null;
+let csInboxPollTimer=null;
 let subscribedConversationId=null;
 
 function el(id){return document.getElementById(id);}
@@ -190,6 +191,17 @@ async function subscribeCustomerRealtime(conversationId){
       }
     });
 }
+function stopCsInboxPolling(){if(csInboxPollTimer){clearInterval(csInboxPollTimer);csInboxPollTimer=null;}}
+function startCsInboxPolling(){
+  stopCsInboxPolling();
+  csInboxPollTimer=setInterval(async()=>{
+    try{
+      if(customerOnly||!el('hmCsView')||el('hmCsView').classList.contains('hm-hidden'))return;
+      if(el('hmCsConversation')&&!el('hmCsConversation').classList.contains('hm-hidden'))return;
+      await loadCsInbox();
+    }catch(e){console.warn('[HM Chat CS inbox fallback]',e)}
+  },2000);
+}
 async function subscribeChatNotifications(){
   try{
     await ensureClient();
@@ -215,7 +227,9 @@ async function subscribeChatNotifications(){
       })
       .subscribe(async(status)=>{
         console.log('[HM Chat CS inbox realtime]',status);
+        if(status==='SUBSCRIBED')startCsInboxPolling();
         if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
+          startCsInboxPolling();
           setTimeout(()=>subscribeChatNotifications(),1500);
         }
       });
@@ -246,6 +260,7 @@ function renderInbox(rows){
 
 async function openCsConversation(cid){
   try{
+    stopCsInboxPolling();
     const {data,error}=await sb.from('chat_conversations').select('*').eq('id',cid).single();
     if(error)throw error;
     if(!data.claimed_by){

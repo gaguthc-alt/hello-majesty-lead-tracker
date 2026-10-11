@@ -2021,7 +2021,7 @@ function hmOpenLeadTracker(){
     if(st==='AVAILABLE')return 'AVAILABLE';
     return 'LAINNYA';
   };
-  const statuses=[['AVAILABLE','AVAILABLE'],['CS LOCK','CS LOCK'],['POTENSIAL','POTENSIAL'],['QUALIFIED','QUALIFIED'],['HANDLE','HANDLE'],['CLOSING','CLOSING']];
+  const statuses=[['AVAILABLE','AVAILABLE'],['CS LOCK','CS LOCK'],['POTENSIAL','POTENSIAL'],['QUALIFIED','QUALIFIED'],['HANDLE','HANDLE'],['SERVICE','SERVICE'],['CLOSING','CLOSING']];
   const todayBoard='<div class="box" style="margin-bottom:14px;border:1px solid #d0d5dd;background:#fff">'+
     '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">📅 LEAD HARI INI</h3><span class="small">'+todayRows.length+' aktivitas</span></div>'+
     '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;width:100%">'+
@@ -3313,6 +3313,9 @@ function viewerLead(l){
  if(l.outlet!==profile?.outlet)return false;
  // Fasilitator melihat seluruh lead outletnya, tanpa dibatasi claim CS/Sales.
  if(isFacilitator)return true;
+ // SERVICE yang sudah di-claim harus terlihat oleh teknisi pemiliknya,
+ // walaupun CS Owner-nya adalah anggota tim lain.
+ if(l.service_pic)return l.service_pic===profile?.name;
  if(l.sales_claimed_by)return l.sales_claimed_by===profile?.name;
  if(l.cs_claimed_by)return l.cs_claimed_by===profile?.name;
  return true;
@@ -3342,13 +3345,14 @@ async function render(){
      if(sales==='CLOSING'||cs==='CLOSING'||hasil==='CLOSING')return 'CLOSING';
      if(sales==='GAGAL'||cs==='GAGAL'||hasil==='GAGAL'||hasil==='LOST')return 'GAGAL';
      if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
+     if(st==='SERVICE'||(String(l.need_type||'').toUpperCase()==='SERVICE'&&l.service_pic))return 'SERVICE';
      if(st==='HANDLE'||l.sales_claimed_by)return 'HANDLE';
      if(st==='QUALIFIED')return 'QUALIFIED';
      if(st==='CS LOCK')return 'CS LOCK';
      if(st==='AVAILABLE')return 'AVAILABLE';
      return 'LAINNYA';
    };
-   const statuses=[['AVAILABLE','Available'],['CS LOCK','CS Lock'],['POTENSIAL','Potensial'],['QUALIFIED','Qualified'],['HANDLE','Handle'],['CLOSING','Closing']];
+   const statuses=[['AVAILABLE','Available'],['CS LOCK','CS Lock'],['POTENSIAL','Potensial'],['QUALIFIED','Qualified'],['HANDLE','Handle'],['SERVICE','Service'],['CLOSING','Closing']];
    todayBox.innerHTML='<div class="box" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">📅 LEAD HARI INI</h3><span class="small">'+todayRows.length+' aktivitas</span></div>'+
      '<div class="row" style="display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:8px;margin-top:10px">'+
      statuses.map(([key,label])=>{const n=todayRows.filter(l=>bucket(l)===key).length;return '<div class="stat" style="cursor:pointer;text-align:center" onclick="showCurrentStatus(\''+key+'\')"><div class="small">'+label+'</div><div class="num">'+n+'</div></div>';}).join('')+
@@ -3401,7 +3405,7 @@ async function render(){
  const isManagementAccount=!!profile?.is_management||roleName==='MANAGEMENT';
  const ownLead=(l)=>{
   if(!isFacilitatorAccount&&!isManagementAccount)return viewerLead(l);
-  return l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
+  return l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name||l.service_pic===profile?.name;
  };
  // Fasilitator & Management: Resume melihat seluruh lead outlet, tetapi daftar LEAD AKTIF hanya lead milik sendiri.
  const active=resumeLeads.filter(l=>getActiveLeadBucket(l));
@@ -3415,6 +3419,7 @@ async function render(){
   potential:active.filter(l=>getActiveLeadBucket(l)==='POTENSIAL').length,
   qualified:active.filter(l=>getActiveLeadBucket(l)==='QUALIFIED').length,
   handle:active.filter(l=>getActiveLeadBucket(l)==='HANDLE').length,
+  service:active.filter(l=>getActiveLeadBucket(l)==='SERVICE').length,
   selesai:selesai
  };
  const resume='<div class="box" style="margin-top:12px;background:linear-gradient(145deg,#f8fafc,#f0fdf4)!important;border-color:rgba(25,181,107,.14)!important">'+
@@ -3425,6 +3430,7 @@ async function render(){
   stat('Potensial',activeResume.potential,"showCurrentStatus('POTENSIAL')")+
   stat('Qualified',activeResume.qualified,"showCurrentStatus('QUALIFIED')")+
   stat('Handle',activeResume.handle,"showCurrentStatus('HANDLE')")+
+  stat('🔧 Service',activeResume.service,"showCurrentStatus('SERVICE')")+
   stat('Selesai',activeResume.selesai,"showCurrentStatus('HASIL')")+
   '</div></div>';
  $('activeLeadResume').innerHTML=resume;
@@ -4679,6 +4685,7 @@ function getActiveLeadBucket(l){
  if(finalResult||status==='HASIL')return '';
  // Kategori dibuat eksklusif: satu lead hanya masuk satu bucket.
  if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
+ if(status==='SERVICE'||(String(l.need_type||'').trim().toUpperCase()==='SERVICE'&&l.service_pic))return 'SERVICE';
  if(status==='HANDLE'||l.sales_claimed_by)return 'HANDLE';
  if(status==='QUALIFIED'&&!l.sales_claimed_by)return 'QUALIFIED';
  if(status==='CS LOCK'&&!cs)return 'CS LOCK';
@@ -4689,7 +4696,7 @@ function showCurrentStatus(type){
  const items=leads.filter(viewerLead).filter(l=>{
   if(type==='ALL')return true;
   if(type==='HASIL')return l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL';
-  if(type==='POTENSIAL'||type==='QUALIFIED'||type==='HANDLE'||type==='CS LOCK'||type==='AVAILABLE')return getActiveLeadBucket(l)===type;
+  if(type==='POTENSIAL'||type==='QUALIFIED'||type==='HANDLE'||type==='SERVICE'||type==='CS LOCK'||type==='AVAILABLE')return getActiveLeadBucket(l)===type;
   return l.status_lead===type;
  });
  $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><h3>Status '+type+'</h3><button class="secondary" onclick="render()">← Kembali ke Lead Aktif</button></div><p class="small">Lead yang tampil berdasarkan status saat ini.</p></div>'+

@@ -10,7 +10,21 @@ const DEMO_KEY='hm_chat_dev_demo_v2';
 let sb=null, customerUser=null, activeConversation=null, mode='cs';
 const customerParams=new URLSearchParams(location.search);
 const customerOnly=customerParams.get('mode')==='customer';
-const requestedConversationId=customerParams.get('conversation');
+const requestedConversationId=customerParams.get('conversation')||decodeMaskedConversation(customerParams.get('c'));
+function decodeMaskedConversation(value){
+  if(!value)return null;
+  try{
+    const s=atob(String(value).replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((String(value).length+3)%4));
+    return /^[0-9a-fA-F-]{36}$/.test(s)?s:null;
+  }catch(_e){return null;}
+}
+function encodeMaskedConversation(value){
+  try{return btoa(String(value)).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');}catch(_e){return '';}
+}
+window.hmCustomerChatLink=function(conversationId){
+  const token=encodeMaskedConversation(conversationId);
+  return location.origin+location.pathname+'?mode=customer&c='+encodeURIComponent(token);
+};
 const forceNewCustomer=customerOnly&&customerParams.get('new')==='1';
 const forceNewSessionKey='hm_chat_force_new_done_'+location.pathname;
 if(customerOnly)mode='customer';

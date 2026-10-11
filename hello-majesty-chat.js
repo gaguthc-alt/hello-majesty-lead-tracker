@@ -199,12 +199,24 @@ async function subscribeCustomerRealtime(conversationId){
     });
 }
 function stopCsInboxPolling(){if(csInboxPollTimer){clearInterval(csInboxPollTimer);csInboxPollTimer=null;}}
+async function refreshActiveCsMessages(){
+  if(customerOnly||!activeConversation)return;
+  try{
+    const box=el('hmCsMessages');
+    const {data,error}=await sb.from('chat_messages').select('*').eq('conversation_id',activeConversation.id).order('created_at',{ascending:true});
+    if(error)throw error;
+    (data||[]).forEach(m=>addBubble(box,m));
+  }catch(e){console.warn('[HM Chat CS active message fallback]',e);}
+}
 function startCsInboxPolling(){
   if(customerOnly||csInboxPollTimer)return;
-  // Realtime is primary. This lightweight fallback keeps the inbox correct
-  // when a browser/websocket temporarily misses an event (mobile sleep, network handoff, etc.).
+  // Realtime is primary. Poll both inbox state and the currently open conversation
+  // so a missed websocket event never leaves a customer message visually stuck.
   csInboxPollTimer=setInterval(async()=>{
-    try{await loadCsInbox();}catch(e){console.warn('[HM Chat CS inbox fallback]',e);}
+    try{
+      await loadCsInbox();
+      await refreshActiveCsMessages();
+    }catch(e){console.warn('[HM Chat CS fallback]',e);}
   },2000);
 }
 

@@ -35,6 +35,7 @@ function hmChatNotify(c){
     }
   }catch(_e){}
   try{localStorage.setItem('hm_chat_global_event',JSON.stringify({id:c.id,at:Date.now()}));}catch(_e){}
+  try{if('BroadcastChannel' in window){const bc=new BroadcastChannel('hm-chat-global');bc.postMessage({type:'NEW_CHAT',conversation_id:c.id});bc.close();}}catch(_e){}
   try{window.dispatchEvent(new CustomEvent('hm-chat-global-new',{detail:c}));}catch(_e){}
 }
 async function hmStartChatGlobalWatch(){
@@ -69,6 +70,8 @@ async function hmStartChatGlobalWatch(){
 }
 window.addEventListener('hm-chat-global-new',()=>{});
 hmStartChatGlobalWatch();
+// The dashboard may be opened before login. Re-check until the CS session exists.
+setInterval(()=>{if(!hmChatGlobalChannel)hmStartChatGlobalWatch();},3000);
 })();
 </script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */

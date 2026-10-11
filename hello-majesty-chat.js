@@ -7,8 +7,9 @@
 const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
 const SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 const DEMO_KEY='hm_chat_dev_demo_v2';
-let sb=null, customerUser=null, activeConversation=null, mode='customer';
+let sb=null, customerUser=null, activeConversation=null, mode='cs';
 const customerOnly=new URLSearchParams(location.search).get('mode')==='customer';
+if(customerOnly)mode='customer';
 let demoState=loadDemo();
 
 function el(id){return document.getElementById(id);}
@@ -99,7 +100,9 @@ function renderDemoCustomer(){const box=el('hmCustomerMessages');box.innerHTML='
 
 async function loadCsInbox(){
   await ensureClient();
-  if(!window.sb)throw new Error('CS harus dibuka dari dashboard Hello Majesty agar sesi login digunakan.');
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session?.user)throw new Error('Sesi CS tidak tersedia. Silakan login Hello Majesty terlebih dahulu.');
+  if(session.user.is_anonymous)throw new Error('Sesi customer terdeteksi. Buka Chat dari akun CS di perangkat/browser CS.');
   const {data,error}=await sb.from('chat_conversations').select('*').order('created_at',{ascending:false}).limit(100);
   if(error)throw error;
   renderInbox(data||[]);
@@ -168,5 +171,22 @@ el('hmResetDemo').onclick=()=>{localStorage.removeItem(DEMO_KEY);demoState={mess
 document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{el('hmCustomerInput').value=b.dataset.quick;sendCustomer();});
 ['hmCustomerInput','hmCsInput'].forEach(id0=>el(id0).addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();id0==='hmCustomerInput'?sendCustomer():sendCs();}}));
 
-(async()=>{try{await ensureClient();}catch(e){console.warn('[HM Chat]',e);}renderDemoCustomer();})();
+(async()=>{
+  try{
+    await ensureClient();
+    if(customerOnly){
+      const c=await getCustomerConversation();
+      if(c)await renderCustomerFromDb(c.id);else renderDemoCustomer();
+    }else{
+      el('hmCustomerView').classList.add('hm-hidden');
+      el('hmCsView').classList.remove('hm-hidden');
+      el('hmChatSubtitle').textContent='CS Inbox';
+      await loadCsInbox();
+    }
+  }catch(e){
+    console.warn('[HM Chat]',e);
+    if(customerOnly)renderDemoCustomer();
+    else el('hmInbox').innerHTML='<div class="hm-lead-card">'+esc(e.message||'CS belum login.')+'</div>';
+  }
+})();
 })();

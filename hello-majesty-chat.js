@@ -8,6 +8,7 @@ const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
 const SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 const DEMO_KEY='hm_chat_dev_demo_v2';
 let sb=null, customerUser=null, activeConversation=null, mode='customer';
+const customerOnly=new URLSearchParams(location.search).get('mode')==='customer';
 let demoState=loadDemo();
 
 function el(id){return document.getElementById(id);}
@@ -156,6 +157,11 @@ async function switchMode(){
 }
 
 el('hmCustomerSend').onclick=sendCustomer;el('hmCsSend').onclick=sendCs;
+if(customerOnly){
+  el('hmModeBtn').classList.add('hm-hidden');
+  el('hmCsView').classList.add('hm-hidden');
+  el('hmCustomerView').classList.remove('hm-hidden');
+}
 el('hmBackInbox').onclick=async()=>{activeConversation=null;el('hmCsConversation').classList.add('hm-hidden');el('hmInbox').classList.remove('hm-hidden');await loadCsInbox();};
 el('hmModeBtn').onclick=switchMode;
 el('hmResetDemo').onclick=()=>{localStorage.removeItem(DEMO_KEY);demoState={messages:[]};renderDemoCustomer();};

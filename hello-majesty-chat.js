@@ -29,8 +29,13 @@ function addBubble(box,m){
   const d=document.createElement('div');
   d.className='hm-bubble '+(m.sender_type==='CUSTOMER'||m.from==='customer'?'customer':'cs');
   if(messageId)d.dataset.hmMessageId=messageId;
+  d.dataset.hmCreatedAt=m.created_at||m.at||'';
   d.innerHTML=esc(m.message??m.text)+'<span class="hm-time">'+esc(time(m.created_at||m.at))+'</span>';
-  box.appendChild(d);box.scrollTop=box.scrollHeight;
+  box.appendChild(d);
+  Array.from(box.children)
+    .sort((a,b)=>new Date(a.dataset.hmCreatedAt||0)-new Date(b.dataset.hmCreatedAt||0))
+    .forEach(node=>box.appendChild(node));
+  box.scrollTop=box.scrollHeight;
 }
 
 async function getMainAuth(){

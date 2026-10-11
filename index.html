@@ -3892,10 +3892,37 @@ function share(id){
 }
 function openUrl(){
  const id=new URLSearchParams(location.search).get('claim');
- if(id&&profile&&!profile.is_management){$('mt').textContent='Lead Qualified';$('mb').innerHTML='<p class="small">Lead ini siap diambil Sales. Detail customer akan terlihat setelah lead menjadi tanggung jawab Anda.</p><button id="claimBtn" class="success">Claim Sales → Handle</button>';$('claimBtn').onclick=()=>claimFromLink(id);$('modal').classList.remove('hidden')}
+ const l=id?leads.find(x=>String(x.lead_id)===String(id)):null;
+ const isService=String(l?.need_type||'').trim().toUpperCase()==='SERVICE';
+ if(id&&profile&&!profile.is_management){
+   $('mt').textContent=isService?'Lead Service':'Lead Qualified';
+   $('mb').innerHTML=isService
+     ?'<p class="small">Lead SERVICE siap diambil Teknisi. Detail customer akan terlihat setelah lead menjadi tanggung jawab Anda.</p><button id="claimBtn" class="success">🔧 Claim Service → Handle</button>'
+     :'<p class="small">Lead ini siap diambil Sales. Detail customer akan terlihat setelah lead menjadi tanggung jawab Anda.</p><button id="claimBtn" class="success">Claim Sales → Handle</button>';
+   $('claimBtn').onclick=()=>claimFromLink(id);
+   $('modal').classList.remove('hidden');
+ }
 }
 async function claimFromLink(id){
- const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'});if(x.error)return alert(x.error.message); const claimed=leads.find(x=>x.lead_id===id); history.replaceState({},'',location.pathname);closeModal();await loadLeads(); const fresh=leads.find(x=>x.lead_id===id)||claimed; if(fresh)shareSalesClaim(fresh); editLead(id);
+ const l=leads.find(x=>String(x.lead_id)===String(id));
+ const isService=String(l?.need_type||'').trim().toUpperCase()==='SERVICE';
+ const x=isService
+   ?await sb.rpc('claim_service_lead',{p_lead_id:id})
+   :await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'});
+ if(x.error)return alert(x.error.message);
+ const claimed=leads.find(x=>x.lead_id===id);
+ history.replaceState({},'',location.pathname);
+ closeModal();
+ await loadLeads();
+ const fresh=leads.find(x=>x.lead_id===id)||claimed;
+ if(fresh){
+   if(isService){
+     alert('Service berhasil di-claim oleh Teknisi '+(profile?.name||'')+'.');
+   }else{
+     shareSalesClaim(fresh);
+   }
+ }
+ editLead(id);
 }
 async function salesResult(id){
  const leadId=String(id||'').trim();

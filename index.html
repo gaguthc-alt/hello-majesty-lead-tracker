@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261010-direct-buyback-3"><meta name="hm-ui-build" content="service-technician-label-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261010-direct-buyback-3"><meta name="hm-ui-build" content="remove-informasi-lead-type-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -2192,7 +2192,7 @@ async function hmOpenLeadNewInline(){
   if(title)title.textContent='📱 Lead Baru';
   body.innerHTML='<label>Nama Customer</label><input id="hm_fc" placeholder="Nama customer">'+
     '<label>No WhatsApp</label><input id="hm_fw" placeholder="08xxxxxxxxxx">'+
-    '<label>Kebutuhan</label><select id="hm_fneedtype" onchange="renderInitialNeedFields()"><option value="">— Pilih Kebutuhan —</option><option>PEMBELIAN</option><option>SERVICE</option><option>TUKAR TAMBAH</option><option>KREDIT/CICILAN</option><option>INFORMASI</option></select>'+
+    '<label>Kebutuhan</label><select id="hm_fneedtype" onchange="renderInitialNeedFields()"><option value="">— Pilih Kebutuhan —</option><option>PEMBELIAN</option><option>SERVICE</option><option>TUKAR TAMBAH</option><option>KREDIT/CICILAN</option></select>'+
     '<div id="hm_initialNeedFields"></div>'+
     '<label>Catatan Awal</label><textarea id="hm_fcatatan" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea>'+
     '<button id="hm_saveLeadBtn" class="success" type="button">Simpan Lead</button>';
@@ -3779,7 +3779,7 @@ window.openFacilitatorReports=openFacilitatorReports;
 window.shareFacilitatorReport=shareFacilitatorReport;
 window.shareFacilitatorStock=shareFacilitatorStock;
 
-function leadTypeLabel(l){const t=String(l.need_type||'').trim().toUpperCase();const m={'PEMBELIAN':'🛒 PEMBELIAN','SERVICE':'🔧 SERVICE','TUKAR TAMBAH':'🔄 TUKAR TAMBAH','KREDIT/CICILAN':'💳 CICILAN','CICILAN':'💳 CICILAN','INFORMASI':'ℹ️ INFORMASI'};return m[t]||'❓ BELUM DITENTUKAN'}
+function leadTypeLabel(l){const t=String(l.need_type||'').trim().toUpperCase();const m={'PEMBELIAN':'🛒 PEMBELIAN','SERVICE':'🔧 SERVICE','TUKAR TAMBAH':'🔄 TUKAR TAMBAH','KREDIT/CICILAN':'💳 CICILAN','CICILAN':'💳 CICILAN'};return m[t]||'❓ BELUM DITENTUKAN'}
 function card(l){
  const mg=profile?.is_management;
  const available=l.status_lead==='AVAILABLE';
@@ -4259,7 +4259,7 @@ async function addLead(){
  $('mt').textContent='＋ DATA LEAD AWAL';
  $('mb').innerHTML='<label>Nama Customer</label><input id="fc" placeholder="Nama customer">'+
  '<label>No WhatsApp</label><input id="fw" placeholder="08xxxxxxxxxx">'+
- '<label>Kebutuhan</label><select id="fneedtype" onchange="renderInitialNeedFields()"><option value="">— Pilih Kebutuhan —</option><option>PEMBELIAN</option><option>SERVICE</option><option>TUKAR TAMBAH</option><option>KREDIT/CICILAN</option><option>INFORMASI</option></select>'+
+ '<label>Kebutuhan</label><select id="fneedtype" onchange="renderInitialNeedFields()"><option value="">— Pilih Kebutuhan —</option><option>PEMBELIAN</option><option>SERVICE</option><option>TUKAR TAMBAH</option><option>KREDIT/CICILAN</option></select>'+
  '<div id="initialNeedFields"></div>'+
  '<label>Catatan Awal</label><textarea id="fcatatan" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea>'+ '<button id="saveLeadBtn" class="success">Simpan Lead</button>';
  $('saveLeadBtn').onclick=saveLead;$('modal').classList.remove('hidden');
@@ -4396,7 +4396,7 @@ async function saveLead(){
 function editNeedFields(t,d){
  const v=k=>esc(d?.[k]??'');
  const opts=(arr,sel)=>arr.map(x=>'<option value="'+esc(x)+'"'+(x===sel?' selected':'')+'>'+esc(x)+'</option>').join('');
- return '<label>Kebutuhan</label><select id="e_need_type" onchange="renderEditNeedFields()">'+opts(['PEMBELIAN','SERVICE','TUKAR TAMBAH','KREDIT/CICILAN','INFORMASI'],t)+'</select><div id="editNeedFields"></div>';
+ return '<label>Kebutuhan</label><select id="e_need_type" onchange="renderEditNeedFields()">'+opts(['PEMBELIAN','SERVICE','TUKAR TAMBAH','KREDIT/CICILAN'],t)+'</select><div id="editNeedFields"></div>';
 }
 function renderEditNeedFields(){
  const l=window.hmEditingLead||{},t=$('e_need_type')?.value,d=l.initial_data||{},h=$('editNeedFields');if(!h)return;

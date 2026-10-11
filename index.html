@@ -2141,6 +2141,7 @@ function hmRunMainMenuAction(action){
   case 'hmOpenTargetOutlet()': return hmOpenTargetOutlet();
   case 'hmOpenContentPerformance()': return hmOpenContentPerformance();
   case 'hmOpenLeadNewInline()': return hmOpenLeadNewInline();
+  case 'hmOpenHelloMajestyChat()': return hmOpenHelloMajestyChat();
   case 'hmOpenTradeInline()': return hmOpenTradeInline();
   case 'hmOpenDirectBuyback()': return (typeof window.hmOpenDirectBuyback==='function' ? window.hmOpenDirectBuyback() : Promise.resolve().then(()=>window.hmOpenDirectBuyback()));
   case 'hmOpenSellPhoneInline()': return hmOpenSellPhoneInline();

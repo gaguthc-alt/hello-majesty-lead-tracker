@@ -34,7 +34,12 @@ function addBubble(box,m){
   const messageId=m?.id;
   if(messageId&&box.querySelector('[data-hm-message-id="'+messageId+'"]'))return;
   const d=document.createElement('div');
-  d.className='hm-bubble '+(m.sender_type==='CUSTOMER'||m.from==='customer'?'customer':'cs');
+  const isCustomerMessage=m.sender_type==='CUSTOMER'||m.from==='customer';
+  // Bubble direction is relative to the current view:
+  // Customer view: customer right, CS left.
+  // CS view: CS right, customer left.
+  const isMine=customerOnly?isCustomerMessage:!isCustomerMessage;
+  d.className='hm-bubble '+(isMine?'mine':'other')+' '+(isCustomerMessage?'customer':'cs');
   if(messageId)d.dataset.hmMessageId=messageId;
   d.dataset.hmCreatedAt=m.created_at||m.at||'';
   d.innerHTML=esc(m.message??m.text)+'<span class="hm-time">'+esc(time(m.created_at||m.at))+'</span>';

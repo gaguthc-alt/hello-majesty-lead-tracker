@@ -2335,6 +2335,10 @@ async function hmRenderHomePerformance(){
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA</div><div class="small" style="padding:8px;color:#b42318">Gagal memuat performa: '+escH(e?.message||e)+'</div>';
  }
 }
+function hmOpenHelloMajestyChat(){
+  const url='hello-majesty-chat.html';
+  window.open(url,'_blank','noopener');
+}
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT'),developer=rawRole==='DEVELOPER APLIKASI',has=r=>roles.includes(r);
@@ -2352,6 +2356,7 @@ function renderRoleHome(){
 
  if(mg || developer){
    add('📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()');
+   add('💬','Hello Majesty Chat','Chat customer → lead otomatis → claim CS','hmOpenHelloMajestyChat()');
    add('👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()');
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');
    add('🤝','Lead Handover','Qualified/Potensial → handover & share ke Sales','hmOpenLeadHandover()');

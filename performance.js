@@ -109,7 +109,10 @@
       const key=String(e.employee_name||'')+'|'+String(e.outlet||'');
       if(!known.has(key)){merged.push({employee_name:e.employee_name||'-',outlet:e.outlet||'-',claim_cs:0,handover:0,cs_closing:0,sales_closing:0,hunter_closing:Number(hm[key]||0)});known.add(key);}
     });
-    return merged;
+    // Akun yang bukan bagian dari tim performa operasional tidak ikut dihitung.
+    // Agnes Pradita adalah orang yang sama dengan Agnes, sedangkan Atmadita adalah fungsi Finance.
+    const excludedNames=new Set(['agnes pradita','atmadita']);
+    return merged.filter(r=>!excludedNames.has(String(r.employee_name||'').trim().toLowerCase()));
   }
   async function showPerson(name,role,mode){
     const body=document.getElementById('perfBody'); if(!body)return;

@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261010-direct-buyback-3"><meta name="hm-ui-build" content="service-handover-guard-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261010-direct-buyback-3"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM BROCHURE BOOTSTRAP — must exist before role menu can be clicked */
 window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   const panel=document.getElementById('hmMenuPanel');
@@ -3868,7 +3868,7 @@ Mohon tim tidak melakukan follow up pada lead yang sama tanpa koordinasi dengan 
 function shareSalesClaim(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesClaimMessage(l));}
 async function handoverSales(id){ const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'}); if(x.error)return alert(x.error.message); await loadLeads(); openUrl(); }
 function serviceHandoverMessage(l){
- const link=location.origin+location.pathname+'?claim='+encodeURIComponent(l.lead_id);
+ const link=location.origin+location.pathname+'?claim='+encodeURIComponent(l.lead_id)+'&type=SERVICE';
  const d=l.initial_data||{}; const nl=String.fromCharCode(10);
  return ['🔧 *HANDOVER SERVICE — SIAP DI-CLAIM TEKNISI*','','*Lead ID:* '+l.lead_id,'*Customer:* '+(l.customer||'-'),'*Outlet:* '+(l.outlet||'-'),'*CS:* '+(l.cs_claimed_by||'-'),'','📱 Perangkat: '+(d.device||l.product||'-'),'🔧 Keluhan: '+(d.complaint||l.need||'-'),'','👉 *CLAIM SERVICE DI SINI*',link,'','Silakan Teknisi yang tersedia melakukan Claim Service melalui link.','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
 }
@@ -3908,7 +3908,8 @@ async function openUrl(){
  const id=new URLSearchParams(location.search).get('claim');
  let l=id?leads.find(x=>String(x.lead_id)===String(id)):null;
  if(id&&!l&&sb){const r=await sb.from('leads').select('lead_id,need_type,outlet,cs_claimed_by,service_pic,sales_claimed_by').eq('lead_id',id).maybeSingle();if(!r.error&&r.data){l=r.data;leads.push(r.data);}}
- const isService=String(l?.need_type||'').trim().toUpperCase()==='SERVICE';
+ const claimType=new URLSearchParams(location.search).get('type')||'';
+ const isService=String(l?.need_type||claimType).trim().toUpperCase()==='SERVICE';
  if(id&&profile&&!profile.is_management){
    $('mt').textContent=isService?'Lead Service':'Lead Qualified';
    $('mb').innerHTML=isService
@@ -3920,7 +3921,8 @@ async function openUrl(){
 }
 async function claimFromLink(id){
  const l=leads.find(x=>String(x.lead_id)===String(id));
- const isService=String(l?.need_type||'').trim().toUpperCase()==='SERVICE';
+ const claimType=new URLSearchParams(location.search).get('type')||'';
+ const isService=String(l?.need_type||claimType).trim().toUpperCase()==='SERVICE';
  const x=isService
    ?await sb.rpc('claim_service_lead',{p_lead_id:id})
    :await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'});

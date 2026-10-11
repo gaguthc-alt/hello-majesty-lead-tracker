@@ -23,7 +23,15 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function time(v){return new Date(v||Date.now()).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});}
 function loadDemo(){try{return JSON.parse(localStorage.getItem(DEMO_KEY))||{messages:[]};}catch(_e){return {messages:[]};}}
 function saveDemo(){localStorage.setItem(DEMO_KEY,JSON.stringify(demoState));}
-function addBubble(box,m){const d=document.createElement('div');d.className='hm-bubble '+(m.sender_type==='CUSTOMER'||m.from==='customer'?'customer':'cs');d.innerHTML=esc(m.message??m.text)+'<span class="hm-time">'+esc(time(m.created_at||m.at))+'</span>';box.appendChild(d);box.scrollTop=box.scrollHeight;}
+function addBubble(box,m){
+  const messageId=m?.id;
+  if(messageId&&box.querySelector('[data-hm-message-id="'+messageId+'"]'))return;
+  const d=document.createElement('div');
+  d.className='hm-bubble '+(m.sender_type==='CUSTOMER'||m.from==='customer'?'customer':'cs');
+  if(messageId)d.dataset.hmMessageId=messageId;
+  d.innerHTML=esc(m.message??m.text)+'<span class="hm-time">'+esc(time(m.created_at||m.at))+'</span>';
+  box.appendChild(d);box.scrollTop=box.scrollHeight;
+}
 
 async function getMainAuth(){
   try{
@@ -145,11 +153,20 @@ async function subscribeCsConversationRealtime(conversationId){
   await ensureClient();
   if(customerOnly||!conversationId)return;
   if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}}
-  csMessageChannel=sb.channel('hm-cs-conversation-live-'+conversationId)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'conversation_id=eq.'+conversationId},async()=>{
-      try{await openCsConversation(conversationId)}catch(e){console.warn('[HM Chat CS message realtime]',e)}
+  const channelName='hm-cs-conversation-live-'+conversationId;
+  csMessageChannel=sb.channel(channelName)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'conversation_id=eq.'+conversationId},p=>{
+      try{
+        if(activeConversation?.id!==conversationId)return;
+        addBubble(el('hmCsMessages'),p.new);
+      }catch(e){console.warn('[HM Chat CS message realtime]',e)}
     })
-    .subscribe((status)=>console.log('[HM Chat CS message realtime]',status));
+    .subscribe(async(status)=>{
+      console.log('[HM Chat CS message realtime]',status);
+      if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
+        setTimeout(()=>{if(activeConversation?.id===conversationId)subscribeCsConversationRealtime(conversationId)},1500);
+      }
+    });
 }
 async function subscribeCustomerRealtime(conversationId){
   await ensureClient();
@@ -157,10 +174,16 @@ async function subscribeCustomerRealtime(conversationId){
   await stopRealtime();
   subscribedConversationId=conversationId;
   realtimeChannel=sb.channel('hm-customer-chat-'+conversationId)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'conversation_id=eq.'+conversationId},async p=>{
-      try{await renderCustomerFromDb(conversationId)}catch(e){console.warn('[HM Chat customer realtime]',e)}
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:'conversation_id=eq.'+conversationId},p=>{
+      try{addBubble(el('hmCustomerMessages'),p.new);el('hmWelcome').classList.add('hm-hidden');}
+      catch(e){console.warn('[HM Chat customer realtime]',e)}
     })
-    .subscribe((status)=>console.log('[HM Chat customer realtime]',status));
+    .subscribe(async(status)=>{
+      console.log('[HM Chat customer realtime]',status);
+      if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
+        setTimeout(()=>{if(subscribedConversationId===conversationId)subscribeCustomerRealtime(conversationId)},1500);
+      }
+    });
 }
 async function subscribeChatNotifications(){
   try{

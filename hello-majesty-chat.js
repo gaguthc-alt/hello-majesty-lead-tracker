@@ -10,6 +10,7 @@ const DEMO_KEY='hm_chat_dev_demo_v2';
 let sb=null, customerUser=null, activeConversation=null, mode='cs';
 const customerParams=new URLSearchParams(location.search);
 const customerOnly=customerParams.get('mode')==='customer';
+const requestedConversationId=customerParams.get('conversation');
 const forceNewCustomer=customerOnly&&customerParams.get('new')==='1';
 const forceNewSessionKey='hm_chat_force_new_done_'+location.pathname;
 if(customerOnly)mode='customer';
@@ -337,6 +338,7 @@ document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{el('hmCustom
       el('hmChatSubtitle').textContent='CS Inbox';
       await loadCsInbox();
       await subscribeChatNotifications();
+      if(requestedConversationId)await openCsConversation(requestedConversationId);
     }
   }catch(e){
     console.warn('[HM Chat]',e);

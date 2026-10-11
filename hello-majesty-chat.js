@@ -40,6 +40,17 @@ function addBubble(box,m){
   // CS view: CS right, customer left.
   const isMine=customerOnly?isCustomerMessage:!isCustomerMessage;
   d.className='hm-bubble '+(isMine?'mine':'other')+' '+(isCustomerMessage?'customer':'cs');
+  // Set alignment inline as a final guard so cached/older CSS cannot invert the role direction.
+  d.style.alignSelf=isMine?'flex-end':'flex-start';
+  if(isMine){
+    d.style.background='#d9fdd3';
+    d.style.borderTopRightRadius='3px';
+    d.style.borderTopLeftRadius='';
+  }else{
+    d.style.background='#fff';
+    d.style.borderTopLeftRadius='3px';
+    d.style.borderTopRightRadius='';
+  }
   if(messageId)d.dataset.hmMessageId=messageId;
   d.dataset.hmCreatedAt=m.created_at||m.at||'';
   d.innerHTML=esc(m.message??m.text)+'<span class="hm-time">'+esc(time(m.created_at||m.at))+'</span>';

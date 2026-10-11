@@ -13,7 +13,7 @@ const customerOnly=customerParams.get('mode')==='customer';
 const forceNewCustomer=customerOnly&&customerParams.get('new')==='1';
 const forceNewSessionKey='hm_chat_force_new_done_'+location.pathname;
 if(customerOnly)mode='customer';
-let demoState=loadDemo();
+let demoState={messages:[]};
 
 function el(id){return document.getElementById(id);}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
@@ -194,7 +194,7 @@ async function switchMode(){
   cv.classList.toggle('hm-hidden',showingCustomer);cs.classList.toggle('hm-hidden',!showingCustomer);
   el('hmChatSubtitle').textContent=showingCustomer?'CS Inbox':'Customer';
   if(showingCustomer){mode='cs';el('hmModeBtn').textContent='‹';try{await loadCsInbox();}catch(e){el('hmInbox').innerHTML='<div class="hm-lead-card">'+esc(e.message||'CS belum login.')+'</div>';}}
-  else{mode='customer';el('hmModeBtn').textContent='⋮';try{const c=await getCustomerConversation();if(c)await renderCustomerFromDb(c.id);else renderDemoCustomer();}catch(_e){renderDemoCustomer();}}
+  else{mode='customer';el('hmModeBtn').textContent='⋮';try{await ensureCustomer();const c=await getCustomerConversation();if(c)await renderCustomerFromDb(c.id);else{el('hmCustomerMessages').innerHTML='';el('hmWelcome').classList.remove('hm-hidden');}}catch(e){console.error('[HM Chat customer view]',e);alert(e.message||'Chat customer gagal dimuat.');}}
 }
 
 el('hmCustomerSend').onclick=sendCustomer;el('hmCsSend').onclick=sendCs;
@@ -213,8 +213,9 @@ document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{el('hmCustom
   try{
     await ensureClient();
     if(customerOnly){
+      await ensureCustomer();
       const c=await getCustomerConversation();
-      if(c)await renderCustomerFromDb(c.id);else renderDemoCustomer();
+      if(c)await renderCustomerFromDb(c.id);else{el('hmCustomerMessages').innerHTML='';el('hmWelcome').classList.remove('hm-hidden');}
     }else{
       el('hmCustomerView').classList.add('hm-hidden');
       el('hmCsView').classList.remove('hm-hidden');

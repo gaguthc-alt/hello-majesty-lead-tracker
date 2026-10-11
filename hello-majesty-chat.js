@@ -8,7 +8,10 @@ const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
 const SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 const DEMO_KEY='hm_chat_dev_demo_v2';
 let sb=null, customerUser=null, activeConversation=null, mode='cs';
-const customerOnly=new URLSearchParams(location.search).get('mode')==='customer';
+const customerParams=new URLSearchParams(location.search);
+const customerOnly=customerParams.get('mode')==='customer';
+const forceNewCustomer=customerOnly&&customerParams.get('new')==='1';
+const forceNewSessionKey='hm_chat_force_new_done_'+location.pathname;
 if(customerOnly)mode='customer';
 let demoState=loadDemo();
 
@@ -61,7 +64,12 @@ async function ensureCustomer(){
     customerUser=user;
     return customerUser;
   }
-  const {data:{session}}=await sb.auth.getSession();
+  let {data:{session}}=await sb.auth.getSession();
+  if(forceNewCustomer&&sessionStorage.getItem(forceNewSessionKey)!=='1'){
+    if(session)await sb.auth.signOut({scope:'local'});
+    sessionStorage.setItem(forceNewSessionKey,'1');
+    session=null;
+  }
   if(session?.user){customerUser=session.user;return customerUser;}
   const {data,error}=await sb.auth.signInAnonymously();
   if(error)throw error;
@@ -117,14 +125,9 @@ async function sendCustomer(){
     if(!c)c=await createConversation(text);else await sendCustomerMessage(c.id,text,false);
     await renderCustomerFromDb(c.id);
   }catch(e){
-    console.error(e);
-    demoState.messages.push({from:'customer',text,at:Date.now()});saveDemo();renderDemoCustomer();
-    const msg=String(e?.message||'');
-    if(/anonymous|anonymous sign|signups? not allowed|disabled/i.test(msg)){
-      alert('Chat customer siap, tetapi Anonymous Sign-In Supabase belum diaktifkan. Aktifkan Authentication → Providers → Anonymous Sign-Ins, lalu coba lagi.');
-    }else{
-      alert('Chat server belum aktif untuk customer. Demo lokal tetap berjalan.');
-    }
+    console.error('[HM Chat customer send]',e);
+    const msg=String(e?.message||'Chat gagal dikirim.');
+    alert('Pesan belum terkirim ke CS. '+msg+' Silakan coba lagi.');
   }
 }
 
@@ -221,8 +224,11 @@ document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{el('hmCustom
     }
   }catch(e){
     console.warn('[HM Chat]',e);
-    if(customerOnly)renderDemoCustomer();
-    else el('hmInbox').innerHTML='<div class="hm-lead-card">'+esc(e.message||'CS belum login.')+'</div>';
+    if(customerOnly){
+      const box=el('hmCustomerMessages');
+      if(box)box.innerHTML='<div class="hm-server-error">Chat belum terhubung ke server: '+esc(e.message||'silakan muat ulang halaman.')+'</div>';
+      if(el('hmWelcome'))el('hmWelcome').classList.remove('hm-hidden');
+    }else el('hmInbox').innerHTML='<div class="hm-lead-card">'+esc(e.message||'CS belum login.')+'</div>';
   }
 })();
 })();

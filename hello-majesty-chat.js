@@ -85,7 +85,12 @@ async function sendCustomer(){
   }catch(e){
     console.error(e);
     demoState.messages.push({from:'customer',text,at:Date.now()});saveDemo();renderDemoCustomer();
-    alert('Chat server belum aktif untuk customer. Demo lokal tetap berjalan.');
+    const msg=String(e?.message||'');
+    if(/anonymous|anonymous sign|signups? not allowed|disabled/i.test(msg)){
+      alert('Chat customer siap, tetapi Anonymous Sign-In Supabase belum diaktifkan. Aktifkan Authentication → Providers → Anonymous Sign-Ins, lalu coba lagi.');
+    }else{
+      alert('Chat server belum aktif untuk customer. Demo lokal tetap berjalan.');
+    }
   }
 }
 

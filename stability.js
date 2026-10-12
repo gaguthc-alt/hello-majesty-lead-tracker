@@ -18,17 +18,24 @@
     }catch(_e){}
   }
 
+  function errorDetails(err){
+    try{
+      var stack=err && err.stack ? String(err.stack) : '';
+      return stack ? '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:140px;overflow:auto;margin:6px 0 0;font:10px/1.35 monospace;color:#7f1d1d">'+stack.slice(0,1800).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>' : '';
+    }catch(_e){return '';}
+  }
+
   window.addEventListener('error',function(e){
     var msg=e && e.message ? e.message : 'JavaScript error';
     console.error('[HM runtime]',e);
-    showError(msg);
+    showError(msg+errorDetails(e && e.error));
   });
 
   window.addEventListener('unhandledrejection',function(e){
     var reason=e && e.reason;
     var msg=reason && reason.message ? reason.message : String(reason||'Promise error');
     console.error('[HM unhandled rejection]',reason);
-    showError(msg);
+    showError(msg+errorDetails(reason));
   });
 
   /* HM DATA LEAD — MOBILE/UI POLISH: presentation only */

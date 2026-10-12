@@ -354,7 +354,10 @@ async function renderInventory(){
   host.innerHTML='<div class="small">⏳ Memuat Product & Stock...</div>';
   host.id='inventoryPanel';host.className='box';
   const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');
-  if(dash&&!dash.contains(host))dash.insertBefore(host,stats||null);
+  const inlineBody=document.getElementById('hmMenuPanelBody');
+  // Product & Stock can be hosted inside the active menu panel. Do not move it
+  // back to the dashboard while the menu owns it; that causes competing UI renders.
+  if(dash&&!dash.contains(host)&&!(inlineBody&&inlineBody.contains(host)))dash.insertBefore(host,stats||null);
   try{await loadInventoryData();}catch(e){
     console.error('[HM] Inventory load error',e);
     host.innerHTML='<h2 style="margin:0">📦 PRODUCT & STOCK</h2><p class="small" style="margin-top:10px">Product & Stock gagal memuat data.</p><div class="box"><b>Error:</b> '+esc(e?.message||e)+'</div><button class="secondary" onclick="refreshInventory(this)">↻ Coba Lagi</button>';

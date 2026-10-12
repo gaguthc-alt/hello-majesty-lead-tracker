@@ -185,7 +185,17 @@ async function sendCustomer(){
   try{
     await ensureCustomer();
     let c=await getCustomerConversation();
-    if(!c)c=await createConversation(text);else await sendCustomerMessage(c.id,text,false);
+    if(!c)c=await createConversation(text);else{
+      // Returning customers reuse the same conversation. The RPC verifies
+      // customer ownership, reopens CLOSED chats, updates activity and inserts
+      // the text message without exposing direct conversation UPDATE access.
+      const {data:rpcMessage,error:rpcError}=await sb.rpc('hm_customer_send_chat_message',{
+        p_conversation_id:c.id,
+        p_message:text
+      });
+      if(rpcError)throw rpcError;
+      if(rpcMessage?.conversation_id)c={...c,updated_at:new Date().toISOString()};
+    }
     await renderCustomerFromDb(c.id);
     await subscribeCustomerRealtime(c.id);
   }catch(e){
@@ -198,7 +208,16 @@ async function sendCustomer(){
 function renderDemoCustomer(){const box=el('hmCustomerMessages');box.innerHTML='';demoState.messages.forEach(m=>addBubble(box,m));if(demoState.messages.length)el('hmWelcome').classList.add('hm-hidden');}
 
 async function requestChatNotifications(){try{if('Notification' in window&&Notification.permission==='default')await Notification.requestPermission();}catch(_e){}}
-function showInAppChatAlert(c){const box=document.getElementById('hmChatAlert'),txt=document.getElementById('hmChatAlertText'),btn=document.getElementById('hmChatAlertBtn');if(!box)return;if(txt)txt.textContent='Lead baru dari '+(c?.customer_name||'Customer')+' menunggu di-claim.';if(btn)btn.onclick=()=>{box.classList.add('hm-hidden');openCsConversation(c.id)};box.classList.remove('hm-hidden');try{document.title='🔔 Chat Baru • Hello Majesty'}catch(_e){}}
+function showInAppChatAlert(c,message){const box=document.getElementById('hmChatAlert'),txt=document.getElementById('hmChatAlertText'),btn=document.getElementById('hmChatAlertBtn');if(!box)return;if(txt)txt.textContent=message||('Lead baru dari '+(c?.customer_name||'Customer')+' menunggu di-claim.');if(btn)btn.onclick=()=>{box.classList.add('hm-hidden');openCsConversation(c.id)};box.classList.remove('hm-hidden');try{document.title='🔔 Chat Baru • Hello Majesty'}catch(_e){}}
+function showAssignedMessageNotification(c){
+  if(!c?.id)return;
+  showInAppChatAlert(c,'💬 Pesan baru dari customer yang Anda tangani. Klik untuk membuka chat.');
+  try{
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    const n=new Notification('💬 Pesan Customer Baru',{body:(c.customer_name||'Customer')+' mengirim pesan baru. PIC: '+(c.claimed_name||'Anda'),tag:'hm-chat-message-'+c.id});
+    n.onclick=()=>{window.focus();openCsConversation(c.id)};
+  }catch(e){console.warn('[HM Chat assigned notification]',e)}
+}
 function showChatNotification(c){if(c?.claimed_by||c?.status!=='AVAILABLE')return;showInAppChatAlert(c);try{if(!('Notification' in window)||Notification.permission!=='granted')return;const n=new Notification('🔔 Lead Baru Menunggu Claim',{body:(c?.customer_name||'Customer')+' masuk dari Hello Majesty Chat. Silakan CLAIM.',tag:'hm-chat-'+c.id});n.onclick=()=>{window.focus();openCsConversation(c.id)}}catch(e){console.warn('[HM Chat notification]',e)}}
 function stopCsRealtimeWatchdog(){
   if(csRealtimeWatchdog){clearInterval(csRealtimeWatchdog);csRealtimeWatchdog=null;}
@@ -312,10 +331,12 @@ async function subscribeChatNotifications(){
           if(!cid)return;
           const {data:conv,error}=await sb.from('chat_conversations').select('*').eq('id',cid).single();
           if(error)throw error;
-          if(conv.status==='AVAILABLE'&&!conv.claimed_by){
+          if(p.new?.sender_type==='CUSTOMER'&&conv.claimed_by===user.id){
+            showAssignedMessageNotification(conv);
+          }else if(conv.status==='AVAILABLE'&&!conv.claimed_by){
             showChatNotification(conv);
-            await loadCsInbox();
           }
+          await loadCsInbox();
         }catch(e){console.warn('[HM Chat CS direct message realtime]',e)}
       })
       // Keep conversation INSERT/UPDATE as a secondary signal for inbox state.
@@ -346,7 +367,7 @@ async function loadCsInbox(){
   await ensureClient();
   if(customerOnly)throw new Error('Mode customer aktif.');
   await getMainUser();
-  const {data,error}=await sb.from('chat_conversations').select('*').order('created_at',{ascending:false}).limit(100);
+  const {data,error}=await sb.from('chat_conversations').select('*').order('updated_at',{ascending:false}).limit(100);
   if(error)throw error;
   renderInbox(data||[]);
   return data||[];
@@ -440,6 +461,8 @@ async function sendCs(){
     // Render immediately from the exact inserted row. Realtime will deliver
     // the same row too, and addBubble deduplicates it by message id.
     addBubble(el('hmCsMessages'),sent);
+    // Keep Inbox ordering in sync with the latest activity.
+    try{await sb.from('chat_conversations').update({updated_at:new Date().toISOString()}).eq('id',activeConversation.id);}catch(_e){}
   }catch(e){console.error(e);alert(e.message||'Pesan CS gagal dikirim.');}
 }
 

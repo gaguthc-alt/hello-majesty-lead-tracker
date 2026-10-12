@@ -391,9 +391,21 @@ async function loadActiveLeadPhone(){
   const input=el('hmLeadPhone'),status=el('hmLeadDataStatus'),hint=el('hmLeadPhoneHint');
   if(!input||!status||!hint)return;
   input.value='';status.textContent='';hint.textContent='Nomor HP akan disimpan ke lead aktif.';
-  const leadId=activeConversation?.lead_id;
-  if(!leadId){hint.textContent='Chat ini belum terhubung ke lead aktif.';input.disabled=true;el('hmLeadPhoneSave').disabled=true;return;}
-  input.disabled=false;el('hmLeadPhoneSave').disabled=false;
+  let leadId=activeConversation?.lead_id;
+  input.disabled=false;
+  el('hmLeadPhoneSave').disabled=false;
+  // A chat should remain editable even if an older conversation has not yet
+  // received its linked lead. Retry the safe claim/link RPC for the current PIC.
+  if(!leadId&&activeConversation?.id){
+    try{
+      const {data,error}=await sb.rpc('hm_claim_chat_conversation',{p_conversation_id:activeConversation.id});
+      if(!error&&data?.lead_id){activeConversation=data;leadId=data.lead_id;}
+    }catch(e){console.warn('[HM Chat recover lead link]',e);}
+  }
+  if(!leadId){
+    hint.textContent='Nomor bisa diisi. Jika belum tersimpan, buka ulang chat agar tautan lead dibuat.';
+    return;
+  }
   try{
     const {data,error}=await sb.from('leads').select('whatsapp').eq('id',leadId).single();
     if(error)throw error;
@@ -405,8 +417,15 @@ async function loadActiveLeadPhone(){
 }
 async function saveActiveLeadPhone(){
   const input=el('hmLeadPhone'),status=el('hmLeadDataStatus'),hint=el('hmLeadPhoneHint');
-  if(!activeConversation?.lead_id)return alert('Chat ini belum terhubung ke lead aktif.');
   const userData=await getMainUser();
+  if(!activeConversation?.lead_id&&activeConversation?.id){
+    try{
+      const {data,error}=await sb.rpc('hm_claim_chat_conversation',{p_conversation_id:activeConversation.id});
+      if(!error&&data?.lead_id)activeConversation=data;
+    }catch(e){console.warn('[HM Chat recover lead link before save]',e);}
+  }
+  if(!activeConversation?.lead_id)return alert('Lead belum terhubung. Tutup chat lalu buka kembali, kemudian simpan nomor HP.');
+
   if(activeConversation.claimed_by&&activeConversation.claimed_by!==userData.id)return alert('Hanya PIC yang claim chat ini yang dapat mengubah data lead.');
   const phone=String(input.value||'').trim();
   if(!phone)return alert('Nomor HP wajib diisi.');

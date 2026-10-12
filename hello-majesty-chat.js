@@ -186,13 +186,15 @@ async function sendCustomer(){
     await ensureCustomer();
     let c=await getCustomerConversation();
     if(!c)c=await createConversation(text);else{
-      // Reuse the same conversation for returning customers. Reopen a closed
-      // chat without losing the previous messages or assigned CS.
-      try{
-        const nextStatus=c.status==='CLOSED'?(c.claimed_by?'HANDLING':'AVAILABLE'):c.status;
-        await sb.from('chat_conversations').update({status:nextStatus,updated_at:new Date().toISOString()}).eq('id',c.id).eq('customer_user_id',customerUser.id);
-      }catch(e){console.warn('[HM Chat resume status]',e)}
-      await sendCustomerMessage(c.id,text,false);
+      // Returning customers reuse the same conversation. The RPC verifies
+      // customer ownership, reopens CLOSED chats, updates activity and inserts
+      // the text message without exposing direct conversation UPDATE access.
+      const {data:rpcMessage,error:rpcError}=await sb.rpc('hm_customer_send_chat_message',{
+        p_conversation_id:c.id,
+        p_message:text
+      });
+      if(rpcError)throw rpcError;
+      if(rpcMessage?.conversation_id)c={...c,updated_at:new Date().toISOString()};
     }
     await renderCustomerFromDb(c.id);
     await subscribeCustomerRealtime(c.id);

@@ -4794,9 +4794,10 @@ function getActiveLeadBucket(l){
  const cs=String(l.qualification_result||'').toUpperCase();
  const sales=String(l.sales_result||'').toUpperCase();
  const finalResult=(sales==='CLOSING'||sales==='GAGAL'||cs==='GAGAL'||cs==='CLOSING'||String(l.hasil||'').toUpperCase()==='GAGAL'||String(l.hasil||'').toUpperCase()==='LOST'||String(l.hasil||'').toUpperCase()==='CLOSING');
+ // POTENSIAL masih aktif untuk follow-up, meskipun status_lead tersimpan sebagai HASIL.
+ if(!finalResult&&(cs==='POTENSIAL'||sales==='POTENSIAL'))return 'POTENSIAL';
  if(finalResult||status==='HASIL')return '';
  // Kategori dibuat eksklusif: satu lead hanya masuk satu bucket.
- if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
  if(status==='SERVICE'||(String(l.need_type||'').trim().toUpperCase()==='SERVICE'&&l.service_pic))return 'SERVICE';
  if(status==='HANDLE'||l.sales_claimed_by)return 'HANDLE';
  if(status==='QUALIFIED'&&!l.sales_claimed_by)return 'QUALIFIED';

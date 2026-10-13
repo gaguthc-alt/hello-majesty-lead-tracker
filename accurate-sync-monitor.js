@@ -3,7 +3,7 @@
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function isFinanceAdmin(){
     const r=String(window.profile?.role||'').toUpperCase().replace(/_/g,' ');
-    const developer = !!window.profile?.is_developer || r==='DEVELOPER';
+    const developer = !!window.profile?.is_developer || r==='DEVELOPER' || r==='DEVELOPER APLIKASI';
     return developer || !!window.profile?.is_management || r==='ADMIN FINANCE' || r==='ADMIN FINANCE MAJESTY CELL';
   }
   function openModal(title,html){

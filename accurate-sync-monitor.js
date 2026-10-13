@@ -67,7 +67,16 @@
     }
   };
   window.hmOpenAccurateSyncMonitor=async function(){
-    try{ await load(); }catch(e){ openModal('🔗 Accurate Sync Monitor','<div class="danger box">Monitor gagal memuat data: '+esc(e?.message||e)+'</div>'); }
+    try{
+      if(!isFinanceAdmin()) throw new Error('Akun ini belum dikenali sebagai Developer/Management. Role terbaca: '+String(window.profile?.role||'(kosong)'));
+      openModal('🔗 Accurate Sync Monitor','<div class="box"><b>⏳ Memuat status sinkronisasi...</b><div class="small">Mengambil antrean, riwayat sinkronisasi, dan konflik.</div></div>');
+      await load();
+    }catch(e){
+      const msg=String(e?.message||e||'Kesalahan tidak diketahui');
+      console.error('[HM Accurate] Monitor gagal dibuka:',e);
+      try{ openModal('🔗 Accurate Sync Monitor','<div class="danger box"><b>Monitor gagal memuat data</b><div style="margin-top:6px">'+esc(msg)+'</div></div>'); }
+      catch(_){ alert('Accurate Sync gagal dibuka: '+msg); }
+    }
   };
   window.addEventListener('DOMContentLoaded',function(){
     setTimeout(function(){

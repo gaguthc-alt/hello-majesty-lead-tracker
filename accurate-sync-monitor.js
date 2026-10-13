@@ -107,13 +107,19 @@
       openModal('🧩 Pemetaan Produk Accurate','<div class="box"><b>⏳ Memuat produk Hello Majesty dan barang Accurate...</b><div class="small">Belum ada data yang diubah.</div></div>');
       const results=await Promise.all([
         sb.from('product_master').select('id,category,product,variant,grade,accurate_item_id,accurate_item_no').eq('active',true).order('category').order('product'),
+        sb.from('stock_units').select('product_id').eq('status','READY'),
         sb.functions.invoke('accurate-sync',{body:{action:'list_items'}})
       ]);
       if(results[0].error) throw results[0].error;
       if(results[1].error) throw results[1].error;
-      const data=results[1].data||{};
+      if(results[2].error) throw results[2].error;
+      const data=results[2].data||{};
       if(!data.ok) throw new Error(data.error||'Daftar barang Accurate gagal dimuat.');
-      window.__hmAccurateMapProducts=results[0].data||[];
+      const readyCounts={};
+      (results[1].data||[]).forEach(function(unit){if(unit.product_id)readyCounts[String(unit.product_id)]=(readyCounts[String(unit.product_id)]||0)+1;});
+      // Mapping list only shows active Hello Majesty products with at least one READY unit.
+      // Existing mappings remain stored for products temporarily hidden at zero stock.
+      window.__hmAccurateMapProducts=(results[0].data||[]).filter(function(p){return (readyCounts[String(p.id)]||0)>0;}).map(function(p){return {...p,hm_ready_stock:readyCounts[String(p.id)]||0};});
       window.__hmAccurateMapItems=Array.isArray(data.items)?data.items:[];
       const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;
       const mapped=products.filter(p=>p.accurate_item_id||p.accurate_item_no).length;
@@ -125,7 +131,7 @@
         const label=[p.product,p.variant,p.grade?'Grade '+p.grade:null].filter(Boolean).join(' • ');
         const search=[p.category,p.product,p.variant,p.grade,p.accurate_item_no,current&&current.name,current&&current.category].filter(Boolean).join(' ').toLowerCase();
         return '<div class="lead" data-hm-accurate-map-card="1" data-search="'+esc(search)+'" style="margin-bottom:9px">'+
-          '<div style="font-weight:800">'+esc(label)+'</div><div class="small" style="margin:3px 0 8px">Kategori: '+esc(p.category||'-')+'</div>'+
+          '<div style="font-weight:800">'+esc(label)+'</div><div class="small" style="margin:3px 0 8px">Kategori: '+esc(p.category||'-')+' • Stok tersedia: '+esc(p.hm_ready_stock||0)+'</div>'+
           '<div class="small" style="margin-bottom:5px">'+(current?'Terpetakan saat ini: '+esc(current.no)+' — '+esc(current.name):((p.accurate_item_no||p.accurate_item_id)?'Mapping tersimpan: '+esc(p.accurate_item_no||p.accurate_item_id)+' (tidak ditemukan dalam daftar saat ini)':'Belum dipetakan'))+'</div>'+
           '<select id="hm-accurate-map-'+esc(p.id)+'" style="width:100%;min-height:42px;padding:8px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827">'+
             options.replace('value="'+esc(current?current.id:'')+'"','value="'+esc(current?current.id:'')+'" selected')+
@@ -134,7 +140,7 @@
         '</div>';
       }).join('');
       openModal('🧩 Pemetaan Produk Accurate',
-        '<div class="box"><b>Mapping produk: '+mapped+' / '+products.length+'</b><div class="small">Barang Accurate tersedia: '+items.length+'. Pilih barang yang benar untuk setiap produk, lalu simpan per baris.</div><div class="small" style="margin-top:6px">Tidak membuat barang baru dan tidak mengirim transaksi.</div></div>'+
+        '<div class="box"><b>Mapping produk dengan stok: '+mapped+' / '+products.length+'</b><div class="small">Hanya produk Hello Majesty dengan stok READY lebih dari 0 yang ditampilkan. Barang Accurate tersedia: '+items.length+'.</div><div class="small" style="margin-top:6px">Produk stok 0 disembunyikan sementara; mapping tersimpan tidak dihapus. Tidak membuat barang baru dan tidak mengirim transaksi.</div></div>'+
         '<input type="search" placeholder="Cari produk, varian, kategori..." oninput="window.hmFilterAccurateMappings(this.value)" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:12px;margin:10px 0">'+
         '<div style="max-height:55vh;overflow:auto;padding-right:3px">'+(cards||'<div class="box">Tidak ada produk aktif.</div>')+'</div>');
     }catch(e){

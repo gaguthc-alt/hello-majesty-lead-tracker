@@ -80,13 +80,14 @@
         runs.map(function(x){
           const pg=x.pagination||{};
           const sample=Array.isArray(x.sample)?x.sample:[];
+          const allItems=Array.isArray(x.allItems)?x.allItems:[];
           const hpMatches=Array.isArray(x.hpMatches)?x.hpMatches:[];
           return '<div class="lead"><b>'+esc(x.mode)+' • HTTP '+esc(x.httpStatus)+'</b>'+
             '<div class="small">Berhasil: '+esc(x.success)+' • Total baris: '+esc(pg.rowCount??'tidak tersedia')+' • Halaman: '+esc(pg.pageCount??'tidak tersedia')+' • Ukuran halaman: '+esc(pg.pageSize??'tidak tersedia')+'</div>'+
             '<div class="small">Halaman dibaca: '+esc(x.pagesRead??'-')+' • Barang HP cocok: '+esc(x.hpMatchCount??0)+'</div>'+
             (x.error?'<div class="small" style="color:#b91c1c">'+esc(x.error)+'</div>':'')+
             '<div style="margin-top:6px">'+(sample.map(function(i){return '<div class="small">'+esc(i.no||'-')+' — '+esc(i.name||'-')+' • tipe '+esc(i.itemType||'-')+' • ID '+esc(i.id||'-')+'</div>';}).join('')||'<div class="small">Tidak ada sampel.</div>')+'</div>'+
-            '<div style="margin-top:6px"><b class="small">HP ditemukan</b>'+(hpMatches.map(function(i){return '<div class="small">'+esc(i.no||'-')+' — '+esc(i.name||'-')+' • tipe '+esc(i.itemType||'-')+' • ID '+esc(i.id||'-')+'</div>';}).join('')||'<div class="small">Tidak ada nama HP cocok.</div>')+'</div></div>';
+            '<div style="margin-top:6px"><b class="small">Seluruh barang yang dikembalikan API ('+esc(x.totalItemsReturned??allItems.length)+')</b>'+(allItems.map(function(i){return '<div class="small">'+esc(i.no||'-')+' — '+esc(i.name||'-')+' • tipe '+esc(i.itemType||'-')+' • ID '+esc(i.id||'-')+'</div>';}).join('')||'<div class="small">API tidak mengembalikan daftar item lengkap.</div>')+'</div>'+<div style="margin-top:6px"><b class="small">HP ditemukan</b>'+(hpMatches.map(function(i){return '<div class="small">'+esc(i.no||'-')+' — '+esc(i.name||'-')+' • tipe '+esc(i.itemType||'-')+' • ID '+esc(i.id||'-')+'</div>';}).join('')||'<div class="small">Tidak ada nama HP cocok.</div>')+'</div></div>';
         }).join('')+
         '<div class="small" style="margin-top:8px">Kirim screenshot hasil ini untuk menentukan filter dan pagination yang tepat.</div>');
     }catch(e){

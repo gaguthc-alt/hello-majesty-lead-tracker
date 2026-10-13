@@ -2463,7 +2463,7 @@ function renderRoleHome(){
    add('💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")');
    add('💼','Payroll','Pusat pengelolaan gaji Hello Majesty','hmOpenPayroll()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
-   add('🔗','Accurate Sync','Koneksi Accurate, cek barang & sinkronisasi penjualan','hmOpenAccurateSyncMonitor()');
+   if(developer) add('🔗','Accurate Sync','Koneksi Accurate, cek barang & sinkronisasi penjualan','hmOpenAccurateSyncMonitor()');
    add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')");
    add('📊','Laporan Fasilitator','Penjualan & Stock READY','hmOpenFacilitatorReportsInline()');
@@ -2709,6 +2709,7 @@ function renderRoleHome(){
    const isDivisiAccount = roles.includes('DIVISI') || rawRole==='DIVISI';
    const isSakaAccount = String(profile?.name||'').trim().toLowerCase()==='saka';
    const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='MAJESTY CELL' && (isAtmaditaAccount || isDivisiAccount || isSakaAccount)));
+   if(g[1]==='ACCURATE' && !developer)return '';
    const isAccountingGroup = g[1]==='ACCOUNTING' && developer;
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
    if(g[1]==='FINANCE' && !developer && !mg)return '';

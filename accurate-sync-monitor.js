@@ -107,7 +107,7 @@
       openModal('🧩 Pemetaan Produk Accurate','<div class="box"><b>⏳ Memuat produk Hello Majesty dan barang Accurate...</b><div class="small">Belum ada data yang diubah.</div></div>');
       const results=await Promise.all([
         sb.from('product_master').select('id,category,product,variant,grade,accurate_item_id,accurate_item_no').eq('active',true).order('category').order('product'),
-        sb.from('stock_units').select('product_id').eq('status','READY'),
+        sb.from('stock_units').select('product_id').eq('status','READY').eq('outlet','Majesty Plaza iPhone'),
         sb.functions.invoke('accurate-sync',{body:{action:'list_items'}})
       ]);
       if(results[0].error) throw results[0].error;
@@ -117,9 +117,8 @@
       if(!data.ok) throw new Error(data.error||'Daftar barang Accurate gagal dimuat.');
       const readyCounts={};
       (results[1].data||[]).forEach(function(unit){if(unit.product_id)readyCounts[String(unit.product_id)]=(readyCounts[String(unit.product_id)]||0)+1;});
-      // Show every active Hello Majesty product, including zero-stock products, so the mapping list can be reconciled against the full Accurate inventory report.
-      // READY stock is displayed for context only; no mapping is removed when stock is zero.
-      window.__hmAccurateMapProducts=(results[0].data||[]).map(function(p){return {...p,hm_ready_stock:readyCounts[String(p.id)]||0};});
+      // Phase 1 is limited to products with READY units at Majesty Plaza iPhone. Existing mappings remain stored when a product is hidden.
+      window.__hmAccurateMapProducts=(results[0].data||[]).filter(function(p){return (readyCounts[String(p.id)]||0)>0;}).map(function(p){return {...p,hm_ready_stock:readyCounts[String(p.id)]||0};});
       window.__hmAccurateMapItems=Array.isArray(data.items)?data.items:[];
       const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;
       const mapped=products.filter(p=>p.accurate_item_id||p.accurate_item_no).length;
@@ -140,7 +139,7 @@
         '</div>';
       }).join('');
       openModal('🧩 Pemetaan Produk Accurate',
-        '<div class="box"><b>Mapping produk aktif: '+mapped+' / '+products.length+'</b><div class="small">Semua produk aktif Hello Majesty ditampilkan, termasuk stok READY 0, agar dapat dicocokkan dengan PDF persediaan Accurate. Barang Accurate yang tersedia untuk dipilih: '+items.length+'.</div><div class="small" style="margin-top:6px">Stok READY hanya informasi. Mapping yang sudah tersimpan tidak dihapus. Tidak membuat barang baru, tidak mengubah stok, dan tidak mengirim transaksi.</div></div>'+
+        '<div class="box"><b>Mapping Majesty Plaza iPhone: '+mapped+' / '+products.length+'</b><div class="small">Tahap 1 hanya menampilkan produk dengan stok READY di outlet Majesty Plaza iPhone. Barang Accurate tersedia untuk dipilih: '+items.length+'.</div><div class="small" style="margin-top:6px">Stok pusat dan outlet lain tidak masuk tahap ini. Mapping produk yang tersembunyi tetap tersimpan. Tidak membuat barang baru, tidak mengubah stok, dan tidak mengirim transaksi.</div></div>'+
         '<input type="search" placeholder="Cari produk, varian, kategori..." oninput="window.hmFilterAccurateMappings(this.value)" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:12px;margin:10px 0">'+
         '<div style="max-height:55vh;overflow:auto;padding-right:3px">'+(cards||'<div class="box">Tidak ada produk aktif.</div>')+'</div>');
     }catch(e){

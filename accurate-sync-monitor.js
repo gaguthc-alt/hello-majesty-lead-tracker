@@ -107,7 +107,7 @@
       openModal('🧩 Pemetaan Produk Accurate','<div class="box"><b>⏳ Memuat produk Hello Majesty dan barang Accurate...</b><div class="small">Belum ada data yang diubah.</div></div>');
       const results=await Promise.all([
         sb.from('product_master').select('id,category,product,variant,grade,accurate_item_id,accurate_item_no').eq('active',true).order('category').order('product'),
-        sb.from('stock_units').select('product_id').eq('status','READY').eq('outlet','Majesty Plaza iPhone'),
+        sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no').eq('status','READY').eq('outlet','Majesty Plaza iPhone'),
         sb.functions.invoke('accurate-sync',{body:{action:'list_items'}})
       ]);
       if(results[0].error) throw results[0].error;
@@ -115,27 +115,38 @@
       if(results[2].error) throw results[2].error;
       const data=results[2].data||{};
       if(!data.ok) throw new Error(data.error||'Daftar barang Accurate gagal dimuat.');
-      const readyCounts={};
-      (results[1].data||[]).forEach(function(unit){if(unit.product_id)readyCounts[String(unit.product_id)]=(readyCounts[String(unit.product_id)]||0)+1;});
-      // Phase 1 is limited to products with READY units at Majesty Plaza iPhone. Existing mappings remain stored when a product is hidden.
-      window.__hmAccurateMapProducts=(results[0].data||[]).filter(function(p){return (readyCounts[String(p.id)]||0)>0;}).map(function(p){return {...p,hm_ready_stock:readyCounts[String(p.id)]||0};});
+      const readyGroups={};
+      (results[1].data||[]).forEach(function(unit){
+        if(!unit.product_id) return;
+        const key=String(unit.product_id)+'|'+String(unit.grade||'')+'|'+String(unit.color||'');
+        if(!readyGroups[key]) readyGroups[key]={product_id:String(unit.product_id),grade:unit.grade||'',color:unit.color||'',units:[],accurate_item_id:unit.accurate_item_id||'',accurate_item_no:unit.accurate_item_no||''};
+        readyGroups[key].units.push(unit);
+        if(!readyGroups[key].accurate_item_id&&unit.accurate_item_id) readyGroups[key].accurate_item_id=unit.accurate_item_id;
+        if(!readyGroups[key].accurate_item_no&&unit.accurate_item_no) readyGroups[key].accurate_item_no=unit.accurate_item_no;
+      });
+      const masters=results[0].data||[];
+      window.__hmAccurateMapProducts=Object.values(readyGroups).map(function(g){
+        const p=masters.find(function(x){return String(x.id)===g.product_id;});
+        return p?{...p,hm_ready_stock:g.units.length,hm_stock_unit_ids:g.units.map(u=>u.id),hm_grade:g.grade,hm_color:g.color,accurate_item_id:g.accurate_item_id||p.accurate_item_id||'',accurate_item_no:g.accurate_item_no||p.accurate_item_no||''}:null;
+      }).filter(Boolean).sort(function(a,b){return String(a.category).localeCompare(String(b.category))||String(a.product).localeCompare(String(b.product))||String(a.variant).localeCompare(String(b.variant))||String(a.hm_grade).localeCompare(String(b.hm_grade))||String(a.hm_color).localeCompare(String(b.hm_color));});
       window.__hmAccurateMapItems=Array.isArray(data.items)?data.items:[];
       const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;
       const mapped=products.filter(p=>p.accurate_item_id||p.accurate_item_no).length;
-      const options='<option value="">— Pilih barang Accurate —</option>'+items.map(function(x){
-        return '<option value="'+esc(x.id)+'">'+esc(x.no||'(tanpa nomor)')+' — '+esc(x.name||'(tanpa nama)')+' • '+esc(x.category||'Tanpa kategori')+' [ID '+esc(x.id)+']</option>';
-      }).join('');
+      const optionsFor=function(current){
+        return '<option value="">— Pilih barang Accurate —</option>'+items.map(function(x){
+          const selected=current&&((current.accurate_item_id&&String(x.id)===String(current.accurate_item_id))||(current.accurate_item_no&&String(x.no)===String(current.accurate_item_no)));
+          return '<option value="'+esc(x.id)+'"'+(selected?' selected':'')+'>'+esc(x.no||'(tanpa nomor)')+' — '+esc(x.name||'(tanpa nama)')+' • '+esc(x.category||'Tanpa kategori')+' [ID '+esc(x.id)+']</option>';
+        }).join('');
+      };
       const cards=products.map(function(p){
         const current=items.find(function(x){return (p.accurate_item_id&&String(x.id)===String(p.accurate_item_id))||(p.accurate_item_no&&String(x.no)===String(p.accurate_item_no));});
-        const label=[p.product,p.variant,p.grade?'Grade '+p.grade:null].filter(Boolean).join(' • ');
-        const search=[p.category,p.product,p.variant,p.grade,p.accurate_item_no,current&&current.name,current&&current.category].filter(Boolean).join(' ').toLowerCase();
+        const label=[p.product,p.variant,p.hm_color||null,p.hm_grade?'Grade '+p.hm_grade:null].filter(Boolean).join(' • ');
+        const search=[p.category,p.product,p.variant,p.hm_color,p.hm_grade,p.accurate_item_no,current&&current.name,current&&current.category].filter(Boolean).join(' ').toLowerCase();
         return '<div class="lead" data-hm-accurate-map-card="1" data-search="'+esc(search)+'" style="margin-bottom:9px">'+
-          '<div style="font-weight:800">'+esc(label)+'</div><div class="small" style="margin:3px 0 8px">Kategori: '+esc(p.category||'-')+' • Stok tersedia: '+esc(p.hm_ready_stock||0)+'</div>'+
-          '<div class="small" style="margin-bottom:5px">'+(current?'Terpetakan saat ini: '+esc(current.no)+' — '+esc(current.name):((p.accurate_item_no||p.accurate_item_id)?'Mapping tersimpan: '+esc(p.accurate_item_no||p.accurate_item_id)+' (tidak ditemukan dalam daftar saat ini)':'Belum dipetakan'))+'</div>'+
-          '<select id="hm-accurate-map-'+esc(p.id)+'" style="width:100%;min-height:42px;padding:8px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827">'+
-            options.replace('value="'+esc(current?current.id:'')+'"','value="'+esc(current?current.id:'')+'" selected')+
-          '</select>'+
-          '<div class="row" style="margin-top:8px;align-items:center"><button class="secondary" onclick="window.hmSaveAccurateProductMapping(\''+esc(p.id)+'\')">💾 Simpan Mapping</button><span id="hm-accurate-map-msg-'+esc(p.id)+'" class="small"></span></div>'+
+          '<div style="font-weight:800">'+esc(label)+'</div><div class="small" style="margin:3px 0 8px">Kategori: '+esc(p.category||'-')+' • Stok READY: '+esc(p.hm_ready_stock||0)+' unit</div>'+
+          '<div class="small" style="margin-bottom:5px">'+(current?'Barang Accurate saat ini: '+esc(current.no)+' — '+esc(current.name):((p.accurate_item_no||p.accurate_item_id)?'Mapping tersimpan: '+esc(p.accurate_item_no||p.accurate_item_id)+' (tidak ditemukan dalam daftar saat ini)':'Belum dipetakan'))+'</div>'+
+          '<select id="hm-accurate-map-'+esc(p.id)+'-'+esc(p.hm_grade||'none')+'-'+esc(p.hm_color||'none')+'" style="width:100%;min-height:42px;padding:8px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827">'+optionsFor(p)+'</select>'+
+          '<div class="row" style="margin-top:8px;align-items:center"><button class="secondary" onclick="window.hmSaveAccurateProductMapping(\''+esc(p.id)+'\',\''+esc(p.hm_grade||'')+'\',\''+esc(p.hm_color||'')+'\')">💾 Simpan Mapping Grade Ini</button><span id="hm-accurate-map-msg-'+esc(p.id)+'-'+esc(p.hm_grade||'none')+'-'+esc(p.hm_color||'none')+'" class="small"></span></div>'+
         '</div>';
       }).join('');
       openModal('🧩 Pemetaan Produk Accurate',
@@ -147,30 +158,32 @@
       openModal('🧩 Pemetaan Produk Accurate','<div class="danger box"><b>Gagal membuka pemetaan</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>');
     }
   };
-  window.hmSaveAccurateProductMapping=async function(productId){
-    const msg=document.getElementById('hm-accurate-map-msg-'+productId);
-    const select=document.getElementById('hm-accurate-map-'+productId);
+  window.hmSaveAccurateProductMapping=async function(productId,grade,color){
+    const suffix=String(grade||'none')+'-'+String(color||'none');
+    const msg=document.getElementById('hm-accurate-map-msg-'+productId+'-'+suffix);
+    const select=document.getElementById('hm-accurate-map-'+productId+'-'+suffix);
     const say=function(t,ok){if(msg){msg.textContent=t;msg.style.color=ok?'#15803d':'#b91c1c';}};
     try{
       if(!isFinanceAdmin()) throw new Error('Akses pemetaan ditolak.');
       if(!select||!select.value){say('Pilih barang Accurate dulu.',false);return;}
       const item=window.__hmAccurateMapItems.find(function(x){return String(x.id)===String(select.value);});
-      const product=window.__hmAccurateMapProducts.find(function(x){return String(x.id)===String(productId);});
+      const product=window.__hmAccurateMapProducts.find(function(x){return String(x.id)===String(productId)&&String(x.hm_grade||'')===String(grade||'')&&String(x.hm_color||'')===String(color||'');});
       if(!item||!product) throw new Error('Produk atau barang Accurate tidak ditemukan. Buka ulang pemetaan.');
       say('Menyimpan...',true);
-      const result=await sb.from('product_master').update({
-        accurate_item_id:String(item.id),
-        accurate_item_no:String(item.no||'')
-      }).eq('id',productId).select('id,accurate_item_id,accurate_item_no');
+      let query=sb.from('stock_units').update({accurate_item_id:String(item.id),accurate_item_no:String(item.no||'')})
+        .eq('product_id',productId).eq('outlet','Majesty Plaza iPhone').eq('status','READY');
+      query=grade?query.eq('grade',grade):query.is('grade',null);
+      query=color?query.eq('color',color):query.is('color',null);
+      const result=await query.select('id,accurate_item_id,accurate_item_no');
       if(result.error) throw result.error;
-      if(!result.data||!result.data.length) throw new Error('Tidak ada baris yang tersimpan. Periksa izin Management pada product_master.');
+      if(!result.data||!result.data.length) throw new Error('Tidak ada unit stok yang diperbarui. Mapping belum tersimpan.');
       product.accurate_item_id=String(item.id);
       product.accurate_item_no=String(item.no||'');
-      say('Tersimpan: '+String(item.no||'-')+' ✓',true);
+      say('Tersimpan untuk '+result.data.length+' unit: '+String(item.no||'-')+' ✓',true);
       const total=window.__hmAccurateMapProducts.length;
       const mapped=window.__hmAccurateMapProducts.filter(function(p){return p.accurate_item_id||p.accurate_item_no;}).length;
       const first=document.querySelector('#mb .box b');
-      if(first&&first.textContent.indexOf('Mapping produk:')===0) first.textContent='Mapping produk: '+mapped+' / '+total;
+      if(first) first.textContent='Mapping berdasarkan grade: '+mapped+' / '+total;
     }catch(e){
       console.error('[HM Accurate mapping save]',e);
       say(e?.message||String(e),false);

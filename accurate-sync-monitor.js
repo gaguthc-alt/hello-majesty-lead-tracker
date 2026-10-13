@@ -127,7 +127,7 @@
       const masters=results[0].data||[];
       window.__hmAccurateMapProducts=Object.values(readyGroups).map(function(g){
         const p=masters.find(function(x){return String(x.id)===g.product_id;});
-        return p?{...p,hm_ready_stock:g.units.length,hm_stock_unit_ids:g.units.map(u=>u.id),hm_grade:g.grade,hm_color:g.color,accurate_item_id:g.accurate_item_id||p.accurate_item_id||'',accurate_item_no:g.accurate_item_no||p.accurate_item_no||''}:null;
+        return p?{...p,hm_ready_stock:g.units.length,hm_stock_unit_ids:g.units.map(u=>u.id),hm_grade:g.grade,hm_color:g.color,accurate_item_id:g.accurate_item_id||'',accurate_item_no:g.accurate_item_no||''}:null;
       }).filter(Boolean).sort(function(a,b){return String(a.category).localeCompare(String(b.category))||String(a.product).localeCompare(String(b.product))||String(a.variant).localeCompare(String(b.variant))||String(a.hm_grade).localeCompare(String(b.hm_grade))||String(a.hm_color).localeCompare(String(b.hm_color));});
       window.__hmAccurateMapItems=Array.isArray(data.items)?data.items:[];
       const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;

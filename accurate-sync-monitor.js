@@ -128,7 +128,7 @@
       window.__hmAccurateMapProducts=Object.values(readyGroups).map(function(g){
         const p=masters.find(function(x){return String(x.id)===g.product_id;});
         return p?{...p,hm_ready_stock:g.units.length,hm_stock_unit_ids:g.units.map(u=>u.id),hm_grade:g.grade,hm_color:g.color,accurate_item_id:g.accurate_item_id||'',accurate_item_no:g.accurate_item_no||''}:null;
-      }).filter(Boolean).sort(function(a,b){return String(a.category).localeCompare(String(b.category))||String(a.product).localeCompare(String(b.product))||String(a.variant).localeCompare(String(b.variant))||String(a.hm_grade).localeCompare(String(b.hm_grade))||String(a.hm_color).localeCompare(String(b.hm_color));});
+      }).filter(function(p){return p && ['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(String(p.category||'').toUpperCase());}).sort(function(a,b){return String(a.category).localeCompare(String(b.category))||String(a.product).localeCompare(String(b.product))||String(a.variant).localeCompare(String(b.variant))||String(a.hm_grade).localeCompare(String(b.hm_grade))||String(a.hm_color).localeCompare(String(b.hm_color));});
       window.__hmAccurateMapItems=Array.isArray(data.items)?data.items:[];
       const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;
       const mapped=products.filter(p=>p.accurate_item_id||p.accurate_item_no).length;
@@ -150,7 +150,7 @@
         '</div>';
       }).join('');
       openModal('🧩 Pemetaan Produk Accurate',
-        '<div class="box"><b>Mapping Majesty Plaza iPhone: '+mapped+' / '+products.length+'</b><div class="small">Tahap 1 hanya menampilkan produk dengan stok READY di outlet Majesty Plaza iPhone. Barang Accurate tersedia untuk dipilih: '+items.length+'.</div><div class="small" style="margin-top:6px">Stok pusat dan outlet lain tidak masuk tahap ini. Mapping produk yang tersembunyi tetap tersimpan. Tidak membuat barang baru, tidak mengubah stok, dan tidak mengirim transaksi.</div></div>'+
+        '<div class="box"><b>Mapping stok Plaza (non-Majesty Cell): '+mapped+' / '+products.length+'</b><div class="small">Tahap 1 hanya menampilkan kategori iPhone/Android New dan Second dengan stok READY di Majesty Plaza iPhone. Stok titipan/kategori Majesty Cell dikecualikan. Barang Accurate tersedia untuk dipilih: '+items.length+'.</div><div class="small" style="margin-top:6px">Stok pusat dan outlet lain tidak masuk tahap ini. Mapping produk yang tersembunyi tetap tersimpan. Tidak membuat barang baru, tidak mengubah stok, dan tidak mengirim transaksi.</div></div>'+
         '<input type="search" placeholder="Cari produk, varian, kategori..." oninput="window.hmFilterAccurateMappings(this.value)" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:12px;margin:10px 0">'+
         '<div style="max-height:55vh;overflow:auto;padding-right:3px">'+(cards||'<div class="box">Tidak ada produk aktif.</div>')+'</div>');
     }catch(e){

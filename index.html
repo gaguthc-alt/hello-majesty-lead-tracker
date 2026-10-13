@@ -2867,49 +2867,46 @@ function renderRoleHome(){
        });
        return;
      }
-     // ACCURATE: jalur langsung. Jangan bergantung pada router menu umum.
+     // ACCURATE: jalur minimal. Buka fungsi langsung; jangan tutup menu/router terlebih dahulu.
      if(title==='Accurate Sync' || title==='Cek Barang Accurate'){
-       hmCloseMainMenu();
-       hmActiveMainMenu=title;
-       hmSetMainMenuButtonOpen(title);
-       void Promise.resolve().then(async()=>{
-         const ensureAccurateMonitor=async()=>{
-           if(typeof window.hmOpenAccurateSyncMonitor==='function' && typeof window.hmCheckAccurateItems==='function') return;
-           const existing=[...document.scripts].find(s=>String(s.src||'').includes('accurate-sync-monitor.js'));
-           if(existing){
-             await new Promise((resolve,reject)=>{
-               if(typeof window.hmOpenAccurateSyncMonitor==='function') return resolve();
-               const done=()=>resolve(), fail=()=>reject(new Error('Modul Accurate Sync Monitor gagal dimuat.'));
-               existing.addEventListener('load',done,{once:true});
-               existing.addEventListener('error',fail,{once:true});
-               setTimeout(()=>typeof window.hmOpenAccurateSyncMonitor==='function'?resolve():reject(new Error('Modul Accurate Sync Monitor belum siap.')),3000);
-             });
+       try{
+         if(title==='Accurate Sync'){
+           if(typeof window.hmOpenAccurateSyncMonitor==='function'){
+             window.hmOpenAccurateSyncMonitor();
            }else{
-             await new Promise((resolve,reject)=>{
-               const s=document.createElement('script');
-               s.src='accurate-sync-monitor.js?v=20261013-4';
-               s.onload=resolve;
-               s.onerror=()=>reject(new Error('File Accurate Sync Monitor gagal dimuat.'));
-               document.head.appendChild(s);
-             });
+             const old=document.querySelector('script[data-hm-accurate-loader]');
+             if(old) old.remove();
+             const s=document.createElement('script');
+             s.src='accurate-sync-monitor.js?v=20261013-5';
+             s.dataset.hmAccurateLoader='1';
+             s.onload=()=>{
+               if(typeof window.hmOpenAccurateSyncMonitor==='function') window.hmOpenAccurateSyncMonitor();
+               else alert('Modul Accurate termuat, tetapi fungsi monitor tidak tersedia.');
+             };
+             s.onerror=()=>alert('File Accurate Sync Monitor gagal dimuat. Periksa koneksi lalu coba lagi.');
+             document.head.appendChild(s);
            }
-           if(typeof window.hmOpenAccurateSyncMonitor!=='function')throw new Error('Fungsi Accurate Sync Monitor belum tersedia.');
-         };
-         await ensureAccurateMonitor();
-         if(title==='Cek Barang Accurate'){
-           if(typeof window.hmCheckAccurateItems!=='function')throw new Error('Fungsi Cek Barang Accurate belum tersedia.');
-           return window.hmCheckAccurateItems();
+         }else{
+           if(typeof window.hmCheckAccurateItems==='function'){
+             window.hmCheckAccurateItems();
+           }else{
+             const old=document.querySelector('script[data-hm-accurate-loader]');
+             if(old) old.remove();
+             const s=document.createElement('script');
+             s.src='accurate-sync-monitor.js?v=20261013-5';
+             s.dataset.hmAccurateLoader='1';
+             s.onload=()=>{
+               if(typeof window.hmCheckAccurateItems==='function') window.hmCheckAccurateItems();
+               else alert('Modul Accurate termuat, tetapi fungsi cek barang tidak tersedia.');
+             };
+             s.onerror=()=>alert('File Accurate Sync Monitor gagal dimuat. Periksa koneksi lalu coba lagi.');
+             document.head.appendChild(s);
+           }
          }
-         return window.hmOpenAccurateSyncMonitor();
-       }).catch(ex=>{
-         console.error('[HM] Accurate gagal dibuka:',title,ex);
-         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
-         if(panel&&body){
-           body.innerHTML='<div style="padding:10px;color:#b42318"><b>'+esc(title)+' gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||'Terjadi kesalahan')+'</div></div>';
-           panel.classList.remove('hidden');
-           panel.scrollIntoView({behavior:'smooth',block:'start'});
-         }else alert(title+' gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
-       });
+       }catch(ex){
+         console.error('[HM] Accurate click error:',ex);
+         alert('Accurate gagal dibuka: '+(ex?.message||'Kesalahan tidak diketahui'));
+       }
        return;
      }
 

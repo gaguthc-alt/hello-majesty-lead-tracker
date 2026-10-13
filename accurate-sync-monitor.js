@@ -48,6 +48,23 @@
       '<div class="small" style="margin-top:10px">Catatan: konflik tidak ditimpa otomatis. Management menentukan sumber data yang benar.</div>'
     );
   }
+  window.hmCheckAccurateItems=async function(){
+    try{
+      openModal('📦 Cek Barang Accurate','<div class="box"><b>⏳ Sedang membaca daftar barang Accurate...</b><div class="small">Tidak membuat atau mengubah transaksi.</div></div>');
+      const r=await sb.functions.invoke('accurate-sync',{body:{action:'list_items'}});
+      if(r.error) throw r.error;
+      const data=r.data||{};
+      if(!data.ok) throw new Error(data.error||'Gagal membaca barang Accurate.');
+      const items=Array.isArray(data.items)?data.items:[];
+      openModal('📦 Barang Accurate — '+items.length+' item',
+        '<div class="box"><b>Berhasil membaca '+items.length+' barang.</b><div class="small">Database: Hello Majesty • hanya baca</div></div>'+
+        '<div style="max-height:55vh;overflow:auto;margin-top:10px">'+
+        (items.map((x)=>'<div class="lead"><div><b>'+esc(x.no||'-')+'</b> — '+esc(x.name||'-')+'</div><div class="small">ID: '+esc(x.id||'-')+'</div></div>').join('')||'<div class="box">Tidak ada barang inventory yang ditemukan.</div>')+
+        '</div>');
+    }catch(e){
+      openModal('📦 Cek Barang Accurate','<div class="danger box">Gagal membaca barang Accurate: '+esc(e?.message||e)+'</div><div class="small" style="margin-top:8px">Pastikan akun Hello Majesty sudah login. Tidak ada transaksi yang dibuat.</div>');
+    }
+  };
   window.hmOpenAccurateSyncMonitor=async function(){
     try{ await load(); }catch(e){ openModal('🔗 Accurate Sync Monitor','<div class="danger box">Monitor gagal memuat data: '+esc(e?.message||e)+'</div>'); }
   };

@@ -40,7 +40,7 @@
       '<div class="stat"><div class="small">🟡 Tertunda</div><div class="num">'+pending+'</div></div>'+
       '<div class="stat"><div class="small">🔴 Gagal</div><div class="num">'+failed+'</div></div>'+
       '<div class="stat"><div class="small">🟠 Konflik</div><div class="num">'+conflicts.length+'</div></div></div>'+
-      '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button></div>'+
+      '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak</h3>'+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
       (queue.filter(x=>x.status!=='SYNCED').map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>Penjualan</b>'+statusBadge(x.status)+'</div><div class="small">ID: '+esc(x.sale_id)+'</div><div class="small" style="margin-top:4px">'+esc(x.last_error||'Menunggu sinkronisasi')+'</div></div>').join('')||'')+
@@ -58,7 +58,7 @@
       if(!data.ok) throw new Error(data.error||'Gagal membaca barang Accurate.');
       const items=Array.isArray(data.items)?data.items:[];
       openModal('📦 Barang Accurate — '+items.length+' item',
-        '<div class="box"><b>Berhasil membaca '+items.length+' barang.</b><div class="small">Database: Hello Majesty • hanya baca</div></div>'+
+        '<div class="box"><b>Berhasil membaca '+items.length+' barang.</b><div class="small">Database: Hello Majesty • hanya baca</div><div style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Buka Pemetaan Produk</button></div></div>'+
         '<div style="max-height:55vh;overflow:auto;margin-top:10px">'+
         (items.map((x)=>'<div class="lead"><div><b>'+esc(x.no||'-')+'</b> — '+esc(x.name||'-')+'</div><div class="small">ID: '+esc(x.id||'-')+'</div></div>').join('')||'<div class="box">Tidak ada barang inventory yang ditemukan.</div>')+
         '</div>');
@@ -66,6 +66,86 @@
       openModal('📦 Cek Barang Accurate','<div class="danger box">Gagal membaca barang Accurate: '+esc(e?.message||e)+'</div><div class="small" style="margin-top:8px">Pastikan akun Hello Majesty sudah login. Tidak ada transaksi yang dibuat.</div>');
     }
   };
+
+  window.__hmAccurateMapItems = [];
+  window.__hmAccurateMapProducts = [];
+  window.hmFilterAccurateMappings = function(value){
+    const q=String(value||'').trim().toLowerCase();
+    document.querySelectorAll('[data-hm-accurate-map-card]').forEach(function(card){
+      card.style.display=(!q||String(card.getAttribute('data-search')||'').includes(q))?'':'none';
+    });
+  };
+  window.hmOpenAccurateProductMapping=async function(){
+    try{
+      if(!isFinanceAdmin()) throw new Error('Pemetaan hanya untuk Developer/Management.');
+      openModal('🧩 Pemetaan Produk Accurate','<div class="box"><b>⏳ Memuat produk Hello Majesty dan barang Accurate...</b><div class="small">Belum ada data yang diubah.</div></div>');
+      const results=await Promise.all([
+        sb.from('product_master').select('id,category,product,variant,grade,accurate_item_id,accurate_item_no').eq('active',true).order('category').order('product'),
+        sb.functions.invoke('accurate-sync',{body:{action:'list_items'}})
+      ]);
+      if(results[0].error) throw results[0].error;
+      if(results[1].error) throw results[1].error;
+      const data=results[1].data||{};
+      if(!data.ok) throw new Error(data.error||'Daftar barang Accurate gagal dimuat.');
+      window.__hmAccurateMapProducts=results[0].data||[];
+      window.__hmAccurateMapItems=Array.isArray(data.items)?data.items:[];
+      const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;
+      const mapped=products.filter(p=>p.accurate_item_id||p.accurate_item_no).length;
+      const options='<option value="">— Pilih barang Accurate —</option>'+items.map(function(x){
+        return '<option value="'+esc(x.id)+'">'+esc(x.no||'(tanpa nomor)')+' — '+esc(x.name||'(tanpa nama)')+' [ID '+esc(x.id)+']</option>';
+      }).join('');
+      const cards=products.map(function(p){
+        const current=items.find(function(x){return (p.accurate_item_id&&String(x.id)===String(p.accurate_item_id))||(p.accurate_item_no&&String(x.no)===String(p.accurate_item_no));});
+        const label=[p.product,p.variant,p.grade?'Grade '+p.grade:null].filter(Boolean).join(' • ');
+        const search=[p.category,p.product,p.variant,p.grade,p.accurate_item_no,current&&current.name].filter(Boolean).join(' ').toLowerCase();
+        return '<div class="lead" data-hm-accurate-map-card="1" data-search="'+esc(search)+'" style="margin-bottom:9px">'+
+          '<div style="font-weight:800">'+esc(label)+'</div><div class="small" style="margin:3px 0 8px">Kategori: '+esc(p.category||'-')+'</div>'+
+          '<div class="small" style="margin-bottom:5px">'+(current?'Terpetakan saat ini: '+esc(current.no)+' — '+esc(current.name):((p.accurate_item_no||p.accurate_item_id)?'Mapping tersimpan: '+esc(p.accurate_item_no||p.accurate_item_id)+' (tidak ditemukan dalam daftar saat ini)':'Belum dipetakan'))+'</div>'+
+          '<select id="hm-accurate-map-'+esc(p.id)+'" style="width:100%;min-height:42px;padding:8px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827">'+
+            options.replace('value="'+esc(current?current.id:'')+'"','value="'+esc(current?current.id:'')+'" selected')+
+          '</select>'+
+          '<div class="row" style="margin-top:8px;align-items:center"><button class="secondary" onclick="window.hmSaveAccurateProductMapping(\''+esc(p.id)+'\')">💾 Simpan Mapping</button><span id="hm-accurate-map-msg-'+esc(p.id)+'" class="small"></span></div>'+
+        '</div>';
+      }).join('');
+      openModal('🧩 Pemetaan Produk Accurate',
+        '<div class="box"><b>Mapping produk: '+mapped+' / '+products.length+'</b><div class="small">Barang Accurate tersedia: '+items.length+'. Pilih barang yang benar untuk setiap produk, lalu simpan per baris.</div><div class="small" style="margin-top:6px">Tidak membuat barang baru dan tidak mengirim transaksi.</div></div>'+
+        '<input type="search" placeholder="Cari produk, varian, kategori..." oninput="window.hmFilterAccurateMappings(this.value)" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:12px;margin:10px 0">'+
+        '<div style="max-height:55vh;overflow:auto;padding-right:3px">'+(cards||'<div class="box">Tidak ada produk aktif.</div>')+'</div>');
+    }catch(e){
+      console.error('[HM Accurate mapping]',e);
+      openModal('🧩 Pemetaan Produk Accurate','<div class="danger box"><b>Gagal membuka pemetaan</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>');
+    }
+  };
+  window.hmSaveAccurateProductMapping=async function(productId){
+    const msg=document.getElementById('hm-accurate-map-msg-'+productId);
+    const select=document.getElementById('hm-accurate-map-'+productId);
+    const say=function(t,ok){if(msg){msg.textContent=t;msg.style.color=ok?'#15803d':'#b91c1c';}};
+    try{
+      if(!isFinanceAdmin()) throw new Error('Akses pemetaan ditolak.');
+      if(!select||!select.value){say('Pilih barang Accurate dulu.',false);return;}
+      const item=window.__hmAccurateMapItems.find(function(x){return String(x.id)===String(select.value);});
+      const product=window.__hmAccurateMapProducts.find(function(x){return String(x.id)===String(productId);});
+      if(!item||!product) throw new Error('Produk atau barang Accurate tidak ditemukan. Buka ulang pemetaan.');
+      say('Menyimpan...',true);
+      const result=await sb.from('product_master').update({
+        accurate_item_id:String(item.id),
+        accurate_item_no:String(item.no||'')
+      }).eq('id',productId).select('id,accurate_item_id,accurate_item_no');
+      if(result.error) throw result.error;
+      if(!result.data||!result.data.length) throw new Error('Tidak ada baris yang tersimpan. Periksa izin Management pada product_master.');
+      product.accurate_item_id=String(item.id);
+      product.accurate_item_no=String(item.no||'');
+      say('Tersimpan: '+String(item.no||'-')+' ✓',true);
+      const total=window.__hmAccurateMapProducts.length;
+      const mapped=window.__hmAccurateMapProducts.filter(function(p){return p.accurate_item_id||p.accurate_item_no;}).length;
+      const first=document.querySelector('#mb .box b');
+      if(first&&first.textContent.indexOf('Mapping produk:')===0) first.textContent='Mapping produk: '+mapped+' / '+total;
+    }catch(e){
+      console.error('[HM Accurate mapping save]',e);
+      say(e?.message||String(e),false);
+    }
+  };
+
   window.hmOpenAccurateSyncMonitor=async function(){
     try{
       if(!isFinanceAdmin()) throw new Error('Akun ini belum dikenali sebagai Developer/Management. Role terbaca: '+String(window.profile?.role||'(kosong)'));

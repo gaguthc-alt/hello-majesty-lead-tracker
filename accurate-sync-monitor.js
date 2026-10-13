@@ -40,7 +40,7 @@
       '<div class="stat"><div class="small">🟡 Tertunda</div><div class="num">'+pending+'</div></div>'+
       '<div class="stat"><div class="small">🔴 Gagal</div><div class="num">'+failed+'</div></div>'+
       '<div class="stat"><div class="small">🟠 Konflik</div><div class="num">'+conflicts.length+'</div></div></div>'+
-      '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
+      '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmDiagnoseAccurateItems()">🧪 Diagnosa Daftar</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak</h3>'+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
       (queue.filter(x=>x.status!=='SYNCED').map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>Penjualan</b>'+statusBadge(x.status)+'</div><div class="small">ID: '+esc(x.sale_id)+'</div><div class="small" style="margin-top:4px">'+esc(x.last_error||'Menunggu sinkronisasi')+'</div></div>').join('')||'')+
@@ -67,6 +67,29 @@
     }
   };
 
+  window.hmDiagnoseAccurateItems=async function(){
+    try{
+      openModal('🧪 Diagnosa Daftar Accurate','<div class="box"><b>⏳ Memeriksa hasil API...</b><div class="small">Hanya membaca daftar, tidak mengubah data.</div></div>');
+      const r=await sb.functions.invoke('accurate-sync',{body:{action:'diagnose_items'}});
+      if(r.error) throw r.error;
+      const data=r.data||{};
+      if(!data.ok) throw new Error(data.error||'Diagnosa gagal.');
+      const runs=Array.isArray(data.runs)?data.runs:[];
+      openModal('🧪 Diagnosa Daftar Accurate',
+        '<div class="box"><b>Diagnosa selesai — hanya baca</b><div class="small">Database: '+esc(data.database||'Accurate')+'</div></div>'+
+        runs.map(function(x){
+          const pg=x.pagination||{};
+          const sample=Array.isArray(x.sample)?x.sample:[];
+          return '<div class="lead"><b>'+esc(x.mode)+' • HTTP '+esc(x.httpStatus)+'</b>'+
+            '<div class="small">Berhasil: '+esc(x.success)+' • Total baris: '+esc(pg.rowCount??'tidak tersedia')+' • Halaman: '+esc(pg.pageCount??'tidak tersedia')+' • Ukuran halaman: '+esc(pg.pageSize??'tidak tersedia')+'</div>'+
+            (x.error?'<div class="small" style="color:#b91c1c">'+esc(x.error)+'</div>':'')+
+            '<div style="margin-top:6px">'+(sample.map(function(i){return '<div class="small">'+esc(i.no||'-')+' — '+esc(i.name||'-')+' • tipe '+esc(i.itemType||'-')+' • ID '+esc(i.id||'-')+'</div>';}).join('')||'<div class="small">Tidak ada sampel.</div>')+'</div></div>';
+        }).join('')+
+        '<div class="small" style="margin-top:8px">Kirim screenshot hasil ini untuk menentukan filter dan pagination yang tepat.</div>');
+    }catch(e){
+      openModal('🧪 Diagnosa Daftar Accurate','<div class="danger box">Gagal: '+esc(e?.message||e)+'</div>');
+    }
+  };
   window.__hmAccurateMapItems = [];
   window.__hmAccurateMapProducts = [];
   window.hmFilterAccurateMappings = function(value){

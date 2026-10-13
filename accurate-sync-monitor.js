@@ -60,7 +60,7 @@
       openModal('📦 Barang Accurate — '+items.length+' item',
         '<div class="box"><b>Berhasil membaca '+items.length+' barang.</b><div class="small">Database: Hello Majesty • hanya baca</div><div style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Buka Pemetaan Produk</button></div></div>'+
         '<div style="max-height:55vh;overflow:auto;margin-top:10px">'+
-        (items.map((x)=>'<div class="lead"><div><b>'+esc(x.no||'-')+'</b> — '+esc(x.name||'-')+'</div><div class="small">ID: '+esc(x.id||'-')+'</div></div>').join('')||'<div class="box">Tidak ada barang inventory yang ditemukan.</div>')+
+        (items.map((x)=>'<div class="lead"><div><b>'+esc(x.no||'-')+'</b> — '+esc(x.name||'-')+'</div><div class="small">Kategori Accurate: '+esc(x.category||'Tanpa kategori')+' • Tipe: '+esc(x.itemType||'-')+'</div><div class="small">ID: '+esc(x.id||'-')+'</div></div>').join('')||'<div class="box">Tidak ada barang inventory yang ditemukan.</div>')+
         '</div>');
     }catch(e){
       openModal('📦 Cek Barang Accurate','<div class="danger box">Gagal membaca barang Accurate: '+esc(e?.message||e)+'</div><div class="small" style="margin-top:8px">Pastikan akun Hello Majesty sudah login. Tidak ada transaksi yang dibuat.</div>');
@@ -92,12 +92,12 @@
       const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;
       const mapped=products.filter(p=>p.accurate_item_id||p.accurate_item_no).length;
       const options='<option value="">— Pilih barang Accurate —</option>'+items.map(function(x){
-        return '<option value="'+esc(x.id)+'">'+esc(x.no||'(tanpa nomor)')+' — '+esc(x.name||'(tanpa nama)')+' [ID '+esc(x.id)+']</option>';
+        return '<option value="'+esc(x.id)+'">'+esc(x.no||'(tanpa nomor)')+' — '+esc(x.name||'(tanpa nama)')+' • '+esc(x.category||'Tanpa kategori')+' [ID '+esc(x.id)+']</option>';
       }).join('');
       const cards=products.map(function(p){
         const current=items.find(function(x){return (p.accurate_item_id&&String(x.id)===String(p.accurate_item_id))||(p.accurate_item_no&&String(x.no)===String(p.accurate_item_no));});
         const label=[p.product,p.variant,p.grade?'Grade '+p.grade:null].filter(Boolean).join(' • ');
-        const search=[p.category,p.product,p.variant,p.grade,p.accurate_item_no,current&&current.name].filter(Boolean).join(' ').toLowerCase();
+        const search=[p.category,p.product,p.variant,p.grade,p.accurate_item_no,current&&current.name,current&&current.category].filter(Boolean).join(' ').toLowerCase();
         return '<div class="lead" data-hm-accurate-map-card="1" data-search="'+esc(search)+'" style="margin-bottom:9px">'+
           '<div style="font-weight:800">'+esc(label)+'</div><div class="small" style="margin:3px 0 8px">Kategori: '+esc(p.category||'-')+'</div>'+
           '<div class="small" style="margin-bottom:5px">'+(current?'Terpetakan saat ini: '+esc(current.no)+' — '+esc(current.name):((p.accurate_item_no||p.accurate_item_id)?'Mapping tersimpan: '+esc(p.accurate_item_no||p.accurate_item_id)+' (tidak ditemukan dalam daftar saat ini)':'Belum dipetakan'))+'</div>'+

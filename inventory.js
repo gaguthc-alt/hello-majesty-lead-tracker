@@ -182,6 +182,32 @@ async function reviewUnifiedWalkin(id,kind,action){
    }
  }
  if(action==='APPROVE'){
+   try{
+     const table=kind==='STOCK'?'stock_sale_approvals':'walkin_sale_approvals';
+     const approval=await sb.from(table).select('stock_unit_id').eq('id',id).maybeSingle();
+     const stockId=approval.data?.stock_unit_id;
+     if(stockId){
+       const saleRow=await sb.from('sales_transactions')
+         .select('id,stock_units!sales_transactions_stock_unit_id_fkey(source_type,partner_name)')
+         .eq('stock_unit_id',stockId).maybeSingle();
+       const saleId=saleRow.data?.id||null;
+       if(saleId){
+         const stockSource=String(saleRow.data?.stock_units?.source_type||'').toUpperCase();
+         const partner=String(saleRow.data?.stock_units?.partner_name||'');
+         const isMajestyCellConsignment=stockSource==='MAJESTY_CELL' && /majesty cell/i.test(partner);
+         const sync=await sb.functions.invoke('accurate-sync',{body:{action:isMajestyCellConsignment?'sync_consign_journal':'sync_sale',sale_id:saleId}});
+         if(sync.error||!sync.data?.ok){
+           console.warn('[HM Accurate] Approved Walk-In sync not confirmed:',sync.error||sync.data);
+           alert('Transaksi sudah disetujui, tetapi sinkronisasi Accurate belum terkonfirmasi. Periksa Accurate Sync Monitor sebelum mencoba ulang.');
+         }else{
+           console.info('[HM Accurate] Approved Walk-In synced:',sync.data);
+         }
+       }
+     }
+   }catch(e){
+     console.warn('[HM Accurate] Approved Walk-In sync trigger error:',e);
+     alert('Transaksi sudah disetujui, tetapi sinkronisasi Accurate belum terkonfirmasi. Periksa Accurate Sync Monitor sebelum mencoba ulang.');
+   }
    const msg=['✅ *WALK-IN DISETUJUI*','','Transaksi Walk-In sudah disetujui dan status menjadi *SOLD*.','','Silakan cek detail transaksi di aplikasi *Hello Majesty*.','','— *HELLO MAJESTY*','_Built on Trust._'].join(String.fromCharCode(10));
    const sendWA=confirm((kind==='STOCK'?'Closing Stock':'Walk-In')+' sudah disetujui dan menjadi SOLD.\\n\\nKirim konfirmasi hasil persetujuan ke WhatsApp?');
    if(sendWA)window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');

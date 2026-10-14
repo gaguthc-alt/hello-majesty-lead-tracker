@@ -40,6 +40,7 @@
       '<div class="stat"><div class="small">🟡 Tertunda</div><div class="num">'+pending+'</div></div>'+
       '<div class="stat"><div class="small">🔴 Gagal</div><div class="num">'+failed+'</div></div>'+
       '<div class="stat"><div class="small">🟠 Konflik</div><div class="num">'+conflicts.length+'</div></div></div>'+
+      '<div class="box" style="margin-top:12px;border:1px solid #f0c36d;background:#fffbeb"><b>🧾 Jurnal Konsinyasi Majesty Cell</b><div class="small" style="margin-top:5px">Transaksi iPhone 14 NEW 128GB • 13 Oktober 2026 • Rp11.070.000</div><div class="small" style="margin-top:5px">ID transaksi: d0ded27a-eb49-4e03-bc64-d613d288ebb0</div><div class="small" style="margin-top:5px">Sebelum menjalankan, pastikan jurnal transaksi ini belum pernah dibuat langsung di Accurate. Fungsi hanya memeriksa riwayat sinkronisasi lokal.</div><div style="margin-top:9px"><label style="display:flex;gap:8px;align-items:flex-start"><input id="hmConsignJournalConfirmed" type="checkbox" style="width:auto;margin-top:3px"><span>Saya sudah memeriksa Accurate dan memastikan jurnal untuk transaksi ini belum ada.</span></label></div><button style="margin-top:9px;background:#92400e" onclick="window.hmRunConsignJournal()">Kirim Jurnal Konsinyasi ke Accurate</button><div id="hmConsignJournalResult" class="small" style="margin-top:8px"></div></div>'+
       '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmDiagnoseAccurateItems()">🧪 Diagnosa Daftar</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak</h3>'+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
@@ -49,6 +50,32 @@
       '<div class="small" style="margin-top:10px">Catatan: konflik tidak ditimpa otomatis. Management menentukan sumber data yang benar.</div>'
     );
   }
+  window.hmRunConsignJournal=async function(){
+    const checkbox=document.getElementById('hmConsignJournalConfirmed');
+    const result=document.getElementById('hmConsignJournalResult');
+    if(!checkbox||!checkbox.checked){
+      if(result) result.textContent='Centang konfirmasi setelah memastikan jurnal belum ada di Accurate.';
+      return;
+    }
+    if(!isFinanceAdmin()){
+      if(result) result.textContent='Akses ditolak: hanya Developer/Management.';
+      return;
+    }
+    if(!confirm('Kirim jurnal konsinyasi untuk iPhone 14 NEW 128GB senilai Rp11.070.000 ke Accurate sekarang? Pastikan jurnal belum ada agar tidak ganda.')) return;
+    if(result) result.textContent='Mengirim jurnal… jangan tutup jendela ini.';
+    try{
+      const r=await sb.functions.invoke('accurate-sync',{body:{action:'sync_consign_journal',sale_id:'d0ded27a-eb49-4e03-bc64-d613d288ebb0'}});
+      if(r.error) throw r.error;
+      const d=r.data||{};
+      if(!d.ok) throw new Error(d.error||'Accurate belum mengonfirmasi jurnal berhasil.');
+      const j=d.journal||{};
+      if(result) result.innerHTML='<b style="color:#15803d">Berhasil dikirim dan dicatat.</b><div>Nomor jurnal: '+esc(j.number||'(tidak dikembalikan)')+'</div><div>ID Accurate: '+esc(j.id||'-')+'</div><div>Total debit: Rp11.070.000 • Total kredit: Rp11.070.000</div>';
+      alert('Jurnal berhasil dikirim. Nomor jurnal: '+(j.number||'(tidak dikembalikan)')+'. Periksa kembali jurnal tersebut di Accurate.');
+    }catch(e){
+      const msg=String(e?.message||e||'Kesalahan tidak diketahui');
+      if(result) result.innerHTML='<b style="color:#b91c1c">Belum terkonfirmasi berhasil.</b><div>'+esc(msg)+'</div><div>Jangan klik kirim ulang sebelum memeriksa daftar jurnal Accurate.</div>';
+    }
+  };
   window.hmCheckAccurateItems=async function(){
     try{
       openModal('📦 Cek Barang Accurate','<div class="box"><b>⏳ Sedang membaca daftar barang Accurate...</b><div class="small">Tidak membuat atau mengubah transaksi.</div></div>');

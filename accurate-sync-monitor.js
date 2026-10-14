@@ -40,7 +40,8 @@
       '<div class="stat"><div class="small">🟡 Tertunda</div><div class="num">'+pending+'</div></div>'+
       '<div class="stat"><div class="small">🔴 Gagal</div><div class="num">'+failed+'</div></div>'+
       '<div class="stat"><div class="small">🟠 Konflik</div><div class="num">'+conflicts.length+'</div></div></div>'+
-      '<div class="box" style="margin-top:12px;border:1px solid #f0c36d;background:#fffbeb"><b>🧾 Jurnal Konsinyasi Majesty Cell</b><div class="small" style="margin-top:5px">Transaksi iPhone 14 NEW 128GB • 13 Oktober 2026 • Rp11.070.000</div><div class="small" style="margin-top:5px">ID transaksi: d0ded27a-eb49-4e03-bc64-d613d288ebb0</div><div class="small" style="margin-top:5px">Sebelum menjalankan, pastikan jurnal transaksi ini belum pernah dibuat langsung di Accurate. Fungsi hanya memeriksa riwayat sinkronisasi lokal.</div><div style="margin-top:9px"><label style="display:flex;gap:8px;align-items:flex-start"><input id="hmConsignJournalConfirmed" type="checkbox" style="width:auto;margin-top:3px"><span>Saya sudah memeriksa Accurate dan memastikan jurnal untuk transaksi ini belum ada.</span></label></div><button style="margin-top:9px;background:#92400e" onclick="window.hmRunConsignJournal()">Kirim Jurnal Konsinyasi ke Accurate</button><div id="hmConsignJournalResult" class="small" style="margin-top:8px"></div></div>'+
+      '<div class="box" style="margin-top:12px;border:1px solid #f0c36d;background:#fffbeb"><b>🧾 Jurnal Konsinyasi Majesty Cell — Plaza</b><div class="small" style="margin-top:5px">iPhone 14 NEW 128GB • 13 Oktober 2026 • Rp11.070.000 • JV.2026.10.00122 sudah tersinkron.</div><div class="small" style="margin-top:5px">Transaksi ini hanya ditampilkan sebagai riwayat. Pengiriman ulang dinonaktifkan untuk mencegah jurnal ganda.</div></div>'+
+      '<div class="box" style="margin-top:12px;border:1px solid #86efac;background:#f0fdf4"><b>🧾 Jurnal Konsinyasi Majesty Cell — Refill</b><div class="small" style="margin-top:5px">Samsung A04 4/64 • 13 Oktober 2026 • Rp2.200.000</div><div class="small" style="margin-top:5px">ID transaksi: 63c42b35-e731-4a62-8d16-f8d915897a15</div><div class="small" style="margin-top:5px">Jurnal: Debit 110202 Rp2.200.000; Kredit 170111 Rp2.055.250; Kredit 410201 Rp144.750.</div><div class="small" style="margin-top:5px">Pastikan jurnal transaksi Refill ini belum pernah dibuat di Accurate sebelum mengirim.</div><div style="margin-top:9px"><label style="display:flex;gap:8px;align-items:flex-start"><input id="hmRefillConsignJournalConfirmed" type="checkbox" style="width:auto;margin-top:3px"><span>Saya sudah memeriksa Accurate dan memastikan jurnal Refill ini belum ada.</span></label></div><button style="margin-top:9px;background:#166534" onclick="window.hmRunRefillConsignJournal()">Kirim Jurnal Konsinyasi Refill ke Accurate</button><div id="hmRefillConsignJournalResult" class="small" style="margin-top:8px"></div></div>'+
       '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmDiagnoseAccurateItems()">🧪 Diagnosa Daftar</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak</h3>'+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
@@ -71,6 +72,32 @@
       const j=d.journal||{};
       if(result) result.innerHTML='<b style="color:#15803d">Berhasil dikirim dan dicatat.</b><div>Nomor jurnal: '+esc(j.number||'(tidak dikembalikan)')+'</div><div>ID Accurate: '+esc(j.id||'-')+'</div><div>Total debit: Rp11.070.000 • Total kredit: Rp11.070.000</div>';
       alert('Jurnal berhasil dikirim. Nomor jurnal: '+(j.number||'(tidak dikembalikan)')+'. Periksa kembali jurnal tersebut di Accurate.');
+    }catch(e){
+      const msg=String(e?.message||e||'Kesalahan tidak diketahui');
+      if(result) result.innerHTML='<b style="color:#b91c1c">Belum terkonfirmasi berhasil.</b><div>'+esc(msg)+'</div><div>Jangan klik kirim ulang sebelum memeriksa daftar jurnal Accurate.</div>';
+    }
+  };
+  window.hmRunRefillConsignJournal=async function(){
+    const checkbox=document.getElementById('hmRefillConsignJournalConfirmed');
+    const result=document.getElementById('hmRefillConsignJournalResult');
+    if(!checkbox||!checkbox.checked){
+      if(result) result.textContent='Centang konfirmasi setelah memastikan jurnal Refill belum ada di Accurate.';
+      return;
+    }
+    if(!isFinanceAdmin()){
+      if(result) result.textContent='Akses ditolak: hanya Developer/Management.';
+      return;
+    }
+    if(!confirm('Kirim jurnal konsinyasi Samsung A04 4/64 untuk Majesty Refill Phone senilai Rp2.200.000? Akun: debit 110202, kredit 170111 dan 410201. Pastikan belum ada jurnal yang sama di Accurate.')) return;
+    if(result) result.textContent='Mengirim jurnal Refill… jangan tutup jendela ini.';
+    try{
+      const r=await sb.functions.invoke('accurate-sync',{body:{action:'sync_consign_journal',sale_id:'63c42b35-e731-4a62-8d16-f8d915897a15'}});
+      if(r.error) throw r.error;
+      const d=r.data||{};
+      if(!d.ok) throw new Error(d.error||'Accurate belum mengonfirmasi jurnal berhasil.');
+      const j=d.journal||{};
+      if(result) result.innerHTML='<b style="color:#15803d">Berhasil dikirim dan dicatat.</b><div>Nomor jurnal: '+esc(j.number||'(tidak dikembalikan)')+'</div><div>ID Accurate: '+esc(j.id||'-')+'</div><div>Debit 110202 Rp2.200.000 • Kredit 170111 Rp2.055.250 • Kredit 410201 Rp144.750</div>';
+      alert('Jurnal Refill berhasil dikirim. Nomor jurnal: '+(j.number||'(tidak dikembalikan)')+'. Periksa kembali jurnal tersebut di Accurate.');
     }catch(e){
       const msg=String(e?.message||e||'Kesalahan tidak diketahui');
       if(result) result.innerHTML='<b style="color:#b91c1c">Belum terkonfirmasi berhasil.</b><div>'+esc(msg)+'</div><div>Jangan klik kirim ulang sebelum memeriksa daftar jurnal Accurate.</div>';

@@ -41,7 +41,7 @@
       '<div class="stat"><div class="small">🔴 Gagal</div><div class="num">'+failed+'</div></div>'+
       '<div class="stat"><div class="small">🟠 Konflik</div><div class="num">'+conflicts.length+'</div></div></div>'+
       '<div class="box" style="margin-top:12px;border:1px solid #f0c36d;background:#fffbeb"><b>🧾 Jurnal Konsinyasi Majesty Cell — Plaza</b><div class="small" style="margin-top:5px">iPhone 14 NEW 128GB • 13 Oktober 2026 • Rp11.070.000 • JV.2026.10.00122 sudah tersinkron.</div><div class="small" style="margin-top:5px">Transaksi ini hanya ditampilkan sebagai riwayat. Pengiriman ulang dinonaktifkan untuk mencegah jurnal ganda.</div></div>'+
-      '<div class="box" style="margin-top:12px;border:1px solid #86efac;background:#f0fdf4"><b>🧾 Uji 1 Jurnal Konsinyasi Majesty Cell — Refill</b><div class="small" style="margin-top:5px">Infinix Hot 70 NEW 4/128GB • 8 Oktober 2026 • Rp2.800.000</div><div class="small" style="margin-top:5px">ID transaksi: 3d8a5dee-af01-499f-8df6-04225ebb709b</div><div class="small" style="margin-top:5px">Jurnal: Debit 110202 Rp2.800.000; Kredit 170111 Rp1.948.695; Kredit 410201 Rp851.305.</div><div class="small" style="margin-top:5px">Kirim hanya setelah memastikan jurnal untuk ID transaksi ini belum ada di Accurate.</div><div style="margin-top:9px"><label style="display:flex;gap:8px;align-items:flex-start"><input id="hmRefillConsignJournalConfirmed" type="checkbox" style="width:auto;margin-top:3px"><span>Saya sudah memeriksa Accurate dan memastikan jurnal Infinix ini belum ada.</span></label></div><button style="margin-top:9px;background:#166534" onclick="window.hmRunRefillConsignJournal()">Kirim Jurnal Infinix ke Accurate</button><div id="hmRefillConsignJournalResult" class="small" style="margin-top:8px"></div></div>' +
+      '<div class="box" style="margin-top:12px;border:1px solid #86efac;background:#f0fdf4"><b>🧾 Sinkronisasi Massal Jurnal Konsinyasi Majesty Cell — Refill</b><div class="small" style="margin-top:5px">Sistem memeriksa transaksi lama otomatis, melewati jurnal yang sudah tercatat, dan menahan transaksi yang akun pembayarannya belum jelas.</div><div class="row" style="margin-top:9px"><button class="secondary" onclick="window.hmPreviewConsignBatch()">🔎 Periksa Transaksi Lama</button><button style="background:#166534" onclick="window.hmRunConsignBatch()">🚀 Sinkronkan yang Aman</button></div><div id="hmConsignBatchResult" class="small" style="margin-top:8px">Belum ada pemeriksaan baru.</div></div>' +
       '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmDiagnoseAccurateItems()">🧪 Diagnosa Daftar</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak</h3>'+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
@@ -103,6 +103,26 @@
       if(result) result.innerHTML='<b style="color:#b91c1c">Belum terkonfirmasi berhasil.</b><div>'+esc(msg)+'</div><div>Jangan klik kirim ulang sebelum memeriksa daftar jurnal Accurate.</div>';
     }
   };
+  async function hmConsignBatch(confirmSend){
+    const result=document.getElementById('hmConsignBatchResult');
+    if(!isFinanceAdmin()){if(result)result.textContent='Akses ditolak: hanya Developer/Management/Finance.';return;}
+    if(confirmSend&&!confirm('Sinkronkan semua jurnal konsinyasi lama yang memenuhi pemeriksaan otomatis? Transaksi tanpa akun penerimaan terverifikasi akan dilewati.'))return;
+    if(result)result.textContent=confirmSend?'Memproses antrean transaksi yang aman…':'Memeriksa riwayat jurnal dan akun penerimaan…';
+    try{
+      const r=await sb.functions.invoke('accurate-sync',{body:{action:'sync_consign_batch',confirm:!!confirmSend}});
+      if(r.error)throw r.error;
+      const d=r.data||{};
+      if(!d.ok)throw new Error(d.error||'Pemeriksaan batch gagal.');
+      const rows=Array.isArray(d.results)?d.results:[];
+      const count=status=>rows.filter(x=>x.status===status).length;
+      const labels={SYNCED_NOW:'🟢 Tersinkron sekarang',ALREADY_SYNCED:'✓ Sudah tercatat',READY_TO_SYNC:'🟡 Siap dikirim',NEEDS_PAYMENT_ACCOUNT:'🟠 Akun penerimaan belum jelas',NEEDS_ACCOUNT_MAPPING:'🟠 Perlu pemetaan akun',FAILED:'🔴 Gagal',ERROR:'🔴 Gagal memeriksa'};
+      if(result)result.innerHTML='<b>'+(confirmSend?'Hasil sinkronisasi':'Hasil pemeriksaan')+'</b><div>Total diperiksa: '+esc(d.total||0)+' • Berhasil sekarang: '+count('SYNCED_NOW')+' • Sudah tercatat: '+count('ALREADY_SYNCED')+' • Perlu ditinjau: '+rows.filter(x=>!['SYNCED_NOW','ALREADY_SYNCED','READY_TO_SYNC'].includes(x.status)).length+'</div>'+
+        (rows.map(x=>'<div style="margin-top:7px;padding:7px;border:1px solid #d1d5db;border-radius:8px"><b>'+esc(x.product||x.sale_id||'Transaksi')+'</b> — '+esc(labels[x.status]||x.status)+'<div class="small">'+esc(x.variant||'')+' '+(x.amount!=null?'• Rp'+Number(x.amount).toLocaleString('id-ID'):'')+'</div>'+(x.accurate?.number?'<div class="small">Jurnal Accurate: '+esc(x.accurate.number)+'</div>':'')+(x.message||x.error?'<div class="small">'+esc(x.message||x.error)+'</div>':'')+'</div>').join('')||'<div class="small">Tidak ada transaksi konsinyasi yang cocok.</div>')+
+        '<div class="small" style="margin-top:8px">Transaksi yang ditahan tidak dikirim. Periksa akun penerimaan sebelum memperbaiki mapping.</div>';
+    }catch(e){if(result)result.textContent='Batch gagal: '+String(e?.message||e);}
+  }
+  window.hmPreviewConsignBatch=function(){return hmConsignBatch(false);};
+  window.hmRunConsignBatch=function(){return hmConsignBatch(true);};
   window.hmCheckAccurateItems=async function(){
     try{
       openModal('📦 Cek Barang Accurate','<div class="box"><b>⏳ Sedang membaca daftar barang Accurate...</b><div class="small">Tidak membuat atau mengubah transaksi.</div></div>');

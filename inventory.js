@@ -560,7 +560,7 @@ function invStat(label,val){
   : String(val??'');
  return '<div class="stat"><div class="small">'+label+'</div><div class="num">'+display+'</div></div>';
 }
-function filterHunterOptions(){ const sel=$('sthunter'),outlet=String($('stoutlet')?.value||profile?.outlet||'').trim().toLowerCase(); if(!sel)return; [...sel.options].forEach(o=>{const ho=String(o.getAttribute('data-hunter-outlet')||'').trim().toLowerCase(); o.hidden=ho!==outlet;}); if(sel.selectedOptions[0]?.hidden)sel.value=''; }
+function filterHunterOptions(){ const sel=$('sthunter'); if(!sel)return; const outlet=String($('stoutlet')?.value||profile?.outlet||'').trim().toLowerCase(); const opts=[...sel.options].filter(o=>o.value); const matches=opts.filter(o=>String(o.getAttribute('data-hunter-outlet')||'').trim().toLowerCase()===outlet); /* Jangan kosongkan pilihan Hunter jika outlet profil/label tidak sinkron; tampilkan daftar aktif sebagai fallback. */ opts.forEach(o=>{o.hidden=!!outlet&&matches.length>0&&String(o.getAttribute('data-hunter-outlet')||'').trim().toLowerCase()!==outlet;}); if(sel.selectedOptions[0]?.hidden)sel.value=''; }
 function toggleHunterField(){const box=$('hunterBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='HUNTER');}
 function togglePartnerFields(){const box=$('partnerBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='MAJESTY_CELL');}
 function inventoryReceiveOutlet(){

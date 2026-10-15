@@ -1164,7 +1164,7 @@ async function openSalesReport(){
  if(isAdminFinance&&profile?.outlet)q=q.eq('outlet',profile.outlet);
  const x=await q;
  if(x.error)throw x.error;
- const rows=(x.data||[]).filter(r=>String(r.customer_source||'').toUpperCase()!=='WALK-IN'); // Walk-In tidak ditampilkan pada laporan ini; transaksi tetap tersimpan.
+ const rows=x.data||[];
  const stockIds=[...new Set(rows.map(r=>r.stock_unit_id).filter(Boolean))];
  let stocks=[],peopleMap={},productMap={},leadMap={};
 

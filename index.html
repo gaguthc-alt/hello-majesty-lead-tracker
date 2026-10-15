@@ -1519,16 +1519,23 @@ async function start(u,authClient){
   $('identity').textContent='Memuat profil akun...';
   const apiHeaders={apikey:KEY,Authorization:'Bearer '+token};
   const fetchJson=async(url,label)=>{
-   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);
-   try{
-    const res=await fetch(url,{headers:apiHeaders,signal:ctl.signal});
-    let data=null;try{data=await res.json()}catch(_e){}
-    if(!res.ok)throw new Error(label+': '+(data?.message||data?.hint||data?.details||'akses database ditolak.'));
-    return data;
-   }catch(e){
-    if(e?.name==='AbortError')throw new Error(label+' terlalu lama. Koneksi ke database Supabase tidak merespons.');
-    throw e;
-   }finally{clearTimeout(timer)}
+   let lastError=null;
+   for(let attempt=0;attempt<2;attempt++){
+    const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),10000);
+    try{
+     const res=await fetch(url,{headers:apiHeaders,signal:ctl.signal,cache:'no-store'});
+     let data=null;try{data=await res.json()}catch(_e){}
+     if(!res.ok)throw new Error(label+': '+(data?.message||data?.hint||data?.details||'akses database ditolak.'));
+     return data;
+    }catch(e){
+     if(e?.name==='AbortError')throw new Error(label+' terlalu lama. Koneksi ke database Supabase tidak merespons.');
+     lastError=e;
+     const networkFailure=e instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(String(e?.message||e));
+     if(!networkFailure||attempt===1)throw e;
+     await new Promise(resolve=>setTimeout(resolve,600));
+    }finally{clearTimeout(timer)}
+   }
+   throw lastError||new Error(label+' gagal dimuat.');
   };
   const profileRows=await fetchJson(SUPABASE_URL+'/rest/v1/team_profiles?user_id=eq.'+encodeURIComponent(u.id)+'&select=*','Profile akun');
   if(!Array.isArray(profileRows)||!profileRows.length)throw new Error('Profile akun belum terdaftar.');

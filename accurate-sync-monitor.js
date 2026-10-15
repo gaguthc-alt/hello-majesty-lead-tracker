@@ -341,6 +341,8 @@
     setTimeout(function(){
       try{
         if(!isFinanceAdmin()) return;
+        // Accurate Sync sudah tersedia di grup ACCURATE; jangan sisipkan pintasan duplikat ke ACCOUNTING.
+        return;
         const nodes=[...document.querySelectorAll('button')];
         const accounting=nodes.find(b=>/Dashboard Accounting/i.test(b.textContent||''));
         if(!accounting) return;

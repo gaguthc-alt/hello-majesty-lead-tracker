@@ -40,10 +40,7 @@
       '<div class="stat"><div class="small">🟡 Tertunda</div><div class="num">'+pending+'</div></div>'+
       '<div class="stat"><div class="small">🔴 Gagal</div><div class="num">'+failed+'</div></div>'+
       '<div class="stat"><div class="small">🟠 Konflik</div><div class="num">'+conflicts.length+'</div></div></div>'+
-      '<div class="box" style="margin-top:12px;border:1px solid #f0c36d;background:#fffbeb"><b>🧾 Jurnal Konsinyasi Majesty Cell — Plaza</b><div class="small" style="margin-top:5px">iPhone 14 NEW 128GB • 13 Oktober 2026 • Rp11.070.000 • JV.2026.10.00122 sudah tersinkron.</div><div class="small" style="margin-top:5px">Transaksi ini hanya ditampilkan sebagai riwayat. Pengiriman ulang dinonaktifkan untuk mencegah jurnal ganda.</div></div>'+
       '<div class="box" style="margin-top:12px;border:1px solid #86efac;background:#f0fdf4"><b>🧾 Sinkronisasi Massal Jurnal Konsinyasi Majesty Cell — Refill</b><div class="small" style="margin-top:5px">Sistem memeriksa transaksi lama otomatis, melewati jurnal yang sudah tercatat, dan menahan transaksi yang akun pembayarannya belum jelas.</div><div class="row" style="margin-top:9px"><button class="secondary" onclick="window.hmPreviewConsignBatch()">🔎 Periksa Transaksi Lama</button><button style="background:#166534" onclick="window.hmRunConsignBatch()">🚀 Sinkronkan yang Aman</button></div><div id="hmConsignBatchResult" class="small" style="margin-top:8px">Belum ada pemeriksaan baru.</div></div>' +
-      '<div class="box" style="margin-top:12px;border:1px solid #93c5fd;background:#eff6ff"><b>💵 Uji Penerimaan Pembayaran — Sudarme</b><div class="small" style="margin-top:5px">Faktur SI.2026.10.00025 • Rp4.370.000 • Kas MNG Majesty Plaza (Accurate 110201). Pemeriksaan duplikasi dijalankan sebelum pengiriman.</div><div class="row" style="margin-top:9px"><button class="secondary" onclick="window.hmPreviewSudarmeReceipt()">🔎 Periksa Dulu</button><button style="background:#1d4ed8" onclick="window.hmSendSudarmeReceipt()">💵 Kirim Penerimaan</button></div><div id="hmSudarmeReceiptResult" class="small" style="margin-top:8px">Belum diperiksa. Mulai dengan Periksa Dulu.</div></div>' +
-      '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmDiagnoseAccurateItems()">🧪 Diagnosa Barang</button><button class="secondary" onclick="window.hmDiagnoseAccurateCustomers()">👤 Diagnosa Pelanggan</button><button class="secondary" onclick="window.hmDiagnoseFailedSales()">🧾 Cek Faktur Gagal</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak</h3>'+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
       (queue.filter(x=>x.status!=='SYNCED').map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>Penjualan</b>'+statusBadge(x.status)+'</div><div class="small">ID: '+esc(x.sale_id)+'</div><div class="small" style="margin-top:4px">'+esc(x.last_error||'Menunggu sinkronisasi')+'</div>'+(x.status==='FAILED'?'<div style="margin-top:8px"><button class="secondary" onclick=\"window.hmRetryAccurateSale(&quot;'+esc(x.sale_id)+'&quot;)\">🔁 Coba Sinkronkan</button><span class="small" id="hm-retry-sale-'+esc(x.sale_id)+'" style="margin-left:8px"></span></div>':'')+'</div>').join('')||'')+
@@ -52,35 +49,6 @@
       '<div class="small" style="margin-top:10px">Catatan: konflik tidak ditimpa otomatis. Management menentukan sumber data yang benar.</div>'
     );
   }
-
-  const HM_SUDARME_PAYMENT_ID='e29c0ea8-1998-4428-921c-d4df39c25109';
-  window.hmPreviewSudarmeReceipt=async function(){
-    if(!isFinanceAdmin()){alert('Akses ditolak: hanya Developer/Management/Finance.');return;}
-    const el=document.getElementById('hmSudarmeReceiptResult'); if(el)el.textContent='Memeriksa faktur dan daftar penerimaan Accurate…';
-    try{
-      const r=await sb.functions.invoke('accurate-sync',{body:{action:'sync_sales_payment',payment_id:HM_SUDARME_PAYMENT_ID,preview:true}});
-      if(r.error)throw r.error; const d=r.data||{}; if(!d.ok)throw new Error(d.error||'Pemeriksaan belum berhasil.');
-      if(d.recovered){if(el)el.innerHTML='<b style="color:#15803d">Penerimaan sudah ditemukan di Accurate.</b><div>Nomor: '+esc(d.accurate?.number||'-')+'. Tidak perlu mengirim ulang.</div>';return d;}
-      if(el)el.innerHTML='<b style="color:#15803d">Pemeriksaan lolos — belum mengubah Accurate.</b><div>Faktur: '+esc(d.invoice_no)+' • Nominal: Rp'+Number(d.amount).toLocaleString('id-ID')+'</div><div>Akun: '+esc(d.accurate_account_no)+' • Pelanggan: '+esc(d.customer_no)+'</div><div>Siap dikirim: '+(d.would_create_receipt?'Ya':'Tidak')+'. Klik Kirim Penerimaan hanya jika rincian ini benar.</div>';
-      return d;
-    }catch(e){const msg=String(e?.message||e);if(el)el.innerHTML='<b style="color:#b91c1c">Belum aman dikirim.</b><div>'+esc(msg)+'</div>';alert('Pemeriksaan gagal: '+msg);}
-  };
-  window.hmSendSudarmeReceipt=async function(){
-    if(!isFinanceAdmin()){alert('Akses ditolak: hanya Developer/Management/Finance.');return;}
-    const preview=await window.hmPreviewSudarmeReceipt(); if(!preview||!preview.ok)return;
-    if(preview.recovered){alert('Penerimaan sudah ditemukan di Accurate. Tidak ada pengiriman baru.');return;}
-    if(!preview.would_create_receipt||preview.invoice_no!=='SI.2026.10.00025'||Number(preview.amount)!==4370000||String(preview.accurate_account_no)!=='110201'){
-      alert('Rincian tidak sesuai dengan target uji. Tidak ada penerimaan yang dikirim.');return;
-    }
-    if(!confirm('Konfirmasi kirim penerimaan Rp4.370.000 ke faktur SI.2026.10.00025, akun Accurate 110201? Sistem telah memeriksa penerimaan yang sudah ada.'))return;
-    const el=document.getElementById('hmSudarmeReceiptResult');if(el)el.textContent='Mengirim penerimaan… jangan klik ulang.';
-    try{
-      const r=await sb.functions.invoke('accurate-sync',{body:{action:'sync_sales_payment',payment_id:HM_SUDARME_PAYMENT_ID,preview:false}});
-      if(r.error)throw r.error;const d=r.data||{};if(!d.ok)throw new Error(d.error||'Accurate belum mengonfirmasi penerimaan.');
-      if(el)el.innerHTML='<b style="color:#15803d">Penerimaan terkonfirmasi.</b><div>Nomor: '+esc(d.accurate?.number||'-')+' • Faktur: '+esc(d.invoice_no||'SI.2026.10.00025')+'</div><div>Periksa tab Penerimaan Penjualan di Accurate. Jangan kirim ulang.</div>';
-      alert('Penerimaan terkonfirmasi oleh backend. Nomor: '+(d.accurate?.number||'-')+'. Periksa Accurate.');
-    }catch(e){const msg=String(e?.message||e);if(el)el.innerHTML='<b style="color:#b91c1c">Belum terkonfirmasi.</b><div>'+esc(msg)+'</div><div>Jangan klik kirim ulang sebelum memeriksa Accurate.</div>';alert('Penerimaan belum terkonfirmasi: '+msg+'\nJangan kirim ulang sebelum memeriksa Accurate.');}
-  };
 
   window.hmRetryAccurateSale=async function(saleId){
     if(!isFinanceAdmin()){alert('Akses ditolak: hanya Developer/Management/Finance.');return;}

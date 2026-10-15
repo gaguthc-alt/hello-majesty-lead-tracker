@@ -215,6 +215,16 @@ async function reviewUnifiedWalkin(id,kind,action){
    alert(kind==='STOCK'?'Closing Stock ditolak.':'Walk-In ditolak.');
  }
  closeModal(); await renderInventory();
+ // Refresh panel immediately: remove processed request without requiring close/reopen.
+ await window.openWalkinApprovals();
+ const panelBody=document.getElementById('hmMenuPanelBody');
+ if(panelBody){
+   const notice=document.createElement('div');
+   notice.className='box';
+   notice.style.cssText='margin-bottom:12px;border:1px solid #86efac;background:#f0fdf4;color:#166534';
+   notice.innerHTML=action==='APPROVE'?'✅ <b>DISETUJUI</b><div class="small" style="margin-top:4px">Transaksi berhasil disetujui dan menjadi SOLD. Pengajuan sudah dihapus dari daftar menunggu.</div>':'🔴 <b>DITOLAK</b><div class="small" style="margin-top:4px">Pengajuan sudah diproses dan dihapus dari daftar menunggu.</div>';
+   panelBody.prepend(notice);
+ }
 }
 
 async function reviewWalkinSale(id,action){

@@ -88,6 +88,42 @@ window.openPartnerSettlement=async function(){
     panel.classList.remove('hidden');
   }
 };
+window.updatePartnerCapitalSelection=function(){
+  const checks=[...document.querySelectorAll('.partner-capital-check:checked')];
+  const total=checks.reduce((s,x)=>s+Number(x.dataset.amount||0),0);
+  const box=document.getElementById('partnerCapitalSelectionTotal');
+  if(box)box.innerHTML='<b>Total unit terpilih: '+checks.length+'</b><br><b>Total modal terpilih: '+hmRp(total)+'</b>';
+};
+window.sharePartnerCapitalSelectionWhatsApp=async function(){
+  const checks=[...document.querySelectorAll('.partner-capital-check:checked')];
+  if(!checks.length){alert('Pilih minimal 1 unit terlebih dahulu.');return;}
+  const ids=checks.map(x=>x.dataset.sid).filter(Boolean);
+  let sales=[];
+  if(ids.length){
+    const {data,error}=await sb.from('sales_transactions').select('id,sale_price,finance_status,finance_requested_amount,finance_actual_disbursement,finance_cash_payment,finance_cashout_amount,finance_actual_fee').in('id',ids);
+    if(error){alert('Rincian finance gagal dimuat: '+error.message);return;}
+    sales=data||[];
+  }
+  const byId={};sales.forEach(x=>byId[x.id]=x);
+  const lines=['*RINCIAN SETORAN MODAL MAJESTY CELL*','Outlet: Majesty Refill Phone','Tanggal: '+new Date().toLocaleDateString('id-ID'),''];
+  let totalModal=0,totalFinance=0,totalCash=0,totalCashout=0;
+  checks.forEach((x,i)=>{
+    const amount=Number(x.dataset.amount||0),s=byId[x.dataset.sid]||{};
+    totalModal+=amount;totalFinance+=Number(s.finance_actual_disbursement||s.finance_requested_amount||0);totalCash+=Number(s.finance_cash_payment||0);totalCashout+=Number(s.finance_cashout_amount||0);
+    lines.push((i+1)+'. '+(x.dataset.product||'Produk')+' | IMEI: '+(x.dataset.imei||'-'));
+    lines.push('   Modal: '+hmRp(amount));
+    if(s.finance_status||Number(s.finance_actual_disbursement||0)||Number(s.finance_cash_payment||0)||Number(s.finance_cashout_amount||0)){
+      lines.push('   Status finance: '+(s.finance_status||'-'));
+      lines.push('   Pencairan finance: '+hmRp(s.finance_actual_disbursement||s.finance_requested_amount||0));
+      lines.push('   Tunai pelanggan: '+hmRp(s.finance_cash_payment||0));
+      lines.push('   Tarik tunai customer: '+hmRp(s.finance_cashout_amount||0));
+      if(s.finance_actual_fee!=null)lines.push('   Potongan finance: '+hmRp(s.finance_actual_fee));
+    } else lines.push('   Finance: Tidak ada data finance pada transaksi ini');
+    lines.push('');
+  });
+  lines.push('*REKAP*','Jumlah unit: '+checks.length,'Total modal terpilih: '+hmRp(totalModal),'Total pencairan finance terkait: '+hmRp(totalFinance),'Total tunai pelanggan: '+hmRp(totalCash),'Total tarik tunai customer: '+hmRp(totalCashout),'','Catatan: rincian finance ditampilkan terpisah dan tidak otomatis dianggap sebagai pengurang modal. Mohon konfirmasi nilai setoran.');
+  window.open('https://wa.me/?text='+encodeURIComponent(lines.join('\\n')),'_blank','noopener');
+};
 window.payPartnerCapitalSettlement=async function(){
   const ids=[...document.querySelectorAll('.partner-capital-check:checked')].map(x=>x.value);
   if(!ids.length){alert('Pilih minimal 1 unit.');return;}
@@ -152,7 +188,8 @@ window.loadPartnerSettlementDetail=async function(outlet){
           bh+' • Modal '+hmRp(r.capital_due)+' • IMEI '+esc(String(imei))+
           '</span></label>';
       }).join('')+
-      '<button class="success" style="margin-top:12px" onclick="window.payPartnerCapitalSettlement()">💸 Setor Modal Terpilih</button>'
+      '<div id="partnerCapitalSelectionTotal" class="box" style="margin-top:12px"><b>Total unit terpilih: 0</b><br><b>Total modal terpilih: Rp0</b></div>'+
+      '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="success" onclick="window.payPartnerCapitalSettlement()">💸 Setor Modal Terpilih</button><button class="primary" onclick="window.sharePartnerCapitalSelectionWhatsApp()">🟢 Kirim Rincian ke WhatsApp</button></div>'
     : '<div class="small">Tidak ada modal Cell yang belum disetor.</div>';
 };
 window.payPartnerPlazaHistoricalCapital=async function(){

@@ -45,12 +45,34 @@
       '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmDiagnoseAccurateItems()">🧪 Diagnosa Barang</button><button class="secondary" onclick="window.hmDiagnoseAccurateCustomers()">👤 Diagnosa Pelanggan</button><button class="secondary" onclick="window.hmDiagnoseFailedSales()">🧾 Cek Faktur Gagal</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak</h3>'+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
-      (queue.filter(x=>x.status!=='SYNCED').map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>Penjualan</b>'+statusBadge(x.status)+'</div><div class="small">ID: '+esc(x.sale_id)+'</div><div class="small" style="margin-top:4px">'+esc(x.last_error||'Menunggu sinkronisasi')+'</div></div>').join('')||'')+
+      (queue.filter(x=>x.status!=='SYNCED').map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>Penjualan</b>'+statusBadge(x.status)+'</div><div class="small">ID: '+esc(x.sale_id)+'</div><div class="small" style="margin-top:4px">'+esc(x.last_error||'Menunggu sinkronisasi')+'</div>'+(x.status==='FAILED'?'<div style="margin-top:8px"><button class="secondary" onclick="window.hmRetryAccurateSale(\\''+esc(x.sale_id)+'\\')">🔁 Coba Sinkronkan</button><span class="small" id="hm-retry-sale-'+esc(x.sale_id)+'" style="margin-left:8px"></span></div>':'')+'</div>').join('')||'')+
       (records.filter(x=>x.status!=='SYNCED').map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.entity_type)+'</b>'+statusBadge(x.status)+'</div><div class="small">'+esc(x.direction)+' • '+esc(x.local_id||x.accurate_no||x.accurate_id||'-')+'</div><div class="small" style="margin-top:4px">'+esc(x.last_error||'Menunggu sinkronisasi')+'</div></div>').join('')||'')+
       (!conflicts.length&&!queue.some(x=>x.status!=='SYNCED')&&!records.some(x=>x.status!=='SYNCED')?'<div class="box"><b>🟢 Tidak ada data bermasalah.</b><div class="small">Sistem akan menampilkan masalah di sini jika terjadi kegagalan, keterlambatan, atau konflik.</div></div>':'')+
       '<div class="small" style="margin-top:10px">Catatan: konflik tidak ditimpa otomatis. Management menentukan sumber data yang benar.</div>'
     );
   }
+  window.hmRetryAccurateSale=async function(saleId){
+    if(!isFinanceAdmin()){alert('Akses ditolak: hanya Developer/Management/Finance.');return;}
+    const id=String(saleId||'').trim();
+    if(!id) return;
+    const result=document.getElementById('hm-retry-sale-'+id);
+    if(!confirm('Coba sinkronkan transaksi '+id+'? Sistem akan menolak transaksi yang sudah tersinkron, dibatalkan, atau di luar batas sinkronisasi.')) return;
+    if(result) result.textContent='Memeriksa dan memproses…';
+    try{
+      const r=await sb.functions.invoke('accurate-sync',{body:{action:'sync_sale',sale_id:id}});
+      if(r.error) throw r.error;
+      const d=r.data||{};
+      if(!d.ok) throw new Error(d.error||'Sinkronisasi belum terkonfirmasi.');
+      if(result) result.textContent='Berhasil: '+String(d.journal?.number||d.invoice?.number||d.invoice_no||'cek Accurate');
+      alert('Sinkronisasi terkonfirmasi oleh backend. Periksa nomor faktur dan status di Accurate Sync Monitor.');
+      await window.hmOpenAccurateSyncMonitor();
+    }catch(e){
+      const msg=String(e?.message||e||'Kesalahan tidak diketahui');
+      if(result) result.textContent='Belum berhasil: '+msg;
+      alert('Transaksi belum terkonfirmasi berhasil. Jangan kirim ulang lagi sebelum membaca pesan ini:\n'+msg);
+      try{await window.hmOpenAccurateSyncMonitor();}catch(_){}
+    }
+  };
   window.hmRunConsignJournal=async function(){
     const checkbox=document.getElementById('hmConsignJournalConfirmed');
     const result=document.getElementById('hmConsignJournalResult');

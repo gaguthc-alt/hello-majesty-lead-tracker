@@ -1190,7 +1190,7 @@ async function openSalesReport(){
  const phones=[...new Set(rows.map(r=>hmNormalizePhone(r.customer_phone)).filter(Boolean))];
  if(phones.length){
    try{
-     const leadRes=await sb.from('leads').select('whatsapp,cs,cs_claimed_by,customer,updated_at').in('whatsapp',rows.map(r=>r.customer_phone).filter(Boolean)).order('updated_at',{ascending:false});
+     const leadRes=await sb.from('leads').select('whatsapp,cs,cs_claimed_by,customer,updated_at').order('updated_at',{ascending:false}).limit(2000);
      if(!leadRes.error)leadRes.data?.forEach(l=>{const p=hmNormalizePhone(l.whatsapp);if(p&&!leadMap[p])leadMap[p]=l;});
    }catch(e){console.warn('[HM] Lead enrichment skipped:',e);}
  }

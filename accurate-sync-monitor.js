@@ -42,7 +42,7 @@
       '<div class="stat"><div class="small">🟠 Konflik</div><div class="num">'+conflicts.length+'</div></div></div>'+
       '<div class="box" style="margin-top:12px;border:1px solid #f0c36d;background:#fffbeb"><b>🧾 Jurnal Konsinyasi Majesty Cell — Plaza</b><div class="small" style="margin-top:5px">iPhone 14 NEW 128GB • 13 Oktober 2026 • Rp11.070.000 • JV.2026.10.00122 sudah tersinkron.</div><div class="small" style="margin-top:5px">Transaksi ini hanya ditampilkan sebagai riwayat. Pengiriman ulang dinonaktifkan untuk mencegah jurnal ganda.</div></div>'+
       '<div class="box" style="margin-top:12px;border:1px solid #86efac;background:#f0fdf4"><b>🧾 Sinkronisasi Massal Jurnal Konsinyasi Majesty Cell — Refill</b><div class="small" style="margin-top:5px">Sistem memeriksa transaksi lama otomatis, melewati jurnal yang sudah tercatat, dan menahan transaksi yang akun pembayarannya belum jelas.</div><div class="row" style="margin-top:9px"><button class="secondary" onclick="window.hmPreviewConsignBatch()">🔎 Periksa Transaksi Lama</button><button style="background:#166534" onclick="window.hmRunConsignBatch()">🚀 Sinkronkan yang Aman</button></div><div id="hmConsignBatchResult" class="small" style="margin-top:8px">Belum ada pemeriksaan baru.</div></div>' +
-      '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmDiagnoseAccurateItems()">🧪 Diagnosa Daftar</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
+      '<div class="row" style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Periksa Lagi</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmDiagnoseAccurateItems()">🧪 Diagnosa Barang</button><button class="secondary" onclick="window.hmDiagnoseAccurateCustomers()">👤 Diagnosa Pelanggan</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak</h3>'+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
       (queue.filter(x=>x.status!=='SYNCED').map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>Penjualan</b>'+statusBadge(x.status)+'</div><div class="small">ID: '+esc(x.sale_id)+'</div><div class="small" style="margin-top:4px">'+esc(x.last_error||'Menunggu sinkronisasi')+'</div></div>').join('')||'')+
@@ -166,6 +166,28 @@
         '<div class="small" style="margin-top:8px">Kirim screenshot hasil ini untuk menentukan filter dan pagination yang tepat.</div>');
     }catch(e){
       openModal('🧪 Diagnosa Daftar Accurate','<div class="danger box">Gagal: '+esc(e?.message||e)+'</div>');
+    }
+  };
+  window.hmDiagnoseAccurateCustomers=async function(){
+    try{
+      openModal('👤 Diagnosa Pelanggan Accurate','<div class="box"><b>⏳ Membaca daftar pelanggan...</b><div class="small">Pemeriksaan hanya baca; tidak membuat pelanggan atau faktur.</div></div>');
+      const r=await sb.functions.invoke('accurate-sync',{body:{action:'diagnose_customers'}});
+      if(r.error) throw r.error;
+      const d=r.data||{};
+      if(!d.ok) throw new Error(d.error||'Diagnosa pelanggan gagal.');
+      const pg=d.pagination||{};
+      const matches=Array.isArray(d.walkInMatches)?d.walkInMatches:[];
+      const customers=Array.isArray(d.customers)?d.customers:[];
+      openModal('👤 Diagnosa Pelanggan Accurate',
+        '<div class="box"><b>Diagnosa selesai — hanya baca</b><div class="small">Database: '+esc(d.database||'Accurate')+' • HTTP '+esc(d.httpStatus)+'</div><div class="small">Total pelanggan: '+esc(d.totalCustomers??customers.length)+' • Halaman dibaca: '+esc(d.pagesRead??'-')+' • Halaman API: '+esc(pg.pageCount??'-')+'</div></div>'+
+        '<div class="lead"><b>🔎 Pemetaan Walk-In / Pelanggan Umum</b><div class="small">Jumlah yang cocok: '+esc(matches.length)+'</div>'+
+        (matches.map(c=>'<div class="small">Kode: <b>'+esc(c.no||'(kode kosong)')+'</b> • Nama: '+esc(c.name||'-')+' • ID: '+esc(c.id||'-')+'</div>').join('')||'<div class="small" style="color:#b91c1c">Tidak ditemukan pelanggan bernama Pelanggan Umum.</div>')+
+        (matches.length>1?'<div class="small" style="color:#b91c1c">Ada duplikasi nama Pelanggan Umum; perlu dirapikan sebelum sinkronisasi.</div>':'')+'</div>'+
+        '<div class="lead"><b>Daftar pelanggan dari Accurate</b><div class="small">Kode • Nama • ID</div>'+
+        (customers.map(c=>'<div class="small">'+esc(c.no||'(kode kosong)')+' — '+esc(c.name||'-')+' • ID '+esc(c.id||'-')+'</div>').join('')||'<div class="small">Tidak ada data pelanggan yang dikembalikan.</div>')+'</div>'+
+        '<div class="small">Pemeriksaan ini tidak mengirim faktur dan tidak mengubah data Accurate.</div>');
+    }catch(e){
+      openModal('👤 Diagnosa Pelanggan Accurate','<div class="danger box">Gagal: '+esc(e?.message||e)+'</div>');
     }
   };
   window.__hmAccurateMapItems = [];

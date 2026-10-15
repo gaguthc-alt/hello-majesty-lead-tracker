@@ -105,7 +105,7 @@ window.sharePartnerCapitalSelectionWhatsApp=async function(){
     sales=data||[];
   }
   const byId={};sales.forEach(x=>byId[x.id]=x);
-  const lines=['*RINCIAN SETORAN MODAL MAJESTY CELL*','Outlet: Majesty Refill Phone','Tanggal: '+new Date().toLocaleDateString('id-ID'),''];
+  const lines=['*RINCIAN SETORAN MODAL MAJESTY CELL*','Outlet: '+(window.hmPartnerCapitalOutlet||'Majesty Refill Phone'),'Tanggal: '+new Date().toLocaleDateString('id-ID'),''];
   let totalModal=0,totalFinance=0,totalCash=0,totalCashout=0;
   checks.forEach((x,i)=>{
     const amount=Number(x.dataset.amount||0),s=byId[x.dataset.sid]||{};
@@ -153,6 +153,7 @@ window.payPartnerProfitSettlement=async function(start){
 window.loadPartnerSettlementDetail=async function(outlet){
   const box=document.getElementById('partnerSettlementDetail');if(!box)return;
   outlet=outlet||'Majesty Refill Phone';
+  window.hmPartnerCapitalOutlet=outlet;
   if(outlet==='Majesty Plaza iPhone'){
     const {data:rows,error}=await sb.from('partner_historical_stock_details').select('*').eq('outlet',outlet).eq('partner_name','Majesty Cell').order('created_at',{ascending:true});
     if(error){box.innerHTML='<div class="small">'+error.message+'</div>';return;}
@@ -180,7 +181,7 @@ window.loadPartnerSettlementDetail=async function(outlet){
         const bh=r.battery_health!=null?' • BH '+Number(r.battery_health)+'%':'';
         const imei=r.imei_1||'-';
         return '<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd">'+
-          '<input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" style="width:auto;margin-right:8px">'+
+          '<input class="partner-capital-check" type="checkbox" value="'+r.stock_unit_id+'" data-amount="'+Number(r.capital_due||0)+'" data-sid="'+esc(String(r.sales_transaction_id||''))+'" data-product="'+esc(product+' '+variant+' '+color).replace(/"/g,'&quot;')+'" data-imei="'+esc(String(imei)).replace(/"/g,'&quot;')+'" style="width:auto;margin-right:8px" onchange="window.updatePartnerCapitalSelection()">'+
           '<b>'+esc(product)+'</b>'+
           (variant?' — '+esc(variant):'')+
           (color?' • '+esc(color):'')+

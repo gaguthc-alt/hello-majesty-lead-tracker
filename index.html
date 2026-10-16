@@ -3030,7 +3030,7 @@ function renderRoleHome(){
        panel.classList.remove('hidden');
        body.innerHTML='<div class="box">Memuat '+esc(title)+'…</div>';
        void (async()=>{
-         if(typeof window.hmOpenKinerjaDivisi!=='function') await hmLoadModule('kinerja-divisi');
+         if(typeof window.hmOpenKinerjaDivisi!=='function') await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='kinerja-divisi.js?v=20261016-9';s.onload=resolve;s.onerror=()=>reject(new Error('File kinerja-divisi.js gagal dimuat.'));document.head.appendChild(s);});
          if(typeof window.hmOpenKinerjaDivisi!=='function') throw new Error('Fungsi Kinerja Divisi tidak tersedia.');
          await window.hmOpenKinerjaDivisi();
          if(typeof window.hmKinerjaDivision==='function') window.hmKinerjaDivision(divisionId);
@@ -3054,7 +3054,7 @@ function renderRoleHome(){
        body.innerHTML='<div class="box">Memuat Kinerja Divisi…</div>';
        const openKinerja=async()=>{
          if(typeof window.hmOpenKinerjaDivisi!=='function'){
-           await hmLoadModule('kinerja-divisi');
+           await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='kinerja-divisi.js?v=20261016-9';s.onload=resolve;s.onerror=()=>reject(new Error('File kinerja-divisi.js gagal dimuat.'));document.head.appendChild(s);});
          }
          if(typeof window.hmOpenKinerjaDivisi!=='function')throw new Error('Modul termuat tetapi fungsi hmOpenKinerjaDivisi tidak ditemukan.');
          await window.hmOpenKinerjaDivisi();

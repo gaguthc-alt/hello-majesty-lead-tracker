@@ -2554,7 +2554,24 @@ async function hmRenderManagementMessage(){
  if(has('FASILITATOR')||primary==='FASILITATOR')labels.push('Fasilitator');
  let message='';
  if(allOutlet){
-   message='Fokus hari ini: pantau hasil dan hambatan di seluruh outlet, pastikan tindak lanjut memiliki PIC yang jelas, lalu gunakan data terbaru sebelum mengambil keputusan. Ringkasan performa di bawah akan menampilkan cakupan seluruh outlet.';
+   const divisionRole=roles.includes('DIVISI')||raw==='DIVISI';
+   const divisionName=String(profile?.division||profile?.divisi||profile?.department||'').trim().toUpperCase();
+   const name=String(profile?.name||'').trim().split(/\\s+/)[0]||'Tim';
+   if(divisionRole){
+     const roleText=divisionName||'';
+     const divisionKey=roleText||String(profile?.name||'').toUpperCase();
+     if(divisionKey.includes('HELLO')){
+       message=name+', fokus Divisi Hello: pastikan konten menarik perhatian pelanggan yang tepat, pantau lead masuk dan kualitas percakapan, lalu pastikan lead diteruskan ke CS/Sales dengan sumber yang tercatat. Evaluasi konten berdasarkan lead berkualitas dan hasil tindak lanjut, bukan views saja.';
+     }else if(divisionKey.includes('MAJESTY')){
+       message=name+', fokus Divisi Majesty: pantau konsultasi dan closing di seluruh outlet, pastikan ketersediaan unit serta harga akurat, dan tindak lanjuti lead potensial yang belum selesai. Gunakan angka closing dan laba yang tercatat untuk menentukan prioritas tim.';
+     }else if(divisionKey.includes('REFILL')){
+       message=name+', fokus Divisi Refill: jaga akurasi transaksi, kas, administrasi, dan rekonsiliasi Accurate. Periksa transaksi pending atau selisih terlebih dahulu, pastikan setiap transaksi memiliki akun pemetaan yang benar, dan selesaikan tindak lanjut dengan PIC yang jelas.';
+     }else{
+       message=name+', fokus Divisi: pantau hasil dan hambatan seluruh outlet, tentukan prioritas berdasarkan data aktual, pastikan setiap tindak lanjut memiliki PIC dan tenggat yang jelas, lalu evaluasi hasilnya. Pesan ini akan disesuaikan lebih spesifik ketika divisi pada profil tersedia.';
+     }
+   }else{
+     message='Fokus hari ini: pantau hasil dan hambatan di seluruh outlet, pastikan tindak lanjut memiliki PIC yang jelas, lalu gunakan data terbaru sebelum mengambil keputusan.';
+   }
  }else{
    const scope=profile?.outlet?(' untuk '+profile.outlet):'';
    const roleText=labels.length?labels.join(', '):String(profile?.role||'tim operasional');

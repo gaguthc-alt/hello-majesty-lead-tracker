@@ -3018,7 +3018,7 @@ function renderRoleHome(){
 
      // Shortcut tiap divisi: masing-masing menjadi menu utama tersendiri.
      if(action.startsWith('hmOpenKinerjaDivision(')){
-       const m=action.match(/^hmOpenKinerjaDivision\((hello|majesty|refill)\)$/);
+       const m=action.match(/^hmOpenKinerjaDivision\(['\"]?(hello|majesty|refill)['\"]?\)$/);
        if(!m){alert('Tujuan divisi tidak valid.');return;}
        const divisionId=m[1];
        hmCloseMainMenu();

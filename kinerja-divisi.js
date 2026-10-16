@@ -65,7 +65,7 @@ window.hmOpenKinerjaDivisi=async function(){
  const old=$('hmKinerjaDivisiPanel');if(old)old.remove();
  const host=document.createElement('div');host.id='hmKinerjaDivisiPanel';body.appendChild(host);
  try{
-  const result=await window.sb?.rpc?.('kinerja_divisi_summary');
+  const result=await (typeof sb!=='undefined' ? sb.rpc('kinerja_divisi_summary') : Promise.resolve(null));
   if(!result)throw new Error('Koneksi database belum siap.');
   if(result.error)throw result.error;
   latestData=result.data||{};

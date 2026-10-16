@@ -2304,7 +2304,7 @@ function hmRunMainMenuAction(action){
   case 'openInventoryDashboard()': return window.openInventoryDashboard();
   case 'openHunterStock()': return window.openHunterStock();
   case 'hmOpenTargetOutlet()': return hmOpenTargetOutlet();
-  case 'hmOpenKinerjaDivisi()': return (typeof window.hmOpenKinerjaDivisi==='function' ? window.hmOpenKinerjaDivisi() : new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='kinerja-divisi.js?v=20261016-11';s.onload=()=>typeof window.hmOpenKinerjaDivisi==='function'?resolve(window.hmOpenKinerjaDivisi()):reject(new Error('Modul termuat tetapi fungsi pembuka tidak tersedia.'));s.onerror=()=>reject(new Error('File kinerja-divisi.js gagal dimuat.'));document.head.appendChild(s);}));
+  case 'hmOpenKinerjaDivisi()': return (typeof window.hmOpenKinerjaDivisi==='function' ? window.hmOpenKinerjaDivisi() : new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='kinerja-divisi.js?v=20261016-12';s.onload=()=>typeof window.hmOpenKinerjaDivisi==='function'?resolve(window.hmOpenKinerjaDivisi()):reject(new Error('Modul termuat tetapi fungsi pembuka tidak tersedia.'));s.onerror=()=>reject(new Error('File kinerja-divisi.js gagal dimuat.'));document.head.appendChild(s);}));
   case 'hmOpenContentPerformance()': return hmOpenContentPerformance();
   case 'hmOpenLeadNewInline()': return hmOpenLeadNewInline();
   case 'hmOpenHelloMajestyChat()': return hmOpenHelloMajestyChat();

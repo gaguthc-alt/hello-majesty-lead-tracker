@@ -10,7 +10,7 @@
   function rp(v){return 'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');}
   function monthStart(){
     const d=new Date();
-    return new Date(d.getFullYear(),d.getMonth(),1).toISOString().slice(0,10);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
   }
 
   async function loadCommission(){

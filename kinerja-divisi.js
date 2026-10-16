@@ -63,6 +63,19 @@ function renderDivisionAnalysis(id,rows){
  const list=divisionAdvice(id,rows);
  return '<div class="hm-kd-panel hm-kd-ai-analysis"><h3>🤖 Analisis AI Divisi · Prioritas Tindakan</h3><p class="hm-kd-note">Analisis otomatis berdasarkan target dan pencapaian yang tersedia; validasi penyebab melalui laporan operasional terkait.</p><div class="hm-kd-ai-list">'+list.map((x,i)=>'<article class="hm-kd-ai-item"><div class="hm-kd-ai-kicker">'+esc(x.priority)+'</div><h4>'+(i+1)+'. '+esc(x.title)+'</h4><p>'+esc(x.detail)+'</p><b>Tindakan yang disarankan</b><ul>'+x.actions.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul></article>').join('')+'</div></div>';
 }
+function managementCommandCenter(rows,totals){
+ const leadPct=pct(totals.lead_actual,totals.wa_target), handPct=pct(totals.handover_actual,totals.handover_target), unitPct=pct(totals.unit_actual,totals.closing_target), profitPct=pct(totals.profit_actual,totals.profit_target);
+ const pace=monthPace(latestData?.month_start), pacePct=Math.round(pace.ratio*100);
+ const overallMin=Math.min(leadPct,handPct,unitPct,profitPct);
+ const status=overallMin<pacePct?'PERLU TINDAKAN':overallMin<80?'WASPADA':'TERKENDALI';
+ const tone=overallMin<pacePct?'critical':overallMin<80?'warning':'good';
+ const instructions=[
+  {name:'Tyar',role:'PEMIMPIN DIVISI HELLO',color:'#0f766e',metric:'Lead / WA '+leadPct+'% · Target proses '+pacePct+'% waktu bulan berjalan',text:leadPct<pacePct?'TINGKATKAN lead valid, bukan views saja. Prioritaskan konten ber-CTA WhatsApp, ukur sumber lead, dan pastikan kualitas serta handover bisa ditelusuri.':'JAGA kualitas lead dan bukti kontribusi konten. Pastikan setiap sumber lead tercatat dan peluang yang masuk benar-benar valid.',action:'Fokus: konten → lead valid → handover'},
+  {name:'Wawan',role:'PEMIMPIN DIVISI MAJESTY',color:'#1d4ed8',metric:'Unit '+unitPct+'% · Laba '+profitPct+'%',text:unitPct<pacePct?'KEJAR closing melalui daftar lead potensial, PIC, dan follow-up terjadwal. Periksa alasan lost serta kecocokan stok; jangan mengorbankan margin demi volume.':'JAGA konversi dan laba per transaksi. Audit margin, diskon, serta biaya finance sebelum mendorong penjualan tambahan.',action:'Fokus: follow-up → closing → laba'},
+  {name:'Gagut',role:'PEMIMPIN DIVISI REFILL · DEVELOPER',color:'#6d28d9',metric:'Handover '+handPct+'% · Integritas data perlu dijaga',text:handPct<pacePct?'AUDIT lead yang belum direspons, belum punya PIC, atau belum memiliki jadwal tindak lanjut. Cocokkan data handover dengan alur operasional.':'JAGA keandalan data, administrasi, kas, dan sinkronisasi Accurate. Prioritaskan error atau transaksi pending yang terverifikasi sebelum mengubah data.',action:'Fokus: handover · finance · Accurate · stabilitas aplikasi'}
+ ];
+ return '<section class="hm-kd-command"><div class="hm-kd-command-head"><div><div class="hm-kd-eyebrow">PUSAT KOMANDO · HELLO MAJESTY</div><h3>Instruksi Management Hari Ini</h3><p>Prioritas singkat untuk setiap pemimpin berdasarkan indikator target yang tersedia.</p></div><span class="hm-kd-status '+tone+'">'+status+'</span></div><div class="hm-kd-command-grid">'+instructions.map((x,i)=>'<article class="hm-kd-command-card" style="--leader:'+x.color+'"><div class="hm-kd-command-person"><span class="hm-kd-command-num">'+(i+1)+'</span><div><h4>'+esc(x.name)+'</h4><div class="hm-kd-command-role">'+esc(x.role)+'</div></div></div><div class="hm-kd-command-metric">'+esc(x.metric)+'</div><p>'+esc(x.text)+'</p><div class="hm-kd-command-action">'+esc(x.action)+'</div></article>').join('')+'</div><div class="hm-kd-command-foot">Arahan ini adalah rekomendasi otomatis berbasis indikator yang tersedia, bukan pesan yang sudah dikirim kepada tim. Verifikasi data dan tetapkan PIC serta tenggat sebelum menjalankan tindakan.</div></section>';
+}
 function renderDivisions(){
  const rows=latestData?.outlets||[];
  const leads=total(rows,'lead_actual'),handover=total(rows,'handover_actual'),unit=total(rows,'unit_actual'),profit=total(rows,'profit_actual');
@@ -74,6 +87,10 @@ function renderDivisions(){
  const detail=activeDivision?divisions.find(d=>d.id===activeDivision):null;
  const outletTable=(items)=>'<div class="hm-kd-table-wrap"><table class="hm-kd-table"><thead><tr><th>Outlet</th><th>Target</th><th>Aktual</th><th>Pencapaian</th><th>Kekurangan</th></tr></thead><tbody>'+items.map(x=>'<tr><td>'+esc(x.outlet)+'</td><td>'+x.fmt(x.target)+'</td><td>'+x.fmt(x.actual)+'</td><td><b>'+pct(x.actual,x.target)+'%</b></td><td>'+x.fmt(safe(x.actual,x.target))+'</td></tr>').join('')+'</tbody></table></div>';
  let html='<div class="hm-kd-head"><div><div class="hm-kd-eyebrow">HELLO MAJESTY · MONITORING BERSAMA</div><h2>Kinerja Divisi</h2><p>Target hasil dan target proses seluruh outlet · '+new Date(latestData.month_start+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</p></div><button class="secondary" type="button" onclick="window.hmOpenKinerjaDivisi()">↻ Refresh</button></div>';
+ if(!detail){
+  const commandTotals={wa_target:total(rows,'wa_target'),lead_actual:leads,handover_target:total(rows,'handover_target'),handover_actual:handover,closing_target:total(rows,'closing_target'),unit_actual:unit,profit_target:total(rows,'profit_target'),profit_actual:profit};
+  html+=managementCommandCenter(rows,commandTotals);
+ }
  if(detail){
   html+='<button class="secondary hm-kd-back" type="button" onclick="window.hmKinerjaDivision(&quot;&quot;)">← Ringkasan seluruh divisi</button><div class="hm-kd-section-title">'+detail.icon+' '+detail.name+' <span>'+detail.sub+'</span></div><p>'+detail.desc+'</p>';
   const specs=detail.id==='hello'?[['Lead baru / WA masuk','lead_actual','wa_target','num']]:detail.id==='majesty'?[['Unit terjual','unit_actual','closing_target','num'],['Laba aktual','profit_actual','profit_target','money']]:[['Handover CS','handover_actual','handover_target','num'],['Closing dari lead','lead_closing_actual','closing_target','num']];

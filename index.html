@@ -3447,6 +3447,43 @@ window.hmOpenCriticalMainMenu=hmOpenCriticalMainMenu;
        });
        return;
      }
+     if(action.startsWith('hmOpenKinerjaDivision:')){
+       const divisionId=action.slice('hmOpenKinerjaDivision:'.length).trim();
+       if(!['hello','majesty','refill'].includes(divisionId)){alert('Tujuan divisi tidak valid.');return;}
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       const panel=document.getElementById('hmMenuPanel');
+       const body=document.getElementById('hmMenuPanelBody');
+       if(!panel||!body){alert('Panel menu belum siap.');return;}
+       panel.classList.remove('hidden');
+       panel.style.width='min(96vw, 1400px)';
+       panel.style.maxWidth='96vw';
+       panel.style.height='calc(100vh - 24px)';
+       panel.style.maxHeight='calc(100vh - 24px)';
+       panel.style.margin='12px auto';
+       body.style.maxHeight='calc(100vh - 112px)';
+       body.style.overflowY='auto';
+       body.innerHTML='<div class="box">Memuat '+esc(title)+'…</div>';
+       void (async()=>{
+         if(typeof window.hmOpenKinerjaDivisi!=='function') await new Promise((resolve,reject)=>{
+           const loader=document.createElement('script');
+           loader.src='kinerja-divisi.js?v=20261016-17';
+           loader.onload=resolve;
+           loader.onerror=()=>reject(new Error('File kinerja-divisi.js gagal dimuat.'));
+           document.head.appendChild(loader);
+         });
+         if(typeof window.hmOpenKinerjaDivisi!=='function') throw new Error('Fungsi Kinerja Divisi tidak tersedia.');
+         await window.hmOpenKinerjaDivisi();
+         if(typeof window.hmKinerjaDivision!=='function') throw new Error('Fungsi detail divisi belum tersedia.');
+         window.hmKinerjaDivision(divisionId);
+       })().catch(ex=>{
+         console.error('[HM] Menu divisi gagal dibuka:',title,ex);
+         body.innerHTML='<div class="box" style="color:#b42318"><b>'+esc(title)+' gagal dibuka</b><p>'+esc(ex?.message||'Terjadi kesalahan')+'</p></div>';
+         panel.classList.remove('hidden');
+       });
+       return;
+     }
      void hmMainMenuClick(title,function(){
        return hmRunMainMenuAction(action);
      },action);

@@ -1391,19 +1391,26 @@ async function openTeamCommissionDetails(encodedName){
  if(r.error)return alert('Rincian komisi error: '+r.error.message);
  const rows=r.data||[];
  const back='<button class="btn" onclick="openTeamCommission()">← Kembali ke Komisi Tim</button>';
+ const performanceTypes=new Set(['CS Handover','Content Creator','Fasilitator']);
  const details=rows.map(x=>{
-   const fields=[
+   const isPerformance=performanceTypes.has(x.commission_type)||!x.sale_id;
+   const fields=isPerformance?[
+     ['Komponen',x.commission_type],
+     ['Dasar Laba Outlet',rp(x.gross_profit)],
+     ['Komisi',rp(x.commission)]
+   ]:[
      ['Produk',x.product_name],
      ['Customer',x.customer_name],
      ['CS',x.cs],
      ['CS Closing',x.cs_closing],
      ['Sales',x.sales],
      ['Hunter',x.hunter],
-     ['Laba',rp(x.gross_profit)],
+     ['Laba Transaksi',rp(x.gross_profit)],
      ['Komisi',rp(x.commission)]
    ].filter(([,v])=>v!==null&&v!==undefined&&String(v).trim()!=='');
+   const dateLabel=isPerformance?'Periode '+new Date(monthStart+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'}):new Date(x.sold_at).toLocaleString('id-ID');
    return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.commission_type)+'</b><b>'+rp(x.commission)+'</b></div>'+
-     '<div class="small" style="margin-top:5px">'+new Date(x.sold_at).toLocaleString('id-ID')+'</div>'+
+     '<div class="small" style="margin-top:5px">'+dateLabel+'</div>'+
      fields.map(([k,v])=>'<div class="small" style="margin-top:4px"><b>'+esc(k)+':</b> '+esc(v)+'</div>').join('')+
      '</div>';
  }).join('');
@@ -1411,7 +1418,7 @@ async function openTeamCommissionDetails(encodedName){
  $('mb').innerHTML=
    '<div class="box">'+
    '<h3 style="margin-top:0">'+esc(name)+'</h3>'+
-   '<div class="small">Rincian transaksi komisi bulan '+new Date(monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</div>'+
+   '<div class="small">Rincian komisi bulan '+new Date(monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</div>'+
    '</div>'+
    '<div class="box">'+
    (details||'<div class="small">Tidak ada rincian transaksi komisi untuk anggota ini pada periode tersebut.</div>')+

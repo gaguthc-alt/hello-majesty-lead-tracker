@@ -63,6 +63,28 @@ function divisionAdvice(id,rows){
   if(hp<lp)add('Bocor di funnel','Handover tertinggal dari volume lead','Pencapaian handover '+hp+'% lebih rendah daripada lead '+lp+'%; periksa antrean dan disiplin follow-up.',['Buat daftar lead tanpa status/PIC dan tetapkan pemilik serta tenggat tindak lanjut.']);
  } return items;
 }
+function dataQuality(rows){
+ const checks=[];
+ if(!rows.length)checks.push({level:'Kritis',title:'Tidak ada outlet dalam ringkasan',detail:'Jangan menilai kinerja sampai target dan sumber data tersedia.'});
+ rows.forEach(r=>{
+  const name=String(r.outlet||'Outlet tanpa nama');
+  [['target lead',r.wa_target],['target handover',r.handover_target],['target closing',r.closing_target],['target laba',r.profit_target]].forEach(([label,v])=>{
+   if(v===null||v===undefined||v==='')checks.push({level:'Periksa',title:name+': '+label+' kosong',detail:'Pencapaian indikator ini tidak dapat dinilai secara andal.'});
+  });
+  if(['wa_target','handover_target','closing_target','profit_target'].some(k=>Number(r[k]||0)===0))
+   checks.push({level:'Periksa',title:name+': ada target nol',detail:'Pastikan target nol memang disengaja; jika tidak, persentase dapat menyesatkan.'});
+  if(Number(r.lead_actual||0)<Number(r.handover_actual||0))
+   checks.push({level:'Validasi',title:name+': handover melebihi lead baru',detail:'Periksa definisi periode dan asal lead sebelum menyimpulkan funnel bermasalah.'});
+  if(Number(r.unit_actual||0)>0&&Number(r.profit_actual||0)===0)
+   checks.push({level:'Validasi',title:name+': unit terjual tetapi laba tercatat nol',detail:'Periksa nilai laba transaksi dan konsistensi periode laporan.'});
+ });
+ if(!checks.length)checks.push({level:'Awal',title:'Pemeriksaan dasar tidak menemukan anomali umum',detail:'Ini bukan audit penuh; rekonsiliasi transaksi dan Accurate tetap diperlukan.'});
+ return checks;
+}
+function renderDataQuality(rows){
+ const checks=dataQuality(rows);
+ return '<div class="hm-kd-panel hm-kd-quality"><h3>🛡️ Pemeriksaan Kualitas Data</h3><p class="hm-kd-note">Peringatan berbasis pemeriksaan sederhana, bukan bukti bahwa data pasti benar atau salah.</p><div class="hm-kd-quality-list">'+checks.map(x=>'<article><span class="hm-kd-quality-tag">'+esc(x.level)+'</span><div><b>'+esc(x.title)+'</b><p>'+esc(x.detail)+'</p></div></article>').join('')+'</div></div>';
+}
 function renderDivisionAnalysis(id,rows){
  const list=divisionAdvice(id,rows);
  return '<div class="hm-kd-panel hm-kd-ai-analysis"><h3>Analisis Otomatis Divisi · Diagnosis dan Tindakan</h3><p class="hm-kd-note">Ini analisis berbasis aturan dari target dan pencapaian yang tersedia, bukan AI yang membaca seluruh percakapan/transaksi. Penyebab harus diverifikasi sebelum menetapkan kesalahan individu.</p><div class="hm-kd-ai-list">'+list.map((x,i)=>'<article class="hm-kd-ai-item"><div class="hm-kd-ai-kicker">'+esc(x.priority)+'</div><h4>'+(i+1)+'. '+esc(x.title)+'</h4><p>'+esc(x.detail)+'</p><b>Instruksi tindakan</b><ul>'+x.actions.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul><div class="hm-kd-note"><b>PIC utama:</b> '+esc(id==='hello'?'Tyar — Divisi Hello':id==='majesty'?'Wawan — Divisi Majesty':'Gagut — Divisi Refill')+' · <b>Tenggat awal:</b> hari ini, konfirmasi saat briefing berikutnya · <b>Verifikasi:</b> bandingkan angka setelah tindakan dengan data awal dan catat bukti/perubahan.</div></article>').join('')+'</div></div>';
@@ -103,9 +125,10 @@ function renderDivisions(){
   html+=renderDivisionAnalysis(detail.id,rows);
  }else{
   const totalTarget={wa_target:total(rows,'wa_target'),lead_actual:leads,handover_target:total(rows,'handover_target'),handover_actual:handover,closing_target:total(rows,'closing_target'),unit_actual:unit,profit_target:total(rows,'profit_target'),profit_actual:profit};
+  html+=renderDataQuality(rows);
   html+='<div class="hm-kd-summary"><div><span>Outlet dipantau</span><b>'+num(rows.length)+'</b></div><div><span>Rata-rata pencapaian lead</span><b>'+avg(rows,'lead_actual','wa_target')+'%</b><small>Lead baru · outlet</small></div><div><span>Rata-rata pencapaian handover</span><b>'+avg(rows,'handover_actual','handover_target')+'%</b><small>Handover · outlet</small></div><div><span>Rata-rata pencapaian closing</span><b>'+avg(rows,'lead_closing_actual','closing_target')+'%</b><small>Closing lead · outlet</small></div><div><span>Rata-rata pencapaian unit</span><b>'+avg(rows,'unit_actual','closing_target')+'%</b><small>Unit terjual · outlet</small></div><div><span>Rata-rata pencapaian laba</span><b>'+avg(rows,'profit_actual','profit_target')+'%</b><small>Laba aktual · outlet</small></div></div>';
   const pace=monthPace(latestData.month_start);
-  html+='<div class="hm-kd-panel hm-kd-ai-analysis"><h3>🎯 Arah & Keputusan Management</h3><p class="hm-kd-note">'+(pace.valid?'Bulan berjalan: hari '+pace.elapsed+' dari '+pace.days+' · Sisa '+pace.remaining+' hari.':'Tanggal awal bulan tidak valid; status laju target tidak dapat dinilai.')+' Analisis dihitung ulang dari data terbaru saat menu dibuka, di-refresh, dan pembaruan otomatis.</p><ol class="hm-kd-advice">'+advice(rows,totalTarget).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol><p class="hm-kd-note">Gunakan rekomendasi sebagai agenda keputusan: tetapkan PIC, tindakan, tenggat, lalu verifikasi hasilnya. Sistem belum mencatat keputusan atau PIC otomatis.</p></div>';
+  html+='<div class="hm-kd-panel hm-kd-ai-analysis"><h3>🎯 Arah & Keputusan Management</h3><p class="hm-kd-note">'+(pace.valid?'Periode: hari '+pace.elapsed+' dari '+pace.days+' · Sisa '+pace.remaining+' hari.':'Tanggal periode tidak valid; laju target tidak dapat dinilai.')+' Analisis dihitung ulang dari data terbaru saat menu dibuka, di-refresh, dan pembaruan otomatis.</p><ol class="hm-kd-advice">'+advice(rows,totalTarget).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol><p class="hm-kd-note">Gunakan rekomendasi sebagai agenda keputusan: tetapkan PIC, tindakan, tenggat, lalu verifikasi hasilnya. Sistem belum mencatat keputusan atau PIC otomatis.</p></div>';
   html+='<div class="hm-kd-panel"><h3>Target Hasil</h3><div class="hm-kd-grid">'+metric('Unit terjual',unit,totalTarget.closing_target,'num')+metric('Nominal laba',profit,totalTarget.profit_target,'money')+'</div></div>';
   html+='<div class="hm-kd-panel"><h3>Target Proses</h3><div class="hm-kd-grid">'+metric('Lead baru / WA masuk',leads,totalTarget.wa_target,'num')+metric('Handover ke CS/Sales',handover,totalTarget.handover_target,'num')+metric('Closing dari lead',total(rows,'lead_closing_actual'),totalTarget.closing_target,'num')+'</div></div>';
   html+='<div class="hm-kd-panel"><h3>Pencapaian per Outlet</h3><div class="hm-kd-table-wrap"><table class="hm-kd-table"><thead><tr><th>Outlet</th><th>Lead %</th><th>Handover %</th><th>Unit %</th><th>Laba %</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.outlet)+'</td><td>'+pct(r.lead_actual,r.wa_target)+'%<small>Kurang '+num(safe(r.lead_actual,r.wa_target))+'</small></td><td>'+pct(r.handover_actual,r.handover_target)+'%<small>Kurang '+num(safe(r.handover_actual,r.handover_target))+'</small></td><td>'+pct(r.unit_actual,r.closing_target)+'%<small>Kurang '+num(safe(r.unit_actual,r.closing_target))+'</small></td><td>'+pct(r.profit_actual,r.profit_target)+'%<small>Kurang '+rp(safe(r.profit_actual,r.profit_target))+'</small></td></tr>').join('')+'</tbody></table></div></div>';

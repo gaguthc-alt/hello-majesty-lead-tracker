@@ -1414,12 +1414,23 @@ async function openTeamCommissionDetails(encodedName){
  const allRows=[...rows,...fallback];
  const back='<button class="btn" onclick="openTeamCommission()">← Kembali ke Komisi Tim</button>';
  const performanceTypes=new Set(['CS Handover','Content Creator','Fasilitator']);
+ const formulaByType={
+   'CS Handover':'(Handover CS ÷ Handover Tim) × (Unit Terjual Outlet ÷ Target Unit Outlet) × (Laba Aktual Outlet ÷ Target Laba Outlet) × 10% × Laba Aktual Outlet',
+   'CS Closing':'5% × laba transaksi yang memenuhi syarat CS Closing',
+   'Sales Closing':'10% × laba transaksi yang memenuhi syarat Sales Closing, dibagi sesuai anggota tim closing',
+   'Freelance Internal':'30% × laba transaksi Freelance Internal',
+   'Hunter':'10% × laba unit yang di-hunt dan berhasil SOLD',
+   'Content Creator':'(WA Masuk ÷ Target WA) × (Unit Terjual ÷ Target Unit) × (Laba Aktual Outlet ÷ Target Laba Outlet) × 10% × Laba Aktual Outlet',
+   'Fasilitator':'(WA Masuk ÷ Target WA) × (Handover Tim ÷ Target Handover) × (Unit Terjual ÷ Target Unit) × (Laba Aktual Outlet ÷ Target Laba Outlet) × 10% × Laba Aktual Outlet',
+   'Service Closing':'Sesuai aturan komisi Service Closing pada transaksi'
+ };
  const details=allRows.map(x=>{
    const isSummary=!!x.is_summary;
    const isPerformance=isSummary||performanceTypes.has(x.commission_type)||!x.sale_id;
    const fields=isPerformance?[
      ['Komponen',x.commission_type],
-     ...(isSummary?[['Keterangan','Ringkasan komisi dari rekap bulanan']]:[['Dasar Laba Outlet',rp(x.gross_profit)]]),
+     ['Rumus',formulaByType[x.commission_type]||'Mengikuti aturan komisi untuk komponen ini'],
+     ...(isSummary?[['Keterangan','Nominal ringkasan dari rekap bulanan; bukan transaksi baru']]:[['Dasar Laba Outlet',rp(x.gross_profit)]]),
      ['Komisi',rp(x.commission)]
    ]:[
      ['Produk',x.product_name],
@@ -1429,12 +1440,13 @@ async function openTeamCommissionDetails(encodedName){
      ['Sales',x.sales],
      ['Hunter',x.hunter],
      ['Laba Transaksi',rp(x.gross_profit)],
+     ['Rumus',formulaByType[x.commission_type]||'Mengikuti aturan komisi untuk transaksi ini'],
      ['Komisi',rp(x.commission)]
    ].filter(([,v])=>v!==null&&v!==undefined&&String(v).trim()!=='');
    const dateLabel=isPerformance?'Periode '+new Date(monthStart+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'}):new Date(x.sold_at).toLocaleString('id-ID');
    return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.commission_type)+'</b><b>'+rp(x.commission)+'</b></div>'+
      '<div class="small" style="margin-top:5px">'+dateLabel+'</div>'+
-     fields.map(([k,v])=>'<div class="small" style="margin-top:4px"><b>'+esc(k)+':</b> '+esc(v)+'</div>').join('')+
+     fields.map(([k,v])=>'<div class="small" style="margin-top:4px;'+(k==='Rumus'?'line-height:1.45;white-space:normal':'')+'"><b>'+esc(k)+':</b> '+esc(v)+'</div>').join('')+
      '</div>';
  }).join('');
  $('mt').textContent='🔎 Rincian Komisi • '+name;

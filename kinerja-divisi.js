@@ -15,16 +15,27 @@ function metric(label,actual,target,format){
 }
 function total(rows,a){return rows.reduce((s,r)=>s+Number(r[a]||0),0)}
 function avg(rows,a,t){return rows.length?Math.round(rows.reduce((s,r)=>s+pct(r[a],r[t]),0)/rows.length):0}
+function monthPace(monthStart){
+ const d=new Date(),start=new Date(monthStart+'T12:00:00'),days=new Date(start.getFullYear(),start.getMonth()+1,0).getDate();
+ const elapsed=Math.min(days,d.getDate()),remaining=Math.max(0,days-elapsed);
+ return {days,elapsed,remaining,ratio:elapsed/days};
+}
+function paceLine(actual,target,pace){
+ const expected=Number(target||0)*pace.ratio, gap=Math.max(0,Math.ceil(expected-Number(actual||0)));
+ if(Number(actual||0)>=expected)return 'Di atas laju minimum bulan berjalan; tetap pantau kualitas dan laba.';
+ return 'Tertinggal sekitar '+num(gap)+' dari laju yang seharusnya sudah dicapai hari ini.';
+}
 function advice(rows, totals){
- const out=[];
+ const out=[],pace=monthPace(latestData?.month_start);
  const leadPct=pct(totals.lead_actual,totals.wa_target), handPct=pct(totals.handover_actual,totals.handover_target), closePct=pct(totals.unit_actual,totals.closing_target), profitPct=pct(totals.profit_actual,totals.profit_target);
- if(leadPct<closePct) out.push('Lead baru tertinggal dari kebutuhan hasil. Prioritaskan konten dan CTA yang menghasilkan WhatsApp masuk, bukan hanya tayangan.');
- if(handPct<leadPct) out.push('Handover CS tertinggal dibanding lead masuk. Periksa kecepatan respons, lead yang belum dikualifikasi, dan disiplin serah-terima.');
- if(closePct<handPct) out.push('Closing/unit tertinggal dari volume handover. Audit kualitas lead, konsultasi Sales, follow-up, dan alasan lead gagal.');
- if(profitPct<closePct) out.push('Pencapaian laba tertinggal dari pencapaian unit. Periksa margin per transaksi, diskon, biaya, dan komposisi produk.');
- const worst=rows.slice().sort((a,b)=>Math.min(pct(a.lead_actual,a.wa_target),pct(a.handover_actual,a.handover_target),pct(a.unit_actual,a.closing_target),pct(a.profit_actual,a.profit_target))-Math.min(pct(b.lead_actual,b.wa_target),pct(b.handover_actual,b.handover_target),pct(b.unit_actual,b.closing_target),pct(b.profit_actual,b.profit_target)))[0];
- if(worst) out.push('Mulai evaluasi di '+worst.outlet+': cek indikator dengan persentase terendah dan tetapkan target harian sampai akhir bulan.');
- if(!out.length)out.push('Seluruh indikator utama bergerak seimbang. Pertahankan aktivitas yang menghasilkan lead berkualitas, closing, dan laba; pantau kembali setiap hari.');
+ if(leadPct<Math.round(pace.ratio*100)) out.push('PRIORITAS HELLO: lead '+leadPct+'% dari target, sedangkan waktu bulan berjalan sudah '+Math.round(pace.ratio*100)+'%. '+paceLine(totals.lead_actual,totals.wa_target,pace)+' Perbanyak konten dengan CTA WhatsApp dan ukur lead valid per sumber.');
+ if(handPct<leadPct) out.push('PRIORITAS REFILL: handover '+handPct+'% tertinggal dari lead '+leadPct+'%. Audit antrean, kecepatan respons, kelengkapan kualifikasi, PIC, dan jadwal follow-up.');
+ if(closePct<handPct) out.push('PRIORITAS MAJESTY: unit '+closePct+'% tertinggal dari handover '+handPct+'%. Tinjau lead potensial, waktu respons Sales, stok yang cocok, penawaran, dan alasan lost.');
+ if(profitPct<closePct) out.push('PERLINDUNGAN LABA: laba '+profitPct+'% tertinggal dari unit '+closePct+'%. Audit margin, diskon, biaya finance/tarik tunai, dan transaksi bermargin rendah sebelum mendorong volume.');
+ const metrics=[['Lead',r=>pct(r.lead_actual,r.wa_target)],['Handover',r=>pct(r.handover_actual,r.handover_target)],['Unit',r=>pct(r.unit_actual,r.closing_target)],['Laba',r=>pct(r.profit_actual,r.profit_target)]];
+ const ranking=rows.flatMap(r=>metrics.map(([label,fn])=>({outlet:r.outlet,label,p:fn(r)}))).sort((a,b)=>a.p-b.p);
+ if(ranking[0])out.push('KEPUTUSAN MANAGEMENT: mulai dari '+ranking[0].outlet+' — indikator '+ranking[0].label+' baru '+ranking[0].p+'% dari target. Tetapkan PIC, tindakan harian, dan tenggat; periksa kembali pada refresh berikutnya.');
+ if(!out.length)out.push('Indikator utama tidak menunjukkan ketertinggalan relatif yang terdeteksi. Pastikan kualitas lead, laba per unit, dan validitas data tetap terjaga; angka agregat saja belum membuktikan seluruh proses sehat.');
  return out;
 }
 function divisionAdvice(id,rows){
@@ -72,6 +83,8 @@ function renderDivisions(){
  }else{
   const totalTarget={wa_target:total(rows,'wa_target'),lead_actual:leads,handover_target:total(rows,'handover_target'),handover_actual:handover,closing_target:total(rows,'closing_target'),unit_actual:unit,profit_target:total(rows,'profit_target'),profit_actual:profit};
   html+='<div class="hm-kd-summary"><div><span>Outlet dipantau</span><b>'+num(rows.length)+'</b></div><div><span>Rata-rata pencapaian lead</span><b>'+avg(rows,'lead_actual','wa_target')+'%</b><small>Lead baru · outlet</small></div><div><span>Rata-rata pencapaian handover</span><b>'+avg(rows,'handover_actual','handover_target')+'%</b><small>Handover · outlet</small></div><div><span>Rata-rata pencapaian closing</span><b>'+avg(rows,'lead_closing_actual','closing_target')+'%</b><small>Closing lead · outlet</small></div><div><span>Rata-rata pencapaian unit</span><b>'+avg(rows,'unit_actual','closing_target')+'%</b><small>Unit terjual · outlet</small></div><div><span>Rata-rata pencapaian laba</span><b>'+avg(rows,'profit_actual','profit_target')+'%</b><small>Laba aktual · outlet</small></div></div>';
+  const pace=monthPace(latestData.month_start);
+  html+='<div class="hm-kd-panel hm-kd-ai-analysis"><h3>🎯 Arah & Keputusan Management</h3><p class="hm-kd-note">Bulan berjalan: hari '+pace.elapsed+' dari '+pace.days+' · Sisa '+pace.remaining+' hari. Analisis dihitung ulang dari data terbaru saat menu dibuka, di-refresh, dan pembaruan otomatis.</p><ol class="hm-kd-advice">'+advice(rows,totalTarget).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol><p class="hm-kd-note">Gunakan rekomendasi sebagai agenda keputusan: tetapkan PIC, tindakan, tenggat, lalu verifikasi hasilnya. Sistem belum mencatat keputusan atau PIC otomatis.</p></div>';
   html+='<div class="hm-kd-panel"><h3>Target Hasil</h3><div class="hm-kd-grid">'+metric('Unit terjual',unit,totalTarget.closing_target,'num')+metric('Nominal laba',profit,totalTarget.profit_target,'money')+'</div></div>';
   html+='<div class="hm-kd-panel"><h3>Target Proses</h3><div class="hm-kd-grid">'+metric('Lead baru / WA masuk',leads,totalTarget.wa_target,'num')+metric('Handover ke CS/Sales',handover,totalTarget.handover_target,'num')+metric('Closing dari lead',total(rows,'lead_closing_actual'),totalTarget.closing_target,'num')+'</div></div>';
   html+='<div class="hm-kd-panel"><h3>Pencapaian per Outlet</h3><div class="hm-kd-table-wrap"><table class="hm-kd-table"><thead><tr><th>Outlet</th><th>Lead %</th><th>Handover %</th><th>Unit %</th><th>Laba %</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.outlet)+'</td><td>'+pct(r.lead_actual,r.wa_target)+'%<small>Kurang '+num(safe(r.lead_actual,r.wa_target))+'</small></td><td>'+pct(r.handover_actual,r.handover_target)+'%<small>Kurang '+num(safe(r.handover_actual,r.handover_target))+'</small></td><td>'+pct(r.unit_actual,r.closing_target)+'%<small>Kurang '+num(safe(r.unit_actual,r.closing_target))+'</small></td><td>'+pct(r.profit_actual,r.profit_target)+'%<small>Kurang '+rp(safe(r.profit_actual,r.profit_target))+'</small></td></tr>').join('')+'</tbody></table></div></div>';

@@ -7,7 +7,7 @@ const num = n => Number(n||0).toLocaleString('id-ID');
 const pct = (a,t) => Number(t)>0 ? Math.round(Number(a||0)/Number(t)*100) : 0;
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safe = (n,t) => Math.max(0,Number(t||0)-Number(n||0));
-let latestData=null, activeDivision='';
+let latestData=null, activeDivision='', lastUpdatedAt=null, refreshTimer=null, refreshBusy=false;
 
 function metric(label,actual,target,format){
  const f=format==='money'?rp:num, p=pct(actual,target);
@@ -52,27 +52,44 @@ function renderDivisions(){
   html+='<div class="hm-kd-panel"><h3>Analisis AI · Prioritas Tindakan</h3><ol class="hm-kd-advice">'+advice(rows,totalTarget).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol><p class="hm-kd-note">Rekomendasi otomatis berdasarkan selisih indikator aktual dan target. Gunakan sebagai bahan evaluasi tim, bukan pengganti pemeriksaan data.</p></div>';
   html+='<div class="hm-kd-panel"><h3>Masuk ke Detail Divisi</h3><div class="hm-kd-divisions">'+divisions.map(d=>'<button type="button" class="hm-kd-division" onclick="window.hmKinerjaDivision(\''+d.id+'\')"><b>'+d.icon+' '+d.name+'</b><span>'+d.sub+'</span><small>'+d.desc+'</small></button>').join('')+'</div></div>';
  }
+ html=html.replace('Target hasil dan target proses seluruh outlet · '+new Date(latestData.month_start+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'}), 'Target hasil dan target proses seluruh outlet · '+new Date(latestData.month_start+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'})+' · Diperbarui '+(lastUpdatedAt?lastUpdatedAt.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—'));
+ html=html.replace('Analisis AI · Prioritas Tindakan','Analisis Otomatis · Prioritas Tindakan');
  const host=$('hmKinerjaDivisiPanel');
  if(host)host.innerHTML=html;
 }
 window.hmKinerjaDivision=id=>{activeDivision=String(id||'');renderDivisions();};
-window.hmOpenKinerjaDivisi=async function(){
- const panel=$('hmMenuPanel'),body=$('hmMenuPanelBody'),title=$('hmMenuPanelTitle');
- if(!panel||!body){alert('Panel menu belum siap.');return;}
- if(title)title.textContent='📊 Kinerja Divisi';
- body.innerHTML='<div class="box">Memuat target dan pencapaian seluruh outlet…</div>';
- panel.classList.remove('hidden');
- const old=$('hmKinerjaDivisiPanel');if(old)old.remove();
- const host=document.createElement('div');host.id='hmKinerjaDivisiPanel';body.appendChild(host);
+window.hmRefreshKinerjaDivisi=async function(){
+ if(refreshBusy)return;
+ refreshBusy=true;
+ const host=$('hmKinerjaDivisiPanel');
  try{
   const result=await (typeof sb!=='undefined' ? sb.rpc('kinerja_divisi_summary') : Promise.resolve(null));
   if(!result)throw new Error('Koneksi database belum siap.');
   if(result.error)throw result.error;
-  latestData=result.data||{};
-  if(!Array.isArray(latestData.outlets)||!latestData.outlets.length)throw new Error('Belum ada target aktif untuk bulan ini.');
+  const data=result.data||{};
+  if(!Array.isArray(data.outlets)||!data.outlets.length)throw new Error('Belum ada target aktif untuk bulan ini.');
+  latestData=data;lastUpdatedAt=new Date();
   renderDivisions();
- }catch(e){host.innerHTML='<div class="box" style="color:#b42318"><b>Kinerja Divisi gagal dimuat</b><p>'+esc(e?.message||e)+'</p><button class="secondary" onclick="window.hmOpenKinerjaDivisi()">Coba lagi</button></div>';}
+ }catch(e){
+  if(host&&!latestData)host.innerHTML='<div class="box" style="color:#b42318"><b>Kinerja Divisi gagal dimuat</b><p>'+esc(e?.message||e)+'</p><button class="secondary" onclick="window.hmRefreshKinerjaDivisi()">Coba lagi</button></div>';
+  else if(host){const note=document.createElement('p');note.className='hm-kd-note';note.textContent='Pembaruan gagal: '+(e?.message||e)+'. Data terakhir tetap ditampilkan.';host.appendChild(note);}
+ }finally{refreshBusy=false;}
+};
+window.hmOpenKinerjaDivisi=async function(){
+ const panel=$('hmMenuPanel'),body=$('hmMenuPanelBody'),title=$('hmMenuPanelTitle');
+ if(!panel||!body){alert('Panel menu belum siap.');return;}
+ if(title)title.textContent='📊 Kinerja Divisi';
+ panel.classList.remove('hidden');
+ if(!$('hmKinerjaDivisiPanel')){const host=document.createElement('div');host.id='hmKinerjaDivisiPanel';body.appendChild(host);}
+ const host=$('hmKinerjaDivisiPanel');
+ if(!latestData)host.innerHTML='<div class="box">Memuat target dan pencapaian seluruh outlet…</div>';
+ await window.hmRefreshKinerjaDivisi();
  if($('modal'))$('modal').classList.add('hidden');
  panel.scrollIntoView({behavior:'smooth',block:'start'});
+ if(refreshTimer)clearInterval(refreshTimer);
+ refreshTimer=setInterval(()=>{
+  const p=$('hmMenuPanel');
+  if(p&&!p.classList.contains('hidden'))window.hmRefreshKinerjaDivisi();
+ },60000);
 };
 })();

@@ -1387,16 +1387,39 @@ async function openTeamCommissionDetails(encodedName){
  const name=decodeURIComponent(encodedName||'');
  const monthStart=window._teamCommissionMonthStart||(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'})();
  const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
- const r=await sb.rpc('management_team_commission_details',{p_month_start:monthStart,p_team_name:name});
- if(r.error)return alert('Rincian komisi error: '+r.error.message);
- const rows=r.data||[];
+ const [detailResult,reportResult]=await Promise.all([
+   sb.rpc('management_team_commission_details',{p_month_start:monthStart,p_team_name:name}),
+   sb.rpc('management_team_commission_report',{p_month_start:monthStart})
+ ]);
+ if(detailResult.error)return alert('Rincian komisi error: '+detailResult.error.message);
+ if(reportResult.error)return alert('Rekap komisi error: '+reportResult.error.message);
+ const rows=detailResult.data||[];
+ const report=(reportResult.data||[]).find(x=>x.name===name);
+ const componentTargets=report?[
+   {type:'CS Handover',amount:Math.max(Number(report.cs_commission||0)-Number(report.cs_closing_commission||0),0),profit:0},
+   {type:'CS Closing',amount:Number(report.cs_closing_commission||0),profit:0},
+   {type:'Sales Closing',amount:Number(report.sales_commission||0),profit:0},
+   {type:'Freelance Internal',amount:Number(report.freelance_internal_commission||0),profit:0},
+   {type:'Hunter',amount:Number(report.hunter_commission||0),profit:0},
+   {type:'Content Creator',amount:Number(report.content_creator_commission||0),profit:0},
+   {type:'Fasilitator',amount:Number(report.facilitator_commission||0),profit:0}
+ ]:[];
+ // Tambahkan ringkasan hanya untuk komisi yang belum terwakili oleh rincian transaksi.
+ const fallback=[];
+ componentTargets.forEach(t=>{
+   const existing=rows.filter(x=>x.commission_type===t.type).reduce((s,x)=>s+Number(x.commission||0),0);
+   const missing=Math.round((t.amount-existing)*100)/100;
+   if(missing>0.01)fallback.push({commission_type:t.type,sale_id:null,sold_at:monthStart+'T00:00:00',product_name:'Ringkasan komisi '+t.type,customer_name:'-',cs:null,cs_closing:null,sales:null,hunter:null,gross_profit:0,commission:missing,is_summary:true});
+ });
+ const allRows=[...rows,...fallback];
  const back='<button class="btn" onclick="openTeamCommission()">← Kembali ke Komisi Tim</button>';
  const performanceTypes=new Set(['CS Handover','Content Creator','Fasilitator']);
- const details=rows.map(x=>{
-   const isPerformance=performanceTypes.has(x.commission_type)||!x.sale_id;
+ const details=allRows.map(x=>{
+   const isSummary=!!x.is_summary;
+   const isPerformance=isSummary||performanceTypes.has(x.commission_type)||!x.sale_id;
    const fields=isPerformance?[
      ['Komponen',x.commission_type],
-     ['Dasar Laba Outlet',rp(x.gross_profit)],
+     ...(isSummary?[['Keterangan','Ringkasan komisi dari rekap bulanan']]:[['Dasar Laba Outlet',rp(x.gross_profit)]]),
      ['Komisi',rp(x.commission)]
    ]:[
      ['Produk',x.product_name],
@@ -1416,13 +1439,9 @@ async function openTeamCommissionDetails(encodedName){
  }).join('');
  $('mt').textContent='🔎 Rincian Komisi • '+name;
  $('mb').innerHTML=
-   '<div class="box">'+
-   '<h3 style="margin-top:0">'+esc(name)+'</h3>'+
-   '<div class="small">Rincian komisi bulan '+new Date(monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</div>'+
-   '</div>'+
-   '<div class="box">'+
-   (details||'<div class="small">Tidak ada rincian transaksi komisi untuk anggota ini pada periode tersebut.</div>')+
-   '</div>'+
+   '<div class="box"><h3 style="margin-top:0">'+esc(name)+'</h3>'+
+   '<div class="small">Rincian komisi bulan '+new Date(monthStart+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</div></div>'+
+   '<div class="box">'+(details||'<div class="small">Tidak ada rincian komisi untuk anggota ini pada periode tersebut.</div>')+'</div>'+
    '<div class="box">'+back+'</div>';
  if(hmActiveMainMenu==='Komisi Tim'){
    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');

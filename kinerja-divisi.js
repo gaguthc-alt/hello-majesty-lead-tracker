@@ -75,6 +75,7 @@ window.hmRefreshKinerjaDivisi=async function(){
   else if(host){const note=document.createElement('p');note.className='hm-kd-note';note.textContent='Pembaruan gagal: '+(e?.message||e)+'. Data terakhir tetap ditampilkan.';host.appendChild(note);}
  }finally{refreshBusy=false;}
 };
+window.hmOpenKinerjaDivision=async function(id){await window.hmOpenKinerjaDivisi();window.hmKinerjaDivision(id);};
 window.hmOpenKinerjaDivisi=async function(){
  const panel=$('hmMenuPanel'),body=$('hmMenuPanelBody'),title=$('hmMenuPanelTitle');
  if(!panel||!body){alert('Panel menu belum siap.');return;}

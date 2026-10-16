@@ -2705,9 +2705,9 @@ function renderRoleHome(){
  }
  // Kinerja Divisi adalah menu bersama untuk seluruh divisi dan Developer, termasuk akun Divisi Refill.
  if(!cards.some(x=>x[1]==='Kinerja Divisi'))cards.push(['📊','Kinerja Divisi','Pusat evaluasi manajemen: target, hasil, hambatan, dan prioritas tindakan','hmOpenKinerjaDivisi()']);
- if(!cards.some(x=>x[1]==='Divisi Hello'))cards.push(['📣','Divisi Hello','Promotion · lead baru, WA masuk, dan konten','hmOpenKinerjaDivision(hello)']);
- if(!cards.some(x=>x[1]==='Divisi Majesty'))cards.push(['🛍️','Divisi Majesty','Sales · closing, unit terjual, dan laba','hmOpenKinerjaDivision(majesty)']);
- if(!cards.some(x=>x[1]==='Divisi Refill'))cards.push(['⚙️','Divisi Refill','Finance & Administration · CS, finance, Accurate, dan sistem','hmOpenKinerjaDivision(refill)']);
+ if(!cards.some(x=>x[1]==='Divisi Hello'))cards.push(['📣','Divisi Hello','Promotion · lead baru, WA masuk, dan konten','hmOpenKinerjaDivision(\\'hello\\')']);
+ if(!cards.some(x=>x[1]==='Divisi Majesty'))cards.push(['🛍️','Divisi Majesty','Sales · closing, unit terjual, dan laba','hmOpenKinerjaDivision(\\'majesty\\')']);
+ if(!cards.some(x=>x[1]==='Divisi Refill'))cards.push(['⚙️','Divisi Refill','Finance & Administration · CS, finance, Accurate, dan sistem','hmOpenKinerjaDivision(\\'refill\\')']);
  window.hmMainMenuItems=cards;
  const menuGroups=[
    ['🎯','LEAD TRACKER',[
@@ -2723,13 +2723,13 @@ function renderRoleHome(){
      ['📊','Kinerja Divisi','Target hasil, target proses, pencapaian outlet, dan rekomendasi AI','hmOpenKinerjaDivisi()']
    ]],
    ['📣','DIVISI HELLO — PROMOTION',[
-     ['📣','Divisi Hello','Lead baru, WA masuk, konten, dan kualitas lead','hmOpenKinerjaDivision(hello)']
+     ['📣','Divisi Hello','Lead baru, WA masuk, konten, dan kualitas lead','hmOpenKinerjaDivision(\\'hello\\')']
    ]],
    ['🛍️','DIVISI MAJESTY — SALES',[
-     ['🛍️','Divisi Majesty','Closing, unit terjual, dan laba outlet','hmOpenKinerjaDivision(majesty)']
+     ['🛍️','Divisi Majesty','Closing, unit terjual, dan laba outlet','hmOpenKinerjaDivision(\\'majesty\\')']
    ]],
    ['⚙️','DIVISI REFILL — FINANCE & ADMINISTRATION',[
-     ['⚙️','Divisi Refill','CS, finance, Accurate, administrasi, dan Management System','hmOpenKinerjaDivision(refill)']
+     ['⚙️','Divisi Refill','CS, finance, Accurate, administrasi, dan Management System','hmOpenKinerjaDivision(\\'refill\\')']
    ]],
    ['🛒','SALES & PENJUALAN',[
      ['🏪','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()'],
@@ -2877,9 +2877,9 @@ function renderRoleHome(){
  const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
  host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div><div class="role-home-status"><i></i> Workspace aktif</div><section id="hmHomePerformance" class="hm-home-performance"><div class="hm-home-perf-title">📊 PERFORMA</div><div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>PERFORMA SAYA</b><span>Aktivitas akun ini</span></div></div><div class="hm-home-perf-grid"><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing</div><div class="hm-home-perf-value">0</div></div></div></div><div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>TOTAL</b><span>Memuat...</span></div></div><div class="hm-home-perf-grid"><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing</div><div class="hm-home-perf-value">0</div></div></div></div></section>'+kpis+'<div class="role-home-tools"><button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><div class="role-home-section">MENU UTAMA</div><div class="role-home-categories">'+visibleGroups+'<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>🏛️ MENU DIVISI — AKSES LANGSUNG</span></div><div class="role-home-submenu">'+[
  ['📊','Kinerja Divisi','Ringkasan lintas divisi, target, hasil, dan prioritas tindakan','hmOpenKinerjaDivisi()'],
- ['📣','Divisi Hello','Promotion · lead baru, WhatsApp masuk, konten, dan kualitas lead','hmOpenKinerjaDivision(hello)'],
- ['🛍️','Divisi Majesty','Sales · closing, unit terjual, dan laba','hmOpenKinerjaDivision(majesty)'],
- ['⚙️','Divisi Refill','Finance & Administration · CS, finance, Accurate, dan sistem','hmOpenKinerjaDivision(refill)']
+ ['📣','Divisi Hello','Promotion · lead baru, WhatsApp masuk, konten, dan kualitas lead','hmOpenKinerjaDivision(\\'hello\\')'],
+ ['🛍️','Divisi Majesty','Sales · closing, unit terjual, dan laba','hmOpenKinerjaDivision(\\'majesty\\')'],
+ ['⚙️','Divisi Refill','Finance & Administration · CS, finance, Accurate, dan sistem','hmOpenKinerjaDivision(\\'refill\\')']
 ].map(item=>{let card=cards.find(x=>x[1]===item[1]);if(!card){card=[item[0],item[1],item[2],item[3]];cards.push(card);}const cardIndex=cards.indexOf(card);return '<button type="button" class="role-home-submenu-item" data-hm-menu-index="'+cardIndex+'" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';}).join('')+'</div></section></div><div id="hmMenuPanel" class="box hidden hm-menu-panel-bottom" style="margin:12px 0 0;padding:16px"><div class="hm-menu-panel-head"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800"></div><button type="button" class="secondary hm-menu-panel-close" onclick="hmCloseMainMenu()" aria-label="Tutup panel">✕ Tutup</button></div><div id="hmMenuPanelBody"></div></div>';
  host.querySelectorAll('[data-hm-menu-index]').forEach(btn=>{
    // Satu tombol = satu tujuan. Gunakan onclick property agar tidak ada

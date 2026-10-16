@@ -32,9 +32,9 @@
       lines.push(
         r.name+' | CS Handover '+rp(handover)+
         ' | CS Closing '+rp(r.cs_closing_commission)+
-        ' | Sales '+rp(r.sales_commission)+
+        ' | Sales Closing '+rp(r.sales_commission)+
         ' | Hunter '+rp(r.hunter_commission)+
-        ' | Content '+rp(r.content_creator_commission)+
+        ' | Content Creator '+rp(r.content_creator_commission)+
         ' | Fasilitator '+rp(r.facilitator_commission)+
         ' | TOTAL '+rp(r.total_commission)
       );
@@ -64,9 +64,9 @@
       '<th style="text-align:left;padding:9px">Nama</th>'+
       '<th style="text-align:right;padding:9px">CS Handover</th>'+
       '<th style="text-align:right;padding:9px">CS Closing</th>'+
-      '<th style="text-align:right;padding:9px">Sales</th>'+
+      '<th style="text-align:right;padding:9px">Sales Closing</th>'+
       '<th style="text-align:right;padding:9px">Hunter</th>'+
-      '<th style="text-align:right;padding:9px">Content</th>'+
+      '<th style="text-align:right;padding:9px">Content Creator</th>'+
       '<th style="text-align:right;padding:9px">Fasilitator</th>'+
       '<th style="text-align:right;padding:9px">Total</th>'+
       '</tr></thead><tbody>';

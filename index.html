@@ -2494,6 +2494,24 @@ function hmEnsureHomePerformanceStyle(){
   margin-bottom:0!important;
   box-shadow:0 -6px 14px rgba(16,24,40,.10)!important;
 }
+
+.hm-kd-command{margin:14px 0 18px;padding:18px;border-radius:20px;background:linear-gradient(135deg,#101827 0%,#163a50 55%,#0f766e 100%);color:#fff;box-shadow:0 10px 26px #0f172a1a}
+.hm-kd-command-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hm-kd-command-head h3{margin:4px 0 5px;font-size:21px}
+.hm-kd-command-head p{margin:0;color:#dbeafe;font-size:13px}
+.hm-kd-status{display:inline-flex;align-items:center;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;background:#fee2e2;color:#991b1b}
+.hm-kd-status.warning{background:#fef3c7;color:#92400e}.hm-kd-status.good{background:#d1fae5;color:#065f46}
+.hm-kd-command-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:15px}
+.hm-kd-command-card{min-width:0;background:#f8fafc;color:#172033;border-radius:15px;padding:14px;border-top:4px solid var(--leader,#64748b);box-shadow:0 3px 12px #00000012}
+.hm-kd-command-person{display:flex;align-items:center;gap:9px}
+.hm-kd-command-num{width:30px;height:30px;flex:0 0 30px;border-radius:10px;display:grid;place-items:center;background:var(--leader);color:#fff;font-weight:800}
+.hm-kd-command-person h4{margin:0;font-size:17px}
+.hm-kd-command-role{font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--leader);margin-top:3px}
+.hm-kd-command-metric{font-size:12px;font-weight:800;margin:13px 0 8px;padding:8px;border-radius:9px;background:#e9eef5}
+.hm-kd-command-card p{font-size:13px;line-height:1.5;margin:0 0 12px}
+.hm-kd-command-action{font-size:11px;font-weight:800;color:var(--leader);border-top:1px solid #d8dee8;padding-top:9px}
+.hm-kd-command-foot{margin-top:13px;color:#dbeafe;font-size:11px;line-height:1.5}
+@media(max-width:760px){.hm-kd-command-grid{grid-template-columns:1fr}.hm-kd-command{padding:13px}.hm-kd-command-head h3{font-size:19px}}
 </style>`);
 }
 async function hmRenderHomePerformance(){

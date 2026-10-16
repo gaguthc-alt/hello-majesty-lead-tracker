@@ -2557,8 +2557,9 @@ async function hmRenderManagementMessage(){
    const divisionRole=roles.includes('DIVISI')||raw==='DIVISI';
    const divisionName=String(profile?.division||profile?.divisi||profile?.department||'').trim().toUpperCase();
    const name=String(profile?.name||'').trim().split(/\\s+/)[0]||'Tim';
+   const assignedDivision=String(({TYAR:'HELLO',GAGUT:'REFILL',WAWAN:'MAJESTY'})[name.toUpperCase()]||'').toUpperCase();
    if(divisionRole){
-     const roleText=divisionName||'';
+     const roleText=divisionName||assignedDivision;
      const divisionKey=roleText||String(profile?.name||'').toUpperCase();
      if(divisionKey.includes('HELLO')){
        message=name+', fokus Divisi Hello: pastikan konten menarik perhatian pelanggan yang tepat, pantau lead masuk dan kualitas percakapan, lalu pastikan lead diteruskan ke CS/Sales dengan sumber yang tercatat. Evaluasi konten berdasarkan lead berkualitas dan hasil tindak lanjut, bukan views saja.';

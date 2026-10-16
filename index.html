@@ -1308,7 +1308,7 @@ function renderCommissionActions(){
 }
 
 async function openTeamCommission(){
- const monthStart=new Date().toISOString().slice(0,7)+'-01';
+ const monthStart=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'})();
  const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
  const [r,profitRes]=await Promise.all([
    sb.rpc('management_team_commission_report',{p_month_start:monthStart}),
@@ -1385,7 +1385,7 @@ async function openTeamCommission(){
 }
 async function openTeamCommissionDetails(encodedName){
  const name=decodeURIComponent(encodedName||'');
- const monthStart=window._teamCommissionMonthStart||new Date().toISOString().slice(0,7)+'-01';
+ const monthStart=window._teamCommissionMonthStart||(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'})();
  const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
  const r=await sb.rpc('management_team_commission_details',{p_month_start:monthStart,p_team_name:name});
  if(r.error)return alert('Rincian komisi error: '+r.error.message);
@@ -1423,7 +1423,7 @@ async function openTeamCommissionDetails(encodedName){
  }
 }
 async function openCommission(){
-  const monthStart=new Date().toISOString().slice(0,7)+'-01';
+  const monthStart=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'})();
   const r=await sb.rpc('my_commission_summary',{p_month_start:monthStart});
   if(r.error)return alert('Komisi error: '+r.error.message);
   const d=r.data||{}, t=d.targets||{}, tm=d.team||{};

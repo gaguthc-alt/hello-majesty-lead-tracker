@@ -1430,7 +1430,7 @@ async function openTeamCommissionDetails(encodedName){
    const fields=isPerformance?[
      ['Komponen',x.commission_type],
      ['Rumus',formulaByType[x.commission_type]||'Mengikuti aturan komisi untuk komponen ini'],
-     ...(isSummary?[['Keterangan','Nominal ringkasan dari rekap bulanan; bukan transaksi baru']]:[['Dasar Laba Outlet',rp(x.gross_profit)]]),
+     ...(isSummary?[]:[['Dasar Laba Outlet',rp(x.gross_profit)]]),
      ['Komisi',rp(x.commission)]
    ]:[
      ['Produk',x.product_name],

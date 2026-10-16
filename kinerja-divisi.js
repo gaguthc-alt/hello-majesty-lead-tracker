@@ -85,6 +85,54 @@ function renderDataQuality(rows){
  const checks=dataQuality(rows);
  return '<div class="hm-kd-panel hm-kd-quality"><h3>🛡️ Pemeriksaan Kualitas Data</h3><p class="hm-kd-note">Peringatan berbasis pemeriksaan sederhana, bukan bukti bahwa data pasti benar atau salah.</p><div class="hm-kd-quality-list">'+checks.map(x=>'<article><span class="hm-kd-quality-tag">'+esc(x.level)+'</span><div><b>'+esc(x.title)+'</b><p>'+esc(x.detail)+'</p></div></article>').join('')+'</div></div>';
 }
+function decisionBookAllowed(){
+ const p=typeof profile!=='undefined'?profile:null;
+ const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
+ return !!p&&(!!p.is_management||String(p.role||'').toUpperCase().includes('MANAGEMENT')||roles.includes('MANAGEMENT'));
+}
+function decisionDivisionLabel(v){return ({hello:'Divisi Hello',majesty:'Divisi Majesty',refill:'Divisi Refill',cross_division:'Lintas Divisi'})[v]||v;}
+function decisionStatusLabel(v){return ({open:'Belum dimulai',in_progress:'Sedang dikerjakan',blocked:'Terhambat',completed:'Selesai · menunggu verifikasi',verified:'Terverifikasi'})[v]||v;}
+function renderDecisionRows(rows){
+ if(!rows.length)return '<p class="hm-kd-note">Belum ada keputusan tersimpan. Tambahkan masalah prioritas pertama setelah data dan buktinya diperiksa.</p>';
+ return '<div class="hm-kd-decision-list">'+rows.map(r=>'<article class="hm-kd-decision"><div class="hm-kd-decision-top"><span class="hm-kd-decision-priority '+esc(r.priority)+'">'+esc(String(r.priority||'medium').toUpperCase())+'</span><span class="hm-kd-decision-status">'+esc(decisionStatusLabel(r.status))+'</span></div><h4>'+esc(r.title)+'</h4><p class="hm-kd-note">'+esc(decisionDivisionLabel(r.division))+' · PIC: '+esc(r.owner_name)+' · Tenggat: '+esc(r.due_date)+'</p><p><b>Masalah:</b> '+esc(r.problem)+'</p><p><b>Bukti:</b> '+esc(r.evidence||'Belum dicatat')+'</p><p><b>Hipotesis yang perlu diuji:</b> '+esc(r.hypothesis||'Belum dicatat')+'</p><p><b>Tindakan:</b> '+esc(r.action_plan)+'</p><p><b>Ukuran berhasil:</b> '+esc(r.success_measure)+'</p>'+(r.verification_notes?'<p><b>Verifikasi:</b> '+esc(r.verification_notes)+'</p>':'')+'<div class="hm-kd-decision-controls"><select id="hmKdStatus-'+esc(r.id)+'"><option value="open" '+(r.status==='open'?'selected':'')+'>Belum dimulai</option><option value="in_progress" '+(r.status==='in_progress'?'selected':'')+'>Sedang dikerjakan</option><option value="blocked" '+(r.status==='blocked'?'selected':'')+'>Terhambat</option><option value="completed" '+(r.status==='completed'?'selected':'')+'>Selesai · menunggu verifikasi</option><option value="verified" '+(r.status==='verified'?'selected':'')+'>Terverifikasi</option></select><input id="hmKdVerify-'+esc(r.id)+'" placeholder="Catatan hasil verifikasi / hambatan" value="'+esc(r.verification_notes||'')+'"><button type="button" class="secondary" onclick="window.hmKdUpdateDecision(\''+esc(r.id)+'\')">Simpan status</button></div></article>').join('')+'</div>';
+}
+async function loadDecisionBook(){
+ const host=$('hmKdDecisionRows');if(!host)return;
+ if(!decisionBookAllowed()){host.innerHTML='<p class="hm-kd-note">Buku Keputusan hanya tersedia untuk akun Management yang berwenang.</p>';return;}
+ const db=typeof sb!=='undefined'?sb:window.sb;
+ if(!db){host.textContent='Koneksi database belum siap.';return;}
+ host.innerHTML='<p class="hm-kd-note">Memuat keputusan tersimpan…</p>';
+ const {data,error}=await db.from('management_decisions').select('*').order('due_date',{ascending:true}).order('created_at',{ascending:false}).limit(100);
+ if(error){host.innerHTML='<p class="hm-kd-note">Gagal memuat Buku Keputusan: '+esc(error.message)+' · Periksa izin Management/RLS.</p>';return;}
+ host.innerHTML=renderDecisionRows(data||[]);
+}
+window.hmKdCreateDecision=async function(){
+ if(!decisionBookAllowed()){alert('Akses hanya untuk Management.');return;}
+ const get=id=>String($(id)?.value||'').trim();
+ const payload={title:get('hmKdTitle'),division:get('hmKdDivision'),priority:get('hmKdPriority'),problem:get('hmKdProblem'),evidence:get('hmKdEvidence'),hypothesis:get('hmKdHypothesis'),action_plan:get('hmKdAction'),owner_name:get('hmKdOwner'),due_date:get('hmKdDue'),success_measure:get('hmKdSuccess'),period_start:latestData?.month_start||new Date().toISOString().slice(0,10)};
+ if(!payload.title||!payload.problem||!payload.action_plan||!payload.owner_name||!payload.due_date||!payload.success_measure){alert('Lengkapi judul, masalah, tindakan, PIC, tenggat, dan ukuran keberhasilan.');return;}
+ const db=typeof sb!=='undefined'?sb:window.sb;
+ const btn=$('hmKdSaveDecision');if(btn)btn.disabled=true;
+ const {error}=await db.from('management_decisions').insert(payload);
+ if(btn)btn.disabled=false;
+ if(error){alert('Keputusan belum tersimpan: '+error.message);return;}
+ ['hmKdTitle','hmKdProblem','hmKdEvidence','hmKdHypothesis','hmKdAction','hmKdOwner','hmKdDue','hmKdSuccess'].forEach(id=>{if($(id))$(id).value='';});
+ await loadDecisionBook();
+};
+window.hmKdUpdateDecision=async function(id){
+ if(!decisionBookAllowed()){alert('Akses hanya untuk Management.');return;}
+ const status=$('hmKdStatus-'+id)?.value,verification_notes=String($('hmKdVerify-'+id)?.value||'').trim();
+ if(status==='verified'&&!verification_notes){alert('Catatan verifikasi wajib diisi sebelum keputusan dinyatakan terverifikasi.');return;}
+ const db=typeof sb!=='undefined'?sb:window.sb;
+ const {error}=await db.from('management_decisions').update({status,verification_notes}).eq('id',id);
+ if(error){alert('Status belum tersimpan: '+error.message);return;}
+ await loadDecisionBook();
+};
+function renderDecisionBook(){
+ if(!decisionBookAllowed())return '';
+ const today=new Date().toISOString().slice(0,10);
+ return '<section class="hm-kd-panel hm-kd-decision-book"><h3>📒 Buku Keputusan Management</h3><p>Catat keputusan yang dapat ditindaklanjuti dan diverifikasi. Pisahkan fakta, hipotesis, tindakan, PIC, tenggat, dan ukuran keberhasilan.</p><div class="hm-kd-decision-form"><label>Judul masalah/keputusan<input id="hmKdTitle" maxlength="180" placeholder="Contoh: Handover lead potensial terlambat"></label><div class="hm-kd-decision-form-grid"><label>Divisi<select id="hmKdDivision"><option value="cross_division">Lintas Divisi</option><option value="hello">Divisi Hello</option><option value="majesty">Divisi Majesty</option><option value="refill">Divisi Refill</option></select></label><label>Prioritas<select id="hmKdPriority"><option value="critical">Kritis</option><option value="high">Tinggi</option><option value="medium" selected>Menengah</option><option value="low">Rendah</option></select></label></div><label>Masalah terukur<textarea id="hmKdProblem" maxlength="5000" rows="2" placeholder="Apa yang terjadi dan seberapa besar dampaknya?"></textarea></label><label>Bukti yang sudah diperiksa<textarea id="hmKdEvidence" maxlength="5000" rows="2" placeholder="Angka, periode, transaksi, lead, atau sumber bukti"></textarea></label><label>Hipotesis penyebab yang masih perlu diuji<textarea id="hmKdHypothesis" maxlength="5000" rows="2" placeholder="Jangan tulis dugaan sebagai fakta"></textarea></label><label>Rencana tindakan<textarea id="hmKdAction" maxlength="5000" rows="2" placeholder="Langkah konkret yang harus dilakukan"></textarea></label><div class="hm-kd-decision-form-grid"><label>PIC utama<input id="hmKdOwner" maxlength="120" placeholder="Nama penanggung jawab"></label><label>Tenggat<input id="hmKdDue" type="date" value="'+today+'"></label></div><label>Ukuran keberhasilan<textarea id="hmKdSuccess" maxlength="1000" rows="2" placeholder="Angka/bukti yang membuktikan masalah membaik"></textarea></label><button id="hmKdSaveDecision" type="button" onclick="window.hmKdCreateDecision()">+ Simpan keputusan</button></div><div class="hm-kd-decision-existing"><h4>Keputusan aktif dan riwayat</h4><div id="hmKdDecisionRows"><p class="hm-kd-note">Memuat keputusan…</p></div></div></section>';
+}
 function renderDivisionAnalysis(id,rows){
  const list=divisionAdvice(id,rows);
  return '<div class="hm-kd-panel hm-kd-ai-analysis"><h3>Analisis Otomatis Divisi · Diagnosis dan Tindakan</h3><p class="hm-kd-note">Ini analisis berbasis aturan dari target dan pencapaian yang tersedia, bukan AI yang membaca seluruh percakapan/transaksi. Penyebab harus diverifikasi sebelum menetapkan kesalahan individu.</p><div class="hm-kd-ai-list">'+list.map((x,i)=>'<article class="hm-kd-ai-item"><div class="hm-kd-ai-kicker">'+esc(x.priority)+'</div><h4>'+(i+1)+'. '+esc(x.title)+'</h4><p>'+esc(x.detail)+'</p><b>Instruksi tindakan</b><ul>'+x.actions.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul><div class="hm-kd-note"><b>PIC utama:</b> '+esc(id==='hello'?'Tyar — Divisi Hello':id==='majesty'?'Wawan — Divisi Majesty':'Gagut — Divisi Refill')+' · <b>Tenggat awal:</b> hari ini, konfirmasi saat briefing berikutnya · <b>Verifikasi:</b> bandingkan angka setelah tindakan dengan data awal dan catat bukti/perubahan.</div></article>').join('')+'</div></div>';
@@ -126,6 +174,7 @@ function renderDivisions(){
  }else{
   const totalTarget={wa_target:total(rows,'wa_target'),lead_actual:leads,handover_target:total(rows,'handover_target'),handover_actual:handover,closing_target:total(rows,'closing_target'),unit_actual:unit,profit_target:total(rows,'profit_target'),profit_actual:profit};
   html+=renderDataQuality(rows);
+  html+=renderDecisionBook();
   html+='<div class="hm-kd-summary"><div><span>Outlet dipantau</span><b>'+num(rows.length)+'</b></div><div><span>Rata-rata pencapaian lead</span><b>'+avg(rows,'lead_actual','wa_target')+'%</b><small>Lead baru · outlet</small></div><div><span>Rata-rata pencapaian handover</span><b>'+avg(rows,'handover_actual','handover_target')+'%</b><small>Handover · outlet</small></div><div><span>Rata-rata pencapaian closing</span><b>'+avg(rows,'lead_closing_actual','closing_target')+'%</b><small>Closing lead · outlet</small></div><div><span>Rata-rata pencapaian unit</span><b>'+avg(rows,'unit_actual','closing_target')+'%</b><small>Unit terjual · outlet</small></div><div><span>Rata-rata pencapaian laba</span><b>'+avg(rows,'profit_actual','profit_target')+'%</b><small>Laba aktual · outlet</small></div></div>';
   const pace=monthPace(latestData.month_start);
   html+='<div class="hm-kd-panel hm-kd-ai-analysis"><h3>🎯 Arah & Keputusan Management</h3><p class="hm-kd-note">'+(pace.valid?'Periode: hari '+pace.elapsed+' dari '+pace.days+' · Sisa '+pace.remaining+' hari.':'Tanggal periode tidak valid; laju target tidak dapat dinilai.')+' Analisis dihitung ulang dari data terbaru saat menu dibuka, di-refresh, dan pembaruan otomatis.</p><ol class="hm-kd-advice">'+advice(rows,totalTarget).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol><p class="hm-kd-note">Gunakan rekomendasi sebagai agenda keputusan: tetapkan PIC, tindakan, tenggat, lalu verifikasi hasilnya. Sistem belum mencatat keputusan atau PIC otomatis.</p></div>';
@@ -137,7 +186,7 @@ function renderDivisions(){
  html=html.replace('Target hasil dan target proses seluruh outlet · '+new Date(latestData.month_start+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'}), 'Target hasil dan target proses seluruh outlet · '+new Date(latestData.month_start+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'})+' · Diperbarui '+(lastUpdatedAt?lastUpdatedAt.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—'));
  html=html.replace('Analisis AI · Prioritas Tindakan','Analisis Otomatis · Prioritas Tindakan');
  const host=$('hmKinerjaDivisiPanel');
- if(host)host.innerHTML=html;
+ if(host){host.innerHTML=html;if(!detail&&decisionBookAllowed())loadDecisionBook();}
 }
 window.hmKinerjaDivision=id=>{activeDivision=String(id||'');renderDivisions();};
 window.hmRefreshKinerjaDivisi=async function(){

@@ -407,6 +407,33 @@ button:hover{filter:brightness(1.025)}
 }
 .role-home-menu button span{color:#758397!important}
 
+/* HELLO MAJESTY: vivid colors for the shared division shortcuts */
+.role-home-menu:has([data-hm-menu-title="Kinerja Divisi"]){
+  background:linear-gradient(135deg,#0f172a,#1e293b 55%,#0f766e)!important;
+  border:1px solid #0f766e!important;
+  box-shadow:0 12px 28px rgba(15,23,42,.18)!important;
+}
+.role-home-menu:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-menu-title{
+  color:#fff!important;
+}
+.role-home-menu:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-menu-grid button[data-hm-menu-title="Kinerja Divisi"]{
+  background:linear-gradient(135deg,#2563eb,#1d4ed8)!important;color:#fff!important;border-color:#60a5fa!important;
+}
+.role-home-menu:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-menu-grid button[data-hm-menu-title="Divisi Hello"]{
+  background:linear-gradient(135deg,#f97316,#ea580c)!important;color:#fff!important;border-color:#fdba74!important;
+}
+.role-home-menu:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-menu-grid button[data-hm-menu-title="Divisi Majesty"]{
+  background:linear-gradient(135deg,#7c3aed,#6d28d9)!important;color:#fff!important;border-color:#c4b5fd!important;
+}
+.role-home-menu:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-menu-grid button[data-hm-menu-title="Divisi Refill"]{
+  background:linear-gradient(135deg,#059669,#047857)!important;color:#fff!important;border-color:#6ee7b7!important;
+}
+.role-home-menu:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-menu-grid button b,
+.role-home-menu:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-menu-grid button span{
+  color:#fff!important;
+}
+.role-home-menu:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-menu-grid button span{opacity:.88!important}
+
 /* KPI/stat surfaces throughout the application */
 .stat{
   position:relative;

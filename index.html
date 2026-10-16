@@ -2948,9 +2948,9 @@ function renderRoleHome(){
    const isAccountingGroup = g[1]==='ACCOUNTING' && developer;
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
    if(g[1]==='FINANCE' && !developer && !mg)return '';
-   const isCommissionGroup = g[1]==='KOMISI & REWARD';
+   const isCommissionGroup = g[1]==='KOMISI' || g[1]==='KOMISI & REWARD';
    const isDivisi = roles.includes('DIVISI') || rawRole==='DIVISI';
-   // KOMISI & REWARD mempunyai aturan khusus:
+   // Kelompok KOMISI mempunyai aturan khusus:
    // - Komisi Tim untuk DIVISI dan DEVELOPER.
    // - Komisi Saya untuk semua peran selain DIVISI/DEVELOPER.
    // Divisi dan Developer tidak perlu melihat Komisi Saya.

@@ -1356,7 +1356,7 @@ async function openTeamCommission(){
    '<div class="stats hm-commission-stats">'+invStat('Tim',rows.length)+' '+invStat('Total Komisi',rp(total()))+' '+invStat('Laba',rp(totalProfit))+'</div></div>'+
    '<div class="box"><h3>Rekap Komisi Tim</h3>'+
    '<div class="small" style="margin-bottom:10px">Persentase dihitung terhadap laba penjualan pada periode yang sama.</div>'+
-   '<div style="overflow-x:auto"><table class="hm-commission-table"><colgroup><col style="width:38%"><col style="width:22%"><col style="width:24%"><col style="width:16%"></colgroup><thead><tr><th>Jenis Komisi</th><th>Nominal</th><th>% terhadap Laba</th><th>% Max</th></tr></thead><tbody>'+
+   '<div style="overflow-x:auto"><table class="hm-commission-table"><colgroup><col style="width:30%"><col style="width:26%"><col style="width:26%"><col style="width:18%"></colgroup><thead><tr><th>Jenis Komisi</th><th>Nominal</th><th>% terhadap Laba</th><th>% Max</th></tr></thead><tbody>'+
    commissionSummary.map(([label,value])=>'<tr><td>'+esc(label)+'</td><td class="hm-money"><b>'+rp(value)+'</b></td><td class="hm-percent">'+pct(value)+'</td><td class="hm-percent">'+(maxPct[label]||'—')+'</td></tr>').join('')+
    '<tr><td><b>TOTAL KOMISI</b></td><td class="hm-money"><b>'+rp(total())+'</b></td><td class="hm-percent"><b>'+pct(total())+'</b></td><td class="hm-percent"><b>60%</b></td></tr></tbody></table></div></div>'+
    '<div class="box"><h3>Rincian Komisi Seluruh Tim</h3>'+

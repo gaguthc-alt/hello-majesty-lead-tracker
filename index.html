@@ -3025,6 +3025,8 @@ function renderRoleHome(){
        const body=document.getElementById('hmMenuPanelBody');
        if(!panel||!body){alert('Panel Kinerja Divisi belum siap.');return;}
        panel.classList.remove('hidden');
+        panel.style.width='min(96vw, 1400px)'; panel.style.maxWidth='96vw'; panel.style.height='calc(100vh - 24px)'; panel.style.maxHeight='calc(100vh - 24px)'; panel.style.margin='12px auto';
+        body.style.maxHeight='calc(100vh - 112px)'; body.style.overflowY='auto';
        body.innerHTML='<div class="box">Memuat '+esc(title)+'…</div>';
        void (async()=>{
          if(typeof window.hmOpenKinerjaDivisi!=='function') await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='kinerja-divisi.js?v=20261016-14';s.onload=resolve;s.onerror=()=>reject(new Error('File kinerja-divisi.js gagal dimuat.'));document.head.appendChild(s);});
@@ -3048,6 +3050,8 @@ function renderRoleHome(){
        const body=document.getElementById('hmMenuPanelBody');
        if(!panel||!body){alert('Panel Kinerja Divisi belum siap.');return;}
        panel.classList.remove('hidden');
+        panel.style.width='min(96vw, 1400px)'; panel.style.maxWidth='96vw'; panel.style.height='calc(100vh - 24px)'; panel.style.maxHeight='calc(100vh - 24px)'; panel.style.margin='12px auto';
+        body.style.maxHeight='calc(100vh - 112px)'; body.style.overflowY='auto';
        body.innerHTML='<div class="box">Memuat Kinerja Divisi…</div>';
        const openKinerja=async()=>{
          if(typeof window.hmOpenKinerjaDivisi!=='function'){

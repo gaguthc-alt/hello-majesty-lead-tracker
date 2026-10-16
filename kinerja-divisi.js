@@ -27,6 +27,31 @@ function advice(rows, totals){
  if(!out.length)out.push('Seluruh indikator utama bergerak seimbang. Pertahankan aktivitas yang menghasilkan lead berkualitas, closing, dan laba; pantau kembali setiap hari.');
  return out;
 }
+function divisionAdvice(id,rows){
+ const items=[]; const sum=k=>total(rows,k);
+ const leadA=sum('lead_actual'),leadT=sum('wa_target'),handoverA=sum('handover_actual'),handoverT=sum('handover_target'),unitA=sum('unit_actual'),unitT=sum('closing_target'),profitA=sum('profit_actual'),profitT=sum('profit_target'),closingA=sum('lead_closing_actual');
+ const add=(priority,title,detail,actions)=>items.push({priority,title,detail,actions});
+ if(id==='hello'){
+  const p=pct(leadA,leadT),gap=safe(leadA,leadT);
+  add(p<50?'Kritis':p<80?'Perlu dikejar':'Pantau','Pintu masuk lead adalah tanggung jawab utama Divisi Hello','Lead/WA masuk '+num(leadA)+' dari target '+num(leadT)+' ('+p+'%). '+(gap?'Masih kurang '+num(gap)+' lead untuk mencapai target.':'Target lead tercapai; jaga konsistensi volume dan kualitas.'),['Prioritaskan konten dengan CTA jelas ke WhatsApp, bukan tayangan semata.','Catat sumber lead per konten/host agar terlihat konten yang menghasilkan chat.','Pantau harian WA masuk, lead valid, dan lead yang berhasil diteruskan.']);
+  if(pct(handoverA,handoverT)<p)add('Bocor di funnel','Pastikan lead yang dihasilkan ditindaklanjuti','Pencapaian handover '+pct(handoverA,handoverT)+'% dibanding lead '+p+'%; periksa agar peluang tidak berhenti di inbox.',['Selaraskan definisi lead valid dengan Divisi Refill.','Review lead yang belum direspons atau belum diserahkan; jangan mengukur sukses hanya dari views.']);
+  add('Kolaborasi','Serahkan konteks lead yang lengkap','Lead perlu memiliki sumber konten, kebutuhan awal, produk yang dicari, dan kontak yang dapat dihubungi.',['Gunakan format handover seragam dan minta umpan balik Refill tentang kualitas lead.']);
+ }else if(id==='majesty'){
+  const up=pct(unitA,unitT),pp=pct(profitA,profitT);
+  add(up<50?'Kritis':up<80?'Perlu dikejar':'Pantau','Fokus pada konversi sampai unit terjual','Unit terjual '+num(unitA)+' dari target '+num(unitT)+' ('+up+'%). Closing lead '+num(closingA)+'; pencapaian laba '+pp+'%.',['Audit lead potensial yang belum closing dan tetapkan follow-up berikutnya per PIC.','Periksa respons Sales, kecocokan produk, stok, keberatan harga, dan alasan lost.','Review harian konsultasi → penawaran → follow-up → closing.']);
+  if(pp<up)add('Perhatian margin','Laba tertinggal dari unit','Pencapaian laba ('+pp+'%) di bawah pencapaian unit ('+up+'%).',['Tinjau margin per transaksi, diskon, biaya finance/tarik tunai, dan komposisi produk.','Jangan mengejar unit dengan mengorbankan laba tanpa persetujuan Management.']);
+  add('Kolaborasi','Berikan umpan balik ke Hello dan Refill','Alasan gagal closing membantu memperbaiki kualitas lead dan handover.',['Catat alasan lost secara konsisten dan laporkan produk/pertanyaan yang sering dicari customer.']);
+ }else{
+  const hp=pct(handoverA,handoverT),lp=pct(leadA,leadT);
+  add(hp<50?'Kritis':hp<80?'Perlu dikejar':'Pantau','Jaga kecepatan respons dan kelengkapan handover','Handover '+num(handoverA)+' dari target '+num(handoverT)+' ('+hp+'%). Lead masuk '+num(leadA)+' dan closing lead '+num(closingA)+'.',['Pantau lead belum direspons, belum dikualifikasi, atau belum memiliki PIC dan jadwal follow-up.','Pastikan handover menyertakan kebutuhan customer, sumber lead, produk, status, dan langkah berikutnya.','Audit sampel percakapan untuk menemukan keterlambatan respons dan alasan lead berhenti.']);
+  add('Kontrol data','Pastikan data operasional bisa dipercaya','Indikator ini mencakup lead/handover; finance, rekonsiliasi Accurate, dan stabilitas aplikasi perlu dicocokkan dengan laporan operasional masing-masing.',['Cocokkan transaksi dan akun kas Accurate yang belum tersinkron, lalu catat selisih dan penanggung jawabnya.','Catat error aplikasi beserta waktu, menu, langkah reproduksi, dan screenshot; jangan mengubah transaksi tanpa verifikasi.']);
+  if(hp<lp)add('Bocor di funnel','Handover tertinggal dari volume lead','Pencapaian handover '+hp+'% lebih rendah daripada lead '+lp+'%; periksa antrean dan disiplin follow-up.',['Buat daftar lead tanpa status/PIC dan tetapkan pemilik serta tenggat tindak lanjut.']);
+ } return items;
+}
+function renderDivisionAnalysis(id,rows){
+ const list=divisionAdvice(id,rows);
+ return '<div class="hm-kd-panel hm-kd-ai-analysis"><h3>🤖 Analisis AI Divisi · Prioritas Tindakan</h3><p class="hm-kd-note">Analisis otomatis berdasarkan target dan pencapaian yang tersedia; validasi penyebab melalui laporan operasional terkait.</p><div class="hm-kd-ai-list">'+list.map((x,i)=>'<article class="hm-kd-ai-item"><div class="hm-kd-ai-kicker">'+esc(x.priority)+'</div><h4>'+(i+1)+'. '+esc(x.title)+'</h4><p>'+esc(x.detail)+'</p><b>Tindakan yang disarankan</b><ul>'+x.actions.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul></article>').join('')+'</div></div>';
+}
 function renderDivisions(){
  const rows=latestData?.outlets||[];
  const leads=total(rows,'lead_actual'),handover=total(rows,'handover_actual'),unit=total(rows,'unit_actual'),profit=total(rows,'profit_actual');
@@ -43,6 +68,7 @@ function renderDivisions(){
   const specs=detail.id==='hello'?[['Lead baru / WA masuk','lead_actual','wa_target','num']]:detail.id==='majesty'?[['Unit terjual','unit_actual','closing_target','num'],['Laba aktual','profit_actual','profit_target','money']]:[['Handover CS','handover_actual','handover_target','num'],['Closing dari lead','lead_closing_actual','closing_target','num']];
   specs.forEach(sp=>{const items=rows.map(r=>({outlet:r.outlet,actual:Number(r[sp[1]]||0),target:Number(r[sp[2]]||0),fmt:sp[3]==='money'?rp:num}));html+='<div class="hm-kd-panel"><h3>'+sp[0]+'</h3>'+outletTable(items)+'</div>';});
   if(detail.id==='refill') html+='<div class="hm-kd-note">CS berada di bawah Divisi Refill. Data handover dan closing lead ditampilkan dari catatan lead; kontrol finance, Accurate, dan stabilitas aplikasi perlu dievaluasi dari laporan operasional masing-masing.</div>';
+  html+=renderDivisionAnalysis(detail.id,rows);
  }else{
   const totalTarget={wa_target:total(rows,'wa_target'),lead_actual:leads,handover_target:total(rows,'handover_target'),handover_actual:handover,closing_target:total(rows,'closing_target'),unit_actual:unit,profit_target:total(rows,'profit_target'),profit_actual:profit};
   html+='<div class="hm-kd-summary"><div><span>Outlet dipantau</span><b>'+num(rows.length)+'</b></div><div><span>Rata-rata pencapaian lead</span><b>'+avg(rows,'lead_actual','wa_target')+'%</b><small>Lead baru · outlet</small></div><div><span>Rata-rata pencapaian handover</span><b>'+avg(rows,'handover_actual','handover_target')+'%</b><small>Handover · outlet</small></div><div><span>Rata-rata pencapaian closing</span><b>'+avg(rows,'lead_closing_actual','closing_target')+'%</b><small>Closing lead · outlet</small></div><div><span>Rata-rata pencapaian unit</span><b>'+avg(rows,'unit_actual','closing_target')+'%</b><small>Unit terjual · outlet</small></div><div><span>Rata-rata pencapaian laba</span><b>'+avg(rows,'profit_actual','profit_target')+'%</b><small>Laba aktual · outlet</small></div></div>';

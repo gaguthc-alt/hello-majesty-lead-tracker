@@ -2304,6 +2304,7 @@ function hmRunMainMenuAction(action){
   case 'openInventoryDashboard()': return window.openInventoryDashboard();
   case 'openHunterStock()': return window.openHunterStock();
   case 'hmOpenTargetOutlet()': return hmOpenTargetOutlet();
+  case 'hmOpenKinerjaDivisi()': return (typeof window.hmOpenKinerjaDivisi==='function' ? window.hmOpenKinerjaDivisi() : hmLoadModule('kinerja-divisi').then(()=>window.hmOpenKinerjaDivisi()));
   case 'hmOpenContentPerformance()': return hmOpenContentPerformance();
   case 'hmOpenLeadNewInline()': return hmOpenLeadNewInline();
   case 'hmOpenHelloMajestyChat()': return hmOpenHelloMajestyChat();

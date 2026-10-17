@@ -2953,16 +2953,13 @@ function renderRoleHome(){
    if(g[1]==='FINANCE' && !developer && !mg)return '';
    const isCommissionGroup = g[1]==='KOMISI' || g[1]==='KOMISI & REWARD';
    const isDivisi = roles.includes('DIVISI') || rawRole==='DIVISI';
-   // Kelompok KOMISI mempunyai aturan khusus:
-   // - Komisi Tim untuk DIVISI dan DEVELOPER.
-   // - Komisi Saya untuk semua peran selain DIVISI/DEVELOPER.
-   // Divisi dan Developer tidak perlu melihat Komisi Saya.
+   // Sementara: Komisi Saya disembunyikan untuk seluruh tim operasional.
+   // Hanya Divisi dan Developer yang melihat Komisi Tim.
    if(isCommissionGroup){
      if(rawRole.includes('ADMIN FINANCE'))return '';
      const canSeeCommissionTeam = isDivisi || developer;
-     let allowed = canSeeCommissionTeam
-       ? g[2].filter(item=>item[1]==='Komisi Tim')
-       : g[2].filter(item=>item[1]==='Komisi Saya');
+     if(!canSeeCommissionTeam)return '';
+     let allowed = g[2].filter(item=>item[1]==='Komisi Tim');
      if(!allowed.length)return '';
      return '<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>'+g[0]+' '+esc(g[1])+'</span></div><div class="role-home-submenu">'+allowed.map(item=>{
        let card=cards.find(x=>x[1]===item[1]);

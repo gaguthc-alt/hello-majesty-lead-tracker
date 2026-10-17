@@ -4498,12 +4498,24 @@ async function salesResult(id){
    const wanted=code==='CASH'?'CASH':'BANK';
    // Untuk pembayaran TUNAI, Kas mengikuti outlet/PIC yang sedang login.
    // Tim Refill -> Kas MNG Majesty Refill; Tim Plaza -> Kas MNG Majesty Plaza.
-   const userOutlet=String(currentOutlet||'').trim();
+   // Normalisasi nama outlet karena profil tim dapat memakai nama singkat
+   // (mis. "Plaza") sementara financial_accounts memakai nama lengkap
+   // (mis. "Majesty Plaza iPhone").
+   const normalizeOutlet=v=>String(v||'').toLowerCase()
+     .replace(/maj(e|a)sty/g,'')
+     .replace(/mng/g,'')
+     .replace(/iphone|phone/g,'')
+     .replace(/[^a-z0-9]/g,'')
+     .trim();
+   const userOutletKey=normalizeOutlet(currentOutlet);
    [...acc.options].forEach(o=>{
      if(!o.value){o.hidden=false;return;}
-     const typeOk=o.dataset.accountType===wanted;
+     const typeOk=String(o.dataset.accountType||'').trim().toUpperCase()===wanted;
      const accountOutlet=String(o.dataset.accountOutlet||'').trim();
-     const outletOk=wanted!=='CASH'||!userOutlet||accountOutlet===userOutlet;
+     const accountOutletKey=normalizeOutlet(accountOutlet);
+     const outletOk=wanted!=='CASH'||!userOutletKey||accountOutletKey===userOutletKey||
+       (userOutletKey.includes('plaza')&&accountOutletKey.includes('plaza'))||
+       (userOutletKey.includes('refill')&&accountOutletKey.includes('refill'));
      o.hidden=!(typeOk&&outletOk);
    });
    acc.value='';

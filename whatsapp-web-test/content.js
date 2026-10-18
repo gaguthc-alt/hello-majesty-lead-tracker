@@ -54,15 +54,23 @@
       || document.querySelector('[role="main"] header');
     const headerText = header ? (header.innerText || "").slice(0, 180) : "";
     let phone = "";
-    if (header) {
-      const values = [headerText];
-      for (const el of header.querySelectorAll("[title], [aria-label]")) {
+    // WhatsApp may show the number in the open contact-info pane, not in the chat header.
+    // Read only visible contact-info areas and their small text nodes; do not scan all page text.
+    const contactInfo = document.querySelector('[data-testid="contact-info-drawer"]')
+      || document.querySelector('[data-testid="drawer-right"]')
+      || document.querySelector('[role="dialog"]')
+      || document.querySelector('div[aria-label="Info kontak"]');
+    const searchRoots = [contactInfo, header].filter(Boolean);
+    for (const root of searchRoots) {
+      const values = [root.innerText || ""];
+      for (const el of root.querySelectorAll("[title], [aria-label]")) {
         values.push(el.getAttribute("title") || "", el.getAttribute("aria-label") || "");
       }
       for (const value of values) {
         const match = value.match(PHONE_RE);
         if (match) { phone = normalizePhone(match[0]); if (phone) break; }
       }
+      if (phone) break;
     }
 
     // Inspect only a small number of visible outgoing bubbles.

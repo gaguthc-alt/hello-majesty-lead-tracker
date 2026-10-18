@@ -4,7 +4,7 @@
   // Passive sidebar-only diagnostic. No network calls, no lead writes, no MutationObserver.
   // Scans at a low frequency and only while the user has enabled monitoring in the panel.
   const PANEL_ID = "hm-wa-detection-panel";
-  const PHONE_RE = /(?:\\+?62|0)[\\s().-]*8(?:[\\s().-]*\\d){7,12}/;
+  const PHONE_RE = /(?:\+?62|0)[\s().-]*8(?:[\s().-]*\d){7,12}/;
   let timer = null;
   let enabled = false;
   let lastSummary = "";
@@ -42,8 +42,13 @@
       const text = (row.innerText || "").trim().replace(/\\s+/g, " ").slice(0, 220);
       if (!text) continue;
       const match = text.match(PHONE_RE);
+      const label = text.slice(0, 90);
+      const isGroup = /\bgroup\b|grup|reuni|koordinasi/i.test(label);
+      const csMatch = text.match(/\bdengan\s+([a-z][a-z .'-]{1,30}?)\s+ada yang bisa dibantu/i);
       chats.push({
-        label: text.slice(0, 90),
+        label,
+        isGroup,
+        csName: csMatch ? csMatch[1].trim().replace(/\s+/g, " ") : "",
         phone: match ? normalizePhone(match[0]) : ""
       });
     }

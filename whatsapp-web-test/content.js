@@ -41,15 +41,26 @@
     for (const row of rows) {
       const text = (row.innerText || "").trim().replace(/\s+/g, " ").slice(0, 220);
       if (!text) continue;
-      const match = text.match(PHONE_RE);
       const label = text.slice(0, 90);
       const isGroup = /\bgroup\b|grup|reuni|koordinasi/i.test(label);
       const csMatch = text.match(/\bdengan\s+([a-z][a-z .'-]{1,30}?)\s+ada yang bisa dibantu/i);
+      // Diagnostic only: inspect a few DOM attributes already attached to this row.
+      // Do not click chats, open contact panels, or send data anywhere.
+      const nodes = [row, ...row.querySelectorAll("[data-id], [data-testid], [aria-label], [title]")].slice(0, 20);
+      const meta = nodes.map(node => [
+        node.getAttribute("data-id") || "",
+        node.getAttribute("data-testid") || "",
+        node.getAttribute("aria-label") || "",
+        node.getAttribute("title") || ""
+      ].filter(Boolean).join(" ")).filter(Boolean).join(" ").slice(0, 500);
+      const phoneMatch = (text + " " + meta).match(PHONE_RE);
       chats.push({
         label,
         isGroup,
         csName: csMatch ? csMatch[1].trim().replace(/\s+/g, " ") : "",
-        phone: match ? normalizePhone(match[0]) : ""
+        phone: phoneMatch ? normalizePhone(phoneMatch[0]) : "",
+        rowHasContactId: /@c\.us|@s\.whatsapp\.net/i.test(meta),
+        rowMetaPreview: meta.slice(0, 140)
       });
     }
     const summary = JSON.stringify(chats);

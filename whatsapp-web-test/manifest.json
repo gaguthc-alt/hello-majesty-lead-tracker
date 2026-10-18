@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Hello Majesty WhatsApp Web Detection Test",
+  "version": "0.1.0",
+  "description": "Local-only test to detect the active WhatsApp chat number and a CS self-identification reply. Does not create leads or send chat data.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://web.whatsapp.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://web.whatsapp.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

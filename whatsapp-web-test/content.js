@@ -3,10 +3,10 @@
 
   // Safe, manual-only local diagnostic. No timers, MutationObserver, network calls, or lead writes.
   const PANEL_ID = "hm-wa-detection-panel";
-  const PHONE_RE = /(?:\\+?62|0)[\\s().-]*8(?:[\\s().-]*\\d){7,12}/;
+  const PHONE_RE = /(?:\+?62|0)[\s().-]*8(?:[\s().-]*\d){7,12}/;
 
   function normalizePhone(value) {
-    let digits = (value || "").replace(/\\D/g, "");
+    let digits = (value || "").replace(/\D/g, "");
     if (digits.startsWith("0")) digits = "62" + digits.slice(1);
     if (digits.startsWith("8")) digits = "62" + digits;
     return digits.length >= 10 && digits.length <= 15 ? "+" + digits : "";
@@ -50,7 +50,8 @@
     // Query only likely header nodes, not the full page text or message history.
     const header = document.querySelector('[data-testid="conversation-info-header"]')
       || document.querySelector('[data-testid="conversation-header"]')
-      || document.querySelector('header');
+      || document.querySelector('#main header')
+      || document.querySelector('[role="main"] header');
     const headerText = header ? (header.innerText || "").slice(0, 180) : "";
     let phone = "";
     if (header) {
@@ -65,13 +66,17 @@
     }
 
     // Inspect only a small number of visible outgoing bubbles.
-    const nodes = [...document.querySelectorAll('[data-testid="msg-container"]')].slice(-12);
+    const messageRoot = document.querySelector('[data-testid="conversation-panel-messages"]')
+      || document.querySelector('#main');
+    const nodes = messageRoot
+      ? [...messageRoot.querySelectorAll('[data-testid="msg-container"], .message-out')].slice(-12)
+      : [];
     let reply = "", csName = "";
     for (let i = nodes.length - 1; i >= 0; i--) {
       const node = nodes[i];
       if (!node.getClientRects().length) continue;
       const text = (node.innerText || "").trim().slice(0, 240);
-      const match = text.match(/(?:dengan|saya|aku)\\s+([A-Z][a-zA-ZÀ-ÿ.'-]{1,24})/i);
+      const match = text.match(/(?:dengan|saya|aku)\s+([A-Z][a-zA-ZÀ-ÿ.'-]{1,24})/i);
       if (match) { reply = text; csName = match[1]; break; }
     }
 

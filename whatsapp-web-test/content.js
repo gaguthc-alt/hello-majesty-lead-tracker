@@ -10,7 +10,7 @@
   let lastSummary = "";
 
   function normalizePhone(value) {
-    let digits = (value || "").replace(/\\D/g, "");
+    let digits = (value || "").replace(/\D/g, "");
     if (digits.startsWith("0")) digits = "62" + digits.slice(1);
     if (digits.startsWith("8")) digits = "62" + digits;
     return digits.length >= 10 && digits.length <= 15 ? "+" + digits : "";
@@ -39,7 +39,7 @@
       .slice(0, 12);
     const chats = [];
     for (const row of rows) {
-      const text = (row.innerText || "").trim().replace(/\\s+/g, " ").slice(0, 220);
+      const text = (row.innerText || "").trim().replace(/\s+/g, " ").slice(0, 220);
       if (!text) continue;
       const match = text.match(PHONE_RE);
       const label = text.slice(0, 90);

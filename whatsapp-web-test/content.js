@@ -7,6 +7,8 @@
   const CS_RE = /\b(?:dengan|saya|aku)\s+([A-Z][a-zA-ZÀ-ÿ.'-]{1,24})\b/i;
   let lastSnapshot = "";
   let observerStarted = false;
+  let scanQueued = false;
+  let lastScanAt = 0;
 
   const normalizePhone = (value) => {
     if (!value) return "";
@@ -128,6 +130,10 @@
 
   function scan() {
     if (!document.body) return;
+    // Avoid doing expensive full-page DOM queries more than once per 1.5 seconds.
+    const now = Date.now();
+    if (now - lastScanAt < 1500) return;
+    lastScanAt = now;
     const panel = ensurePanel();
     if (!document.getElementById(PANEL_ID)) return;
     const header = activeChatHeader();
@@ -161,10 +167,24 @@
     if (observerStarted) return;
     observerStarted = true;
     scan();
-    const observer = new MutationObserver(() => scan());
+    const observer = new MutationObserver((mutations) => {
+      // Ignore the extension's own panel updates so they cannot trigger a mutation loop.
+      const relevant = mutations.some((mutation) => {
+        const target = mutation.target instanceof Element
+          ? mutation.target
+          : mutation.target.parentElement;
+        return target && !target.closest("#" + PANEL_ID);
+      });
+      if (!relevant || scanQueued) return;
+      scanQueued = true;
+      setTimeout(() => {
+        scanQueued = false;
+        scan();
+      }, 700);
+    });
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    // WhatsApp virtualizes chat views; a low-frequency fallback catches header/chat changes.
-    setInterval(scan, 1800);
+    // Low-frequency fallback only; do not repeatedly scan the entire page.
+    setInterval(scan, 5000);
   }
 
   const ready = () => {

@@ -3,14 +3,14 @@
 
   // Local-only diagnostic. This extension never sends data to a server and never writes leads.
   const PANEL_ID = "hm-wa-detection-panel";
-  const PHONE_RE = /(?:\\+?62|0)[\\s().-]*8(?:[\\s().-]*\\d){7,12}/;
-  const CS_RE = /\\b(?:dengan|saya|aku)\\s+([A-Z][a-zA-ZÀ-ÿ.'-]{1,24})\\b/i;
+  const PHONE_RE = /(?:\+?62|0)[\s().-]*8(?:[\s().-]*\d){7,12}/;
+  const CS_RE = /\b(?:dengan|saya|aku)\s+([A-Z][a-zA-ZÀ-ÿ.'-]{1,24})\b/i;
   let lastSnapshot = "";
   let observerStarted = false;
 
   const normalizePhone = (value) => {
     if (!value) return "";
-    let digits = value.replace(/\\D/g, "");
+    let digits = value.replace(/\D/g, "");
     if (digits.startsWith("0")) digits = "62" + digits.slice(1);
     if (digits.startsWith("8")) digits = "62" + digits;
     return digits.length >= 10 && digits.length <= 15 ? "+" + digits : "";
@@ -79,7 +79,7 @@
     for (const node of nodes.reverse().slice(0, 15)) {
       const text = (node.innerText || "").trim();
       if (!text) continue;
-      const match = text.match(/(?:dengan|saya|aku)\\s+([A-Z][a-zA-ZÀ-ÿ.'-]{1,24})/i);
+      const match = text.match(/(?:dengan|saya|aku)\s+([A-Z][a-zA-ZÀ-ÿ.'-]{1,24})/i);
       if (match) return { text: text.slice(0, 240), csName: match[1] };
     }
     return { text: "", csName: "" };

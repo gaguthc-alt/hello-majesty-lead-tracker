@@ -3047,6 +3047,12 @@ function renderRoleHome(){
    // Developer tetap melihat seluruh kelompok menu.
    if(!forceVisible && !developer && !mg && !isAccountingGroup && gi>1 && g[1]!=='KINERJA DIVISI' && !(g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))) && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
    let allowed=(forceVisible || isAccountingGroup || g[1]==='KINERJA DIVISI') ? g[2] : g[2].filter(item=>cards.some(x=>x[1]===item[1]));
+   // KINERJA & TARGET: tim biasa hanya melihat item yang benar-benar diizinkan lewat cards.
+   // Jangan tampilkan seluruh grup hanya karena Target Outlet tersedia; Laporan Performa Tim
+   // tetap khusus Management, Developer, dan Divisi/Fasilitator yang punya izin eksplisit.
+   if(g[1]==='KINERJA & TARGET' && !mg && !developer && !isDivisiAccount){
+     allowed=g[2].filter(item=>cards.some(x=>x[1]===item[1]));
+   }
    // Pastikan menu target/performa hanya berada di KINERJA & TARGET, tidak disisipkan lagi ke LEAD TRACKER.
    if(g[1]==='LEAD TRACKER'){
      allowed=allowed.filter(item=>!['Target Outlet','Pengaturan Target Outlet','Laporan Performa Tim'].includes(item[1]));

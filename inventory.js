@@ -982,7 +982,7 @@ async function filterReceiveProducts(){
  if(sel.value)sel.dispatchEvent(new Event('change',{bubbles:true}));
  else toggleReceiveFields();
 }
-async function openReceiveStock(){
+window.openReceiveStock=async function openReceiveStock(){
  if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management, Fasilitator, dan Admin Finance Majesty Cell.');return;}
  const teams=await sb.from('team_directory').select('*').order('name');if(teams.error)return alert(teams.error.message);
  const receiveCategories=[['IPHONE_NEW','iPhone New'],['IPHONE_SECOND','iPhone Second'],['ANDROID_NEW','Android New'],['ANDROID_SECOND','Android Second']];

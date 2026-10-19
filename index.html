@@ -4396,6 +4396,7 @@ function card(l){
  const displayStatus=l.sales_result==='CLOSING'?'HASIL • CLOSING':l.sales_result==='GAGAL'?'HASIL • GAGAL':l.qualification_result==='GAGAL'?'HASIL • GAGAL':l.qualification_result==='POTENSIAL'?'POTENSIAL • FOLLOW-UP':l.status_lead==='HASIL'?'HASIL':l.status_lead==='QUALIFIED'?'QUALIFIED':l.status_lead;
  return '<div class="lead" data-lead-id="'+esc(l.lead_id)+'"><h3>'+esc(l.customer||'Lead')+' <span class="badge">'+esc(displayStatus)+'</span></h3>'+
  '<div style="margin:7px 0 6px"><span class="badge" style="font-size:13px;background:#eef6ff;border:1px solid #b8d7ff;color:#145da0">'+esc(leadTypeLabel(l))+'</span></div>'+
+ '<div class="small">Tanggal Lead Masuk: '+esc((()=>{const d=l.created_at?new Date(l.created_at):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';})())+'</div>'+
  '<div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+(l.content_creator?' • Content: '+esc(l.content_creator):'')+'</div>'+
  '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+(isService?' • Teknisi: '+esc(l.service_pic||'-'):' • Sales: '+esc(l.sales_claimed_by||'-'))+'</div>'+
  (limited?'<p class="small">Lead sedang ditangani oleh owner lain. Detail tidak tersedia.</p>':

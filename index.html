@@ -1393,15 +1393,14 @@ async function openTeamCommission(){
    '<tr><td><b>TOTAL KOMISI</b></td><td class="hm-money"><b>'+rp(total())+'</b></td><td class="hm-percent"><b>'+pct(total())+'</b></td><td class="hm-percent"><b>—</b></td><td class="hm-percent"><b>60%</b></td></tr></tbody></table></div></div>'+
    '<div class="hm-commission-mobile">'+commissionSummary.map(([label,value])=>'<div class="hm-commission-mobile-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>'+esc(label)+'</b><b>'+rp(value)+'</b></div><div class="hm-commission-mobile-grid"><div><small>% terhadap Laba</small><b>'+pct(value)+'</b></div><div><small>% Rumus Komisi</small><b>'+({'CS Handover':'10%','CS Closing':'5%','Sales':'10%','Freelance Internal':'30%','Hunter':'5%','Content Creator':'10%','Fasilitator':'10%'}[label]||'—')+'</b></div><div><small>% Max Budget</small><b>'+(maxPct[label]||'—')+'</b></div></div></div>').join('')+'<div class="hm-commission-mobile-card"><b>TOTAL KOMISI</b><div style="font-size:20px;font-weight:800;margin-top:6px">'+rp(total())+'</div><div class="hm-commission-mobile-grid"><div><small>% terhadap Laba</small><b>'+pct(total())+'</b></div><div><small>% Max Budget</small><b>60%</b></div></div></div></div></div>'+
    '<div class="box"><h3>Rincian Komisi Seluruh Tim</h3>'+
+   '<div class="small" style="margin-bottom:8px">Geser tabel ke samping untuk melihat seluruh jenis komisi, termasuk Freelance Internal dan Fasilitator.</div>'+
+   '<div style="overflow-x:auto;max-width:100%"><table class="hm-commission-table" style="min-width:1120px"><thead><tr><th>Nama</th><th>Outlet</th><th>CS Handover</th><th>CS Closing</th><th>Sales Closing</th><th>Freelance Internal</th><th>Hunter</th><th>Content Creator</th><th>Fasilitator</th><th>Total</th><th>Rincian</th></tr></thead><tbody>'+
    (rows.length?rows.map(x=>{
-     const parts=labels.map(([k,l])=>({k,l,value:k==='cs_commission'?Math.max(Number(x.cs_commission||0)-Number(x.cs_closing_commission||0),0):Number(x[k]||0)})).filter(p=>p.value!==0).map(p=>'<div class="small" style="margin-top:4px">'+esc(p.l)+': <b>'+rp(p.value)+'</b></div>').join('');
-     const btn='<button class="btn" style="margin-top:8px" onclick="openTeamCommissionDetails(\''+encodeURIComponent(x.name||'')+'\')">🔎 Lihat Rincian</button>';
-     return '<div class="lead"><div class="row" style="justify-content:space-between"><div><b>'+esc(x.name)+'</b><div class="small">'+esc(x.outlet||'-')+'</div></div><b>'+rp(rowTotal(x))+'</b></div>'+
-       (parts||'<div class="small" style="margin-top:6px">Belum ada komisi bulan ini.</div>')+
-       btn+
-       '</div>';
-   }).join(''):'<p>Belum ada data tim aktif.</p>')+
-   '</div>';
+     const v=k=>k==='cs_commission'?Math.max(Number(x.cs_commission||0)-Number(x.cs_closing_commission||0),0):Number(x[k]||0);
+     const money=k=>'<td class="hm-money">'+rp(v(k))+'</td>';
+     return '<tr><td><b>'+esc(x.name)+'</b></td><td>'+esc(x.outlet||'-')+'</td>'+money('cs_commission')+money('cs_closing_commission')+money('sales_commission')+money('freelance_internal_commission')+money('hunter_commission')+money('content_creator_commission')+money('facilitator_commission')+'<td class="hm-money"><b>'+rp(rowTotal(x))+'</b></td><td><button class="btn" onclick="openTeamCommissionDetails(\\''+encodeURIComponent(x.name||'')+'\\')">Lihat</button></td></tr>';
+   }).join(''):'<tr><td colspan="11">Belum ada data tim aktif.</td></tr>')+
+   '</tbody></table></div></div>';
  $('modal').classList.remove('hidden');
  if(hmActiveMainMenu==='Komisi Tim'){
    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');

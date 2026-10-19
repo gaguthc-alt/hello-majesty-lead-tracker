@@ -74,7 +74,7 @@ async function loadWalkinApprovalCount(){
  const count=(w.count||0)+(s.count||0);
  if(!w.error&&!s.error)btn.textContent='🚶 Persetujuan Walk-In'+(count?' ('+count+')':'');
 }
-window.openWalkinApprovals=async function(){
+window.openWalkinApprovals=async function(targetStockUnitId=''){
  // Walk-In selalu memakai satu panel inline; jangan buka modal lama bersamaan.
  const legacyModal=document.getElementById('modal');
  if(legacyModal)legacyModal.classList.add('hidden');
@@ -138,7 +138,7 @@ window.openWalkinApprovals=async function(){
    const action=isStock
      ? `<button class="success" onclick="reviewUnifiedWalkin('${a.id}','STOCK','APPROVE')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewUnifiedWalkin('${a.id}','STOCK','REJECT')">✕ Tolak</button>`
      : `<button class="success" onclick="reviewUnifiedWalkin('${a.id}','WALKIN','APPROVE')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewUnifiedWalkin('${a.id}','WALKIN','REJECT')">✕ Tolak</button>`;
-   return '<div class="lead"><div class="small" style="font-weight:800;margin-bottom:4px">'+sourceLabel+'</div><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(st.outlet||'-')+'</b><br>🕒 Diajukan: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Sales: <b>'+esc(rq.name||'User')+'</b></div><div>'+priceLabel+': <b>Rp'+Number(a.sale_price||0).toLocaleString('id-ID')+'</b> • Modal: Rp'+Number(st.cost||0).toLocaleString('id-ID')+'</div><div class="small">Status: MENUNGGU VERIFIKASI</div>'+(canReview?'<div class="row" style="margin-top:8px">'+action+'</div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi pihak yang berwenang.</div>')+'</div>';
+   return '<div class="lead" data-walkin-stock-id="'+esc(a.stock_unit_id||'')+'" style="'+(targetStockUnitId&&String(a.stock_unit_id)===String(targetStockUnitId)?'border:2px solid #16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.14);':'')+'"><div class="small" style="font-weight:800;margin-bottom:4px">'+(targetStockUnitId&&String(a.stock_unit_id)===String(targetStockUnitId)?'🎯 TRANSAKSI DARI LINK WHATSAPP · ':'')+sourceLabel+'</div><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(st.outlet||'-')+'</b><br>🕒 Diajukan: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Sales: <b>'+esc(rq.name||'User')+'</b></div><div>'+priceLabel+': <b>Rp'+Number(a.sale_price||0).toLocaleString('id-ID')+'</b> • Modal: Rp'+Number(st.cost||0).toLocaleString('id-ID')+'</div><div class="small">Status: MENUNGGU VERIFIKASI</div>'+(canReview?'<div class="row" style="margin-top:8px">'+action+'</div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi pihak yang berwenang.</div>')+'</div>';
  }).join('');
 
  if(mt)mt.textContent=heading;
@@ -146,6 +146,7 @@ window.openWalkinApprovals=async function(){
    body.innerHTML=html;
    panel?.classList.remove('hidden');
    panel?.scrollIntoView({behavior:'smooth',block:'start'});
+   if(targetStockUnitId){setTimeout(()=>{const target=body.querySelector('[data-walkin-stock-id="'+String(targetStockUnitId).replace(/[^a-zA-Z0-9_-]/g,'')+'"]');if(target)target.scrollIntoView({behavior:'smooth',block:'center'});},250);}
  }else if(mb){
    mb.innerHTML=html;
    modal?.classList.remove('hidden');

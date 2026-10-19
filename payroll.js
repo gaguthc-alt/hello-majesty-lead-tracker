@@ -15,7 +15,7 @@
 
   async function loadCommission(){
     if(!window.sb) throw new Error('Koneksi database belum siap.');
-    const x=await window.sb.rpc('management_team_commission_report',{p_month_start:monthStart()});
+    const x=await window.sb.rpc('management_team_commission_report_v2',{p_month_start:monthStart()});
     if(x.error) throw x.error;
     return Array.isArray(x.data)?x.data:[];
   }
@@ -65,7 +65,8 @@
       sums.closing+=Number(r.cs_closing_commission||0);
       sums.sales+=Number(r.sales_commission||0);
       sums.freelance+=Number(r.freelance_internal_commission||r.freelance_commission||0);
-      sums.hunter+=Number(r.hunter_commission||0);\n      sums.checker+=Number(r.checker_commission||0);
+      sums.hunter+=Number(r.hunter_commission||0);
+      sums.checker+=Number(r.checker_commission||0);
       sums.content+=Number(r.content_creator_commission||0);
       sums.facilitator+=Number(r.facilitator_commission||0);
       sums.profit+=Number(r.outlet_profit||r.gross_profit||r.profit||0);
@@ -91,7 +92,8 @@
       '<th style="text-align:right;padding:9px">CS Handover</th>'+
       '<th style="text-align:right;padding:9px">CS Closing</th>'+
       '<th style="text-align:right;padding:9px">Sales Closing</th>'+
-      '<th style="text-align:right;padding:9px">Hunter</th>'+\n      '<th style="text-align:right;padding:9px">Checker</th>'+
+      '<th style="text-align:right;padding:9px">Hunter</th>'+
+      '<th style="text-align:right;padding:9px">Checker</th>'+
       '<th style="text-align:right;padding:9px">Content Creator</th>'+
       '<th style="text-align:right;padding:9px">Fasilitator</th>'+
       '<th style="text-align:right;padding:9px">Total</th>'+

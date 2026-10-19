@@ -2278,7 +2278,9 @@ function hmLeadTrackerApplyFilter(){
  const base=(leads||[]).filter(viewerLead).filter(hmLeadVisibleByMonth);
  const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
  const filtered=base.filter(l=>{
-  if(status!=='ALL'&&hmLeadTrackerBucket(l)!==status)return false;
+  if(status==='ACTIVE'&&!getActiveLeadBucket(l))return false;
+  if(status==='RESULT'&&!['CLOSING','GAGAL'].includes(hmLeadTrackerBucket(l)))return false;
+  if(!['ALL','ACTIVE','RESULT'].includes(status)&&hmLeadTrackerBucket(l)!==status)return false;
   if(outlet!=='ALL'&&String(l.outlet||'').trim()!==outlet)return false;
   const owner=String(l.sales_claimed_by||'').trim()||String(l.cs_claimed_by||'').trim()||String(l.cs_owner||'').trim();
   if(pic!=='ALL'&&owner!==pic)return false;

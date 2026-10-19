@@ -2652,7 +2652,8 @@ async function hmRenderHomePerformance(){
  const monthEnd=new Date(new Date().getFullYear(),new Date().getMonth()+1,1);
  const fmt=n=>Number(n||0).toLocaleString('id-ID');
  const escH=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
- const period=monthStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});\n const monthKey=monthStart.getFullYear()+'-'+String(monthStart.getMonth()+1).padStart(2,'0')+'-01';
+ const period=monthStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+ const monthKey=monthStart.getFullYear()+'-'+String(monthStart.getMonth()+1).padStart(2,'0')+'-01';
  const card=(label,value,icon)=>'<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(value)+'</div></div>';
  const section=(title,data,sub)=>'<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+title+'</b><span>'+sub+'</span></div></div><div class="hm-home-perf-grid">'+card('Claim CS',data.claim_cs,'📲')+card('Handover CS',data.handover,'🤝')+card('CS Closing',data.cs_closing,'🎯')+card('Sales Closing',data.sales_closing,'🏆')+'</div></div>';
  try{

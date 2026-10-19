@@ -2419,6 +2419,7 @@ async function hmOpenLeadNewInline(){
   if(title)title.textContent='📱 Lead Baru';
   body.innerHTML='<label>Nama Customer</label><input id="hm_fc" placeholder="Nama customer">'+
     '<label>No WhatsApp</label><input id="hm_fw" placeholder="08xxxxxxxxxx">'+
+    '<label>Lokasi Customer</label><input id="hm_flocation" placeholder="Desa / kelurahan, kecamatan">'+
     '<label>Kebutuhan</label><select id="hm_fneedtype" onchange="renderInitialNeedFields()"><option value="">— Pilih Kebutuhan —</option><option>PEMBELIAN</option><option>SERVICE</option><option>TUKAR TAMBAH</option><option>KREDIT/CICILAN</option></select>'+
     '<div id="hm_initialNeedFields"></div>'+
     '<label>Catatan Awal</label><textarea id="hm_fcatatan" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea>'+
@@ -4349,6 +4350,7 @@ function card(l){
  '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+(isService?' • Teknisi: '+esc(l.service_pic||'-'):' • Sales: '+esc(l.sales_claimed_by||'-'))+'</div>'+
  (limited?'<p class="small">Lead sedang ditangani oleh owner lain. Detail tidak tersedia.</p>':
  '<div style="margin-top:8px">'+
+ '<div><b>Lokasi Customer:</b> '+esc(l.initial_data?.customer_location||l.customer_location||'-')+'</div>'+
  '<div><b>Kebutuhan:</b> '+esc(l.need||'-')+'</div>'+
  '<div><b>Budget:</b> '+esc(l.budget||'-')+' • <b>Timeline:</b> '+esc(l.timeline||'-')+'</div>'+
  (qualified?'<div><b>Status:</b> Siap di-claim Sales.</div>':'')+
@@ -4989,7 +4991,9 @@ async function saveLead(){
     const d=buildInitialData();
     const customer=hmLeadField('fc')?.value||'';
     const whatsapp=hmLeadField('fw')?.value||'';
+    const customerLocation=hmLeadField('flocation')?.value?.trim()||'';
     const catatan=hmLeadField('fcatatan')?.value?.trim()||'';
+    const initialData={...d,customer_location:customerLocation};
     const summary=
       type==='PEMBELIAN'?(d.product||''):
       type==='SERVICE'?(String(d.device||'')+' '+String(d.model||'')+' — '+String(d.complaint||'')):
@@ -5008,7 +5012,7 @@ async function saveLead(){
       p_catatan:catatan||null,
       p_content_creator:null,
       p_need_type:type,
-      p_initial_data:d
+      p_initial_data:initialData
     });
     if(result.error)throw result.error;
 

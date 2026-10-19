@@ -1356,7 +1356,8 @@ async function openTeamCommission(){
    ['CS Closing',rows.reduce((s,x)=>s+Number(x.cs_closing_commission||0),0)],
    ['Sales',rows.reduce((s,x)=>s+Number(x.sales_commission||0),0)],
    ['Freelance Internal',rows.reduce((s,x)=>s+Number(x.freelance_internal_commission||0),0)],
-   ['Hunter',rows.reduce((s,x)=>s+Number(x.hunter_commission||0),0)],\n   ['Checker',rows.reduce((s,x)=>s+Number(x.checker_commission||0),0)],
+   ['Hunter',rows.reduce((s,x)=>s+Number(x.hunter_commission||0),0)],
+   ['Checker',rows.reduce((s,x)=>s+Number(x.checker_commission||0),0)],
    ['Content Creator',rows.reduce((s,x)=>s+Number(x.content_creator_commission||0),0)],
    ['Fasilitator',rows.reduce((s,x)=>s+Number(x.facilitator_commission||0),0)]
  ];
@@ -1366,7 +1367,8 @@ async function openTeamCommission(){
    'CS Closing':'5%',
    'Sales':'10%',
    'Freelance Internal':'10%',
-   'Hunter':'10%',\n   'Checker':'5%',
+   'Hunter':'10%',
+   'Checker':'5%',
    'Content Creator':'10%',
    'Fasilitator':'10%'
  };
@@ -1375,7 +1377,8 @@ async function openTeamCommission(){
   ['cs_closing_commission','CS Closing'],
   ['sales_commission','Sales Closing'],
   ['freelance_internal_commission','Freelance Internal'],
-  ['hunter_commission','Hunter'],\n  ['checker_commission','Checker'],
+  ['hunter_commission','Hunter'],
+  ['checker_commission','Checker'],
   ['content_creator_commission','Content Creator'],
   ['facilitator_commission','Fasilitator']
  ];

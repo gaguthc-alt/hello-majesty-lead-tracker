@@ -1645,7 +1645,7 @@ async function start(u,authClient){
   try{
     renderRoleHome();
     if(typeof hmEnsureHomePerformanceStyle==='function')hmEnsureHomePerformanceStyle();
-if(typeof hmRenderHomePerformance==='function'){ void hmRenderHomePerformance(); setTimeout(()=>{try{void hmRenderHomePerformance();}catch(e){console.warn('[HM] delayed performance',e);}},300);}
+if(typeof hmRenderHomePerformance==='function'){ void hmRenderHomePerformance(); }
   }catch(homeErr){
     console.error('[HM] RoleHome initial render error:',homeErr);
     $('roleHome').innerHTML='<div class="box"><h3>Dashboard</h3><p class="small">Dashboard berhasil login, tetapi menu gagal dirender: '+esc(homeErr?.message||homeErr)+'</p></div>';
@@ -2610,6 +2610,7 @@ async function hmRenderManagementMessage(){
  body.textContent=message;
 }
 async function hmRenderHomePerformance(){
+ const renderToken=(window.__hmPerfRenderToken=(window.__hmPerfRenderToken||0)+1);
  const host=document.getElementById('roleHome');
  if(!host)return;
  const block=document.getElementById('hmHomePerformance');
@@ -2654,9 +2655,11 @@ async function hmRenderHomePerformance(){
      }));
      outletSections=rowsByOutlet.join('');
    }
+   if(renderToken!==(window.__hmPerfRenderToken||0))return;
    block.innerHTML='<div class="hm-home-perf-title">📊 '+(isManagement?'COMMAND CENTER • ':'PERFORMA ')+escH(period).toUpperCase()+'</div>'+(isManagement?'':section('PERFORMA SAYA',own,'Aktivitas akun ini'))+section(isManagement?'TOTAL SELURUH OUTLET':'TOTAL OUTLET',total,scopeLabel)+(isManagement?outletSections:'');
  }catch(e){
    console.error('[HM] Home performance:',e);
+   if(renderToken!==(window.__hmPerfRenderToken||0))return;
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA</div><div class="small" style="padding:8px;color:#b42318">Gagal memuat performa: '+escH(e?.message||e)+'</div>';
  }
 }

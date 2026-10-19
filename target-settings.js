@@ -51,4 +51,20 @@
     alert('Target '+outlet+' bulan '+month+' berhasil disimpan.');
     await window.hmLoadTargets();
   };
+
+  function enforceVisibility(){
+    const canSee=allowed();
+    document.querySelectorAll('button,a,[role="button"],.role-home-submenu-item').forEach(el=>{
+      const label=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+      if(label.includes('Pengaturan Target Outlet')){
+        el.style.display=canSee?'':'none';
+        el.setAttribute('aria-hidden',canSee?'false':'true');
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded',enforceVisibility);
+  setTimeout(enforceVisibility,500);
+  setTimeout(enforceVisibility,1500);
+  const visibilityObserver=new MutationObserver(enforceVisibility);
+  visibilityObserver.observe(document.documentElement,{childList:true,subtree:true});
 })();

@@ -3052,7 +3052,7 @@ function renderRoleHome(){
      allowed=allowed.filter(item=>!['Target Outlet','Pengaturan Target Outlet','Laporan Performa Tim'].includes(item[1]));
    }
    // Pengaturan Target Outlet hanya untuk Management/Developer, termasuk pada akun Divisi.
-   if(g[1]==='KINERJA & TARGET' && !mg && !developer){
+   if(g[1]==='KINERJA & TARGET' && !mg && !developer && !isDivisiAccount){
      allowed=allowed.filter(item=>item[1]!=='Pengaturan Target Outlet');
    }
    if(g[1]==='SALES & PENJUALAN'){

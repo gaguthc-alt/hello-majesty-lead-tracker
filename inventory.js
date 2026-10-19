@@ -635,7 +635,17 @@ async function refreshCheckerOptions(){
   sel.innerHTML='<option value="">Gagal memuat Checker — coba pilih ulang</option>';
  }
 }
-function toggleHunterField(){const box=$('hunterBox'),checkerBox=$('checkerBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='HUNTER');if(checkerBox)checkerBox.classList.toggle('hidden',source!=='CHECKER');if(source==='CHECKER')refreshCheckerOptions();}
+function toggleHunterField(){
+ const source=$('stsource')?.value||'MANAGEMENT';
+ const box=$('hunterBox'),checkerBox=$('checkerBox');
+ if(box){box.classList.toggle('hidden',source!=='HUNTER');box.style.display=source==='HUNTER'?'block':'none';}
+ if(checkerBox){
+  checkerBox.classList.toggle('hidden',source!=='CHECKER');
+  checkerBox.style.display=source==='CHECKER'?'block':'none';
+  checkerBox.style.visibility=source==='CHECKER'?'visible':'hidden';
+ }
+ if(source==='CHECKER')refreshCheckerOptions();
+}
 function togglePartnerFields(){const box=$('partnerBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='MAJESTY_CELL');}
 function inventoryReceiveOutlet(){
  const sel=$('stoutlet');

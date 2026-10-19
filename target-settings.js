@@ -1,7 +1,7 @@
 (function(){
   const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID');
-  const allowed=()=>!!window.profile?.is_management;
+  const allowed=()=>{const p=window.profile||{};const role=String(p.role||'').trim().toUpperCase().replace(/[_-]+/g,' ');return p.is_management===true && (role==='MANAGEMENT'||role==='BUSINESS LEADER');};
   const monthNow=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';};
   function panel(title,html){
     const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');

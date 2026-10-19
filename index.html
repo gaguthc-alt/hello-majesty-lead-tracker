@@ -3879,23 +3879,24 @@ function doLeadSearch(){
 window.openLeadSearch=openLeadSearch;
 window.doLeadSearch=doLeadSearch;
 function viewerLead(l){
- const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
- const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- const name=String(profile?.name||'').trim();
- const isManagement=!!profile?.is_management||roles.includes('MANAGEMENT')||role.includes('MANAGEMENT');
- const isDivisi=roles.includes('DIVISI')||role==='DIVISI';
- const isDeveloper=role==='DEVELOPER APLIKASI';
- const isFacilitator=roles.includes('FASILITATOR')||role==='FASILITATOR';
- // Divisi, Management, dan Developer memiliki cakupan seluruh outlet.
+ const norm=v=>String(v??'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\\s+/g,' ');
+ const roles=(typeof getActiveRoles==='function'?getActiveRoles():[]).map(norm);
+ const role=norm(profile?.role);
+ const name=norm(profile?.name);
+ const outlet=norm(profile?.outlet);
+ // Role dapat berisi lebih dari satu fungsi; cocokkan label role secara konsisten.
+ const isManagement=!!profile?.is_management||roles.some(r=>r==='MANAGEMENT')||role.includes('MANAGEMENT');
+ const isDivisi=roles.some(r=>r==='DIVISI'||r.startsWith('DIVISI '))||role==='DIVISI'||role.startsWith('DIVISI ');
+ const isDeveloper=role==='DEVELOPER APLIKASI'||role==='DEVELOPER';
+ const isFacilitator=roles.some(r=>r==='FASILITATOR'||r.startsWith('FASILITATOR '))||role==='FASILITATOR'||role.startsWith('FASILITATOR ');
+ // Divisi, Management, dan Developer dapat melihat lead semua outlet.
  if(isManagement||isDivisi||isDeveloper)return true;
- // Fasilitator dapat melihat semua lead hanya pada outlet yang ditugaskan.
- if(isFacilitator)return !!profile?.outlet&&String(l.outlet||'').trim()===String(profile.outlet).trim();
- // Tim biasa hanya melihat lead yang secara eksplisit menjadi tanggung jawabnya.
- // Jangan tampilkan lead AVAILABLE/belum di-claim ke seluruh anggota outlet.
+ // Fasilitator hanya dapat melihat seluruh lead pada outlet yang ditugaskan.
+ if(isFacilitator)return !!outlet&&norm(l?.outlet)===outlet;
+ // Tim biasa hanya melihat lead yang tercatat sebagai PIC CS, Sales, atau Service.
+ // Perbandingan nama dibuat tidak peka huruf besar/kecil agar PIC yang sama tidak terlewat.
  if(!name)return false;
- const owners=[l.cs_claimed_by,l.sales_claimed_by,l.service_pic]
-   .map(v=>String(v||'').trim()).filter(Boolean);
- return owners.includes(name);
+ return [l?.cs_claimed_by,l?.sales_claimed_by,l?.service_pic].some(owner=>norm(owner)===name);
 }
 async function render(){
  hmRenderLeadTodayMain();

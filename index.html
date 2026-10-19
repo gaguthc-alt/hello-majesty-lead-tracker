@@ -3982,7 +3982,26 @@ async function render(){
   ['Gagal',v.gagal,"showTodayActivity('GAGAL')"],
   ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
- const resumeLeads=leads.filter(viewerLead);
+ // Sembunyikan lead dari bulan sebelumnya pada tampilan operasional,
+ // kecuali follow-up PIC masih baru (tanggal follow-up dalam 3 hari terakhir).
+ // Data sumber tidak dihapus dan tetap tersedia untuk laporan/histori.
+ const hmLeadVisibleByMonth=(l)=>{
+  const created=l?.created_at?new Date(l.created_at):null;
+  if(!created||isNaN(created.getTime()))return true;
+  const now=new Date();
+  if(created.getFullYear()===now.getFullYear()&&created.getMonth()===now.getMonth())return true;
+  const salesClaimed=!!String(l?.sales_claimed_by||'').trim();
+  const raw=salesClaimed?(l?.sales_follow_up_date||l?.follow_up_date||l?.cs_follow_up_date):(l?.cs_follow_up_date||l?.follow_up_date||l?.sales_follow_up_date);
+  if(!raw)return false;
+  const f=new Date(String(raw).slice(0,10)+'T00:00:00');
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  if(isNaN(f.getTime()))return false;
+  const age=Math.floor((today.getTime()-f.getTime())/86400000);
+  const result=String(salesClaimed?l?.sales_result:l?.qualification_result||'').trim().toUpperCase();
+  const finalResult=salesClaimed?['CLOSING','GAGAL','LOST'].includes(result):['GAGAL','LOST'].includes(result);
+  return age>=0&&age<=3&&!finalResult;
+ };
+ const resumeLeads=leads.filter(viewerLead).filter(hmLeadVisibleByMonth);
  const roleName=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const isFacilitatorAccount=roleName==='FASILITATOR'||hmPermissionRoles?.includes?.('FASILITATOR');
  const isManagementAccount=!!profile?.is_management||roleName==='MANAGEMENT';

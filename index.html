@@ -2670,8 +2670,15 @@ async function hmRenderHomePerformance(){
    if(isManagement){
      const {data:targetRows,error:targetError}=await db.from('monthly_outlet_targets').select('outlet,wa_target,qualified_target,closing_target').eq('month_start',monthStart.toISOString().slice(0,10)).eq('active',true).order('outlet');
      if(targetError)throw targetError;
-     const outlets=[...new Set((targetRows||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean))];
-     const targetByOutlet={};(targetRows||[]).forEach(x=>{targetByOutlet[x.outlet]=x;});
+     /* Divisi/Management needs a breakdown for every outlet, even when an outlet has no active target row this month. */
+     const outletSet=new Set((targetRows||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean));
+     try{
+       const {data:profileOutlets,error:profileOutletError}=await db.from('team_profiles').select('outlet,active');
+       if(profileOutletError)console.warn('[HM] Tidak dapat membaca outlet dari team_profiles:',profileOutletError);
+       (profileOutlets||[]).forEach(x=>{const name=String(x.outlet||'').trim();if(name)outletSet.add(name);});
+     }catch(outletLookupError){console.warn('[HM] Fallback daftar outlet tidak tersedia:',outletLookupError);}
+     const outlets=Array.from(outletSet).sort((a,b)=>a.localeCompare(b,'id'));
+     const targetByOutlet={};(targetRows||[]).forEach(x=>{targetByOutlet[String(x.outlet||'').trim()]=x;});
      const rowsByOutlet=await Promise.all(outlets.map(async outlet=>{
        const {data:od,error:oe}=await db.rpc('home_performance_summary',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),p_employee_name:'',p_outlet:outlet,p_all_outlets:false});
        if(oe)throw oe;

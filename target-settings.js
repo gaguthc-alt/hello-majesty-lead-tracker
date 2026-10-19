@@ -51,17 +51,4 @@
     alert('Target '+outlet+' bulan '+month+' berhasil disimpan.');
     await window.hmLoadTargets();
   };
-  function addCard(){
-    if(!allowed())return;
-    const home=document.querySelector('.role-home-menu');
-    if(!home||document.getElementById('hmTargetSettingsCard'))return;
-    const card=document.createElement('button');card.id='hmTargetSettingsCard';card.className='role-home-submenu-item';card.type='button';
-    card.innerHTML='<b>🎯 Pengaturan Target Outlet</b><span>Atur target WA, handover, closing, laba & reward per bulan</span>';
-    card.addEventListener('click',()=>window.hmOpenTargetSettings());
-    const submenu=home.querySelector('.role-home-submenu')||home;
-    submenu.appendChild(card);
-  }
-  document.addEventListener('DOMContentLoaded',addCard);
-  setTimeout(addCard,1200);setTimeout(addCard,3500);
-  const mo=new MutationObserver(addCard);mo.observe(document.documentElement,{childList:true,subtree:true});
 })();

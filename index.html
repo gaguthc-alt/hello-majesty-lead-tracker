@@ -5850,7 +5850,7 @@ window.addEventListener('DOMContentLoaded',function(){
       const heading = section.querySelector('.role-home-category-title');
       if(!heading || !/LEAD TRACKER/i.test(heading.textContent || '')) return;
       section.querySelectorAll('.role-home-submenu-item,[data-hm-menu-title]').forEach(function(button){
-        const title = (button.getAttribute('data-hm-menu-title') || button.querySelector('b')?.textContent || '').replace(/^\\s*[^A-Za-z0-9]+\\s*/, '').trim();
+        const title = (button.getAttribute('data-hm-menu-title') || button.querySelector('b')?.textContent || '').replace(/^\s*[^A-Za-z0-9]+\s*/, '').trim();
         if(forbidden.has(title)) button.remove();
       });
     });

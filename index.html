@@ -2515,7 +2515,7 @@ function hmRenderLeadTodayMain(){
  const isTeam=!isMgmt&&!isDeveloper&&!isDivisi&&!isFacilitator;
  const myName=String(profile?.name||'').trim();
  const myLead=l=>String(l.cs_claimed_by||'').trim()===myName||String(l.sales_claimed_by||'').trim()===myName;
- const today=(isDeveloper||isDivisi||isMgmt)?allToday:isFacilitator?allToday.filter(myLead):isTeam?allToday.filter(myLead):allToday.filter(viewerLead);
+ const today=allToday.filter(viewerLead);
  const bucket=l=>{
   const sales=String(l.sales_result||'').toUpperCase(),cs=String(l.qualification_result||'').toUpperCase(),st=String(l.status_lead||'').toUpperCase(),hasil=String(l.hasil||'').toUpperCase();
   // Hasil akhir harus dipisahkan lebih dulu.
@@ -3879,18 +3879,23 @@ function doLeadSearch(){
 window.openLeadSearch=openLeadSearch;
 window.doLeadSearch=doLeadSearch;
 function viewerLead(l){
+ const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- const isFacilitator=role==='FASILITATOR'||hmPermissionRoles?.includes?.('FASILITATOR');
- if(profile?.is_management)return true;
- if(l.outlet!==profile?.outlet)return false;
- // Fasilitator melihat seluruh lead outletnya, tanpa dibatasi claim CS/Sales.
- if(isFacilitator)return true;
- // SERVICE yang sudah di-claim harus terlihat oleh teknisi pemiliknya,
- // walaupun CS Owner-nya adalah anggota tim lain.
- if(l.service_pic)return l.service_pic===profile?.name;
- if(l.sales_claimed_by)return l.sales_claimed_by===profile?.name;
- if(l.cs_claimed_by)return l.cs_claimed_by===profile?.name;
- return true;
+ const name=String(profile?.name||'').trim();
+ const isManagement=!!profile?.is_management||roles.includes('MANAGEMENT')||role.includes('MANAGEMENT');
+ const isDivisi=roles.includes('DIVISI')||role==='DIVISI';
+ const isDeveloper=role==='DEVELOPER APLIKASI';
+ const isFacilitator=roles.includes('FASILITATOR')||role==='FASILITATOR';
+ // Divisi, Management, dan Developer memiliki cakupan seluruh outlet.
+ if(isManagement||isDivisi||isDeveloper)return true;
+ // Fasilitator dapat melihat semua lead hanya pada outlet yang ditugaskan.
+ if(isFacilitator)return !!profile?.outlet&&String(l.outlet||'').trim()===String(profile.outlet).trim();
+ // Tim biasa hanya melihat lead yang secara eksplisit menjadi tanggung jawabnya.
+ // Jangan tampilkan lead AVAILABLE/belum di-claim ke seluruh anggota outlet.
+ if(!name)return false;
+ const owners=[l.cs_claimed_by,l.sales_claimed_by,l.service_pic]
+   .map(v=>String(v||'').trim()).filter(Boolean);
+ return owners.includes(name);
 }
 async function render(){
  hmRenderLeadTodayMain();

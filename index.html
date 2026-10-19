@@ -2887,7 +2887,7 @@ function renderRoleHome(){
    const allItems=['Stok Siap Jual'];
    const facDivItems=['Dashboard Inventory','Laporan Fasilitator','Master Produk','Barang Masuk','Persetujuan Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
    coreInventoryCards.forEach(item=>{
-     const allowed=(item[1]==='Stock Hunter')
+     const allowed=(item[1]==='Stock Hunter & Checker'||item[1]==='Stock Hunter')
        ? true
        : ((item[1]==='Stock Checker'||item[1]==='Komisi Checker')?inventoryIsManagementLevel:(inventoryIsManagementLevel||allItems.includes(item[1])||(inventoryFacDivAccess&&facDivItems.includes(item[1]))));
      if(allowed&&!cards.some(x=>x[1]===item[1]))cards.push(item);

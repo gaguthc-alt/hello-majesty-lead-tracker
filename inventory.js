@@ -607,7 +607,35 @@ function invStat(label,val){
  return '<div class="stat"><div class="small">'+label+'</div><div class="num">'+display+'</div></div>';
 }
 function filterHunterOptions(){ const sel=$('sthunter'); if(!sel)return; const outlet=String($('stoutlet')?.value||profile?.outlet||'').trim().toLowerCase(); const opts=[...sel.options].filter(o=>o.value); const matches=opts.filter(o=>String(o.getAttribute('data-hunter-outlet')||'').trim().toLowerCase()===outlet); /* Jangan kosongkan pilihan Hunter jika outlet profil/label tidak sinkron; tampilkan daftar aktif sebagai fallback. */ opts.forEach(o=>{o.hidden=!!outlet&&matches.length>0&&String(o.getAttribute('data-hunter-outlet')||'').trim().toLowerCase()!==outlet;}); if(sel.selectedOptions[0]?.hidden)sel.value=''; }
-function toggleHunterField(){const box=$('hunterBox'),checkerBox=$('checkerBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='HUNTER');if(checkerBox)checkerBox.classList.toggle('hidden',source!=='CHECKER');}
+async function refreshCheckerOptions(){
+ const sel=$('stchecker');if(!sel)return;
+ const previous=sel.value;
+ sel.innerHTML='<option value="">Memuat daftar Checker...</option>';
+ try{
+  const [directory,profiles]=await Promise.all([
+   sb.from('team_directory').select('*').order('name'),
+   sb.from('team_profiles').select('user_id,name,is_management,active')
+  ]);
+  if(directory.error)throw directory.error;
+  if(profiles.error)throw profiles.error;
+  const rows=[...(directory.data||[]),...(profiles.data||[])];
+  const managementIds=new Set((profiles.data||[]).filter(x=>x.is_management===true||String(x.is_management).toLowerCase()==='true').map(x=>String(x.user_id||'')));
+  const byId=new Map();
+  for(const row of rows){
+   const id=String(row.user_id||'').trim(),name=String(row.name||row.full_name||row.display_name||'').trim();
+   if(!id||!name||managementIds.has(id)||row.is_management===true||String(row.is_management).toLowerCase()==='true')continue;
+   if(!byId.has(id))byId.set(id,name);
+  }
+  const options=Array.from(byId.entries()).sort((a,b)=>a[1].localeCompare(b[1],'id'));
+  sel.innerHTML='<option value="">Pilih Checker</option>'+options.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(name)+'</option>').join('');
+  if(previous&&byId.has(previous))sel.value=previous;
+  if(!options.length)sel.innerHTML='<option value="">Nama tim belum terbaca — coba tutup dan buka formulir</option>';
+ }catch(e){
+  console.error('[HM] Gagal memuat daftar Checker',e);
+  sel.innerHTML='<option value="">Gagal memuat Checker — coba pilih ulang</option>';
+ }
+}
+function toggleHunterField(){const box=$('hunterBox'),checkerBox=$('checkerBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='HUNTER');if(checkerBox)checkerBox.classList.toggle('hidden',source!=='CHECKER');if(source==='CHECKER')refreshCheckerOptions();}
 function togglePartnerFields(){const box=$('partnerBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='MAJESTY_CELL');}
 function inventoryReceiveOutlet(){
  const sel=$('stoutlet');

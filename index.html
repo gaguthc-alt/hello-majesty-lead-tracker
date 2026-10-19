@@ -2287,9 +2287,12 @@ function hmOpenLeadHandover(){
     const sales=String(l.sales_result||'').trim().toUpperCase();
     const type=String(l.need_type||'').trim().toUpperCase();
     const salesOwner=String(l.sales_claimed_by||'').trim();
+    const handoverAt=l.sales_handover_at;
     const finalResult=['CLOSING','GAGAL'].includes(sales)||q==='GAGAL'||st==='HASIL';
+    // Hanya lead yang benar-benar sudah di-handover CS yang masuk antrean.
+    const handedOver=!!handoverAt;
     const ready=['QUALIFIED','POTENSIAL'].includes(q)||st==='QUALIFIED';
-    return type!=='SERVICE' && ready && !salesOwner && !finalResult;
+    return type!=='SERVICE' && handedOver && ready && !salesOwner && !finalResult;
   });
   t.textContent='🤝 Lead Handover';
   b.innerHTML='<div class="small" style="margin-bottom:10px">Antrean serah-terima CS → Sales. Hanya lead QUALIFIED/POTENSIAL yang belum memiliki PIC Sales. Setelah Sales melakukan claim, lead keluar dari antrean ini dan tetap tercatat di Lead Aktif.</div>'+
@@ -4475,7 +4478,12 @@ Mohon tim tidak melakukan follow up pada lead yang sama tanpa koordinasi dengan 
 *Built on Trust*`;
 }
 function shareSalesClaim(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesClaimMessage(l));}
-async function handoverSales(id){ const x=await sb.rpc('claim_lead',{p_lead_id:id,p_role:'SALES'}); if(x.error)return alert(x.error.message); await loadLeads(); openUrl(); }
+async function handoverSales(id){
+ const x=await sb.rpc('handover_lead_to_sales',{p_lead_id:id});
+ if(x.error)return alert(x.error.message);
+ await loadLeads();
+ openUrl();
+}
 function serviceHandoverMessage(l){
  const link=location.origin+location.pathname+'?claim='+encodeURIComponent(l.lead_id)+'&type=SERVICE';
  const d=l.initial_data||{}; const nl=String.fromCharCode(10);

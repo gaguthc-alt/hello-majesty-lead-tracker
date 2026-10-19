@@ -56,11 +56,36 @@
     }
   }
 
+
+  function renderCommissionSummary(rows){
+    const sums={handover:0,closing:0,sales:0,freelance:0,hunter:0,content:0,facilitator:0,profit:0};
+    rows.forEach(r=>{
+      sums.handover+=Math.max(Number(r.cs_commission||0)-Number(r.cs_closing_commission||0),0);
+      sums.closing+=Number(r.cs_closing_commission||0);
+      sums.sales+=Number(r.sales_commission||0);
+      sums.freelance+=Number(r.freelance_internal_commission||r.freelance_commission||0);
+      sums.hunter+=Number(r.hunter_commission||0);
+      sums.content+=Number(r.content_creator_commission||0);
+      sums.facilitator+=Number(r.facilitator_commission||0);
+      sums.profit+=Number(r.outlet_profit||r.gross_profit||r.profit||0);
+    });
+    const total=sums.handover+sums.closing+sums.sales+sums.freelance+sums.hunter+sums.content+sums.facilitator;
+    const data=[
+      ['CS Handover',sums.handover,10,10],['CS Closing',sums.closing,5,5],['Sales',sums.sales,10,10],
+      ['Freelance Internal',sums.freelance,30,10],['Hunter',sums.hunter,5,5],['Content Creator',sums.content,10,10],['Fasilitator',sums.facilitator,10,10]
+    ];
+    const pct=v=>sums.profit>0?(v/sums.profit*100).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'—';
+    const rowsHtml=data.map(([name,amount,formula,budget])=>
+      '<tr><td>'+esc(name)+'</td><td class="hm-cs-amount">'+rp(amount)+'</td><td>'+pct(amount)+'</td><td>'+formula+'%</td><td>'+budget+'%</td></tr>'
+    ).join('');
+    return '<section class="hm-commission-summary"><h3 style="margin:12px 0">📊 Rekap Komisi per Jenis</h3><div class="hm-cs-desktop"><div style="overflow:auto;border:1px solid #e5e7eb;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8fafc"><th style="text-align:left;padding:10px">Jenis Komisi</th><th style="text-align:right;padding:10px">Nominal</th><th style="text-align:right;padding:10px">% terhadap Laba</th><th style="text-align:right;padding:10px">% Rumus Komisi</th><th style="text-align:right;padding:10px">% Max Budget</th></tr></thead><tbody>'+rowsHtml+'<tr style="font-weight:800;background:#f8fafc"><td style="padding:10px">Total</td><td style="text-align:right;padding:10px">'+rp(total)+'</td><td style="text-align:right;padding:10px">'+pct(total)+'</td><td style="text-align:right;padding:10px">—</td><td style="text-align:right;padding:10px">60%</td></tr></tbody></table></div></div><div class="hm-cs-mobile">'+data.map(([name,amount,formula,budget])=>'<article style="border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin:8px 0"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>'+esc(name)+'</b><b>'+rp(amount)+'</b></div><div class="hm-cs-mobile-grid"><div><small>% terhadap Laba</small><strong>'+pct(amount)+'</strong></div><div><small>% Rumus Komisi</small><strong>'+formula+'%</strong></div><div><small>% Max Budget</small><strong>'+budget+'%</strong></div></div></article>').join('')+'<article style="border:2px solid #cbd5e1;border-radius:12px;padding:12px;margin-top:12px"><div style="display:flex;justify-content:space-between;gap:10px"><b>Total Komisi</b><b>'+rp(total)+'</b></div><div class="hm-cs-mobile-grid"><div><small>% terhadap Laba</small><strong>'+pct(total)+'</strong></div><div><small>% Rumus Komisi</small><strong>—</strong></div><div><small>% Max Budget</small><strong>60%</strong></div></div></article></div></section>';
+  }
+
   async function renderCommissionDetail(host){
     const rows=await loadCommission();
     const groups={};
     rows.forEach(r=>(groups[r.outlet]??=[]).push(r));
-    let html='<div style="overflow:auto;border:1px solid #e5e7eb;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:980px"><thead><tr style="background:#f8fafc">'+
+    let html=renderCommissionSummary(rows)+'<div style="overflow:auto;border:1px solid #e5e7eb;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:980px"><thead><tr style="background:#f8fafc">'+
       '<th style="text-align:left;padding:9px">Nama</th>'+
       '<th style="text-align:right;padding:9px">CS Handover</th>'+
       '<th style="text-align:right;padding:9px">CS Closing</th>'+
@@ -89,6 +114,10 @@
     html+='</tbody></table></div>';
     host.innerHTML=html;
   }
+
+  const css=document.createElement('style');
+  css.textContent='.hm-cs-mobile{display:none}.hm-cs-mobile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}.hm-cs-mobile-grid small{display:block;color:#64748b;font-size:11px}.hm-cs-mobile-grid strong{display:block;margin-top:3px;font-size:14px}@media(max-width:640px){.hm-cs-desktop{display:none!important}.hm-cs-mobile{display:block!important}.hm-cs-mobile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hm-cs-mobile-grid>div:last-child{grid-column:1/-1}}';
+  document.head.appendChild(css);
 
   async function enhance(){
     const box=document.getElementById('hmPayrollBox');

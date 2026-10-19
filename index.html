@@ -2929,8 +2929,7 @@ function renderRoleHome(){
      ['👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()'],
      ['🤝','Lead Handover','Qualified/Potensial → handover & share ke Sales','hmOpenLeadHandover()'],
      ['🔔','Perlu Perhatian','Follow-up yang harus segera ditindaklanjuti','showNeedsAttention()'],
-     ['🔎','Pencarian Lead','Cari lead berdasarkan ID, nama, WhatsApp, kebutuhan, outlet, atau status','openLeadSearch()'],
-     ['📊','Laporan Performa Tim','Claim CS, handover, CS closing & sales closing per anggota tim','openPerformance()']
+     ['🔎','Pencarian Lead','Cari lead berdasarkan ID, nama, WhatsApp, kebutuhan, outlet, atau status','openLeadSearch()']
    ]],
    ['📣','DIVISI HELLO — PROMOTION',[
      ['📣','Divisi Hello','Lead baru, WA masuk, konten, dan kualitas lead','hmOpenKinerjaDivision:hello']
@@ -2943,6 +2942,7 @@ function renderRoleHome(){
    ]],
    ['📊','KINERJA & TARGET',[
      ['🏪','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()'],
+     ['⚙️','Pengaturan Target Outlet','Atur target WA, handover, closing, laba & reward per bulan','openTargetSettings()'],
      ['📊','Laporan Performa Tim','Claim CS, handover, CS closing & sales closing per anggota tim','openPerformance()']
    ]],
    ['🛒','SALES & PENJUALAN',[
@@ -3022,7 +3022,7 @@ function renderRoleHome(){
    const isAtmaditaAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita';
    const isDivisiAccount = roles.includes('DIVISI') || rawRole==='DIVISI';
    const isSakaAccount = String(profile?.name||'').trim().toLowerCase()==='saka';
-   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='ACCURATE' && (developer || mg)) || (g[1]==='MAJESTY CELL' && (isAtmaditaAccount || isDivisiAccount || isSakaAccount)) || (g[1]==='SALES & PENJUALAN' && sales) || (g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet'))));
+   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='ACCURATE' && (developer || mg)) || (g[1]==='MAJESTY CELL' && (isAtmaditaAccount || isDivisiAccount || isSakaAccount)) || (g[1]==='SALES & PENJUALAN' && sales) || (g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))));
    if(g[1]==='ACCURATE' && !developer && !mg)return '';
    const isAccountingGroup = g[1]==='ACCOUNTING' && developer;
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
@@ -3046,7 +3046,7 @@ function renderRoleHome(){
    // Akun lain tetap mengikuti permission melalui cards.
    // Tim dapat melihat LEAD TRACKER + SALES & PENJUALAN.
    // Developer tetap melihat seluruh kelompok menu.
-   if(!forceVisible && !developer && !mg && !isAccountingGroup && gi>1 && g[1]!=='KINERJA DIVISI' && !(g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet'))) && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
+   if(!forceVisible && !developer && !mg && !isAccountingGroup && gi>1 && g[1]!=='KINERJA DIVISI' && !(g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))) && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
    let allowed=(forceVisible || isAccountingGroup || g[1]==='KINERJA DIVISI') ? g[2] : g[2].filter(item=>cards.some(x=>x[1]===item[1]));
    if(g[1]==='SALES & PENJUALAN'){
      const directBuyback=g[2].find(item=>item[1]==='Barang Masuk — Jual HP');

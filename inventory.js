@@ -1084,7 +1084,7 @@ function toggleReceiveFields(){
  $('iphoneSecondFields')?.classList.toggle('hidden',!showSecond);
  $('androidNewFields')?.classList.toggle('hidden',!showAndroidNew);
  $('androidSecondFields')?.classList.toggle('hidden',!showAndroidSecond);
- const source=$('stsource');if(source)source.onchange=()=>{$('hunterBox')?.classList.toggle('hidden',source.value!=='HUNTER')};
+ const source=$('stsource');if(source)source.onchange=()=>{toggleHunterField();togglePartnerFields();};
 }
 async function hmCheckDuplicateImeis(imei1,imei2,excludeId){
  const tokens=[...new Set([imei1,imei2].map(v=>String(v||'').trim()).filter(v=>/^(?:\d{15}|\d{32})$/.test(v)))];

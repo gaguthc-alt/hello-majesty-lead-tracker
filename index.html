@@ -1501,7 +1501,8 @@ async function openCommission(){
   const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
   const roleFormula={
     'Content Creator':'WA saya ÷ Target WA × Closing Tim ÷ Target Closing × 10% Laba',
-    'CS':'Handover saya ÷ Target Handover × Closing Tim ÷ Target Closing × 10% Laba',
+    'CS Handover':'Handover saya ÷ Target Handover × Closing Tim ÷ Target Closing × 10% Laba',
+    'CS Closing':'5% × Laba transaksi yang mencatat saya sebagai CS Closing',
     'Sales':'10% × Laba Closing saya',
     'Freelance Internal':'30% × Laba Closing saya',
     'Hunter':'10% × Laba unit yang saya-hunt dan SOLD',
@@ -1518,7 +1519,8 @@ async function openCommission(){
     '<div class="box"><h3>Rincian Komisi per Peran</h3>'+
     (d.roles||[]).map(x=>{
       const detail=x.role==='Content Creator'?(x.actual+' / '+t.wa+' WA • '+tm.closing+' / '+t.closing+' closing tim'):
-        x.role==='CS'?(x.actual+' / '+t.handover+' handover • '+tm.closing+' / '+t.closing+' closing tim'):
+        x.role==='CS Handover'?(x.actual+' / '+t.handover+' handover • '+tm.closing+' / '+t.closing+' closing tim'):
+        x.role==='CS Closing'?'Komisi dari transaksi yang mencatat saya sebagai CS Closing (5%)':
         x.role==='Sales'?(rp(x.actual)+' laba closing • komisi 10%') :
         x.role==='Freelance Internal'?(rp(x.actual)+' laba closing • komisi 30%') :
         x.role==='Hunter'?'Profit unit Hunter yang SOLD':

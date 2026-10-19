@@ -4492,6 +4492,7 @@ function card(l){
  const canServiceClose=!mg&&isService&&l.service_pic===profile?.name&&l.service_status!=='CLOSING'&&l.status_lead!=='HASIL';
  const canAI=mg||(isFac&&l.outlet===profile?.outlet)||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name||l.service_pic===profile?.name;
  const own=mg||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name||l.service_pic===profile?.name;
+ const canAskPIC=!!window.hmCanFacilitator||['DIVISI','FASILITATOR'].includes(String(profile?.role||'').toUpperCase().replace(/_/g,' '))||(typeof getActiveRoles==='function'&&getActiveRoles().some(r=>['DIVISI','FASILITATOR'].includes(String(r||'').toUpperCase().replace(/_/g,' '))));
  const qualified=l.status_lead==='QUALIFIED';
  const limited=(l.status_lead==='CS LOCK'&&!q&&!mg)||(l.status_lead==='HANDLE'&&!own&&!mg);
  const displayStatus=l.sales_result==='CLOSING'?'HASIL • CLOSING':l.sales_result==='GAGAL'?'HASIL • GAGAL':l.qualification_result==='GAGAL'?'HASIL • GAGAL':l.qualification_result==='POTENSIAL'?'POTENSIAL • FOLLOW-UP':l.status_lead==='HASIL'?'HASIL':l.status_lead==='QUALIFIED'?'QUALIFIED':l.status_lead;
@@ -4516,7 +4517,7 @@ function card(l){
  (sh?'<button class="success" onclick="handoverSales(\''+esc(l.lead_id)+'\')">🤝 Handover ke Sales</button><button class="secondary" onclick="share(\''+esc(l.lead_id)+'\')">📢 Share ke Group WA</button>':'')+
  (sr?'<button type="button" class="success" onclick="window.salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button><button class="secondary" onclick="shareSalesClaim(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+
  (canServiceClose?'<button type="button" class="success" onclick="openServiceClosing(\''+esc(l.lead_id)+'\')">✅ Closing Service</button>':'')+
- ((window.hmCanFacilitator||String(profile?.role||'').toUpperCase()==='FACILITATOR'||String(profile?.role||'').toUpperCase()==='DIVISI'||(typeof getActiveRoles==='function'&&getActiveRoles().some(r=>['DIVISI','FASILITATOR'].includes(String(r||'').toUpperCase().replace(/_/g,' '))))?'<button class="secondary" type="button" onclick="sharePICQuestion(\''+esc(l.lead_id)+'\')">📲 Tanyakan PIC via WA Group</button>':'')+
+ (canAskPIC?'<button class="secondary" type="button" onclick="sharePICQuestion(\\''+esc(l.lead_id)+'\\')">📲 Tanyakan PIC via WA Group</button>':'')+
  (hasChat?'<button class="secondary" type="button" onclick="window.hmOpenLeadChat(\''+esc(l.id||'')+'\')">💬 Chat</button>':'')+
  (own?'<button class="secondary" onclick="editLead(\''+esc(l.lead_id)+'\')">Buka / Update</button>':'')+
  (canAI?'<button class="secondary" type="button" data-lead-ai="'+esc(l.lead_id)+'" onclick="window.openAI(this.dataset.leadAi)">🤖 Tanya AI</button>':'')+

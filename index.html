@@ -1448,12 +1448,12 @@ async function openTeamCommissionDetails(encodedName){
  const back='<button class="btn" onclick="openTeamCommission()">← Kembali ke Komisi Tim</button>';
  const performanceTypes=new Set(['CS Handover','Content Creator','Fasilitator']);
  const formulaByType={
-   'CS Handover':'(Handover CS ÷ Handover Tim) × (Unit Terjual Outlet ÷ Target Unit Outlet) × (Laba Aktual Outlet ÷ Target Laba Outlet) × 10% × Laba Aktual Outlet',
+   'CS Handover':'(Handover saya ÷ Target Handover Outlet) × 10% × Laba Aktual Outlet',
    'CS Closing':'5% × laba transaksi yang memenuhi syarat CS Closing',
    'Sales Closing':'10% × laba transaksi yang memenuhi syarat Sales Closing, dibagi sesuai anggota tim closing',
    'Freelance Internal':'30% × laba transaksi Freelance Internal',
    'Hunter':'10% × laba unit yang di-hunt dan berhasil SOLD',
-   'Content Creator':'(WA Masuk ÷ Target WA) × (Unit Terjual ÷ Target Unit) × (Laba Aktual Outlet ÷ Target Laba Outlet) × 10% × Laba Aktual Outlet',
+   'Content Creator':'(WA yang saya hasilkan ÷ Target WA Outlet) × 10% × Laba Aktual Outlet',
    'Fasilitator':'(WA Masuk ÷ Target WA) × (Handover Tim ÷ Target Handover) × (Unit Terjual ÷ Target Unit) × (Laba Aktual Outlet ÷ Target Laba Outlet) × 10% × Laba Aktual Outlet',
    'Service Closing':'Sesuai aturan komisi Service Closing pada transaksi'
  };
@@ -1500,8 +1500,8 @@ async function openCommission(){
   const d=r.data||{}, t=d.targets||{}, tm=d.team||{};
   const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
   const roleFormula={
-    'Content Creator':'WA saya ÷ Target WA × Closing Tim ÷ Target Closing × 10% Laba',
-    'CS Handover':'Handover saya ÷ Target Handover × Closing Tim ÷ Target Closing × 10% Laba',
+    'Content Creator':'WA saya ÷ Target WA Outlet × 10% × Laba Aktual Outlet',
+    'CS Handover':'Handover saya ÷ Target Handover Outlet × 10% × Laba Aktual Outlet',
     'CS Closing':'5% × Laba transaksi yang mencatat saya sebagai CS Closing',
     'Sales':'10% × Laba Closing saya',
     'Freelance Internal':'30% × Laba Closing saya',
@@ -1518,8 +1518,8 @@ async function openCommission(){
     '<div class="small" style="margin-top:8px">Laba Penjualan Tim: <b>'+rp(tm.profit)+'</b></div></div>'+
     '<div class="box"><h3>Rincian Komisi per Peran</h3>'+
     (d.roles||[]).map(x=>{
-      const detail=x.role==='Content Creator'?(x.actual+' / '+t.wa+' WA • '+tm.closing+' / '+t.closing+' closing tim'):
-        x.role==='CS Handover'?(x.actual+' / '+t.handover+' handover • '+tm.closing+' / '+t.closing+' closing tim'):
+      const detail=x.role==='Content Creator'?(x.actual+' / '+t.wa+' WA dari target outlet'):
+        x.role==='CS Handover'?(x.actual+' / '+t.handover+' handover dari target outlet'):
         x.role==='CS Closing'?'Komisi dari transaksi yang mencatat saya sebagai CS Closing (5%)':
         x.role==='Sales'?(rp(x.actual)+' laba closing • komisi 10%') :
         x.role==='Freelance Internal'?(rp(x.actual)+' laba closing • komisi 30%') :

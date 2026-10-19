@@ -984,7 +984,9 @@ async function filterReceiveProducts(){
 }
 window.openReceiveStock=async function openReceiveStock(){
  if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management, Fasilitator, dan Admin Finance Majesty Cell.');return;}
- const teams=await sb.from('team_directory').select('*').order('name');if(teams.error)return alert(teams.error.message);
+ $('mt').textContent='📦 Barang Masuk';$('mb').innerHTML='<div class="box" style="text-align:center;padding:24px"><b>⏳ Menyiapkan formulir Barang Masuk…</b><div class="small" style="margin-top:8px">Sedang memuat daftar tim dan hak akses.</div></div>';$('modal').classList.remove('hidden');
+ try{
+ const teams=await sb.from('team_directory').select('*').order('name');if(teams.error)throw teams.error;
  const receiveCategories=[['IPHONE_NEW','iPhone New'],['IPHONE_SECOND','iPhone Second'],['ANDROID_NEW','Android New'],['ANDROID_SECOND','Android Second']];
  const products='<option value="">Pilih produk setelah memilih kategori</option>'+inventoryProducts.map(p=>'<option value="'+p.id+'" data-category="'+esc(p.category||'')+'">'+esc(masterProductLabel(p))+'</option>').join('');
  const selected=inventoryProducts.find(p=>p.id===$('stprod')?.value);
@@ -1004,6 +1006,7 @@ window.openReceiveStock=async function openReceiveStock(){
  $('modal').classList.remove('hidden');
  const receiveRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');if(receiveRole==='ADMIN FINANCE MAJESTY CELL'){if($('stsource')){$('stsource').value='MAJESTY_CELL';$('stsource').disabled=true;}if($('stpartner')){$('stpartner').value='Majesty Cell';$('stpartner').disabled=true;}togglePartnerFields();const saveBtn=$('mb').querySelector('button.success[onclick="saveStock()"]');if(saveBtn)saveBtn.textContent='Kirim untuk Persetujuan';$('mb').insertAdjacentHTML('afterbegin','<div class="notice"><b>Barang Masuk Majesty Cell</b><br>Setelah disimpan, barang akan <b>MENUNGGU PERSETUJUAN</b> Management/Facilitator sebelum menjadi Stock READY.</div><button class="secondary" style="margin-bottom:8px" onclick="openMyInventoryReceiveStatus()">📋 Status Pengajuan Saya</button>');}
  filterHunterOptions();
+ }catch(ex){console.error('[HM] Barang Masuk gagal dimuat:',ex);$('mt').textContent='📦 Barang Masuk';$('mb').innerHTML='<div class="box"><b>Formulir Barang Masuk gagal dimuat.</b><div class="small" style="margin-top:8px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:12px" onclick="window.openReceiveStock()">Coba Lagi</button></div>';$('modal').classList.remove('hidden');}
 }
 function toggleReceiveFields(){
  const p=inventoryProducts.find(x=>x.id===$('stprod')?.value);

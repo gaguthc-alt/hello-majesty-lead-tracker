@@ -374,6 +374,26 @@ async function renderStandaloneHunterStock(){
   panel.innerHTML='<div class="box" style="color:#b42318"><b>Stock Hunter gagal dimuat.</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';
  }
 }
+async function renderStandaloneCheckerStock(){
+ const section=document.getElementById('hunterStockSection'),panel=document.getElementById('hunterStockPanel');
+ if(!section||!panel)return;
+ section.classList.remove('hidden');section.setAttribute('aria-hidden','false');
+ panel.className='box';panel.innerHTML='<div class="small">⏳ Memuat Stock Checker...</div>';
+ try{
+  const r=await sb.rpc('get_checker_stock_catalog');if(r.error)throw r.error;
+  const rows=r.data||[];
+  panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧾 STOCK CHECKER</h2><div class="small">Barang dari Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneCheckerStock()">↻ Refresh</button></div><div class="small" style="margin-top:10px">Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
+  (rows.length?'<div style="margin-top:12px">'+rows.map((x,i)=>{const photos=[x.photo_1,x.photo_2,x.photo_3,x.photo_4,x.photo_5].filter(Boolean);const img=photos[0]?'<img src="'+esc(photos[0])+'" alt="Foto '+esc(x.product||'Produk')+'" style="width:100%;max-height:190px;object-fit:contain;border-radius:10px;background:#f3f4f6;margin-bottom:8px">':'';const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;return '<div class="lead" style="margin-bottom:12px">'+img+'<b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b><div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div><div class="small">🧾 Checker: <b>'+esc(x.hunter_name||'-')+'</b></div><div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div><div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div><div class="small" style="margin-top:5px">🟢 READY — belum laku</div></div>';}).join('')+'</div>':'<div class="box" style="text-align:center;margin-top:12px"><b>Belum ada Stock Checker yang menunggu closing.</b><div class="small" style="margin-top:5px">Saat unit Checker terjual, unit otomatis tidak muncul lagi di daftar ini.</div></div>');
+ }catch(e){console.error('[HM] Stock Checker error',e);panel.innerHTML='<div class="box" style="color:#b42318"><b>Stock Checker gagal dimuat.</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';}
+}
+async function openCheckerStock(){
+ const section=document.getElementById('hunterStockSection');if(!section)return;
+ const oldSection=document.getElementById('inventorySection'),dashSection=document.getElementById('inventoryDashboardSection');
+ if(oldSection)oldSection.classList.add('hidden');if(dashSection)dashSection.classList.add('hidden');
+ inventoryDashboardLock=false;section.classList.remove('hidden');section.setAttribute('aria-hidden','false');
+ await renderStandaloneCheckerStock();
+}
+window.openCheckerStock=openCheckerStock;
 async function openHunterStock(){
  const section=document.getElementById('hunterStockSection');
  if(!section)return;
@@ -409,7 +429,7 @@ async function renderInventory(){
   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Stok READY yang tersedia per outlet</div></div><div class="row"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button></div></div>'+
   '<div class="stats" style="margin-top:10px">'+
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('↩️ Retur',returned)+'</div>'+
-  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button>'+(inventoryCanHunter?'<button class="secondary" onclick="openHunterStock()">🧑‍💼 Stock Hunter</button>':'')+'</div>'+
+  '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button>'+(inventoryCanHunter?'<button class="secondary" onclick="openHunterStock()">🧑‍💼 Stock Hunter</button><button class="secondary" onclick="openCheckerStock()">🧾 Stock Checker</button>':'')+'</div>'+
   '<div id="inventoryViewDebug" class="small" style="margin-top:8px;font-weight:700"></div><div id="inventoryBody" style="margin-top:10px"></div>';
   host.onclick=(e)=>{const tab=e.target.closest('[data-inventory-view]');if(tab){e.preventDefault();setInventoryView(tab.dataset.inventoryView)}};
   renderInventoryBody();

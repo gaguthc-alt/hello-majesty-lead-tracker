@@ -2348,7 +2348,7 @@ function hmRunMainMenuAction(action){
   case "openInventorySection('stock')": return window.openInventorySection('stock');
   case "openInventorySection('products')": return window.openInventorySection('products');
   case 'openMyClosings()': return (typeof window.openMyClosings==='function' ? window.openMyClosings() : hmLoadModule('inventory').then(()=>window.openMyClosings()));
-  case 'openReceiveStock()': return openReceiveStock();
+  case 'openReceiveStock()': return (typeof window.openReceiveStock==='function' ? window.openReceiveStock() : hmLoadModule('inventory').then(()=>{if(typeof window.openReceiveStock!=='function')throw new Error('Fungsi Barang Masuk tidak tersedia setelah modul dimuat.');return window.openReceiveStock();}));
   case 'openWalkinApprovals()':
    return (typeof window.openWalkinApprovals==='function' ? window.openWalkinApprovals() : hmLoadModule('inventory').then(()=>window.openWalkinApprovals()));
   case 'openStockSaleApprovals()':

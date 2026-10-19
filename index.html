@@ -4672,12 +4672,25 @@ window.hmOpenWalkinFromLink=async function(){
  try{
    const p=new URLSearchParams(window.location.search);
    if(p.get('open')!=='walkin')return;
-   if(!window.profile||typeof window.openWalkinApprovals!=='function'){setTimeout(window.hmOpenWalkinFromLink,800);return;}
+   // Tunggu profil login siap; jika modul inventory belum ada, muat dulu seperti jalur menu utama.
+   if(typeof profile==='undefined'||!profile){setTimeout(window.hmOpenWalkinFromLink,700);return;}
+   if(typeof window.openWalkinApprovals!=='function'){
+     if(typeof hmLoadModule==='function') await hmLoadModule('inventory');
+     else await new Promise((resolve,reject)=>{
+       const existing=document.querySelector('script[data-hm-walkin-link]');
+       if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',reject,{once:true});return;}
+       const script=document.createElement('script');script.src='inventory.js?v=20261019-walkin-direct-link';script.dataset.hmWalkinLink='1';script.onload=resolve;script.onerror=()=>reject(new Error('Modul persetujuan tidak dapat dimuat'));document.head.appendChild(script);
+     });
+   }
+   if(typeof window.openWalkinApprovals!=='function')throw new Error('Fungsi Persetujuan Walk-In belum tersedia.');
+   const approvalId=p.get('approval')||'';
+   await window.openWalkinApprovals(approvalId);
+   // Hapus query hanya setelah menu berhasil dibuka.
    window.history.replaceState({},document.title,window.location.pathname);
-   await window.openWalkinApprovals();
- }catch(e){console.error('[HM] auto open Walk-In:',e);}
+ }catch(e){console.error('[HM] auto open Walk-In:',e);setTimeout(()=>{const b=document.getElementById('hmMenuPanelBody');const panel=document.getElementById('hmMenuPanel');if(b&&panel){b.innerHTML='<div class="box" style="color:#b42318">Gagal membuka Persetujuan Walk-In: '+String(e?.message||e).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</div>';panel.classList.remove('hidden');}},100);}
 };
-window.addEventListener('load',function(){setTimeout(window.hmOpenWalkinFromLink,900);});
+if(document.readyState==='complete')setTimeout(window.hmOpenWalkinFromLink,300);
+else window.addEventListener('load',function(){setTimeout(window.hmOpenWalkinFromLink,500);},{once:true});
 async function submitStockClosingApproval(id){
  const stockId=$('ss')?.value;
  if(!stockId)return alert('Untuk CLOSING, wajib pilih produk/stock yang laku.');

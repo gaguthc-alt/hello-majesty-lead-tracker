@@ -2676,9 +2676,9 @@ async function hmRenderHomePerformance(){
      try{
        const {data:profileOutlets,error:profileOutletError}=await db.from('team_profiles').select('outlet,active');
        if(profileOutletError)console.warn('[HM] Tidak dapat membaca outlet dari team_profiles:',profileOutletError);
-       (profileOutlets||[]).forEach(x=>{const name=String(x.outlet||'').trim();if(name)outletSet.add(name);});
+       (profileOutlets||[]).forEach(x=>{const name=String(x.outlet||'').trim();if(name&&!/^majesty cell$/i.test(name))outletSet.add(name);});
      }catch(outletLookupError){console.warn('[HM] Fallback daftar outlet tidak tersedia:',outletLookupError);}
-     const outlets=Array.from(outletSet).sort((a,b)=>a.localeCompare(b,'id'));
+     const outlets=Array.from(outletSet).filter(name=>!/^majesty cell$/i.test(name)).sort((a,b)=>a.localeCompare(b,'id'));
      const targetByOutlet={};(targetRows||[]).forEach(x=>{targetByOutlet[String(x.outlet||'').trim()]=x;});
      const rowsByOutlet=await Promise.all(outlets.map(async outlet=>{
        const {data:od,error:oe}=await db.rpc('home_performance_summary',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),p_employee_name:'',p_outlet:outlet,p_all_outlets:false});
@@ -2807,11 +2807,7 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Ide content & DM','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
-   add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
-   add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
-   add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
-   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
-   add('🤖','Tanya AI','Mekanisme Finance Cell','openAI()');
+   // Menu Finance Cell dinonaktifkan sesuai keputusan Management.
  }else if(has('ADMIN FINANCE')){
    add('💰','Finance','Finance outlet','openFinance()');
    add('📊','Laporan Finance','Laporan keuangan','hmOpenFinanceReport()');
@@ -2977,10 +2973,7 @@ function renderRoleHome(){
      ['🔗','Accurate Sync','Koneksi Accurate & status sinkronisasi','hmOpenAccurateSyncMonitor()'],
      ['📦','Cek Barang Accurate','Baca daftar barang Accurate tanpa mengubah transaksi','hmCheckAccurateItems()']
    ]],
-   ['🤝','MAJESTY CELL',[
-     ['📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()'],
-     ['🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()'],
-   ]],
+   // Grup MAJESTY CELL disembunyikan sesuai keputusan Management.
    ['⚡','TOOLS',[
      ['🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()'],
      ['⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()']

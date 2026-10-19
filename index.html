@@ -2245,7 +2245,9 @@ function hmOpenLeadTracker(){
   if(!t||!b)return;
   // Lead Tracker menampilkan seluruh perjalanan lead: AVAILABLE sampai HASIL.
   // Data closing/gagal tidak dihapus dari tampilan.
-  const rows=leads.filter(viewerLead);
+  // Daftar Data Lead operasional: sembunyikan bulan lama, kecuali follow-up masih dalam 3 hari terakhir.
+  // Riwayat tetap berada di database; filter ini hanya memengaruhi tampilan.
+  const rows=leads.filter(viewerLead).filter(hmLeadVisibleByMonth);
   const activeRows=rows.filter(l=>getActiveLeadBucket(l));
   const resultRows=rows.filter(l=>l.sales_result==='CLOSING'||l.sales_result==='GAGAL'||l.qualification_result==='GAGAL'||l.status_lead==='HASIL');
   const d0=new Date();d0.setHours(0,0,0,0);

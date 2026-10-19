@@ -2668,96 +2668,111 @@ async function hmRenderManagementMessage(){
  if(!body)return;
  const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
  const raw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const primary=raw;
  const allOutlet=!!profile?.is_management||roles.includes('MANAGEMENT')||roles.includes('DIVISI')||raw.includes('MANAGEMENT')||raw==='DIVISI';
- const has=r=>roles.includes(r);
- const primary=String(profile?.role||'').toUpperCase();
- const labels=[];
- if(has('CONTENT CREATOR')||primary.includes('CONTENT CREATOR'))labels.push('Content Creator');
- if(has('CS')||has('CUSTOMER SERVICE')||primary==='CS')labels.push('CS');
- if(has('SALES')||primary==='SALES')labels.push('Sales');
- if(has('HUNTER')||primary==='HUNTER')labels.push('Hunter');
- if(has('FASILITATOR')||primary==='FASILITATOR')labels.push('Fasilitator');
+ const isFacilitator=roles.includes('FASILITATOR')||primary==='FASILITATOR';
  const name=String(profile?.name||'').trim().split(/\s+/)[0]||'Tim';
- const divisionRole=roles.includes('DIVISI')||raw==='DIVISI';
+ const outlet=String(profile?.outlet||'').trim();
  const divisionName=String(profile?.division||profile?.divisi||profile?.department||'').trim().toUpperCase();
  const assignedDivision=String(({TYAR:'HELLO',GAGUT:'REFILL',WAWAN:'MAJESTY'})[name.toUpperCase()]||'').toUpperCase();
  const divisionKey=divisionName||assignedDivision;
- const scope=profile?.outlet?(' untuk '+profile.outlet):'';
+ const monthStart=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+ const monthEnd=new Date(new Date().getFullYear(),new Date().getMonth()+1,1);
+ const today=new Date();today.setHours(0,0,0,0);
+ const dateKey=d=>d?String(d).slice(0,10):'';
+ const monthLabel=monthStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+ const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
+ const context={
+   generated_at:new Date().toISOString(),
+   period:monthLabel,
+   profile:{name:profile?.name||'',role:profile?.role||'',active_roles:roles,outlet,division:divisionKey},
+   data_scope:allOutlet?'lintas outlet sesuai akses Management/Divisi':isFacilitator?'outlet fasilitator saja':'aktivitas yang terkait dengan PIC sendiri',
+   performance:null,
+   lead_attention:{active:0,follow_up_due:0,follow_up_overdue:0,unassigned_next_action:0,potential:0},
+   accurate_sync:{available:false,failed_or_pending:0,open_conflicts:0},
+   data_limitations:[]
+ };
  let message='';
- if(allOutlet){
-   if(divisionRole&&divisionKey.includes('HELLO')){
-     message=name+', fokus Divisi Hello: pastikan konten menarik perhatian pelanggan yang tepat, pantau lead masuk dan kualitas percakapan, lalu pastikan lead diteruskan ke CS/Sales dengan sumber yang tercatat. Evaluasi konten berdasarkan lead berkualitas dan hasil tindak lanjut, bukan views saja.';
-   }else if(divisionRole&&divisionKey.includes('MAJESTY')){
-     message=name+', fokus Divisi Majesty: pantau konsultasi dan closing di seluruh outlet, pastikan ketersediaan unit serta harga akurat, dan tindak lanjuti lead potensial yang belum selesai. Gunakan angka closing dan laba yang tercatat untuk menentukan prioritas tim.';
-   }else if(divisionRole&&divisionKey.includes('REFILL')){
-     message=name+', fokus Divisi Refill: jaga akurasi transaksi, kas, administrasi, dan rekonsiliasi Accurate. Periksa transaksi pending atau selisih terlebih dahulu, pastikan setiap transaksi memiliki akun pemetaan yang benar, dan selesaikan tindak lanjut dengan PIC yang jelas.';
-   }else{
-     message='Fokus hari ini: pantau hasil dan hambatan di seluruh outlet, pastikan tindak lanjut memiliki PIC yang jelas, lalu gunakan data terbaru sebelum mengambil keputusan.';
-   }
- }else{
-   const roleText=labels.length?labels.join(', '):String(profile?.role||'tim operasional');
-   const tasks=[];
-   if(labels.includes('Content Creator'))tasks.push('buat konten yang jelas manfaat produknya dan arahkan respons ke CS');
-   if(labels.includes('CS'))tasks.push('respons customer dengan cepat, catat kebutuhan secara akurat, dan lakukan follow-up');
-   if(labels.includes('Sales'))tasks.push('utamakan konsultasi yang sesuai kebutuhan dan catat hasil closing dengan benar');
-   if(labels.includes('Hunter'))tasks.push('pastikan unit/stock yang ditemukan lengkap datanya dan siap ditindaklanjuti tim');
-   if(labels.includes('Fasilitator'))tasks.push('bantu tim menyelesaikan hambatan dan pastikan tindak lanjut outlet berjalan');
-   message=name+', peran aktif Anda'+scope+' adalah '+roleText+'. Fokus hari ini: '+(tasks.length?tasks.join('; '):'selesaikan prioritas kerja, perbarui status aktivitas, dan komunikasikan hambatan lebih awal')+'.';
- }
- const periodStart=new Date(new Date().getFullYear(),new Date().getMonth(),1);
- const periodEnd=new Date(new Date().getFullYear(),new Date().getMonth()+1,1);
- const period=periodStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
- const context={period,all_outlets:allOutlet,profile:{name:profile?.name||'',role:profile?.role||'',roles,division:divisionName||assignedDivision||'',outlet:profile?.outlet||''},performance_summary:null,available_data:[],unavailable_data:['status transaksi pending Accurate','selisih rekonsiliasi Accurate','lead potensial yang belum ditindaklanjuti','PIC dan tenggat tindakan']};
  try{
-   const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
    if(db&&typeof db.rpc==='function'){
-     const {data,error}=await db.rpc('home_performance_summary',{p_start:periodStart.toISOString(),p_end:periodEnd.toISOString(),p_employee_name:profile.name||'',p_outlet:profile.outlet||'',p_all_outlets:allOutlet});
+     const {data,error}=await db.rpc('home_performance_summary',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),p_employee_name:profile.name||'',p_outlet:outlet,p_all_outlets:allOutlet});
      if(!error){
        const r=Array.isArray(data)?data[0]:data;
        if(r){
-         context.performance_summary={
-           claim_cs:Number(allOutlet?r.total_claim_cs||0:r.own_claim_cs||0),
-           handover_cs:Number(allOutlet?r.total_handover||0:r.own_handover||0),
-           cs_closing:Number(allOutlet?r.total_cs_closing||0:r.own_cs_closing||0),
-           sales_closing:Number(allOutlet?r.total_sales_closing||0:r.own_sales_closing||0)
+         context.performance=allOutlet?{
+           claim_cs:Number(r.total_claim_cs||0),handover_cs:Number(r.total_handover||0),cs_closing:Number(r.total_cs_closing||0),sales_closing:Number(r.total_sales_closing||0)
+         }:{
+           claim_cs:Number(r.own_claim_cs||0),handover_cs:Number(r.own_handover||0),cs_closing:Number(r.own_cs_closing||0),sales_closing:Number(r.own_sales_closing||0)
          };
-         context.available_data.push('ringkasan performa '+period);
-         if(!allOutlet){
-           const n=context.performance_summary.sales_closing;
-           const handover=context.performance_summary.handover_cs;
-           if(n>0)message+=' Data performa '+period+' mencatat '+n.toLocaleString('id-ID')+' Sales Closing; pastikan pencatatannya lengkap.';
-           else if(handover>0)message+=' Tercatat '+handover.toLocaleString('id-ID')+' handover CS pada '+period+'; pastikan setiap handover mendapat tindak lanjut Sales.';
-           else message+=' Aktivitas indikator tersebut belum tercatat pada ringkasan performa '+period+'. Perbarui pencatatan setelah pekerjaan dilakukan.';
-         }
-       }
-     }else{
-       console.warn('[HM] Ringkasan performa tidak tersedia untuk pesan management:',error);
-     }
-   }
- }catch(e){console.warn('[HM] Tidak dapat membaca ringkasan performa:',e);}
- // Tampilkan arahan berbasis aturan terlebih dahulu agar beranda tetap berguna
- // walaupun layanan AI sedang tidak tersedia.
- body.textContent=message;
- const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
- if(!db?.functions||typeof db.functions.invoke!=='function')return;
+       }else context.data_limitations.push('ringkasan performa kosong');
+     }else context.data_limitations.push('ringkasan performa tidak dapat dibaca');
+   }else context.data_limitations.push('koneksi database tidak tersedia');
+ }catch(e){context.data_limitations.push('ringkasan performa gagal dibaca');console.warn('[HM] Ringkasan performa pesan beranda:',e);}
+ // Ambil hanya kolom operasional yang diperlukan; jangan kirim nama/customer/nomor WhatsApp ke AI.
  try{
-   const payload={
-     question:'Buat PESAN MANAGEMENT HARI INI untuk pengguna Hello Majesty berdasarkan konteks JSON berikut. Bahasa Indonesia, 2-4 kalimat, ringkas dan spesifik. Utamakan 1-2 prioritas tindakan yang sesuai peran. Gunakan hanya data yang benar-benar ada di konteks. Jangan mengarang transaksi, saldo, selisih, lead, PIC, tenggat, atau hasil audit. Jika data Accurate/pending tidak tersedia, jangan menyatakan bahwa transaksi pending atau selisih benar-benar ada; berikan arahan umum untuk memeriksanya dan jelaskan keterbatasan data secara singkat. Jangan menyebut diri sebagai ChatGPT. Kembalikan hanya teks pesan untuk ditampilkan, tanpa judul atau markdown.\nKONTEKS:\n'+JSON.stringify(context),
-     profile:{name:profile?.name||'',role:profile?.role||'',outlet:profile?.outlet||'',is_management:allOutlet},
-     lead:null
-   };
-   const result=await db.functions.invoke('hello-majesty-ai-gemini',{body:payload});
+   if(db&&typeof db.from==='function'){
+     let q=db.from('leads').select('status_lead,follow_up_date,cs_follow_up_date,sales_follow_up_date,qualification_result,sales_result,cs_claimed_by,sales_claimed_by,content_creator,outlet,updated_at,created_at,archived_at,next_action,service_status',{count:'exact'}).is('archived_at',null).limit(1000);
+     if(!allOutlet){
+       if(isFacilitator){if(outlet)q=q.eq('outlet',outlet);else context.data_limitations.push('outlet fasilitator tidak tercantum di profil');}
+       else if(roles.includes('CS')||primary==='CS')q=q.ilike('cs_claimed_by',String(profile?.name||''));
+       else if(roles.includes('SALES')||primary==='SALES')q=q.ilike('sales_claimed_by',String(profile?.name||''));
+       else if(roles.includes('CONTENT CREATOR')||primary==='CONTENT CREATOR')q=q.ilike('content_creator',String(profile?.name||''));
+       else if(outlet)q=q.eq('outlet',outlet);
+       else q=q.eq('lead_id','__no_match__');
+     }
+     const {data,error}=await q;
+     if(!error&&Array.isArray(data)){
+       const rows=data;
+       const ownRole=roles.includes('CS')||primary==='CS'?'CS':roles.includes('SALES')||primary==='SALES'?'SALES':roles.includes('CONTENT CREATOR')||primary==='CONTENT CREATOR'?'CONTENT CREATOR':'OTHER';
+       const dateFor=row=>ownRole==='SALES'?(row.sales_follow_up_date||row.follow_up_date):ownRole==='CS'?(row.cs_follow_up_date||row.follow_up_date):row.follow_up_date;
+       const active=rows.filter(x=>!['CLOSING','GAGAL','CLOSED','SOLD','SELESAI'].includes(String(ownRole==='SALES'?x.sales_result:x.status_lead||'').toUpperCase()));
+       const due=active.filter(x=>dateKey(dateFor(x))===dateKey(today));
+       const overdue=active.filter(x=>dateKey(dateFor(x))&&dateKey(dateFor(x))<dateKey(today));
+       const potential=rows.filter(x=>String(x.qualification_result||'').toUpperCase()==='POTENSIAL'||String(x.sales_result||'').toUpperCase()==='POTENSIAL');
+       const noAction=active.filter(x=>!String(x.next_action||'').trim());
+       context.lead_attention={active:active.length,follow_up_due:due.length,follow_up_overdue:overdue.length,unassigned_next_action:noAction.length,potential:potential.length};
+     }else context.data_limitations.push('ringkasan lead tidak dapat dibaca sesuai akses pengguna');
+   }
+ }catch(e){context.data_limitations.push('ringkasan lead tidak tersedia');console.warn('[HM] Ringkasan lead pesan beranda:',e);}
+ // Status Accurate hanya dibaca untuk Management/Divisi/Finance; tidak mengubah transaksi.
+ if(allOutlet||primary.includes('ADMIN FINANCE')){
+   try{
+     if(db&&typeof db.from==='function'){
+       const [queueRes,conflictRes,failedSalesRes]=await Promise.all([
+         db.from('accurate_sync_queue').select('status',{count:'exact'}).not('status','in','("SYNCED","CANCELLED")').limit(100),
+         db.from('accurate_sync_conflicts').select('status',{count:'exact'}).neq('status','RESOLVED').limit(100),
+         db.from('sales_transactions').select('id',{count:'exact',head:true}).eq('accurate_sync_status','FAILED').gte('sold_at',monthStart.toISOString()).lt('sold_at',monthEnd.toISOString())
+       ]);
+       if(!queueRes.error&&!conflictRes.error&&!failedSalesRes.error){
+         context.accurate_sync={available:true,failed_or_pending:Number(queueRes.count||0),open_conflicts:Number(conflictRes.count||0),failed_sales_sync:Number(failedSalesRes.count||0)};
+       }else context.data_limitations.push('status Accurate tidak seluruhnya dapat dibaca oleh role ini');
+     }
+   }catch(e){context.data_limitations.push('status Accurate belum dapat diverifikasi');console.warn('[HM] Status Accurate pesan beranda:',e);}
+ }else context.data_limitations.push('status Accurate tidak diperiksa untuk role ini');
+ // Fallback yang singkat dan berbasis data; AI akan menggantinya jika berhasil.
+ const a=context.lead_attention;
+ if(a.follow_up_overdue>0)message='PERHATIAN: '+a.follow_up_overdue+' follow-up sudah lewat jadwal. Dahulukan hari ini dan perbarui next action.';
+ else if(a.follow_up_due>0)message='Pengingat: ada '+a.follow_up_due+' follow-up jatuh tempo hari ini. Selesaikan dan catat hasilnya.';
+ else if(context.accurate_sync.available&&(context.accurate_sync.failed_or_pending>0||context.accurate_sync.open_conflicts>0))message='PERLU TINDAKAN: sinkronisasi Accurate belum tuntas ('+context.accurate_sync.failed_or_pending+' antrean, '+context.accurate_sync.open_conflicts+' konflik terbuka). Periksa error dan PIC.';
+ else if(context.performance&&context.performance.sales_closing>0)message='Apresiasi: sudah tercatat '+context.performance.sales_closing+' Sales Closing bulan ini. Jaga kualitas follow-up dan ketepatan data.';
+ else message='Fokus hari ini: periksa prioritas sesuai peran, tuntaskan tindak lanjut, dan pastikan status kerja tercatat.';
+ body.textContent=message;
+ if(!db?.functions||typeof db.functions.invoke!=='function'){
+   const foot=card.querySelector('.hm-message-foot');if(foot)foot.textContent='Ringkasan berdasarkan data yang berhasil dibaca; AI tidak tersedia.';
+   return;
+ }
+ try{
+   const question='Susun SATU pesan singkat untuk beranda Hello Majesty berdasarkan DATA TERKINI di bawah. Maksimal 1-2 kalimat, sekitar 15-35 kata. Harus spesifik untuk orang, role, outlet/divisi dan data aktualnya. Pilih nada yang tepat: WARNING tegas bila ada follow-up terlambat, antrean/error Accurate, konflik, atau pekerjaan tertunda; PENGINGAT bila ada pekerjaan jatuh tempo; APRESIASI bila hasil nyata baik dan tidak ada masalah mendesak; selain itu beri arahan tegas yang relevan. Dahulukan masalah nyata paling penting daripada pujian. Sebut angka hanya jika tersedia. Berikan satu tindakan jelas. Jangan mengarang, jangan mengklaim sudah memeriksa Accurate bila available=false, jangan menyebut data kosong sebagai masalah, jangan memberi pesan generik jika angka spesifik tersedia. Tidak perlu judul, emoji berlebihan, atau penjelasan panjang. DATA TERKINI: '+JSON.stringify(context);
+   const result=await db.functions.invoke('hello-majesty-ai-gemini',{body:{question,lead:null}});
    if(result?.error)throw result.error;
    const answer=String(result?.data?.answer||'').trim();
    if(answer&&document.getElementById('hmManagementMessage')===card){
      body.textContent=answer;
-     const foot=card.querySelector('.hm-message-foot');
-     if(foot)foot.textContent='Arahan AI berdasarkan profil dan ringkasan data yang tersedia; bukan audit transaksi Accurate.';
-   }
+     const foot=card.querySelector('.hm-message-foot');if(foot)foot.textContent='Pesan AI berdasarkan data yang berhasil dibaca saat beranda dibuka. Data yang tidak tersedia tidak diasumsikan.';
+   }else throw new Error('AI tidak mengembalikan pesan.');
  }catch(e){
-   console.warn('[HM] AI Management Assistant tidak tersedia; memakai arahan otomatis:',e);
-   const foot=card.querySelector('.hm-message-foot');
-   if(foot)foot.textContent='Arahan otomatis; AI sedang tidak tersedia. Data transaksi Accurate belum diverifikasi di pesan ini.';
+   console.warn('[HM] AI pesan beranda gagal; gunakan fallback berbasis data:',e);
+   const foot=card.querySelector('.hm-message-foot');if(foot)foot.textContent='Pesan otomatis dari data yang berhasil dibaca; AI tidak tersedia atau sesi perlu diperiksa.';
  }
 }
 async function hmRenderHomePerformance(){

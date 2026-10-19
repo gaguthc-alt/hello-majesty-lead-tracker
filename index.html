@@ -3797,6 +3797,10 @@ async function logout(){
   location.reload();
 }
 async function loadLeads(){
+ // Tandai gagal otomatis bila tanggal follow-up PIC aktif sudah lewat lebih dari 3 hari.
+ // Closing/Gagal yang sudah tercatat dan lead Service dikecualikan oleh fungsi database.
+ const overdue=await sb.rpc('auto_fail_overdue_leads');
+ if(overdue.error)console.warn('[HM] Auto-fail follow-up:',overdue.error.message);
  // Arsip tidak dihapus dari Lead Tracker. Data lead tetap tersedia
  // dari AVAILABLE sampai HASIL, termasuk lead yang sudah diarsipkan.
  await sb.rpc('archive_completed_leads');

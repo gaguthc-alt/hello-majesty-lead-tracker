@@ -350,28 +350,41 @@ async function renderStandaloneHunterStock(){
  if(!section||!panel)return;
  section.classList.remove('hidden');section.setAttribute('aria-hidden','false');
  panel.className='box';
- panel.innerHTML='<div class="small">⏳ Memuat Stock Hunter...</div>';
+ panel.innerHTML='<div class="small">⏳ Memuat Stock Hunter & Checker...</div>';
  try{
-  const r=await sb.rpc('get_hunter_stock_catalog');
-  if(r.error)throw r.error;
-  const rows=r.data||[];
-  panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧑‍💼 STOCK HUNTER</h2><div class="small">Barang Hunter yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneHunterStock()">↻ Refresh</button></div>'+
-   '<div class="small" style="margin-top:10px">Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
+  const [hunterResult,checkerResult]=await Promise.all([
+   sb.rpc('get_hunter_stock_catalog'),
+   sb.rpc('get_checker_stock_catalog')
+  ]);
+  if(hunterResult.error)throw hunterResult.error;
+  if(checkerResult.error)throw checkerResult.error;
+  const rows=[
+   ...(hunterResult.data||[]).map(x=>({...x,hm_source_type:'HUNTER',hm_commission_rate:10})),
+   ...(checkerResult.data||[]).map(x=>({...x,hm_source_type:'CHECKER',hm_commission_rate:5}))
+  ].sort((a,b)=>new Date(b.received_at||0)-new Date(a.received_at||0));
+  panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧑‍💼 STOCK HUNTER & CHECKER</h2><div class="small">Daftar unit Hunter dan Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneHunterStock()">↻ Refresh</button></div>'+
+   '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#e8f1ff;color:#174ea6;font-weight:700">🏹 Hunter · Komisi 10%</span><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#f3e8ff;color:#6b21a8;font-weight:700">🔎 Checker · Komisi 5%</span></div>'+
+   '<div class="small" style="margin-top:10px">Persentase ditampilkan sebagai informasi sumber komisi. Komisi baru dialokasikan saat unit benar-benar terjual. Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
    (rows.length?'<div style="margin-top:12px">'+rows.map((x,i)=>{
       const photos=[x.photo_1,x.photo_2,x.photo_3,x.photo_4,x.photo_5].filter(Boolean);
       const img=photos[0]?'<img src="'+esc(photos[0])+'" alt="Foto '+esc(x.product||'Produk')+'" style="width:100%;max-height:190px;object-fit:contain;border-radius:10px;background:#f3f4f6;margin-bottom:8px">':'';
       const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;
+      const isHunter=x.hm_source_type==='HUNTER';
+      const sourceLabel=isHunter?'🏹 HUNTER · KOMISI 10%':'🔎 CHECKER · KOMISI 5%';
+      const sourceStyle=isHunter?'background:#e8f1ff;color:#174ea6':'background:#f3e8ff;color:#6b21a8';
+      const personLabel=isHunter?'Hunter':'Checker';
       return '<div class="lead" style="margin-bottom:12px">'+img+
-       '<b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b>'+
+       '<div style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;'+sourceStyle+'">'+sourceLabel+'</div>'+
+       '<div style="margin-top:7px"><b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b></div>'+
        '<div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div>'+
-       '<div class="small">🏹 Hunter: <b>'+esc(x.hunter_name||'-')+'</b></div>'+
+       '<div class="small">👤 '+personLabel+': <b>'+esc(x.hunter_name||'-')+'</b></div>'+
        '<div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div>'+
        '<div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div>'+
        '<div class="small" style="margin-top:5px">🟢 READY — belum laku</div></div>';
-    }).join('')+'</div>':'<div class="box" style="text-align:center;margin-top:12px"><b>Belum ada stock Hunter yang menunggu closing.</b><div class="small" style="margin-top:5px">Saat barang Hunter terjual, unit ini otomatis tidak muncul lagi di daftar ini.</div></div>');
+    }).join('')+'</div>':'<div class="box" style="text-align:center;margin-top:12px"><b>Belum ada stok Hunter atau Checker yang menunggu closing.</b><div class="small" style="margin-top:5px">Unit yang sudah terjual tidak ditampilkan lagi di daftar READY.</div></div>');
  }catch(e){
-  console.error('[HM] Standalone Hunter Stock error',e);
-  panel.innerHTML='<div class="box" style="color:#b42318"><b>Stock Hunter gagal dimuat.</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';
+  console.error('[HM] Combined Hunter & Checker Stock error',e);
+  panel.innerHTML='<div class="box" style="color:#b42318"><b>Stock Hunter & Checker gagal dimuat.</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div><button class="secondary" type="button" onclick="renderStandaloneHunterStock()">↻ Coba Lagi</button></div>';
  }
 }
 async function renderStandaloneCheckerStock(){

@@ -2245,16 +2245,18 @@ function hmLeadVisibleByMonth(l){
  if(!created||isNaN(created.getTime()))return true;
  const now=new Date();
  if(created.getFullYear()===now.getFullYear()&&created.getMonth()===now.getMonth())return true;
- const salesClaimed=!!String(l?.sales_claimed_by||'').trim();
- const raw=salesClaimed?(l?.sales_follow_up_date||l?.follow_up_date||l?.cs_follow_up_date):(l?.cs_follow_up_date||l?.follow_up_date||l?.sales_follow_up_date);
- if(!raw)return false;
- const f=new Date(String(raw).slice(0,10)+'T00:00:00');
+ const raw=[l?.sales_follow_up_date,l?.cs_follow_up_date,l?.follow_up_date].filter(Boolean);
+ if(!raw.length)return false;
+ const dates=raw.map(v=>new Date(String(v).slice(0,10)+'T00:00:00')).filter(d=>!isNaN(d.getTime()));
+ if(!dates.length)return false;
  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
- if(isNaN(f.getTime()))return false;
- const age=Math.floor((today.getTime()-f.getTime())/86400000);
- const result=String(salesClaimed?l?.sales_result:(l?.qualification_result||'')).trim().toUpperCase();
- const finalResult=salesClaimed?['CLOSING','GAGAL','LOST'].includes(result):['GAGAL','LOST'].includes(result);
- return age>=0&&age<=3&&!finalResult;
+ const recentOrUpcoming=dates.some(f=>Math.floor((today.getTime()-f.getTime())/86400000)<=3);
+ const sales=String(l?.sales_result||'').trim().toUpperCase();
+ const cs=String(l?.qualification_result||'').trim().toUpperCase();
+ const hasil=String(l?.hasil||'').trim().toUpperCase();
+ const status=String(l?.status_lead||'').trim().toUpperCase();
+ const finalResult=['CLOSING','GAGAL','LOST'].includes(sales)||['CLOSING','GAGAL','LOST'].includes(cs)||['CLOSING','GAGAL','LOST'].includes(hasil)||status==='HASIL';
+ return recentOrUpcoming&&!finalResult;
 }
 function hmLeadTrackerBucket(l){
  const sales=String(l.sales_result||'').trim().toUpperCase(),cs=String(l.qualification_result||'').trim().toUpperCase(),st=String(l.status_lead||'').trim().toUpperCase(),hasil=String(l.hasil||'').trim().toUpperCase(),type=String(l.need_type||'').trim().toUpperCase();

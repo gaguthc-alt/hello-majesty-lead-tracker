@@ -2240,6 +2240,22 @@ function hmShowLeadTodayStatus(type){
  host.innerHTML='<div class="box" style="margin:10px 0"><div class="row" style="justify-content:space-between"><b>📅 '+type+' — Hari Ini</b><button type="button" class="secondary" onclick="document.getElementById(\'hmLeadTodayResults\').innerHTML=\'\'">Tutup</button></div><div class="small" style="margin:8px 0">'+selected.length+' lead</div>'+(selected.map(l=>card(l)).join('')||'<div class="small">Tidak ada lead pada kolom ini hari ini.</div>')+'</div>';
  if(all)all.style.display='none';
 }
+function hmLeadVisibleByMonth(l){
+ const created=l?.created_at?new Date(l.created_at):null;
+ if(!created||isNaN(created.getTime()))return true;
+ const now=new Date();
+ if(created.getFullYear()===now.getFullYear()&&created.getMonth()===now.getMonth())return true;
+ const salesClaimed=!!String(l?.sales_claimed_by||'').trim();
+ const raw=salesClaimed?(l?.sales_follow_up_date||l?.follow_up_date||l?.cs_follow_up_date):(l?.cs_follow_up_date||l?.follow_up_date||l?.sales_follow_up_date);
+ if(!raw)return false;
+ const f=new Date(String(raw).slice(0,10)+'T00:00:00');
+ const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ if(isNaN(f.getTime()))return false;
+ const age=Math.floor((today.getTime()-f.getTime())/86400000);
+ const result=String(salesClaimed?l?.sales_result:(l?.qualification_result||'')).trim().toUpperCase();
+ const finalResult=salesClaimed?['CLOSING','GAGAL','LOST'].includes(result):['GAGAL','LOST'].includes(result);
+ return age>=0&&age<=3&&!finalResult;
+}
 function hmOpenLeadTracker(){
   const t=document.getElementById('mt'),b=document.getElementById('mb');
   if(!t||!b)return;

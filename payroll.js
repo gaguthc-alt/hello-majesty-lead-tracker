@@ -33,7 +33,8 @@
         r.name+' | CS Handover '+rp(handover)+
         ' | CS Closing '+rp(r.cs_closing_commission)+
         ' | Sales Closing '+rp(r.sales_commission)+
-        ' | Hunter '+rp(r.hunter_commission)+\n        ' | Checker '+rp(r.checker_commission)+
+        ' | Hunter '+rp(r.hunter_commission)+
+        ' | Checker '+rp(r.checker_commission)+
         ' | Content Creator '+rp(r.content_creator_commission)+
         ' | Fasilitator '+rp(r.facilitator_commission)+
         ' | TOTAL '+rp(r.total_commission)
@@ -104,7 +105,8 @@
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(handover)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.cs_closing_commission)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.sales_commission)+'</td>'+
-          '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.hunter_commission)+'</td>'+\n          '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.checker_commission)+'</td>'+
+          '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.hunter_commission)+'</td>'+
+          '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.checker_commission)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.content_creator_commission)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.facilitator_commission)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7;font-weight:800">'+rp(r.total_commission)+'</td>'+

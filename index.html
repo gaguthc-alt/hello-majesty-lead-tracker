@@ -4684,7 +4684,16 @@ window.hmOpenWalkinFromLink=async function(){
    }
    if(typeof window.openWalkinApprovals!=='function')throw new Error('Fungsi Persetujuan Walk-In belum tersedia.');
    const approvalId=p.get('approval')||'';
-   await window.openWalkinApprovals(approvalId);
+   let stockUnitId='';
+   if(approvalId){
+     const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
+     if(!db)throw new Error('Koneksi database belum siap untuk mencari transaksi.');
+     const lookup=await db.from('walkin_sale_approvals').select('stock_unit_id,status').eq('id',approvalId).maybeSingle();
+     if(lookup.error)throw lookup.error;
+     if(!lookup.data)throw new Error('ID persetujuan tidak ditemukan. Minta Management membuat ulang tautan.');
+     stockUnitId=String(lookup.data.stock_unit_id||'');
+   }
+   await window.openWalkinApprovals(stockUnitId);
    // Hapus query hanya setelah menu berhasil dibuka.
    window.history.replaceState({},document.title,window.location.pathname);
  }catch(e){console.error('[HM] auto open Walk-In:',e);setTimeout(()=>{const b=document.getElementById('hmMenuPanelBody');const panel=document.getElementById('hmMenuPanel');if(b&&panel){b.innerHTML='<div class="box" style="color:#b42318">Gagal membuka Persetujuan Walk-In: '+String(e?.message||e).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</div>';panel.classList.remove('hidden');}},100);}

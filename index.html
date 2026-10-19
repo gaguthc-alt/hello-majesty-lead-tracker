@@ -2256,43 +2256,82 @@ function hmLeadVisibleByMonth(l){
  const finalResult=salesClaimed?['CLOSING','GAGAL','LOST'].includes(result):['GAGAL','LOST'].includes(result);
  return age>=0&&age<=3&&!finalResult;
 }
-function hmOpenLeadTracker(){
-  const t=document.getElementById('mt'),b=document.getElementById('mb');
-  if(!t||!b)return;
-  // Lead Tracker menampilkan seluruh perjalanan lead: AVAILABLE sampai HASIL.
-  // Data closing/gagal tidak dihapus dari tampilan.
-  // Daftar Data Lead operasional: sembunyikan bulan lama, kecuali follow-up masih dalam 3 hari terakhir.
-  // Riwayat tetap berada di database; filter ini hanya memengaruhi tampilan.
-  const rows=leads.filter(viewerLead).filter(hmLeadVisibleByMonth);
-  const activeRows=rows.filter(l=>getActiveLeadBucket(l));
-  const resultRows=rows.filter(l=>l.sales_result==='CLOSING'||l.sales_result==='GAGAL'||l.qualification_result==='GAGAL'||l.status_lead==='HASIL');
-  const d0=new Date();d0.setHours(0,0,0,0);
-  const d1=new Date(d0);d1.setDate(d1.getDate()+1);
-  const todayRows=rows.filter(l=>{const d=new Date(l.updated_at||l.created_at);return d>=d0&&d<d1;});
-  const bucket=l=>{
-    const sales=String(l.sales_result||'').toUpperCase(),cs=String(l.qualification_result||'').toUpperCase(),st=String(l.status_lead||'').toUpperCase(),hasil=String(l.hasil||'').toUpperCase();
-    if(sales==='CLOSING'||cs==='CLOSING'||hasil==='CLOSING')return 'CLOSING';
-    if(sales==='GAGAL'||cs==='GAGAL'||hasil==='GAGAL'||hasil==='LOST')return 'GAGAL';
-    if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
-    if(st==='HANDLE'||l.sales_claimed_by)return 'HANDLE';
-    if(st==='QUALIFIED')return 'QUALIFIED';
-    if(st==='CS LOCK')return 'CS LOCK';
-    if(st==='AVAILABLE')return 'AVAILABLE';
-    return 'LAINNYA';
-  };
-  const statuses=[['AVAILABLE','AVAILABLE'],['CS LOCK','CS LOCK'],['POTENSIAL','POTENSIAL'],['QUALIFIED','QUALIFIED'],['HANDLE','HANDLE'],['SERVICE','SERVICE'],['CLOSING','CLOSING']];
-  const todayBoard='<div class="box" style="margin-bottom:14px;border:1px solid #d0d5dd;background:#fff">'+
-    '<div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">📅 LEAD HARI INI</h3><span class="small">'+todayRows.length+' aktivitas</span></div>'+
-    '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;width:100%">'+
-    statuses.map(([key,label])=>{const n=todayRows.filter(l=>bucket(l)===key).length;return '<button type="button" class="stat" style="cursor:pointer;text-align:center;background:#f8fafc;color:#111827;border:1px solid #e5e7eb" onclick="hmShowLeadTodayStatus(\''+key+'\')"><div class="small">'+label+'</div><div class="num">'+n+'</div></button>';}).join('')+
-    '</div></div>';
-  t.textContent='👥 Lead Tracker — Data Lead';
-  b.innerHTML=
-    '<div class="box" style="margin-bottom:12px"><h3 style="margin:0 0 6px">📋 Ringkasan Lead Operasional</h3><div class="small">Daftar ini hanya menampilkan lead bulan berjalan dan lead lama yang masih memiliki follow-up dalam 3 hari terakhir. Riwayat lama tetap tersimpan di database.</div></div>'+
-    '<div class="stats" style="margin-bottom:10px"><div class="stat"><div class="small">Lead Ditampilkan</div><div class="num">'+rows.length+'</div></div><div class="stat"><div class="small">Masih Aktif</div><div class="num">'+activeRows.length+'</div></div><div class="stat"><div class="small">Hasil Tercatat</div><div class="num">'+resultRows.length+'</div></div><div class="stat"><div class="small">Follow-up Potensial</div><div class="num">'+rows.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length+'</div></div></div>'+
-    '<div id="hmLeadAllResults">'+(rows.map(l=>card(l)).join('')||'<div class="small">Tidak ada lead operasional yang perlu ditampilkan.</div>')+'</div>';
-  $('modal').classList.remove('hidden');
+function hmLeadTrackerBucket(l){
+ const sales=String(l.sales_result||'').trim().toUpperCase(),cs=String(l.qualification_result||'').trim().toUpperCase(),st=String(l.status_lead||'').trim().toUpperCase(),hasil=String(l.hasil||'').trim().toUpperCase(),type=String(l.need_type||'').trim().toUpperCase();
+ if(type==='SERVICE')return 'SERVICE';
+ if(sales==='CLOSING'||cs==='CLOSING'||hasil==='CLOSING')return 'CLOSING';
+ if(sales==='GAGAL'||cs==='GAGAL'||hasil==='GAGAL'||hasil==='LOST'||st==='HASIL')return 'GAGAL';
+ if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
+ if(st==='HANDLE'||String(l.sales_claimed_by||'').trim())return 'HANDLE';
+ if(st==='QUALIFIED'||cs==='QUALIFIED')return 'QUALIFIED';
+ if(st==='CS LOCK'||String(l.cs_claimed_by||'').trim())return 'CS LOCK';
+ if(st==='AVAILABLE')return 'AVAILABLE';
+ return 'LAINNYA';
 }
+function hmLeadTrackerApplyFilter(){
+ const root=document.getElementById('hmLeadTrackerRoot');if(!root)return;
+ const status=root.querySelector('#hmLTStatus')?.value||'ALL';
+ const outlet=root.querySelector('#hmLTOutlet')?.value||'ALL';
+ const pic=root.querySelector('#hmLTPic')?.value||'ALL';
+ const period=root.querySelector('#hmLTPeriod')?.value||'ALL';
+ const sort=root.querySelector('#hmLTSort')?.value||'FOLLOWUP';
+ const base=(leads||[]).filter(viewerLead).filter(hmLeadVisibleByMonth);
+ const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ const filtered=base.filter(l=>{
+  if(status!=='ALL'&&hmLeadTrackerBucket(l)!==status)return false;
+  if(outlet!=='ALL'&&String(l.outlet||'').trim()!==outlet)return false;
+  const owner=String(l.sales_claimed_by||'').trim()||String(l.cs_claimed_by||'').trim()||String(l.cs_owner||'').trim();
+  if(pic!=='ALL'&&owner!==pic)return false;
+  const raw=String(l.sales_claimed_by||'').trim()?(l.sales_follow_up_date||l.follow_up_date||l.cs_follow_up_date):(l.cs_follow_up_date||l.follow_up_date||l.sales_follow_up_date);
+  const fd=raw?new Date(String(raw).slice(0,10)+'T00:00:00'):null;
+  if(period==='TODAY'&&(!fd||isNaN(fd)||fd.getTime()!==today.getTime()))return false;
+  if(period==='OVERDUE'&&(!fd||isNaN(fd)||fd>=today||['CLOSING','GAGAL'].includes(hmLeadTrackerBucket(l))))return false;
+  if(period==='7D'&&(!fd||isNaN(fd)||fd<new Date(today.getTime()-6*86400000)||fd>today))return false;
+  return true;
+ });
+ filtered.sort((a,b)=>{
+  const getDate=l=>{const raw=String(l.sales_claimed_by||'').trim()?(l.sales_follow_up_date||l.follow_up_date||l.cs_follow_up_date):(l.cs_follow_up_date||l.follow_up_date||l.sales_follow_up_date);const d=raw?new Date(String(raw).slice(0,10)+'T00:00:00'):null;return d&&!isNaN(d)?d.getTime():0;};
+  if(sort==='NEWEST')return new Date(b.created_at||0)-new Date(a.created_at||0);
+  if(sort==='OLDEST')return new Date(a.created_at||0)-new Date(b.created_at||0);
+  if(sort==='FOLLOWUP')return getDate(a)-getDate(b);
+  return 0;
+ });
+ const list=root.querySelector('#hmLeadTrackerList');
+ const count=root.querySelector('#hmLTCount');
+ if(count)count.textContent=filtered.length+' lead';
+ if(list)list.innerHTML=filtered.map(l=>card(l)).join('')||'<div class="small" style="padding:14px">Tidak ada lead sesuai filter ini.</div>';
+ root.querySelectorAll('[data-hm-lt-status]').forEach(el=>{el.style.outline=el.dataset.hmLtStatus===status?'3px solid #2563eb':'none';});
+}
+function hmLeadTrackerSetStatus(status){
+ const root=document.getElementById('hmLeadTrackerRoot');if(!root)return;
+ const el=root.querySelector('#hmLTStatus');if(el)el.value=status;
+ hmLeadTrackerApplyFilter();
+}
+function hmOpenLeadTracker(){
+ const t=document.getElementById('mt'),b=document.getElementById('mb');if(!t||!b)return;
+ const rows=(leads||[]).filter(viewerLead).filter(hmLeadVisibleByMonth);
+ const statuses=[['ALL','Semua'],['AVAILABLE','Available'],['CS LOCK','CS Lock'],['POTENSIAL','Potensial'],['QUALIFIED','Qualified'],['HANDLE','Handle Sales'],['CLOSING','Closing'],['GAGAL','Gagal'],['SERVICE','Service']];
+ const outlets=[...new Set(rows.map(l=>String(l.outlet||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+ const pics=[...new Set(rows.map(l=>String(l.sales_claimed_by||'').trim()||String(l.cs_claimed_by||'').trim()||String(l.cs_owner||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+ const nStatus=k=>k==='ALL'?rows.length:rows.filter(l=>hmLeadTrackerBucket(l)===k).length;
+ t.textContent='👥 Lead Tracker — Data Lead';
+ b.innerHTML='<div id="hmLeadTrackerRoot">'+
+ '<div class="box" style="margin-bottom:12px"><h3 style="margin:0 0 6px">📋 Lead Tracker Operasional</h3><div class="small">Klik angka status untuk menyaring lead. Filter outlet, PIC, dan follow-up dapat digabung. Riwayat lama tetap tersimpan di database.</div></div>'+
+ '<div class="stats" style="margin-bottom:12px;grid-template-columns:repeat(2,minmax(0,1fr))">'+
+ [['ALL','Lead Ditampilkan'],['ACTIVE','Masih Aktif'],['RESULT','Hasil Tercatat'],['POTENSIAL','Follow-up Potensial']].map(([k,label])=>{const count=k==='ALL'?rows.length:k==='ACTIVE'?rows.filter(l=>getActiveLeadBucket(l)).length:k==='RESULT'?rows.filter(l=>['CLOSING','GAGAL'].includes(hmLeadTrackerBucket(l))).length:rows.filter(l=>hmLeadTrackerBucket(l)==='POTENSIAL').length;return '<button type="button" class="stat" style="cursor:pointer;text-align:left;background:#fff;color:#111827;border:1px solid #e5e7eb" onclick="hmLeadTrackerSetStatus(\''+(k==='ACTIVE'?'ACTIVE':k==='RESULT'?'RESULT':k)+'\')"><div class="small">'+label+'</div><div class="num">'+count+'</div></button>';}).join('')+
+ '</div><div class="box" style="margin-bottom:12px"><h3 style="margin:0 0 10px">🔎 Filter Lead</h3>'+
+ '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">'+
+ '<label class="small">Status<select id="hmLTStatus" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px">'+statuses.map(([k,v])=>'<option value="'+k+'">'+v+' ('+nStatus(k)+')</option>').join('')+'</select></label>'+
+ '<label class="small">Outlet<select id="hmLTOutlet" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px"><option value="ALL">Semua Outlet</option>'+outlets.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('')+'</select></label>'+
+ '<label class="small">PIC CS / Sales<select id="hmLTPic" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px"><option value="ALL">Semua PIC</option>'+pics.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('')+'</select></label>'+
+ '<label class="small">Tanggal follow-up<select id="hmLTPeriod" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px"><option value="ALL">Semua tanggal</option><option value="TODAY">Follow-up hari ini</option><option value="7D">7 hari terakhir</option><option value="OVERDUE">Terlambat</option></select></label>'+
+ '<label class="small" style="grid-column:1/-1">Urutkan<select id="hmLTSort" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px"><option value="FOLLOWUP">Follow-up paling mendesak</option><option value="NEWEST">Lead terbaru</option><option value="OLDEST">Lead terlama</option></select></label></div>'+
+ '<button type="button" class="secondary" style="margin-top:10px" onclick="hmLeadTrackerResetFilters()">Reset Filter</button></div>'+
+ '<div class="row" style="justify-content:space-between;align-items:center;margin:8px 0"><b>Daftar Lead</b><span id="hmLTCount" class="small"></span></div><div id="hmLeadTrackerList"></div></div>';
+ $('modal').classList.remove('hidden');hmLeadTrackerApplyFilter();
+}
+function hmLeadTrackerResetFilters(){const r=document.getElementById('hmLeadTrackerRoot');if(!r)return;['hmLTStatus','hmLTOutlet','hmLTPic','hmLTPeriod','hmLTSort'].forEach(id=>{const e=r.querySelector('#'+id);if(e)e.value=id==='hmLTSort'?'FOLLOWUP':'ALL';});hmLeadTrackerApplyFilter();}
+
 function hmOpenLeadHandover(){
   const t=document.getElementById('mt'),b=document.getElementById('mb');
   if(!t||!b)return;

@@ -2686,7 +2686,7 @@ async function hmRenderManagementMessage(){
    generated_at:new Date().toISOString(),
    period:monthLabel,
    profile:{name:profile?.name||'',role:profile?.role||'',active_roles:roles,outlet,division:divisionKey},
-   data_scope:allOutlet?'lintas outlet sesuai akses Management/Divisi':isFacilitator?'outlet fasilitator saja':'aktivitas yang terkait dengan PIC sendiri',
+   data_scope:allOutlet?'data lintas outlet yang benar-benar dikembalikan database sesuai hak akses':isFacilitator?'data outlet fasilitator yang benar-benar dikembalikan database':'aktivitas yang terkait dengan PIC sendiri sesuai hak akses database',
    performance:null,
    lead_attention:{active:0,follow_up_due:0,follow_up_overdue:0,unassigned_next_action:0,potential:0},
    accurate_sync:{available:false,failed_or_pending:0,open_conflicts:0},
@@ -2725,7 +2725,7 @@ async function hmRenderManagementMessage(){
        const rows=data;
        const ownRole=roles.includes('CS')||primary==='CS'?'CS':roles.includes('SALES')||primary==='SALES'?'SALES':roles.includes('CONTENT CREATOR')||primary==='CONTENT CREATOR'?'CONTENT CREATOR':'OTHER';
        const dateFor=row=>ownRole==='SALES'?(row.sales_follow_up_date||row.follow_up_date):ownRole==='CS'?(row.cs_follow_up_date||row.follow_up_date):row.follow_up_date;
-       const active=rows.filter(x=>!['CLOSING','GAGAL','CLOSED','SOLD','SELESAI'].includes(String(ownRole==='SALES'?x.sales_result:x.status_lead||'').toUpperCase()));
+       const active=rows.filter(x=>!['HASIL','CLOSING','GAGAL','CLOSED','SOLD','SELESAI'].includes(String(ownRole==='SALES'?(x.sales_result||x.status_lead):(x.status_lead)||'').toUpperCase()));
        const due=active.filter(x=>dateKey(dateFor(x))===dateKey(today));
        const overdue=active.filter(x=>dateKey(dateFor(x))&&dateKey(dateFor(x))<dateKey(today));
        const potential=rows.filter(x=>String(x.qualification_result||'').toUpperCase()==='POTENSIAL'||String(x.sales_result||'').toUpperCase()==='POTENSIAL');

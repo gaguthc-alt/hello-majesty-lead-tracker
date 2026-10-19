@@ -2287,11 +2287,10 @@ function hmOpenLeadTracker(){
     statuses.map(([key,label])=>{const n=todayRows.filter(l=>bucket(l)===key).length;return '<button type="button" class="stat" style="cursor:pointer;text-align:center;background:#f8fafc;color:#111827;border:1px solid #e5e7eb" onclick="hmShowLeadTodayStatus(\''+key+'\')"><div class="small">'+label+'</div><div class="num">'+n+'</div></button>';}).join('')+
     '</div></div>';
   t.textContent='👥 Lead Tracker — Data Lead';
-  b.innerHTML=todayBoard+
-    '<div class="small" style="margin-bottom:10px">Seluruh data lead dari AVAILABLE → CS LOCK → POTENSIAL/QUALIFIED → HANDLE → HASIL.</div>'+
-    '<div class="stats" style="margin-bottom:10px"><div class="stat"><div class="small">Total Lead</div><div class="num">'+rows.length+'</div></div><div class="stat"><div class="small">Masih Aktif</div><div class="num">'+activeRows.length+'</div></div><div class="stat"><div class="small">Hasil</div><div class="num">'+resultRows.length+'</div></div><div class="stat"><div class="small">Follow-up Potensial</div><div class="num">'+rows.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length+'</div></div></div>'+
-    '<div id="hmLeadTodayResults"></div>'+
-    '<div id="hmLeadAllResults">'+(rows.map(l=>card(l)).join('')||'<div class="small">Belum ada data lead.</div>')+'</div>';
+  b.innerHTML=
+    '<div class="box" style="margin-bottom:12px"><h3 style="margin:0 0 6px">📋 Ringkasan Lead Operasional</h3><div class="small">Daftar ini hanya menampilkan lead bulan berjalan dan lead lama yang masih memiliki follow-up dalam 3 hari terakhir. Riwayat lama tetap tersimpan di database.</div></div>'+
+    '<div class="stats" style="margin-bottom:10px"><div class="stat"><div class="small">Lead Ditampilkan</div><div class="num">'+rows.length+'</div></div><div class="stat"><div class="small">Masih Aktif</div><div class="num">'+activeRows.length+'</div></div><div class="stat"><div class="small">Hasil Tercatat</div><div class="num">'+resultRows.length+'</div></div><div class="stat"><div class="small">Follow-up Potensial</div><div class="num">'+rows.filter(l=>l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').length+'</div></div></div>'+
+    '<div id="hmLeadAllResults">'+(rows.map(l=>card(l)).join('')||'<div class="small">Tidak ada lead operasional yang perlu ditampilkan.</div>')+'</div>';
   $('modal').classList.remove('hidden');
 }
 function hmOpenLeadHandover(){

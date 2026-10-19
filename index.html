@@ -2279,10 +2279,21 @@ function hmOpenLeadTracker(){
 function hmOpenLeadHandover(){
   const t=document.getElementById('mt'),b=document.getElementById('mb');
   if(!t||!b)return;
-  const rows=leads.filter(viewerLead).filter(l=>{const st=String(l.status_lead||'').toUpperCase();const q=String(l.qualification_result||'').toUpperCase();const sc=String(l.sales_claimed_by||'').trim();const sat=l.sales_claimed_at;return q==='QUALIFIED'||q==='POTENSIAL'||st==='QUALIFIED'||!!sc||!!sat;});
+  // Handover hanya menampilkan lead non-service yang telah dikualifikasi dan belum di-claim Sales.
+  // Lead yang sudah dimiliki Sales tetap dipantau dari Lead Aktif, bukan antrean handover.
+  const rows=leads.filter(viewerLead).filter(l=>{
+    const st=String(l.status_lead||'').trim().toUpperCase();
+    const q=String(l.qualification_result||'').trim().toUpperCase();
+    const sales=String(l.sales_result||'').trim().toUpperCase();
+    const type=String(l.need_type||'').trim().toUpperCase();
+    const salesOwner=String(l.sales_claimed_by||'').trim();
+    const finalResult=['CLOSING','GAGAL'].includes(sales)||q==='GAGAL'||st==='HASIL';
+    const ready=['QUALIFIED','POTENSIAL'].includes(q)||st==='QUALIFIED';
+    return type!=='SERVICE' && ready && !salesOwner && !finalResult;
+  });
   t.textContent='🤝 Lead Handover';
-  b.innerHTML='<div class="small" style="margin-bottom:10px">Khusus proses serah-terima CS → Sales. Tampilkan lead yang sudah qualified atau sedang ditangani Sales.</div>'+
-    (rows.map(l=>card(l)).join('')||'<div class="small">Belum ada lead yang siap untuk handover.</div>');
+  b.innerHTML='<div class="small" style="margin-bottom:10px">Antrean serah-terima CS → Sales. Hanya lead QUALIFIED/POTENSIAL yang belum memiliki PIC Sales. Setelah Sales melakukan claim, lead keluar dari antrean ini dan tetap tercatat di Lead Aktif.</div>'+
+    (rows.map(l=>card(l)).join('')||'<div class="small">Tidak ada lead yang menunggu handover. Lead yang sudah di-claim Sales tetap dapat dipantau melalui Lead Aktif.</div>');
   $('modal').classList.remove('hidden');
 }
 async function hmOpenBrochuresInline(){

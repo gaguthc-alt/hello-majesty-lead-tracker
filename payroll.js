@@ -33,7 +33,7 @@
         r.name+' | CS Handover '+rp(handover)+
         ' | CS Closing '+rp(r.cs_closing_commission)+
         ' | Sales Closing '+rp(r.sales_commission)+
-        ' | Hunter '+rp(r.hunter_commission)+
+        ' | Hunter '+rp(r.hunter_commission)+\n        ' | Checker '+rp(r.checker_commission)+
         ' | Content Creator '+rp(r.content_creator_commission)+
         ' | Fasilitator '+rp(r.facilitator_commission)+
         ' | TOTAL '+rp(r.total_commission)
@@ -58,21 +58,21 @@
 
 
   function renderCommissionSummary(rows){
-    const sums={handover:0,closing:0,sales:0,freelance:0,hunter:0,content:0,facilitator:0,profit:0};
+    const sums={handover:0,closing:0,sales:0,freelance:0,hunter:0,checker:0,content:0,facilitator:0,profit:0};
     rows.forEach(r=>{
       sums.handover+=Math.max(Number(r.cs_commission||0)-Number(r.cs_closing_commission||0),0);
       sums.closing+=Number(r.cs_closing_commission||0);
       sums.sales+=Number(r.sales_commission||0);
       sums.freelance+=Number(r.freelance_internal_commission||r.freelance_commission||0);
-      sums.hunter+=Number(r.hunter_commission||0);
+      sums.hunter+=Number(r.hunter_commission||0);\n      sums.checker+=Number(r.checker_commission||0);
       sums.content+=Number(r.content_creator_commission||0);
       sums.facilitator+=Number(r.facilitator_commission||0);
       sums.profit+=Number(r.outlet_profit||r.gross_profit||r.profit||0);
     });
-    const total=sums.handover+sums.closing+sums.sales+sums.freelance+sums.hunter+sums.content+sums.facilitator;
+    const total=sums.handover+sums.closing+sums.sales+sums.freelance+sums.hunter+sums.checker+sums.content+sums.facilitator;
     const data=[
       ['CS Handover',sums.handover,10,10],['CS Closing',sums.closing,5,5],['Sales',sums.sales,10,10],
-      ['Freelance Internal',sums.freelance,30,10],['Hunter',sums.hunter,5,5],['Content Creator',sums.content,10,10],['Fasilitator',sums.facilitator,10,10]
+      ['Freelance Internal',sums.freelance,30,10],['Hunter',sums.hunter,10,10],['Checker',sums.checker,5,5],['Content Creator',sums.content,10,10],['Fasilitator',sums.facilitator,10,10]
     ];
     const pct=v=>sums.profit>0?(v/sums.profit*100).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'—';
     const rowsHtml=data.map(([name,amount,formula,budget])=>
@@ -90,13 +90,13 @@
       '<th style="text-align:right;padding:9px">CS Handover</th>'+
       '<th style="text-align:right;padding:9px">CS Closing</th>'+
       '<th style="text-align:right;padding:9px">Sales Closing</th>'+
-      '<th style="text-align:right;padding:9px">Hunter</th>'+
+      '<th style="text-align:right;padding:9px">Hunter</th>'+\n      '<th style="text-align:right;padding:9px">Checker</th>'+
       '<th style="text-align:right;padding:9px">Content Creator</th>'+
       '<th style="text-align:right;padding:9px">Fasilitator</th>'+
       '<th style="text-align:right;padding:9px">Total</th>'+
       '</tr></thead><tbody>';
     Object.entries(groups).forEach(([outlet,list])=>{
-      html+='<tr><td colspan="8" style="padding:8px 9px;background:#eef2f7;font-weight:800">'+esc(outlet)+'</td></tr>';
+      html+='<tr><td colspan="9" style="padding:8px 9px;background:#eef2f7;font-weight:800">'+esc(outlet)+'</td></tr>';
       list.forEach(r=>{
         const handover=Math.max(Number(r.cs_commission||0)-Number(r.cs_closing_commission||0),0);
         html+='<tr>'+
@@ -104,7 +104,7 @@
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(handover)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.cs_closing_commission)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.sales_commission)+'</td>'+
-          '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.hunter_commission)+'</td>'+
+          '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.hunter_commission)+'</td>'+\n          '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.checker_commission)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.content_creator_commission)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7">'+rp(r.facilitator_commission)+'</td>'+
           '<td style="padding:8px 9px;text-align:right;border-top:1px solid #eef2f7;font-weight:800">'+rp(r.total_commission)+'</td>'+

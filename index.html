@@ -1851,12 +1851,15 @@ if(!window.__hmStockistClickCapture){
   const btn=e.target&&e.target.closest?e.target.closest('[data-hm-menu-title]'):null;
   if(!btn)return;
   const title=String(btn.getAttribute('data-hm-menu-title')||'').trim();
-  if(title!=='Majesty Gadget'&&title!=='Majesty Store')return;
+  if(title!=='Majesty Cell'&&title!=='Majesty Gadget'&&title!=='Majesty Store')return;
   e.preventDefault();
   e.stopPropagation();
   if(e.stopImmediatePropagation)e.stopImmediatePropagation();
   if(typeof window.hmOpenStockistInfo==='function'){
-   Promise.resolve(window.hmOpenStockistInfo(title)).catch(ex=>console.error('[HM] Stockist Center:',ex));
+   Promise.resolve(window.hmOpenStockistInfo(title)).catch(ex=>{
+    console.error('[HM] Stockist Center:',ex);
+    alert('Stockist gagal dibuka: '+(ex?.message||ex));
+   });
   }else{
    alert('Modul Stockist Center belum siap. Silakan refresh aplikasi.');
   }

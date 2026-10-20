@@ -3048,6 +3048,7 @@ function renderRoleHome(){
  if(!cards.some(x=>x[1]==='Divisi Hello'))cards.push(['📣','Divisi Hello','Promotion · lead baru, WA masuk, dan konten','hmOpenKinerjaDivision:hello']);
  if(!cards.some(x=>x[1]==='Divisi Majesty'))cards.push(['🛍️','Divisi Majesty','Sales · closing, unit terjual, dan laba','hmOpenKinerjaDivision:majesty']);
  if(!cards.some(x=>x[1]==='Divisi Refill'))cards.push(['⚙️','Divisi Refill','Finance & Administration · CS, finance, Accurate, dan sistem','hmOpenKinerjaDivision:refill']);
+ window.hmOpenStockistInfo=function(name){const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');if(mt)mt.textContent='🏬 '+name;if(mb)mb.innerHTML='<div class="box"><b>'+name+'</b><p>Stockist sudah dicatat dalam rancangan Stockist Center. Sebelum transaksi aktif, perlu disiapkan pemetaan sumber stok, approval barang masuk, perhitungan kewajiban, settlement, dan pencatatan Accurate khusus stockist ini.</p><p>Data stok dan keuangan belum dibuat atau diubah oleh menu ini.</p></div>';const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');if(p&&b){if(t)t.textContent=mt?.textContent||name;b.replaceChildren(...(mb?Array.from(mb.childNodes):[]));p.classList.remove('hidden');p.scrollIntoView({behavior:'smooth',block:'start'});}else if(modal)modal.classList.remove('hidden');};
  window.hmMainMenuItems=cards;
  const menuGroups=[
    ['🎯','LEAD TRACKER',[
@@ -3122,10 +3123,14 @@ function renderRoleHome(){
      ['🔗','Accurate Sync','Koneksi Accurate & status sinkronisasi','hmOpenAccurateSyncMonitor()'],
      ['📦','Cek Barang Accurate','Baca daftar barang Accurate tanpa mengubah transaksi','hmCheckAccurateItems()']
    ]],
-   ['🤝','MAJESTY CELL',[
-     ['📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()'],
-     ['🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()'],
-     ['🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari Majesty Cell','window.openInventoryApprovals()']
+   ['🏬','STOCKIST CENTER',[
+     ['📦','Stok Semua Stockist','Cari dan pantau stok berdasarkan sumber mitra','openInventorySection(\'stock\')'],
+     ['📊','Laporan Finance Cell','Stock, modal & profit sharing Majesty Cell','window.openCellFinanceReport()'],
+     ['🤝','Kewajiban Cell','Modal & profit sharing Majesty Cell','window.openPartnerSettlement()'],
+     ['🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari mitra','window.openInventoryApprovals()'],
+     ['🏬','Majesty Cell','Stockist aktif — laporan dan kewajiban khusus Cell','window.openCellFinanceReport()'],
+     ['🏬','Majesty Gadget','Stockist baru — perlu konfigurasi alur stok dan settlement','hmOpenStockistInfo(\'Majesty Gadget\')'],
+     ['🏬','Majesty Store','Stockist baru — perlu konfigurasi alur stok dan settlement','hmOpenStockistInfo(\'Majesty Store\')']
    ]],
    ['⚡','TOOLS',[
      ['🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()'],
@@ -3153,7 +3158,7 @@ function renderRoleHome(){
    const isAtmaditaAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita';
    const isDivisiAccount = roles.includes('DIVISI') || rawRole==='DIVISI';
    const isSakaAccount = String(profile?.name||'').trim().toLowerCase()==='saka';
-   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='ACCURATE' && (developer || mg)) || (g[1]==='MAJESTY CELL' && (developer || mg || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL'))) || (g[1]==='SALES & PENJUALAN' && sales) || (g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))));
+   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='ACCURATE' && (developer || mg)) || (g[1]==='STOCKIST CENTER' && (developer || mg || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL'))) || (g[1]==='SALES & PENJUALAN' && sales) || (g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))));
    if(g[1]==='ACCURATE' && !developer && !mg)return '';
    const isAccountingGroup = g[1]==='ACCOUNTING' && developer;
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.

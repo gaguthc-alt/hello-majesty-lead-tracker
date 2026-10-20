@@ -3123,7 +3123,7 @@ window.hmOpenStockistInfo=async function(name){
    '<button type="button" class="secondary" onclick="hmOpenStockistInfo(\''+safe(name)+'\')">↻ Refresh data</button>'+
    '<div class="box"><b>Keamanan transaksi</b><p>Data stok dan settlement dipisahkan menurut nama stockist. Pembayaran settlement khusus Gadget/Store tidak diaktifkan sampai aturan pembagian modal/laba dan akun jurnalnya diverifikasi.</p></div>';
   if(typeof window.hmFilterStockistRows==='function')window.hmFilterStockistRows();
-  requestAnimationFrame(()=>{const panel=document.getElementById('hmMenuPanel');if(panel){panel.scrollTop=0;panel.scrollIntoView({behavior:'auto',block:'start');}});
+  requestAnimationFrame(()=>{const panel=document.getElementById('hmMenuPanel');if(panel){panel.scrollTop=0;panel.scrollIntoView({behavior:'auto',block:'start'});}});
  }catch(e){console.error('[HM] Stockist detail:',e);renderError(e);}
 };
  window.hmMainMenuItems=cards;

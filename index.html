@@ -3152,6 +3152,8 @@ function renderRoleHome(){
    if(hideAtmaditaGroups && (g[1]==='CONTENT & PROMOTION' || g[1]==='KOMISI'))return '';
    // Atmadita menangani Admin Finance, jadi tidak perlu menu aktivitas/performa lead.
    if(isAtmaditaMenuAccount && g[1]==='LEAD TRACKER')return '';
+   // Atmadita tidak lagi mengelola Inventory & Stock; gunakan Stockist Center untuk kebutuhan mitra.
+   if(isAtmaditaMenuAccount && g[1]==='INVENTORY & STOCK')return '';
    // CONTENT & PROMOTION adalah menu standar untuk SEMUA akun.
    // Tetap render sebagai HTML section — jangan return array mentah,
    // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.

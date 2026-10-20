@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261020-handover-fix-2"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261020-handover-flow-3"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -4623,10 +4623,16 @@ Mohon tim tidak melakukan follow up pada lead yang sama tanpa koordinasi dengan 
 }
 function shareSalesClaim(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesClaimMessage(l));}
 async function handoverSales(id){
- const x=await sb.rpc('handover_lead_to_sales',{p_lead_id:id});
+ const leadId=String(id||'').trim();
+ const before=leads.find(v=>String(v.lead_id)===leadId);
+ if(!before)return alert('Lead tidak ditemukan. Silakan refresh Lead Tracker.');
+ const x=await sb.rpc('handover_lead_to_sales',{p_lead_id:leadId});
  if(x.error)return alert(x.error.message);
  await loadLeads();
- openUrl();
+ const fresh=leads.find(v=>String(v.lead_id)===leadId)||x.data;
+ if(!fresh?.sales_handover_at)return alert('Handover belum tercatat di database. Refresh data dan coba lagi.');
+ // Setelah handover tercatat, langsung siapkan pesan WhatsApp berisi link claim Sales.
+ share(leadId);
 }
 function serviceHandoverMessage(l){
  const link=location.origin+location.pathname+'?claim='+encodeURIComponent(l.lead_id)+'&type=SERVICE';

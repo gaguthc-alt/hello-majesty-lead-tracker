@@ -205,8 +205,8 @@
     await render('month');
   };
   window.perfShare=async function(){
-    const mode=window.perfMyMode||'month';
-    const [monthRows,todayRows]=await Promise.all([getFunnel(mode==='last_month'?'last_month':'month'),getFunnel('today')]);
+    const mode='month';
+    const [monthRows,todayRows]=await Promise.all([getFunnel('month'),getFunnel('today')]);
     const normalizeRows=source=>source.map(r=>({
       name:String(r.employee_name||'-'),
       outlet:String(r.outlet||r.outlet_name||'-'),

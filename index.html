@@ -4119,7 +4119,7 @@ async function render(){
  // Fasilitator & Management: Resume melihat seluruh lead outlet, tetapi daftar LEAD AKTIF hanya lead milik sendiri.
  const active=resumeLeads.filter(l=>getActiveLeadBucket(l));
  const activeOwn=resumeLeads.filter(l=>ownLead(l)).filter(l=>getActiveLeadBucket(l));
- const visibleLeads=resumeLeads;
+ const visibleLeads=[...resumeLeads].sort((a,b)=>new Date(b.created_at||b.updated_at||0).getTime()-new Date(a.created_at||a.updated_at||0).getTime());
  const selesai=visibleLeads.filter(l=>l.status_lead==='HASIL'&&l.qualification_result!=='POTENSIAL'&&l.sales_result!=='POTENSIAL').length;
  const activeResume={
   total:active.length,

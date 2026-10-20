@@ -195,6 +195,19 @@ function renderDivisions(){
   html+=renderDataQuality(rows);
   html+=renderDecisionBook();
   html+='<div class="hm-kd-summary"><div><span>Outlet dipantau</span><b>'+num(rows.length)+'</b></div><div><span>Rata-rata pencapaian lead</span><b>'+avg(rows,'lead_actual','wa_target')+'%</b><small>Lead baru · outlet</small></div><div><span>Rata-rata pencapaian handover</span><b>'+avg(rows,'handover_actual','handover_target')+'%</b><small>Handover · outlet</small></div><div><span>Rata-rata pencapaian closing</span><b>'+avg(rows,'lead_closing_actual','closing_target')+'%</b><small>Closing lead · outlet</small></div><div><span>Rata-rata pencapaian unit</span><b>'+avg(rows,'unit_actual','closing_target')+'%</b><small>Unit terjual · outlet</small></div><div><span>Rata-rata pencapaian laba</span><b>'+avg(rows,'profit_actual','profit_target')+'%</b><small>Laba aktual · outlet</small></div></div>';
+  const people=Array.isArray(latestData.people)?latestData.people:[];
+  const personMetricLabels=[['Claim CS','today_claim_cs','month_claim_cs'],['Handover CS → Sales','today_handover','month_handover'],['Claim Sales','today_claim_sales','month_claim_sales'],['CS Closing','today_cs_closing','month_cs_closing'],['Sales Closing','today_sales_closing','month_sales_closing'],['Hunter Closing','today_hunter_closing','month_hunter_closing']];
+  html+='<div class="hm-kd-panel"><h3>👥 Kinerja Per Orang</h3><p class="hm-kd-note">Angka hari ini dan akumulasi bulan berjalan ditampilkan berdampingan. Target yang tersedia saat ini ditetapkan per outlet; target individu tidak dibuat-buat.</p>';
+  if(!people.length){html+='<p class="hm-kd-note">Data rincian anggota belum tersedia dari database.</p>';}
+  else{
+   html+='<div class="hm-kd-table-wrap"><table class="hm-kd-table"><thead><tr><th>Nama</th><th>Outlet / Role</th><th>Metrik</th><th>Hari Ini</th><th>Total Bulan Ini</th></tr></thead><tbody>';
+   people.forEach(person=>{personMetricLabels.forEach(([label,todayKey,monthKey])=>{
+    const todayValue=Number(person[todayKey]||0),monthValue=Number(person[monthKey]||0);
+    if(todayValue||monthValue)html+='<tr><td>'+esc(person.name)+'</td><td>'+esc(person.outlet||'—')+'<small>'+esc(person.role||'')+'</small></td><td>'+label+'</td><td><b>'+num(todayValue)+'</b></td><td>'+num(monthValue)+'</td></tr>';
+   });});
+   html+='</tbody></table></div><p class="hm-kd-note">Metrik bernilai nol tidak ditampilkan agar tabel ringkas. Claim dan handover mengikuti timestamp aktivitas; closing dihitung dari transaksi terjual.</p>';
+  }
+  html+='</div>';
   const pace=monthPace(latestData.month_start);
   html+='<div class="hm-kd-panel hm-kd-ai-analysis"><h3>🎯 Arah & Keputusan Management</h3><p class="hm-kd-note">'+(pace.valid?'Periode: hari '+pace.elapsed+' dari '+pace.days+' · Sisa '+pace.remaining+' hari.':'Tanggal periode tidak valid; laju target tidak dapat dinilai.')+' Analisis dihitung ulang dari data terbaru saat menu dibuka, di-refresh, dan pembaruan otomatis.</p><ol class="hm-kd-advice">'+advice(rows,totalTarget).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol><p class="hm-kd-note">Gunakan rekomendasi sebagai agenda keputusan: tetapkan PIC, tindakan, tenggat, lalu verifikasi hasilnya. Sistem belum mencatat keputusan atau PIC otomatis.</p></div>';
   html+='<div class="hm-kd-panel"><h3>Target Hasil</h3><div class="hm-kd-grid">'+metric('Unit terjual',unit,totalTarget.closing_target,'num')+metric('Nominal laba',profit,totalTarget.profit_target,'money')+'</div></div>';

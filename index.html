@@ -3099,6 +3099,7 @@ window.hmOpenStockistInfo=function(partner){return window.hmOpenStockistWorkspac
 window.hmOpenStockistReceiving=function(){return window.hmOpenStockistWorkspace('receiving');};
 
 window.hmOpenPartnerSettlementManagement=async function(){
+ if(!(mg||developer)){alert('Menu Pembayaran Settlement hanya untuk Management.');return;}
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');

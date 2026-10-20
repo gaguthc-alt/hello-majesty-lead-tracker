@@ -1851,7 +1851,7 @@ if(!window.__hmStockistClickCapture){
   const btn=e.target&&e.target.closest?e.target.closest('[data-hm-menu-title]'):null;
   if(!btn)return;
   const title=String(btn.getAttribute('data-hm-menu-title')||'').trim();
-  if(title!=='Majesty Cell'&&title!=='Majesty Gadget'&&title!=='Majesty Store')return;
+  if(title!=='Majesty Gadget'&&title!=='Majesty Store')return;
   e.preventDefault();
   e.stopPropagation();
   if(e.stopImmediatePropagation)e.stopImmediatePropagation();
@@ -3175,7 +3175,7 @@ function renderRoleHome(){
      ['📊','Laporan Finance Cell','Stock, modal & profit sharing Majesty Cell','window.openCellFinanceReport()'],
      ['🤝','Kewajiban Cell','Modal & profit sharing Majesty Cell','window.openPartnerSettlement()'],
      ['🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari mitra','window.openInventoryApprovals()'],
-     ['🏬','Majesty Cell','Stockist aktif — ringkasan stok, lokasi, status, dan settlement','hmOpenStockistInfo(\'Majesty Cell\')'],
+     ['🏬','Majesty Cell','Stockist aktif — laporan stok, modal & profit sharing','window.openCellFinanceReport()'],
      ['🏬','Majesty Gadget','Stockist — ringkasan stok, lokasi, status, dan settlement','hmOpenStockistInfo(\'Majesty Gadget\')'],
      ['🏬','Majesty Store','Stockist — ringkasan stok, lokasi, status, dan settlement','hmOpenStockistInfo(\'Majesty Store\')']
    ]],

@@ -3104,6 +3104,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
  const partners=['Majesty Cell','Majesty Gadget','Majesty Store'];
+ const outlets=['Majesty Plaza','Majesty Refill Phone'];
  if(!window.sb||!p||!b||!t){alert('Panel atau koneksi database belum siap. Refresh lalu coba lagi.');return;}
  t.textContent='🤝 Pembayaran Settlement Stockist';p.classList.remove('hidden');
  b.innerHTML='<div class="box">Memuat unit SOLD dan riwayat settlement…</div>';
@@ -3114,13 +3115,14 @@ window.hmOpenPartnerSettlementManagement=async function(){
    window.sb.from('partner_settlement_items').select('id,settlement_id,stock_unit_id,capital_amount,profit_amount,partner_profit_share').limit(3000)
   ]);
   if(uRes.error)throw uRes.error;if(sRes.error)throw sRes.error;if(iRes.error)throw iRes.error;
-  const units=(uRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||x.supplier||'').toLowerCase()===n.toLowerCase()));
+  const units=(uRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||x.supplier||'').toLowerCase()===n.toLowerCase())&&outlets.some(o=>String(x.outlet||'').toLowerCase()===o.toLowerCase()));
   const settles=sRes.data||[],items=iRes.data||[];
   const settlementById=new Map(settles.map(x=>[String(x.id),x]));
   const allocated=new Map();
   items.forEach(it=>{if(!it.stock_unit_id)return;const st=settlementById.get(String(it.settlement_id));if(st&&['DRAFT','PENDING','PAID','SETTLED','COMPLETED','LUNAS'].includes(String(st.status||'').toUpperCase()))allocated.set(String(it.stock_unit_id),st);});
   const available=units.filter(x=>!allocated.has(String(x.id)));
   const partnerOptions=partners.map(x=>'<option>'+x+'</option>').join('');
+  const outletOptions=outlets.map(x=>'<option>'+x+'</option>').join('');
   const productName=x=>[x.product_master?.product||'Produk',x.product_master?.variant].filter(Boolean).join(' — ');
   const unitRows=available.map(x=>'<tr data-settle-unit data-partner="'+safe(x.partner_name||x.supplier||'')+'" data-outlet="'+safe(x.outlet||'')+'" data-cost="'+Number(x.cost||0)+'"><td><input type="checkbox" class="hmSettleUnitCheck" value="'+safe(x.id)+'" aria-label="Pilih unit '+safe(x.imei_1||x.id)+'"></td><td><b>'+safe(productName(x))+'</b><div class="small">IMEI: '+safe(x.imei_1||'—')+'</div></td><td>'+safe(x.partner_name||x.supplier||'—')+'</td><td>'+safe(x.outlet||'—')+'</td><td>'+safe(x.sold_at||'—')+'</td><td>'+money(x.cost)+'</td></tr>').join('');
   const historyRows=settles.map(x=>{
@@ -3132,8 +3134,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
   b.innerHTML=style+
    '<div class="box"><b>Settlement berdasarkan unit SOLD</b><p>Centang unit yang akan diselesaikan kepada stockist. Total settlement dihitung dari modal unit terpilih. Unit READY tidak ditampilkan. Unit yang sudah masuk draft atau settlement tercatat tidak bisa dipilih lagi. Form ini tidak mengirim jurnal Accurate.</p></div>'+
    '<div class="box"><h3>1. Pilih produk SOLD yang akan disettlement</h3><div class="hmSettleForm">'+
+   '<label>Outlet<select id="hmSettleOutlet" required>'+outletOptions+'</select></label>'+
    '<label>Stockist<select id="hmSettlePartner" required>'+partnerOptions+'</select></label>'+
-   '<label>Outlet pembayaran<input id="hmSettleOutlet" placeholder="Contoh: Majesty Plaza / Refill" required></label>'+
    '<label>Tanggal settlement<input id="hmSettleDate" type="date" required value="'+new Date().toISOString().slice(0,10)+'"></label>'+
    '<label>Catatan<textarea id="hmSettleNote" rows="2" placeholder="Referensi pembayaran atau catatan"></textarea></label>'+
    '</div><div style="overflow:auto;margin-top:12px"><table class="hmSettleTable"><thead><tr><th>Pilih</th><th>Produk / IMEI</th><th>Stockist</th><th>Outlet</th><th>Tanggal SOLD</th><th>Modal settlement</th></tr></thead><tbody>'+(unitRows||'<tr><td colspan="6">Tidak ada unit SOLD yang tersedia untuk settlement baru.</td></tr>')+'</tbody></table></div>'+
@@ -3144,7 +3146,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    let count=0,total=0;
    b.querySelectorAll('[data-settle-unit]').forEach(row=>{
     const partner=row.getAttribute('data-partner'),outlet=row.getAttribute('data-outlet');
-    const visible=partner.toLowerCase()===partnerSel.value.toLowerCase();
+    const selectedOutlet=document.getElementById('hmSettleOutlet').value;
+    const visible=partner.toLowerCase()===partnerSel.value.toLowerCase()&&outlet.toLowerCase()===selectedOutlet.toLowerCase();
     row.style.display=visible?'':'none';
     const cb=row.querySelector('.hmSettleUnitCheck');
     if(cb?.checked){count++;total+=Number(row.getAttribute('data-cost')||0);}
@@ -3154,23 +3157,24 @@ window.hmOpenPartnerSettlementManagement=async function(){
    document.getElementById('hmSettleSaveDraft').disabled=count===0;
   };
   partnerSel.addEventListener('change',()=>{b.querySelectorAll('.hmSettleUnitCheck').forEach(cb=>cb.checked=false);updateSelection();});
+  document.getElementById('hmSettleOutlet').addEventListener('change',()=>{b.querySelectorAll('.hmSettleUnitCheck').forEach(cb=>cb.checked=false);updateSelection();});
   b.querySelectorAll('.hmSettleUnitCheck').forEach(cb=>cb.addEventListener('change',()=>{
    const row=cb.closest('[data-settle-unit]');
    if(cb.checked&&row.getAttribute('data-partner').toLowerCase()!==partnerSel.value.toLowerCase()){cb.checked=false;alert('Pilih unit dari stockist yang sedang diproses.');}
-   if(cb.checked&&!document.getElementById('hmSettleOutlet').value.trim())document.getElementById('hmSettleOutlet').value=row.getAttribute('data-outlet')||'';
+   if(cb.checked&&row.getAttribute('data-outlet').toLowerCase()!==document.getElementById('hmSettleOutlet').value.toLowerCase()){cb.checked=false;alert('Unit ini bukan dari outlet yang sedang diproses.');}
    updateSelection();
   }));
   document.getElementById('hmSettleSaveDraft').addEventListener('click',async()=>{
    const selected=[...b.querySelectorAll('.hmSettleUnitCheck:checked')];
-   const partner=partnerSel.value,outlet=document.getElementById('hmSettleOutlet').value.trim(),date=document.getElementById('hmSettleDate').value,note=document.getElementById('hmSettleNote').value.trim();
+   const partner=partnerSel.value,outlet=document.getElementById('hmSettleOutlet').value,date=document.getElementById('hmSettleDate').value,note=document.getElementById('hmSettleNote').value.trim();
    if(!selected.length){alert('Centang minimal satu unit SOLD.');return;}
    if(!outlet||!date){alert('Outlet dan tanggal settlement wajib diisi.');return;}
    const ids=selected.map(cb=>cb.value);
    const selectedUnits=units.filter(x=>ids.includes(String(x.id)));
-   if(selectedUnits.some(x=>String(x.partner_name||x.supplier||'').toLowerCase()!==partner.toLowerCase())){alert('Ada unit dari stockist lain. Silakan pilih ulang.');return;}
+   if(selectedUnits.some(x=>String(x.partner_name||x.supplier||'').toLowerCase()!==partner.toLowerCase()||String(x.outlet||'').toLowerCase()!==outlet.toLowerCase())){alert('Ada unit dari stockist atau outlet lain. Silakan pilih ulang.');return;}
    const total=selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0);
    if(total<=0){alert('Total modal unit harus lebih besar dari nol.');return;}
-   if(!confirm('Simpan DRAFT settlement '+partner+' untuk '+selectedUnits.length+' unit dengan total '+money(total)+'? Draft belum dianggap pembayaran.'))return;
+   if(!confirm('Simpan DRAFT settlement '+partner+' • '+outlet+' untuk '+selectedUnits.length+' unit dengan total '+money(total)+'? Draft belum dianggap pembayaran.'))return;
    const {data:userData}=await window.sb.auth.getUser();
    const {data:settlement,error:settleError}=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet,settlement_type:'SOLD_UNITS',settlement_date:date,amount:total,note:note||'Dipilih berdasarkan unit SOLD',status:'DRAFT',created_by:userData?.user?.id}).select('id').single();
    if(settleError){alert('Gagal menyimpan draft settlement: '+settleError.message);return;}

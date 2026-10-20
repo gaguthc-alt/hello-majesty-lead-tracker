@@ -2506,6 +2506,7 @@ function hmRunMainMenuAction(action){
   case 'openCommission()': return openCommission();
   case 'openTeamCommission()': return openTeamCommission();
   case 'hmOpenLeadHandover()': return hmOpenLeadHandover();
+  case 'hmOpenStockistCooperationGuide()': return (typeof window.hmOpenStockistCooperationGuide==='function' ? window.hmOpenStockistCooperationGuide() : Promise.reject(new Error('Panduan Kerja Sama Stockist belum siap dimuat. Silakan refresh aplikasi.')));
   case 'window.openCellFinanceReport()': return window.openCellFinanceReport();
   case 'window.openPartnerSettlement()': return window.openPartnerSettlement();
   case 'window.openFinanceInventoryApprovals()': return (typeof window.openInventoryApprovals==='function'?window.openInventoryApprovals():window.openFinanceInventoryApprovals());
@@ -3218,10 +3219,10 @@ window.hmOpenStockistInfo=async function(name){
    ]],
    ['🤝','KERJA SAMA STOCKIST',[
      ['📋','Panduan Kerja Sama','Alur standar penerimaan, penjualan, kewajiban, dan settlement','hmOpenStockistCooperationGuide()'],
-     ['🏬','Profil Majesty Cell','Ringkasan stok dan kerja sama Majesty Cell','window.openCellFinanceReport()'],
-     ['🏬','Profil Majesty Gadget','Ringkasan stok dan kerja sama Majesty Gadget','hmOpenStockistInfo(\'Majesty Gadget\')'],
-     ['🏬','Profil Majesty Store','Ringkasan stok dan kerja sama Majesty Store','hmOpenStockistInfo(\'Majesty Store\')'],
-     ['📦','Penerimaan & Persetujuan','Verifikasi stok titipan sebelum READY','window.openInventoryApprovals()']
+     ['🏬','Profil Majesty Cell','Ringkasan stok dan kerja sama Majesty Cell','hmOpenStockistCooperationGuide()'],
+     ['🏬','Profil Majesty Gadget','Ringkasan stok dan kerja sama Majesty Gadget','hmOpenStockistCooperationGuide()'],
+     ['🏬','Profil Majesty Store','Ringkasan stok dan kerja sama Majesty Store','hmOpenStockistCooperationGuide()'],
+     ['📦','Penerimaan & Persetujuan','Verifikasi stok titipan sebelum READY','hmOpenStockistCooperationGuide()']
    ]],
    ['⚡','TOOLS',[
      ['🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()'],

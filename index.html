@@ -3122,6 +3122,8 @@ window.hmOpenStockistInfo=async function(name){
   const approvalMap=new Map((ar.data||[]).map(a=>[String(a.stock_unit_id),a]));
   const ready=units.filter(x=>String(x.status||'').toUpperCase()==='READY');
   const sold=units.filter(x=>String(x.status||'').toUpperCase()==='SOLD');
+  const returned=units.filter(x=>String(x.status||'').toUpperCase()==='RETURN');
+  const rejected=units.filter(x=>String(x.status||'').toUpperCase()==='REJECTED');
   const outstanding=settles.filter(x=>!paidStatuses.includes(String(x.status||'').toUpperCase()));
   const categories=[...new Set(units.map(x=>String(x.product_master?.category||'').trim()).filter(Boolean))].sort();
   const rows=units.map(x=>{
@@ -3133,13 +3135,15 @@ window.hmOpenStockistInfo=async function(name){
   }).join('');
   const settlementRows=settles.length?settles.map(x=>'<div class="lead"><b>'+safe(x.settlement_type||'Settlement')+' • '+money(x.amount)+'</b><div class="small">'+safe(x.settlement_date||'-')+' • '+safe(x.status||'Belum ada status')+(x.period_start?' • Periode '+safe(x.period_start)+' s/d '+safe(x.period_end||x.period_start):'')+'</div></div>').join(''):'<div class="small">Belum ada catatan settlement untuk stockist ini.</div>';
   const checklist='<div class="box"><b>Status alur stockist</b><ul><li>Master stockist: '+(sup?.active?'Aktif':'Periksa status di master supplier')+'</li><li>Persetujuan barang masuk: menggunakan modul Persetujuan Barang Masuk yang sudah ada; periksa status persetujuan per unit di tabel.</li><li>Settlement: riwayat ditampilkan dari data settlement stockist. Tombol pembayaran khusus Gadget/Store belum diaktifkan.</li><li>Accurate: jangan anggap jurnal stockist sudah teruji hanya dari status koneksi; perlu verifikasi mapping akun dan hasil sinkron transaksi.</li></ul></div>';
-  const reportStyle='<style>.hm-stockist-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.hm-stockist-stat{border:1px solid var(--border,#d0d5dd);border-radius:14px;background:#fff;padding:14px;min-height:92px;box-shadow:0 2px 7px rgba(0,0,0,.06)}.hm-stockist-stat b{font-size:23px;display:block;margin:6px 0}.hm-stockist-table{width:100%;border-collapse:collapse;min-width:600px}.hm-stockist-table th,.hm-stockist-table td{padding:9px 8px;text-align:left;border-bottom:1px solid var(--border,#ddd)}@media(min-width:700px){.hm-stockist-stats{grid-template-columns:repeat(4,minmax(0,1fr))}}</style>';
+  const reportStyle='<style>.hm-stockist-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.hm-stockist-stat{border:1px solid var(--border,#d0d5dd);border-radius:14px;background:#fff;padding:14px;min-height:92px;box-shadow:0 2px 7px rgba(0,0,0,.06)}.hm-stockist-stat b{font-size:23px;display:block;margin:6px 0}.hm-stockist-table{width:100%;border-collapse:collapse;min-width:600px}.hm-stockist-table th,.hm-stockist-table td{padding:9px 8px;text-align:left;border-bottom:1px solid var(--border,#ddd)}@media(min-width:700px){.hm-stockist-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(min-width:1100px){.hm-stockist-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}</style>';
   b.innerHTML=reportStyle+
    '<div class="small">Ringkasan stockist • '+safe(sup?.supplier_code||'-')+' • '+(sup?.active?'Aktif':'Periksa status')+'</div>'+
    '<div class="hm-stockist-stats">'+
    '<div class="hm-stockist-stat"><div class="small">TOTAL STOK</div><b>'+units.length+' unit</b><span>'+money(units.reduce((n,x)=>n+Number(x.cost||0),0))+'</span></div>'+
    '<div class="hm-stockist-stat"><div class="small">READY</div><b>'+ready.length+' unit</b><span>'+money(ready.reduce((n,x)=>n+Number(x.cost||0),0))+'</span></div>'+
    '<div class="hm-stockist-stat"><div class="small">SOLD</div><b>'+sold.length+' unit</b><span>'+money(sold.reduce((n,x)=>n+Number(x.cost||0),0))+'</span></div>'+
+   '<div class="hm-stockist-stat"><div class="small">RETURN</div><b>'+returned.length+' unit</b><span>'+money(returned.reduce((n,x)=>n+Number(x.cost||0),0))+'</span></div>'+
+   '<div class="hm-stockist-stat"><div class="small">REJECTED</div><b>'+rejected.length+' unit</b><span>'+money(rejected.reduce((n,x)=>n+Number(x.cost||0),0))+'</span></div>'+
    '<div class="hm-stockist-stat"><div class="small">SETTLEMENT BELUM LUNAS</div><b>'+money(outstanding.reduce((n,x)=>n+Number(x.amount||0),0))+'</b><span>'+outstanding.length+' catatan status belum lunas</span></div></div>'+
    '<div class="box" style="margin:10px 0"><h3>🔎 Filter Laporan</h3><div class="row" style="display:flex;flex-wrap:wrap;gap:10px">'+
    '<label style="flex:1;min-width:140px">Lokasi<select id="hmStockistLocation" onchange="hmFilterStockistRows()"><option value="ALL">Semua lokasi</option>'+[...new Set(units.map(x=>String(x.outlet||'').trim()).filter(Boolean))].sort().map(v=>'<option value="'+safe(v)+'">'+safe(v)+'</option>').join('')+'</select></label>'+

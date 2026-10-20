@@ -216,13 +216,29 @@
     const sum=rs=>rs.reduce((a,r)=>{a.claim+=r.claim;a.handover+=r.handover;a.claimSales+=r.claimSales;a.cs+=r.cs;a.sales+=r.sales;a.hunter+=r.hunter;return a;},blank());
     const active=r=>r.claim||r.handover||r.claimSales||r.cs||r.sales||r.hunter;
     const outletNames=[...new Set([...today,...month].map(r=>r.outlet).filter(x=>x&&x!=='-'))];
-    const metrics=t=>'📲 Claim CS: '+fmt(t.claim)+' | 🤝 Handover: '+fmt(t.handover)+NL+
-      '📥 Claim Sales: '+fmt(t.claimSales)+' | 🎯 CS Closing: '+fmt(t.cs)+NL+
-      '🏆 Sales Closing: '+fmt(t.sales)+' | 🏹 Hunter: '+fmt(t.hunter)+NL;
+    const metrics=t=>{
+      const parts=[];
+      if(t.claim)parts.push('📲 Claim CS: '+fmt(t.claim));
+      if(t.handover)parts.push('🤝 Handover: '+fmt(t.handover));
+      if(t.claimSales)parts.push('📥 Claim Sales: '+fmt(t.claimSales));
+      if(t.cs)parts.push('🎯 CS Closing: '+fmt(t.cs));
+      if(t.sales)parts.push('🏆 Sales Closing: '+fmt(t.sales));
+      if(t.hunter)parts.push('🏹 Hunter: '+fmt(t.hunter));
+      return (parts.length?parts.join(' | '):'Belum ada aktivitas')+NL;
+    };
     const personLines=rs=>{
       const activeRows=rs.filter(active).sort((a,b)=>(b.claim+b.handover+b.claimSales+b.cs+b.sales+b.hunter)-(a.claim+a.handover+a.claimSales+a.cs+a.sales+a.hunter));
       if(!activeRows.length)return '  Belum ada aktivitas'+NL;
-      return activeRows.map(r=>'• *'+r.name+'*: CS '+fmt(r.claim)+' | HO '+fmt(r.handover)+' | Claim Sales '+fmt(r.claimSales)+' | CS Close '+fmt(r.cs)+' | Sales Close '+fmt(r.sales)+' | Hunter '+fmt(r.hunter)).join(NL)+NL;
+      return activeRows.map(r=>{
+        const bits=[];
+        if(r.claim)bits.push('Claim CS '+fmt(r.claim));
+        if(r.handover)bits.push('Handover '+fmt(r.handover));
+        if(r.claimSales)bits.push('Claim Sales '+fmt(r.claimSales));
+        if(r.cs)bits.push('CS Closing '+fmt(r.cs));
+        if(r.sales)bits.push('Sales Closing '+fmt(r.sales));
+        if(r.hunter)bits.push('Hunter '+fmt(r.hunter));
+        return '• *'+r.name+'*: '+bits.join(' | ');
+      }).join(NL)+NL;
     };
     let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*'+NL+
       '📅 Tanggal: *'+new Date().toLocaleDateString('id-ID')+'*'+NL+

@@ -363,6 +363,17 @@ async function renderStandaloneHunterStock(){
    ...(hunterResult.data||[]).map(x=>({...x,hm_source_type:'HUNTER',hm_commission_rate:10})),
    ...(checkerResult.data||[]).map(x=>({...x,hm_source_type:'CHECKER',hm_commission_rate:5}))
   ].sort((a,b)=>new Date(b.received_at||0)-new Date(a.received_at||0));
+  // Load checker attribution separately so Hunter-sourced stock can display both roles.
+  const stockIds=rows.map(x=>x.id).filter(Boolean);
+  const checkerByStock={};
+  if(stockIds.length){
+   const sr=await sb.from('stock_units').select('id,checker_user_id').in('id',stockIds);
+   if(sr.error)throw sr.error;
+   const checkerIds=[...new Set((sr.data||[]).map(x=>x.checker_user_id).filter(Boolean))];
+   const names={};
+   if(checkerIds.length){const ur=await sb.from('team_profiles').select('user_id,name').in('user_id',checkerIds);if(ur.error)throw ur.error;(ur.data||[]).forEach(u=>names[u.user_id]=u.name);}
+   (sr.data||[]).forEach(x=>checkerByStock[x.id]=names[x.checker_user_id]||'');
+  }
   panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧑‍💼 STOCK HUNTER & CHECKER</h2><div class="small">Daftar unit Hunter dan Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneHunterStock()">↻ Refresh</button></div>'+
    '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#e8f1ff;color:#174ea6;font-weight:700">🏹 Hunter · Komisi 10%</span><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#f3e8ff;color:#6b21a8;font-weight:700">🔎 Checker · Komisi 5%</span></div>'+
    '<div class="small" style="margin-top:10px">Persentase ditampilkan sebagai informasi sumber komisi. Komisi baru dialokasikan saat unit benar-benar terjual. Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
@@ -378,7 +389,7 @@ async function renderStandaloneHunterStock(){
        '<div style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;'+sourceStyle+'">'+sourceLabel+'</div>'+
        '<div style="margin-top:7px"><b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b></div>'+
        '<div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div>'+
-       '<div class="small">👤 '+personLabel+': <b>'+esc(x.hunter_name||'-')+'</b></div>'+
+       '<div class="small">👤 '+personLabel+': <b>'+esc(x.hunter_name||'-')+'</b></div>'+(isHunter&&checkerByStock[x.id]?'<div class="small">🔎 Checker: <b>'+esc(checkerByStock[x.id])+'</b> · Komisi 5%</div>':'')+
        '<div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div>'+
        '<div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div>'+
        '<div class="small" style="margin-top:5px">🟢 READY — belum laku</div></div>';

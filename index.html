@@ -3067,36 +3067,31 @@ function renderRoleHome(){
  if(!cards.some(x=>x[1]==='Divisi Majesty'))cards.push(['🛍️','Divisi Majesty','Sales · closing, unit terjual, dan laba','hmOpenKinerjaDivision:majesty']);
  if(!cards.some(x=>x[1]==='Divisi Refill'))cards.push(['⚙️','Divisi Refill','Finance & Administration · CS, finance, Accurate, dan sistem','hmOpenKinerjaDivision:refill']);
  window.hmOpenStockistInfo=async function(name){
- const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
- const safeName=String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- if(mt)mt.textContent='🏬 '+name;
- if(mb)mb.innerHTML='<div class="box"><b>'+safeName+'</b><p>Memuat ringkasan stok dan settlement…</p></div>';
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
- if(p&&b){if(t)t.textContent='🏬 '+name;b.replaceChildren(...(mb?Array.from(mb.childNodes):[]));p.classList.remove('hidden');p.scrollIntoView({behavior:'smooth',block:'start'});}else if(modal)modal.classList.remove('hidden');
+ const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
+ if(!p||!b||!t){alert('Panel Stockist Center belum siap. Refresh aplikasi lalu coba kembali.');return;}
+ t.textContent='🏬 '+name;
+ p.classList.remove('hidden');p.scrollIntoView({behavior:'smooth',block:'start'});
+ b.innerHTML='<div class="box"><b>'+safe(name)+'</b><p>Memuat data stockist…</p></div>';
+ const renderError=e=>{b.innerHTML='<div class="box"><b>'+safe(name)+'</b><p>Data belum dapat dimuat: '+safe(e?.message||e)+'</p><button type="button" class="secondary" onclick="hmOpenStockistInfo(\''+safe(name)+'\')">↻ Coba Lagi</button></div>';};
  try{
-   if(!window.sb){throw new Error('Koneksi database belum siap');}
-   const [supplierRes,stockRes,settleRes]=await Promise.all([
-     window.sb.from('suppliers').select('supplier_code,name,active,notes').ilike('name',String(name)),
-     window.sb.from('stock_units').select('id,status,cost,asking_price,sold_price,partner_name,source_type').ilike('partner_name',String(name)),
-     window.sb.from('partner_settlements').select('amount,status,settlement_date,settlement_type').ilike('partner_name',String(name))
-   ]);
-   if(supplierRes.error)throw supplierRes.error;
-   if(stockRes.error)throw stockRes.error;
-   if(settleRes.error)throw settleRes.error;
-   const supplier=(supplierRes.data||[]).find(x=>String(x.name||'').toLowerCase()===String(name).toLowerCase());
-   const stock=stockRes.data||[],settlements=settleRes.data||[];
-   const sold=stock.filter(x=>String(x.status||'').toUpperCase()==='SOLD').length;
-   const ready=stock.filter(x=>['READY','AVAILABLE','IN_STOCK'].includes(String(x.status||'').toUpperCase())).length;
-   const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
-   const totalDue=settlements.filter(x=>!['PAID','SETTLED','COMPLETED'].includes(String(x.status||'').toUpperCase())).reduce((a,x)=>a+Number(x.amount||0),0);
-   const sourceNote=supplier?.notes||'Master stockist tercatat.';
-   const html='<div class="box"><b>'+safeName+'</b><p>Kode: <b>'+String(supplier?.supplier_code||'-').replace(/[&<>"]/g,'')+'</b> · Status: <b>'+(supplier?.active?'Aktif':'Belum terdaftar/ nonaktif')+'</b></p><p>'+safeName+' — stok yang terhubung: <b>'+stock.length+' unit</b><br>Siap jual (status dikenali): <b>'+ready+'</b> · Terjual: <b>'+sold+'</b><br>Settlement belum berstatus lunas: <b>'+money(totalDue)+'</b></p><p><b>Catatan:</b> '+String(sourceNote).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</p><p>Ringkasan ini membaca data saja. Tidak membuat stok, transaksi, kewajiban, atau jurnal Accurate. Pastikan setiap barang masuk memiliki sumber stockist yang benar sebelum penjualan.</p></div>';
-   if(mb)mb.innerHTML=html;
-   if(p&&b)b.replaceChildren(...(mb?Array.from(mb.childNodes):[]));
- }catch(e){
-   if(mb)mb.innerHTML='<div class="box"><b>'+safeName+'</b><p>Ringkasan belum dapat dimuat: '+String(e?.message||e).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</p><p>Data tidak diubah. Periksa koneksi dan izin database.</p></div>';
-   if(p&&b)b.replaceChildren(...(mb?Array.from(mb.childNodes):[]));
- }
+  if(!window.sb)throw new Error('Koneksi database belum siap. Login ulang bila diperlukan.');
+  const [sr,ur,pr]=await Promise.all([
+   window.sb.from('suppliers').select('supplier_code,name,active,notes').ilike('name',name),
+   window.sb.from('stock_units').select('id,product_id,outlet,imei_1,grade,condition,battery_health,cost,asking_price,sold_price,status,received_at,source_type,partner_name,supplier,accurate_item_no').or('partner_name.ilike.'+name+',supplier.ilike.'+name).order('created_at',{ascending:false}).limit(200),
+   window.sb.from('partner_settlements').select('amount,status,settlement_date,settlement_type,period_start,period_end').ilike('partner_name',name).order('created_at',{ascending:false}).limit(100)
+  ]);
+  if(sr.error)throw sr.error;if(ur.error)throw ur.error;if(pr.error)throw pr.error;
+  const sup=(sr.data||[]).find(x=>String(x.name).toLowerCase()===name.toLowerCase());
+  const units=ur.data||[],settles=pr.data||[];
+  const ready=units.filter(x=>String(x.status||'').toUpperCase()==='READY');
+  const sold=units.filter(x=>String(x.status||'').toUpperCase()==='SOLD');
+  const due=settles.filter(x=>!['PAID','SETTLED','COMPLETED','LUNAS'].includes(String(x.status||'').toUpperCase())).reduce((n,x)=>n+Number(x.amount||0),0);
+  const rows=units.map(x=>'<tr><td>'+safe(x.imei_1||x.accurate_item_no||'-')+'</td><td>'+safe(x.outlet||'-')+'</td><td>'+safe(x.status||'-')+'</td><td>'+money(x.cost)+'</td></tr>').join('');
+  const checklist='<div class="box"><b>Persiapan sebelum transaksi diaktifkan</b><ul><li>Master stockist: '+(sup?.active?'Aktif':'Periksa status')+'</li><li>Barang masuk & persetujuan: belum dikonfigurasi khusus stockist ini</li><li>Settlement modal/profit: belum dikonfigurasi khusus stockist ini</li><li>Pemetaan jurnal Accurate: wajib diuji sebelum transaksi nyata</li></ul></div>';
+  b.innerHTML='<div class="box"><b>'+safe(name)+'</b><p>Kode: <b>'+safe(sup?.supplier_code||'-')+'</b> · Status: <b>'+(sup?.active?'Aktif':'Tidak aktif/tidak ditemukan')+'</b></p><div class="row" style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0"><div class="box" style="flex:1;min-width:110px"><div class="small">Total terhubung</div><b>'+units.length+' unit</b></div><div class="box" style="flex:1;min-width:110px"><div class="small">Siap jual</div><b>'+ready.length+' unit</b></div><div class="box" style="flex:1;min-width:110px"><div class="small">Terjual</div><b>'+sold.length+' unit</b></div><div class="box" style="flex:1;min-width:110px"><div class="small">Settlement belum lunas</div><b>'+money(due)+'</b></div></div><button type="button" class="secondary" onclick="hmOpenStockistInfo(\''+safe(name)+'\')">↻ Refresh data</button></div><h3>📦 Stok '+safe(name)+'</h3><div class="box" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:8px">IMEI / Kode</th><th style="text-align:left;padding:8px">Outlet</th><th style="text-align:left;padding:8px">Status</th><th style="text-align:left;padding:8px">Modal</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" style="padding:12px">Belum ada unit yang ditautkan ke stockist ini. Tidak ada stok yang dibuat otomatis.</td></tr>')+'</tbody></table></div>'+checklist+'<div class="box"><b>Keamanan transaksi</b><p>Halaman ini menampilkan data aktual saja. Barang masuk, penjualan, pembayaran settlement, dan jurnal Accurate belum diaktifkan khusus untuk stockist ini. Jangan catat transaksi nyata melalui stockist ini sampai alur persetujuan dan pemetaan diuji.</p></div>';
+ }catch(e){console.error('[HM] Stockist detail:',e);renderError(e);}
 };
  window.hmMainMenuItems=cards;
  const menuGroups=[

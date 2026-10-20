@@ -639,13 +639,15 @@ async function refreshCheckerOptions(){
 function toggleHunterField(){
  const source=$('stsource')?.value||'MANAGEMENT';
  const box=$('hunterBox'),checkerBox=$('checkerBox');
+ // HUNTER source can be attributed to either a Hunter or a Checker; CHECKER source is Checker-only.
  if(box){box.classList.toggle('hidden',source!=='HUNTER');box.style.display=source==='HUNTER'?'block':'none';}
  if(checkerBox){
-  checkerBox.classList.toggle('hidden',source!=='CHECKER');
-  checkerBox.style.display=source==='CHECKER'?'block':'none';
-  checkerBox.style.visibility=source==='CHECKER'?'visible':'hidden';
+  const showChecker=source==='CHECKER'||source==='HUNTER';
+  checkerBox.classList.toggle('hidden',!showChecker);checkerBox.style.display=showChecker?'block':'none';
+  checkerBox.style.visibility=showChecker?'visible':'hidden';
+  const label=checkerBox.querySelector('label');if(label)label.textContent=source==='HUNTER'?'Pilih Checker (opsional)':'Pilih Checker';
  }
- if(source==='CHECKER')refreshCheckerOptions();
+ if(source==='HUNTER'||source==='CHECKER')refreshCheckerOptions();
 }
 function togglePartnerFields(){const box=$('partnerBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='MAJESTY_CELL');}
 function inventoryReceiveOutlet(){

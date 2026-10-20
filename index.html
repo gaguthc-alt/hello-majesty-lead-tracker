@@ -3126,7 +3126,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
   const historyRows=settles.map(x=>{
    const its=items.filter(it=>String(it.settlement_id)===String(x.id));
    const productSummary=its.map(it=>{const u=units.find(z=>String(z.id)===String(it.stock_unit_id));return u?(u.imei_1||productName(u)):'Unit';}).join(', ');
-   return '<tr><td>'+safe(x.partner_name)+'</td><td>'+safe(x.outlet||'—')+'</td><td>'+safe(x.settlement_date||'—')+'</td><td>'+money(x.amount)+'</td><td>'+safe(x.status)+'</td><td>'+safe(productSummary||x.note||'—')+'</td></tr>';
+   return '<tr><td>'+safe(x.partner_name)+'</td><td>'+safe(x.outlet||'—')+'</td><td>'+safe(x.settlement_date||'—')+'</td><td>'+money(x.amount)+'</td><td>'+safe(x.status)+'</td><td>'+safe(productSummary||x.note||'—')+'</td><td>'+(String(x.status).toUpperCase()==='DRAFT'?'<button type="button" class="secondary" data-settle-paid="'+safe(x.id)+'">Konfirmasi dibayar</button>':'—')+'</td></tr>';
   }).join('');
   const style='<style>.hmSettleTable{width:100%;min-width:760px;border-collapse:collapse}.hmSettleTable th,.hmSettleTable td{padding:9px;border-bottom:1px solid #eaecf0;text-align:left}.hmSettleForm{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.hmSettleForm label{display:flex;flex-direction:column;gap:5px;font-weight:600}.hmSettleForm input,.hmSettleForm select,.hmSettleForm textarea{padding:10px;border:1px solid #d0d5dd;border-radius:8px;min-width:0}.hmSettleCheck{width:18px;height:18px;accent-color:#175cd3}</style>';
   b.innerHTML=style+
@@ -3138,7 +3138,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    '<label>Catatan<textarea id="hmSettleNote" rows="2" placeholder="Referensi pembayaran atau catatan"></textarea></label>'+
    '</div><div style="overflow:auto;margin-top:12px"><table class="hmSettleTable"><thead><tr><th>Pilih</th><th>Produk / IMEI</th><th>Stockist</th><th>Outlet</th><th>Tanggal SOLD</th><th>Modal settlement</th></tr></thead><tbody>'+(unitRows||'<tr><td colspan="6">Tidak ada unit SOLD yang tersedia untuk settlement baru.</td></tr>')+'</tbody></table></div>'+
    '<div class="box" style="margin-top:12px"><b id="hmSettleSelectedCount">0 unit dipilih</b><h3 id="hmSettleSelectedTotal">'+money(0)+'</h3><p class="small">Pilih unit sesuai pembayaran yang akan dilakukan. Settlement sebagian dilakukan dengan memilih sebagian unit; unit lain tetap tersedia untuk settlement berikutnya.</p><button type="button" id="hmSettleSaveDraft" '+(available.length?'':'disabled')+'>Simpan pilihan sebagai DRAFT</button></div></div>'+
-   '<div class="box"><h3>2. Riwayat settlement</h3><div style="overflow:auto"><table class="hmSettleTable"><thead><tr><th>Stockist</th><th>Outlet</th><th>Tanggal</th><th>Nominal</th><th>Status</th><th>Produk / IMEI</th></tr></thead><tbody>'+(historyRows||'<tr><td colspan="6">Belum ada riwayat settlement.</td></tr>')+'</tbody></table></div></div>';
+   '<div class="box"><h3>2. Riwayat settlement</h3><div style="overflow:auto"><table class="hmSettleTable"><thead><tr><th>Stockist</th><th>Outlet</th><th>Tanggal</th><th>Nominal</th><th>Status</th><th>Produk / IMEI</th><th>Aksi</th></tr></thead><tbody>'+(historyRows||'<tr><td colspan="7">Belum ada riwayat settlement.</td></tr>')+'</tbody></table></div></div>';
   const partnerSel=document.getElementById('hmSettlePartner');
   const updateSelection=()=>{
    let count=0,total=0;
@@ -3183,6 +3183,17 @@ window.hmOpenPartnerSettlementManagement=async function(){
    alert('Draft settlement tersimpan beserta unit terpilih. Belum dianggap pembayaran dan belum membuat jurnal Accurate.');
    window.hmOpenPartnerSettlementManagement();
   });
+  b.querySelectorAll('[data-settle-paid]').forEach(btn=>btn.addEventListener('click',async()=>{
+   const id=btn.getAttribute('data-settle-paid');
+   const source=prompt('Masukkan sumber pembayaran dan referensi bukti transfer. Konfirmasi hanya jika pembayaran benar-benar sudah dilakukan:');
+   if(source===null)return;if(!source.trim()){alert('Sumber pembayaran/referensi wajib diisi.');return;}
+   if(!confirm('Pastikan pembayaran ini sudah benar-benar dilakukan. Tandai settlement sebagai PAID?'))return;
+   const old=settles.find(x=>String(x.id)===String(id));if(!old||String(old.status).toUpperCase()!=='DRAFT'){alert('Draft tidak ditemukan atau status sudah berubah. Refresh data.');return;}
+   const {error}=await window.sb.from('partner_settlements').update({status:'PAID',note:[old.note,'Pembayaran terverifikasi: '+source.trim()].filter(Boolean).join(' | ')}).eq('id',id).eq('status','DRAFT');
+   if(error){alert('Gagal mengonfirmasi pembayaran: '+error.message);return;}
+   alert('Pembayaran ditandai PAID. Simpan bukti transfer sesuai prosedur Finance. Tidak ada jurnal Accurate yang dibuat otomatis.');
+   window.hmOpenPartnerSettlementManagement();
+  }));
  }catch(e){console.error('[HM] Settlement Management:',e);b.innerHTML='<div class="box"><b>Settlement gagal dimuat</b><p>'+safe(e?.message||e)+'</p><button type="button" class="secondary" onclick="hmOpenPartnerSettlementManagement()">Coba lagi</button></div>';}
 };
 

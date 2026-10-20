@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261020-handover-flow-3"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261020-handover-guard-4"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -4563,7 +4563,7 @@ function card(l){
  (canClaimCS?'<button class="success" onclick="claimCS(\''+esc(l.lead_id)+'\')">Claim CS</button>':'')+
  (q?'<button type="button" class="success" onclick="window.qualify(\''+esc(l.lead_id)+'\')">✓ Qualification</button>':'')+
  (sv?'<button class="success" onclick="handoverService(\''+esc(l.lead_id)+'\')">🔧 Handover ke Teknisi</button>':'')+
- (sh?'<button class="success" onclick="handoverSales(\''+esc(l.lead_id)+'\')">🤝 Handover ke Sales</button><button class="secondary" onclick="share(\''+esc(l.lead_id)+'\')">📢 Share ke Group WA</button>':'')+
+ (sh?'<button class="success" onclick="handoverSales(\''+esc(l.lead_id)+'\')">🤝 Handover & Kirim ke WA</button>':'')+
  (sr?'<button type="button" class="success" onclick="window.salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button><button class="secondary" onclick="shareSalesClaim(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+
  (canServiceClose?'<button type="button" class="success" onclick="openServiceClosing(\''+esc(l.lead_id)+'\')">✅ Closing Service</button>':'')+
  (canAskPIC?'<button class="secondary" type="button" onclick="sharePICQuestion(\''+esc(l.lead_id)+'\')">📲 Tanyakan PIC via WA Group</button>':'')+

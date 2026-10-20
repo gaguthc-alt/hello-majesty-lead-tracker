@@ -2511,6 +2511,7 @@ function hmRunMainMenuAction(action){
   case "hmOpenStockistInfo('Majesty Gadget')": return window.hmOpenStockistInfo('Majesty Gadget');
   case "hmOpenStockistInfo('Majesty Store')": return window.hmOpenStockistInfo('Majesty Store');
   case 'hmOpenStockistReceiving()': return window.hmOpenStockistReceiving();
+  case 'hmOpenPartnerSettlementManagement()': return window.hmOpenPartnerSettlementManagement();
   case 'window.openCellFinanceReport()': return window.openCellFinanceReport();
   case 'window.openPartnerSettlement()': return window.openPartnerSettlement();
   case 'window.openFinanceInventoryApprovals()': return (typeof window.openInventoryApprovals==='function'?window.openInventoryApprovals():window.openFinanceInventoryApprovals());
@@ -3097,6 +3098,63 @@ window.hmOpenStockistCooperationGuide=function(){return window.hmOpenStockistWor
 window.hmOpenStockistInfo=function(partner){return window.hmOpenStockistWorkspace('profile',partner);};
 window.hmOpenStockistReceiving=function(){return window.hmOpenStockistWorkspace('receiving');};
 
+window.hmOpenPartnerSettlementManagement=async function(){
+ const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
+ const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
+ const partners=['Majesty Cell','Majesty Gadget','Majesty Store'];
+ if(!window.sb||!p||!b||!t){alert('Panel atau koneksi database belum siap. Refresh lalu coba lagi.');return;}
+ t.textContent='🤝 Pembayaran Settlement Stockist';p.classList.remove('hidden');
+ b.innerHTML='<div class="box">Memuat kewajiban dan riwayat settlement…</div>';
+ try{
+  const [uRes,sRes]=await Promise.all([
+   window.sb.from('stock_units').select('id,partner_name,supplier,outlet,imei_1,cost,status,sold_at').or('partner_name.in.('+partners.join(',')+'),supplier.in.('+partners.join(',')+')').eq('status','SOLD').limit(1000),
+   window.sb.from('partner_settlements').select('id,partner_name,outlet,settlement_type,period_start,period_end,settlement_date,amount,note,status,created_at').in('partner_name',partners).order('created_at',{ascending:false}).limit(300)
+  ]);
+  if(uRes.error)throw uRes.error;if(sRes.error)throw sRes.error;
+  const units=uRes.data||[],settles=sRes.data||[];
+  const partnerOptions=partners.map(x=>'<option>'+x+'</option>').join('');
+  const rows=settles.map(x=>'<tr><td>'+safe(x.partner_name)+'</td><td>'+safe(x.outlet||'—')+'</td><td>'+safe(x.settlement_date||'—')+'</td><td>'+money(x.amount)+'</td><td>'+safe(x.status)+'</td><td>'+safe(x.note||'—')+'</td><td>'+(String(x.status).toUpperCase()==='DRAFT'?'<button type="button" class="secondary" data-settle-paid="'+safe(x.id)+'">Konfirmasi sudah dibayar</button>':'—')+'</td></tr>').join('');
+  const style='<style>.hmSettleTable{width:100%;min-width:800px;border-collapse:collapse}.hmSettleTable th,.hmSettleTable td{padding:9px;border-bottom:1px solid #eaecf0;text-align:left}.hmSettleForm{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.hmSettleForm label{display:flex;flex-direction:column;gap:5px;font-weight:600}.hmSettleForm input,.hmSettleForm select,.hmSettleForm textarea{padding:10px;border:1px solid #d0d5dd;border-radius:8px;min-width:0}</style>';
+  b.innerHTML=style+
+   '<div class="box"><b>Aturan Management</b><p>Settlement dapat dibayar sebagian atau penuh sesuai keputusan Management. Draft bukan pembayaran. Status PAID hanya dicatat setelah transfer/pembayaran benar-benar dilakukan dan diverifikasi. Form ini tidak mengirim jurnal Accurate.</p></div>'+
+   '<div class="box"><h3>1. Buat rencana settlement</h3><form id="hmSettleCreateForm"><div class="hmSettleForm">'+
+   '<label>Stockist<select id="hmSettlePartner" required>'+partnerOptions+'</select></label>'+
+   '<label>Outlet terkait<input id="hmSettleOutlet" placeholder="Contoh: Majesty Plaza / Refill" required></label>'+
+   '<label>Nominal yang direncanakan (Rp)<input id="hmSettleAmount" type="number" min="1" step="1" required></label>'+
+   '<label>Rencana tanggal pembayaran<input id="hmSettleDate" type="date" required value="'+new Date().toISOString().slice(0,10)+'"></label>'+
+   '<label>Periode awal (opsional)<input id="hmSettleStart" type="date"></label>'+
+   '<label>Periode akhir (opsional)<input id="hmSettleEnd" type="date"></label>'+
+   '<label style="grid-column:1/-1">Catatan / referensi kewajiban<textarea id="hmSettleNote" rows="2" placeholder="Contoh: pembayaran sebagian kewajiban unit SOLD"></textarea></label>'+
+   '</div><button type="submit" style="margin-top:12px">Simpan sebagai DRAFT</button></form></div>'+
+   '<div class="box"><h3>2. Riwayat settlement</h3><p class="small">Draft yang belum dibayar dapat dikonfirmasi setelah pembayaran benar-benar terjadi. Konfirmasi menyimpan referensi sumber pembayaran pada catatan. Jangan konfirmasi pembayaran yang belum dilakukan.</p><div style="overflow:auto"><table class="hmSettleTable"><thead><tr><th>Stockist</th><th>Outlet</th><th>Tanggal</th><th>Nominal</th><th>Status</th><th>Catatan</th><th>Aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7">Belum ada riwayat settlement.</td></tr>')+'</tbody></table></div></div>'+
+   '<div class="box"><h3>3. Referensi modal unit SOLD (belum merupakan saldo utang final)</h3><div class="hmSettleForm">'+partners.map(n=>{const us=units.filter(x=>(x.partner_name||x.supplier||'').toLowerCase()===n.toLowerCase());return '<div><b>'+n+'</b><p>'+us.length+' unit SOLD</p><b>'+money(us.reduce((a,x)=>a+Number(x.cost||0),0))+'</b></div>';}).join('')+'</div><p class="small">Perhitungan ini belum mengurangi pembayaran lama dan belum menerapkan penyesuaian perjanjian/bagi hasil. Gunakan sebagai referensi, bukan saldo final.</p></div>';
+  document.getElementById('hmSettleCreateForm')?.addEventListener('submit',async e=>{
+   e.preventDefault();
+   const partner=document.getElementById('hmSettlePartner').value,outlet=document.getElementById('hmSettleOutlet').value.trim(),amount=Number(document.getElementById('hmSettleAmount').value),date=document.getElementById('hmSettleDate').value,start=document.getElementById('hmSettleStart').value||null,end=document.getElementById('hmSettleEnd').value||null,note=document.getElementById('hmSettleNote').value.trim();
+   if(!Number.isFinite(amount)||amount<=0){alert('Nominal harus lebih besar dari nol.');return;}
+   if(start&&end&&start>end){alert('Periode awal tidak boleh melewati periode akhir.');return;}
+   const {data:userData}=await window.sb.auth.getUser();
+   const {error}=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet,settlement_type:'CAPITAL_PAYMENT',period_start:start,period_end:end,settlement_date:date,amount,note:note||'Rencana settlement dibuat Management',status:'DRAFT',created_by:userData?.user?.id});
+   if(error){alert('Gagal menyimpan draft: '+error.message);return;}
+   alert('Draft settlement tersimpan. Belum dianggap pembayaran dan belum membuat jurnal Accurate.');
+   window.hmOpenPartnerSettlementManagement();
+  });
+  b.querySelectorAll('[data-settle-paid]').forEach(btn=>btn.addEventListener('click',async()=>{
+   const id=btn.getAttribute('data-settle-paid');
+   const source=prompt('Masukkan sumber pembayaran dan referensi bukti (contoh: Bank BCA • ref transfer). Konfirmasi hanya jika pembayaran benar-benar sudah dilakukan:');
+   if(source===null)return;if(!source.trim()){alert('Sumber pembayaran/referensi wajib diisi.');return;}
+   if(!confirm('Pastikan pembayaran ini sudah benar-benar dilakukan. Tandai settlement sebagai PAID?'))return;
+   const old=settles.find(x=>String(x.id)===String(id));if(!old||String(old.status).toUpperCase()!=='DRAFT'){alert('Draft tidak ditemukan atau status sudah berubah. Refresh data.');return;}
+   const {error}=await window.sb.from('partner_settlements').update({status:'PAID',note:[old.note, 'Pembayaran terverifikasi: '+source.trim()].filter(Boolean).join(' | ')}).eq('id',id).eq('status','DRAFT');
+   if(error){alert('Gagal mengonfirmasi pembayaran: '+error.message);return;}
+   alert('Status pembayaran diperbarui. Pastikan bukti transfer disimpan sesuai prosedur Finance.');
+   window.hmOpenPartnerSettlementManagement();
+  }));
+ }catch(e){console.error('[HM] Settlement Management:',e);b.innerHTML='<div class="box"><b>Settlement gagal dimuat</b><p>'+safe(e?.message||e)+'</p><button type="button" class="secondary" onclick="hmOpenPartnerSettlementManagement()">Coba lagi</button></div>';}
+};
+
+
 window.hmFilterStockistRows=function(){const loc=document.getElementById('hmStockistLocation')?.value||'ALL',st=document.getElementById('hmStockistStatus')?.value||'ALL',cat=document.getElementById('hmStockistCategory')?.value||'ALL',per=document.getElementById('hmStockistPeriod')?.value||'MONTH',now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),1),prev=new Date(now.getFullYear(),now.getMonth()-1,1),end=new Date(now.getFullYear(),now.getMonth()+1,1),rows=[...document.querySelectorAll('[data-stockist-row]')];let shown=0;rows.forEach(r=>{const date=r.getAttribute('data-date'),d=date?new Date(date):null,okDate=per==='ALL'||(d&&!isNaN(d)&&(per==='MONTH'?d>=start&&d<end:d>=prev&&d<start)),ok=(loc==='ALL'||r.getAttribute('data-location')===loc)&&(st==='ALL'||r.getAttribute('data-status')===st)&&(cat==='ALL'||r.getAttribute('data-category')===cat)&&okDate;r.style.display=ok?'':'none';if(ok)shown++;});const out=document.getElementById('hmStockistFilterCount');if(out)out.textContent='Menampilkan '+shown+' dari '+rows.length+' unit. Unit tanpa tanggal aktivitas tidak masuk filter periode sampai datanya dilengkapi.';};
 window.hmOpenStockistInfo=async function(name){
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
@@ -3252,6 +3310,7 @@ window.hmOpenStockistInfo=async function(name){
      ['🏬','Profil Majesty Cell','Ringkasan stok, penjualan, kewajiban, dan settlement Cell',"hmOpenStockistInfo('Majesty Cell')"],
      ['🏬','Profil Majesty Gadget','Ringkasan stok, penjualan, kewajiban, dan settlement Gadget',"hmOpenStockistInfo('Majesty Gadget')"],
      ['🏬','Profil Majesty Store','Ringkasan stok, penjualan, kewajiban, dan settlement Store',"hmOpenStockistInfo('Majesty Store')"],
+     ['💸','Pembayaran Settlement','Rencana pembayaran, konfirmasi pembayaran, dan riwayat per stockist','hmOpenPartnerSettlementManagement()'],
      ['📦','Penerimaan & Persetujuan','Antrean pemeriksaan stok seluruh stockist','hmOpenStockistReceiving()']
    ]],
    ['⚡','TOOLS',[

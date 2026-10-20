@@ -153,6 +153,24 @@
       html+='</div>'; body.innerHTML=html;
     }catch(e){body.innerHTML='<div class="lead"><b>Gagal memuat detail</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div></div>';}
   }
+  async function renderTechnician(mode){
+    const body=document.getElementById('perfBody'); if(!body)return;
+    body.innerHTML='<div class="small">⏳ Memuat laporan teknisi...</div>';
+    try{
+      const bounds=mode==='today'?localDayBounds():{start:monthStart(mode).toISOString(),end:monthEnd(mode).toISOString()};
+      const x=await sb.rpc('technician_performance_summary',{p_start:bounds.start,p_end:bounds.end});
+      if(x.error)throw x.error;
+      let rows=x.data||[];
+      const canViewAll=!!(profile?.is_management || window.isDeveloper || String(profile?.role||'').toUpperCase().includes('DEVELOPER'));
+      const ownOutlet=String(profile?.outlet||'').trim().toLowerCase();
+      if(!canViewAll && ownOutlet)rows=rows.filter(r=>String(r.outlet_name||'').trim().toLowerCase()===ownOutlet);
+      let html='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><b>🛠️ PERFORMA TEKNISI</b><span class="small">'+escP(mode==='today'?'Hari ini':monthLabel(mode))+'</span></div><div class="small" style="margin-top:5px">Tiket servis dilaporkan terpisah dari KPI Sales.</div></div><div class="perf-list">';
+      rows.forEach(r=>{html+='<div class="lead perf-person-card" style="margin-top:10px"><div class="row" style="justify-content:space-between;align-items:center"><b style="font-size:17px">🧰 '+escP(r.technician_name||'-')+'</b><span class="badge">'+escP(r.outlet_name||'-')+'</span></div><div class="perf-grid" style="margin-top:10px"><div><span>🧾 Tiket Ditugaskan</span><b>'+fmt(r.tickets_assigned)+'</b></div><div><span>✅ Selesai</span><b>'+fmt(r.tickets_completed)+'</b></div><div><span>🔒 Closing</span><b>'+fmt(r.tickets_closing)+'</b></div><div><span>⏳ Menunggu PIC</span><b>'+fmt(r.tickets_waiting)+'</b></div><div><span>🔧 Dalam Proses</span><b>'+fmt(r.tickets_in_progress)+'</b></div></div></div>';});
+      if(!rows.length)html+='<div class="lead">Belum ada tiket servis pada periode ini.</div>';
+      html+='</div><div style="margin-top:10px"><button class="secondary" type="button" onclick="window.perfShow(window.perfMyMode||\'month\')">← Kembali ke Performa Sales/Lead</button></div>';
+      body.innerHTML=html;
+    }catch(e){console.error('[HM] Technician performance',e);body.innerHTML='<div class="lead"><b>Gagal memuat laporan teknisi</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(e?.message||e)+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfTechnician(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';}
+  }
   let lastPerformanceRows=[];
   async function render(mode){
     const body=document.getElementById('perfBody'); if(!body)return;
@@ -196,11 +214,14 @@
       '<div class="row" style="flex-wrap:wrap">'+
         '<button class="secondary" id="perfMonth">📊 Bulan Ini</button>'+
         '<button class="secondary" id="perfLastMonth">↩️ Bulan Kemarin</button>'+
+        '<button class="secondary" id="perfTechnician" type="button">🛠️ Performa Teknisi</button>'+
         '<button class="success" id="perfShare" type="button" onclick="window.perfShare()">📲 Share ke WhatsApp</button>'+
       '</div>' +
       '<div id="perfBody" style="margin-top:10px"></div>';
     document.getElementById('perfMonth').onclick=function(){window.perfMyMode='month';render('month');};
     document.getElementById('perfLastMonth').onclick=function(){window.perfMyMode='last_month';render('last_month');};
+    document.getElementById('perfTechnician').onclick=function(){renderTechnician(window.perfMyMode||'month');};
+    window.perfTechnician=renderTechnician;
     window.perfMyMode='month';
     await render('month');
   };

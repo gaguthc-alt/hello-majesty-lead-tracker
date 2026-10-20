@@ -205,104 +205,44 @@
     await render('month');
   };
   window.perfShare=async function(){
-    const mode='month';
     const [monthRows,todayRows]=await Promise.all([getFunnel('month'),getFunnel('today')]);
-    const normalizeRows=source=>source.map(r=>({
-      name:String(r.employee_name||'-'),
-      outlet:String(r.outlet||r.outlet_name||'-'),
-      claim:Number(r.claim_cs||0),
-      handover:Number(r.handover||0),
-      claimSales:Number(r.claim_sales||0),
-      cs:Number(r.cs_closing||0),
-      sales:Number(r.sales_closing||0),
-      hunter:Number(r.hunter_closing||0)
+    const normalize=source=>source.map(r=>({
+      name:String(r.employee_name||'-'),outlet:String(r.outlet||r.outlet_name||'-'),
+      claim:Number(r.claim_cs||0),handover:Number(r.handover||0),claimSales:Number(r.claim_sales||0),
+      cs:Number(r.cs_closing||0),sales:Number(r.sales_closing||0),hunter:Number(r.hunter_closing||0)
     }));
-    const NL=String.fromCharCode(10);
-    const rows=normalizeRows(monthRows), todayNormalized=normalizeRows(todayRows);
-    const totals=rows.reduce((a,r)=>{
-      a.claim+=r.claim; a.handover+=r.handover; a.claimSales+=r.claimSales; a.cs+=r.cs; a.sales+=r.sales; a.hunter+=r.hunter; return a;
-    },{claim:0,handover:0,cs:0,sales:0,hunter:0});
-
-    const outletNames=[...new Set(rows.map(r=>r.outlet).filter(x=>x&&x!=='-'))];
-    const sections=outletNames.map(outlet=>{
-      const rs=rows.filter(r=>r.outlet===outlet);
-      return {outlet,rows:rs,totals:rs.reduce((a,r)=>{
-        a.claim+=r.claim; a.handover+=r.handover; a.cs+=r.cs; a.sales+=r.sales; a.hunter+=r.hunter; return a;
-      },{claim:0,handover:0,cs:0,sales:0,hunter:0})};
-    }).filter(s=>s.totals.claim||s.totals.handover||s.totals.cs||s.totals.sales||s.totals.hunter);
-
-    let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*'+NL;
-    message+='📅 Tanggal: *'+new Date().toLocaleDateString('id-ID')+'*'+NL;
-    message+='📊 Akumulasi: *'+monthLabel(mode)+'*'+NL+NL;
-    message+='🗓️ *PERFORMA HARI INI*'+NL;
-    const todayOutlets=[...new Set(todayNormalized.map(r=>r.outlet).filter(x=>x&&x!=='-'))];
-    if(todayOutlets.length){
-      todayOutlets.forEach(outlet=>{
-        const rs=todayNormalized.filter(r=>r.outlet===outlet);
-        message+='🏪 *'+outlet.toUpperCase()+'*'+NL;
-        rs.forEach(r=>message+='• '+r.name+': Claim CS '+fmt(r.claim)+', Handover '+fmt(r.handover)+', Claim Sales '+fmt(r.claimSales)+', CS Closing '+fmt(r.cs)+', Sales Closing '+fmt(r.sales)+', Hunter '+fmt(r.hunter)+NL);
-      });
-      message+=NL;
-    }else message+='Belum ada aktivitas hari ini.'+NL+NL;
-    message+='📅 *AKUMULASI BULAN '+monthLabel(mode).toUpperCase()+'*'+NL+NL;
-
-    if(sections.length){
-      sections.forEach((section,index)=>{
-        message+='🏪 *'+section.outlet.toUpperCase()+'*'+NL;
-        message+='📌 *TOTAL PERFORMA*'+NL;
-        message+='📲 Claim CS: *'+fmt(section.totals.claim)+'*'+NL;
-        message+='🤝 Handover CS → Sales: *'+fmt(section.totals.handover)+'*'+NL;
-        message+='📥 Claim Sales: *'+fmt(section.totals.claimSales)+'*'+NL;
-        message+='🎯 CS Closing: *'+fmt(section.totals.cs)+'*'+NL;
-        message+='🏆 Sales Closing: *'+fmt(section.totals.sales)+'*'+NL;
-        message+='🏹 Hunter Closing (Jual HP): *'+fmt(section.totals.hunter)+'*'+NL+NL;
-
-        const leadRows=section.rows.filter(r=>r.claim||r.handover||r.claimSales||r.cs).sort((a,b)=>
-          (b.claim+b.handover+b.claimSales+b.cs)-(a.claim+a.handover+a.claimSales+a.cs)
-        );
-        const salesRows=section.rows.filter(r=>r.sales).sort((a,b)=>b.sales-a.sales);
-        const hunterRows=section.rows.filter(r=>r.hunter).sort((a,b)=>b.hunter-a.hunter);
-
-        if(leadRows.length){
-          message+='👥 *PERFORMA LEAD*'+NL;
-          leadRows.forEach(r=>{
-            message+=NL+'👤 *'+r.name+'*'+NL;
-            message+='📲 Claim CS: '+fmt(r.claim)+' | 🤝 Handover: '+fmt(r.handover)+' | 📥 Claim Sales: '+fmt(r.claimSales);
-            if(r.cs)message+=' | 🎯 CS Closing: '+fmt(r.cs);
-            message+=NL;
-          });
-        }
-
-        if(salesRows.length){
-          message+=NL+'🏆 *SALES CLOSING*'+NL;
-          salesRows.forEach(r=>{
-            message+='👤 *'+r.name+'* — '+fmt(r.sales)+' Closing'+NL;
-          });
-        }
-
-        if(hunterRows.length){message+=NL+'🏹 *HUNTER CLOSING — JUAL HP*'+NL;hunterRows.forEach(r=>{message+='👤 *'+r.name+'* — '+fmt(r.hunter)+' Closing Jual HP'+NL;});}
-
-        if(index<sections.length-1)message+=NL+'━━━━━━━━━━━━━━'+NL+NL;
-        else message+=NL;
-      });
-    }else{
-      message+='Belum ada aktivitas pada periode ini.'+NL+NL;
-    }
-
-    message+='📊 *TOTAL SEMUA OUTLET*'+NL;
-    message+='📲 Claim CS: *'+fmt(totals.claim)+'*'+NL;
-    message+='🤝 Handover CS → Sales: *'+fmt(totals.handover)+'*'+NL;
-    message+='📥 Claim Sales: *'+fmt(totals.claimSales)+'*'+NL;
-    message+='🎯 CS Closing: *'+fmt(totals.cs)+'*'+NL;
-    message+='🏆 Sales Closing: *'+fmt(totals.sales)+'*'+NL;
-    message+='🏹 Hunter Closing (Jual HP): *'+fmt(totals.hunter)+'*'+NL+NL;
-    message+='━━━━━━━━━━━━━━'+NL;
-    message+='*Hello Majesty*'+NL;
-    message+='*Management System*'+NL;
-    message+='*Built on Trust*';
-
-    const url='https://wa.me/?text='+encodeURIComponent(message);
-    window.open(url,'_blank','noopener');
+    const month=normalize(monthRows),today=normalize(todayRows),NL=String.fromCharCode(10);
+    const blank=()=>({claim:0,handover:0,claimSales:0,cs:0,sales:0,hunter:0});
+    const sum=rs=>rs.reduce((a,r)=>{a.claim+=r.claim;a.handover+=r.handover;a.claimSales+=r.claimSales;a.cs+=r.cs;a.sales+=r.sales;a.hunter+=r.hunter;return a;},blank());
+    const active=r=>r.claim||r.handover||r.claimSales||r.cs||r.sales||r.hunter;
+    const outletNames=[...new Set([...today,...month].map(r=>r.outlet).filter(x=>x&&x!=='-'))];
+    const metrics=t=>'📲 Claim CS: '+fmt(t.claim)+' | 🤝 Handover: '+fmt(t.handover)+NL+
+      '📥 Claim Sales: '+fmt(t.claimSales)+' | 🎯 CS Closing: '+fmt(t.cs)+NL+
+      '🏆 Sales Closing: '+fmt(t.sales)+' | 🏹 Hunter: '+fmt(t.hunter)+NL;
+    const personLines=rs=>{
+      const activeRows=rs.filter(active).sort((a,b)=>(b.claim+b.handover+b.claimSales+b.cs+b.sales+b.hunter)-(a.claim+a.handover+a.claimSales+a.cs+a.sales+a.hunter));
+      if(!activeRows.length)return '  Belum ada aktivitas'+NL;
+      return activeRows.map(r=>'• *'+r.name+'*: CS '+fmt(r.claim)+' | HO '+fmt(r.handover)+' | Claim Sales '+fmt(r.claimSales)+' | CS Close '+fmt(r.cs)+' | Sales Close '+fmt(r.sales)+' | Hunter '+fmt(r.hunter)).join(NL)+NL;
+    };
+    let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*'+NL+
+      '📅 Tanggal: *'+new Date().toLocaleDateString('id-ID')+'*'+NL+
+      '📈 Akumulasi: *'+monthLabel('month')+'*'+NL+
+      '━━━━━━━━━━━━━━'+NL+'🗓️ *1. PERFORMA HARI INI*'+NL+NL;
+    outletNames.forEach(outlet=>{
+      const rs=today.filter(r=>r.outlet===outlet);
+      if(!rs.some(active))return;
+      message+='🏪 *'+outlet.toUpperCase()+'*'+NL+metrics(sum(rs))+'👥 *RINCIAN PER ORANG*'+NL+personLines(rs)+NL;
+    });
+    if(!today.some(active))message+='Belum ada aktivitas hari ini.'+NL+NL;
+    message+='━━━━━━━━━━━━━━'+NL+'📅 *2. AKUMULASI BULAN BERJALAN*'+NL+NL;
+    outletNames.forEach(outlet=>{
+      const rs=month.filter(r=>r.outlet===outlet);
+      if(!rs.some(active))return;
+      message+='🏪 *'+outlet.toUpperCase()+'*'+NL+metrics(sum(rs))+'👥 *RINCIAN PER ORANG*'+NL+personLines(rs)+NL;
+    });
+    message+='📊 *TOTAL SEMUA OUTLET — BULAN INI*'+NL+metrics(sum(month))+NL+
+      '━━━━━━━━━━━━━━'+NL+'*Hello Majesty*'+NL+'*Management System*'+NL+'*Built on Trust*';
+    window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank','noopener');
   };
   window.perfShow=render;
   window.perfPerson=showPerson;

@@ -2276,7 +2276,7 @@ function hmLeadTrackerApplyFilter(){
  const outlet=root.querySelector('#hmLTOutlet')?.value||'ALL';
  const pic=root.querySelector('#hmLTPic')?.value||'ALL';
  const period=root.querySelector('#hmLTPeriod')?.value||'ALL';
- const sort=root.querySelector('#hmLTSort')?.value||'FOLLOWUP';
+ const sort=root.querySelector('#hmLTSort')?.value||'NEWEST';
  const base=(leads||[]).filter(viewerLead).filter(hmLeadVisibleByMonth);
  const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
  const filtered=base.filter(l=>{
@@ -2330,12 +2330,12 @@ function hmOpenLeadTracker(){
  '<label class="small">Outlet<select id="hmLTOutlet" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px"><option value="ALL">Semua Outlet</option>'+outlets.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('')+'</select></label>'+
  '<label class="small">PIC CS / Sales<select id="hmLTPic" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px"><option value="ALL">Semua PIC</option>'+pics.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('')+'</select></label>'+
  '<label class="small">Tanggal follow-up<select id="hmLTPeriod" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px"><option value="ALL">Semua tanggal</option><option value="TODAY">Follow-up hari ini</option><option value="7D">7 hari terakhir</option><option value="OVERDUE">Terlambat</option></select></label>'+
- '<label class="small" style="grid-column:1/-1">Urutkan<select id="hmLTSort" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px"><option value="FOLLOWUP">Follow-up paling mendesak</option><option value="NEWEST">Lead terbaru</option><option value="OLDEST">Lead terlama</option></select></label></div>'+
+ '<label class="small" style="grid-column:1/-1">Urutkan<select id="hmLTSort" onchange="hmLeadTrackerApplyFilter()" style="width:100%;margin-top:4px;padding:10px;border-radius:10px"><option value="NEWEST">Lead terbaru</option><option value="FOLLOWUP">Follow-up paling mendesak</option><option value="OLDEST">Lead terlama</option></select></label></div>'+
  '<button type="button" class="secondary" style="margin-top:10px" onclick="hmLeadTrackerResetFilters()">Reset Filter</button></div>'+
  '<div class="row" style="justify-content:space-between;align-items:center;margin:8px 0"><b>Daftar Lead</b><span id="hmLTCount" class="small"></span></div><div id="hmLeadTrackerList"></div></div>';
  $('modal').classList.remove('hidden');hmLeadTrackerApplyFilter();
 }
-function hmLeadTrackerResetFilters(){const r=document.getElementById('hmLeadTrackerRoot');if(!r)return;['hmLTStatus','hmLTOutlet','hmLTPic','hmLTPeriod','hmLTSort'].forEach(id=>{const e=r.querySelector('#'+id);if(e)e.value=id==='hmLTSort'?'FOLLOWUP':'ALL';});hmLeadTrackerApplyFilter();}
+function hmLeadTrackerResetFilters(){const r=document.getElementById('hmLeadTrackerRoot');if(!r)return;['hmLTStatus','hmLTOutlet','hmLTPic','hmLTPeriod','hmLTSort'].forEach(id=>{const e=r.querySelector('#'+id);if(e)e.value=id==='hmLTSort'?'NEWEST':'ALL';});hmLeadTrackerApplyFilter();}
 
 function hmOpenLeadHandover(){
   const t=document.getElementById('mt'),b=document.getElementById('mb');

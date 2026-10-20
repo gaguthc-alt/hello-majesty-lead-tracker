@@ -2282,7 +2282,8 @@ function hmLeadTrackerApplyFilter(){
  const filtered=base.filter(l=>{
   if(status==='ACTIVE'&&!getActiveLeadBucket(l))return false;
   if(status==='RESULT'&&!['CLOSING','GAGAL'].includes(hmLeadTrackerBucket(l)))return false;
-  if(!['ALL','ACTIVE','RESULT'].includes(status)&&hmLeadTrackerBucket(l)!==status)return false;
+  if(status==='NOHANDOVER'&&(String(l.need_type||'').trim().toUpperCase()==='SERVICE'||!String(l.cs_claimed_by||'').trim()||l.sales_handover_at||String(l.sales_claimed_by||'').trim()||!['CS LOCK','HANDLE','HASIL','AVAILABLE','QUALIFIED','POTENSIAL'].includes(String(l.status_lead||'').trim().toUpperCase())))return false;
+  if(!['ALL','ACTIVE','RESULT','NOHANDOVER'].includes(status)&&hmLeadTrackerBucket(l)!==status)return false;
   if(outlet!=='ALL'&&String(l.outlet||'').trim()!==outlet)return false;
   const owner=String(l.sales_claimed_by||'').trim()||String(l.cs_claimed_by||'').trim()||String(l.cs_owner||'').trim();
   if(pic!=='ALL'&&owner!==pic)return false;
@@ -2314,7 +2315,7 @@ function hmLeadTrackerSetStatus(status){
 function hmOpenLeadTracker(){
  const t=document.getElementById('mt'),b=document.getElementById('mb');if(!t||!b)return;
  const rows=(leads||[]).filter(viewerLead).filter(hmLeadVisibleByMonth);
- const statuses=[['ALL','Semua'],['AVAILABLE','Available'],['CS LOCK','CS Lock'],['POTENSIAL','Potensial'],['QUALIFIED','Qualified'],['HANDLE','Handle Sales'],['CLOSING','Closing'],['GAGAL','Gagal'],['SERVICE','Service']];
+ const statuses=[['ALL','Semua'],['NOHANDOVER','Belum Handover CS → Sales'],['AVAILABLE','Available'],['CS LOCK','CS Lock'],['POTENSIAL','Potensial'],['QUALIFIED','Qualified'],['HANDLE','Handle Sales'],['CLOSING','Closing'],['GAGAL','Gagal'],['SERVICE','Service']];
  const outlets=[...new Set(rows.map(l=>String(l.outlet||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
  const pics=[...new Set(rows.map(l=>String(l.sales_claimed_by||'').trim()||String(l.cs_claimed_by||'').trim()||String(l.cs_owner||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
  const nStatus=k=>k==='ALL'?rows.length:rows.filter(l=>hmLeadTrackerBucket(l)===k).length;

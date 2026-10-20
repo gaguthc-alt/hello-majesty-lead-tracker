@@ -83,8 +83,13 @@
     '</div>';
   }
 
+  function localDayBounds(){
+    const now=new Date();
+    return {start:new Date(now.getFullYear(),now.getMonth(),now.getDate()).toISOString(),end:new Date(now.getFullYear(),now.getMonth(),now.getDate()+1).toISOString()};
+  }
   async function getFunnel(mode){
-    const start=monthStart(mode).toISOString(), end=monthEnd(mode).toISOString();
+    const bounds=mode==='today'?localDayBounds():{start:monthStart(mode).toISOString(),end:monthEnd(mode).toISOString()};
+    const start=bounds.start, end=bounds.end;
     const x=await sb.rpc('team_lead_performance_report_by_outlet',{p_start:start,p_end:end});
     if(x.error)throw x.error;
     let rows=x.data||[];
@@ -199,9 +204,10 @@
     window.perfMyMode='month';
     await render('month');
   };
-  window.perfShare=function(){
+  window.perfShare=async function(){
     const mode=window.perfMyMode||'month';
-    const rows=(lastPerformanceRows||[]).map(r=>({
+    const [monthRows,todayRows]=await Promise.all([getFunnel(mode==='last_month'?'last_month':'month'),getFunnel('today')]);
+    const normalizeRows=source=>source.map(r=>({
       name:String(r.employee_name||'-'),
       outlet:String(r.outlet||r.outlet_name||'-'),
       claim:Number(r.claim_cs||0),
@@ -212,6 +218,7 @@
       hunter:Number(r.hunter_closing||0)
     }));
     const NL=String.fromCharCode(10);
+    const rows=normalizeRows(monthRows), todayNormalized=normalizeRows(todayRows);
     const totals=rows.reduce((a,r)=>{
       a.claim+=r.claim; a.handover+=r.handover; a.claimSales+=r.claimSales; a.cs+=r.cs; a.sales+=r.sales; a.hunter+=r.hunter; return a;
     },{claim:0,handover:0,cs:0,sales:0,hunter:0});
@@ -225,7 +232,19 @@
     }).filter(s=>s.totals.claim||s.totals.handover||s.totals.cs||s.totals.sales||s.totals.hunter);
 
     let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*'+NL;
-    message+='📅 Periode: *'+monthLabel(mode)+'*'+NL+NL;
+    message+='📅 Tanggal: *'+new Date().toLocaleDateString('id-ID')+'*'+NL;
+    message+='📊 Akumulasi: *'+monthLabel(mode)+'*'+NL+NL;
+    message+='🗓️ *PERFORMA HARI INI*'+NL;
+    const todayOutlets=[...new Set(todayNormalized.map(r=>r.outlet).filter(x=>x&&x!=='-'))];
+    if(todayOutlets.length){
+      todayOutlets.forEach(outlet=>{
+        const rs=todayNormalized.filter(r=>r.outlet===outlet);
+        message+='🏪 *'+outlet.toUpperCase()+'*'+NL;
+        rs.forEach(r=>message+='• '+r.name+': Claim CS '+fmt(r.claim)+', Handover '+fmt(r.handover)+', Claim Sales '+fmt(r.claimSales)+', CS Closing '+fmt(r.cs)+', Sales Closing '+fmt(r.sales)+', Hunter '+fmt(r.hunter)+NL);
+      });
+      message+=NL;
+    }else message+='Belum ada aktivitas hari ini.'+NL+NL;
+    message+='📅 *AKUMULASI BULAN '+monthLabel(mode).toUpperCase()+'*'+NL+NL;
 
     if(sections.length){
       sections.forEach((section,index)=>{

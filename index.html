@@ -3133,7 +3133,7 @@ function renderRoleHome(){
  // Permission tetap mengikuti "cards", sehingga Management dapat melihat seluruh
  // fungsi dan role tim hanya melihat tombol yang memang diberikan.
  const visibleGroups=menuGroups.map((g,gi)=>{
-   if(['DIVISI HELLO — PROMOTION','DIVISI MAJESTY — SALES','DIVISI REFILL — FINANCE & ADMINISTRATION'].includes(g[1]))return '';
+   if(['DIVISI HELLO — PROMOTION','DIVISI REFILL — FINANCE & ADMINISTRATION'].includes(g[1]))return '';
    // Atmadita/Admin Finance tidak melihat Content maupun Komisi.
    const isAtmaditaMenuAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita';
    const hideAtmaditaGroups = isAtmaditaMenuAccount || String(profile?.role||'').toUpperCase().replace(/_/g,' ').includes('ADMIN FINANCE');

@@ -2318,7 +2318,7 @@ function hmOpenLeadTracker(){
  const statuses=[['ALL','Semua'],['NOHANDOVER','Belum Handover CS → Sales'],['AVAILABLE','Available'],['CS LOCK','CS Lock'],['POTENSIAL','Potensial'],['QUALIFIED','Qualified'],['HANDLE','Handle Sales'],['CLOSING','Closing'],['GAGAL','Gagal'],['SERVICE','Service']];
  const outlets=[...new Set(rows.map(l=>String(l.outlet||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
  const pics=[...new Set(rows.map(l=>String(l.sales_claimed_by||'').trim()||String(l.cs_claimed_by||'').trim()||String(l.cs_owner||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
- const nStatus=k=>k==='ALL'?rows.length:rows.filter(l=>hmLeadTrackerBucket(l)===k).length;
+ const nStatus=k=>k==='ALL'?rows.length:k==='NOHANDOVER'?rows.filter(l=>String(l.need_type||'').trim().toUpperCase()!=='SERVICE'&&!!String(l.cs_claimed_by||'').trim()&&!l.sales_handover_at&&!String(l.sales_claimed_by||'').trim()&&['CS LOCK','HANDLE','HASIL','AVAILABLE','QUALIFIED','POTENSIAL'].includes(String(l.status_lead||'').trim().toUpperCase())).length:rows.filter(l=>hmLeadTrackerBucket(l)===k).length;
  t.textContent='👥 Lead Tracker — Data Lead';
  b.innerHTML='<div id="hmLeadTrackerRoot">'+
  '<div class="box" style="margin-bottom:12px"><h3 style="margin:0 0 6px">📋 Lead Tracker Operasional</h3><div class="small">Klik angka status untuk menyaring lead. Filter outlet, PIC, dan follow-up dapat digabung. Riwayat lama tetap tersimpan di database.</div></div>'+
@@ -4532,7 +4532,7 @@ function card(l){
  const available=l.status_lead==='AVAILABLE';
  const canClaimCS=available&&!mg;
  const q=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK'&&!l.qualification_result;
- const sh=!mg&&l.need_type!=='SERVICE'&&!l.sales_claimed_by&&['QUALIFIED','POTENSIAL'].includes(l.qualification_result)&&(l.cs_claimed_by===profile?.name||window.hmCanSales);
+ const sh=!mg&&l.need_type!=='SERVICE'&&!l.sales_claimed_by&&['QUALIFIED','POTENSIAL'].includes(l.qualification_result)&&(l.cs_claimed_by===profile?.name||((!l.cs_claimed_by||l.sales_handover_at)&&window.hmCanSales));
  const sr=!mg&&l.sales_claimed_by===profile?.name&&(l.status_lead==='HANDLE'||(l.status_lead==='HASIL'&&String(l.sales_result||'').toUpperCase()==='POTENSIAL'));
  const isFac=!!window.hmCanFacilitator||String(profile?.role||'').toUpperCase()==='FACILITATOR';
  const isService=String(l.need_type||'').trim().toUpperCase()==='SERVICE';

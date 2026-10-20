@@ -1105,9 +1105,9 @@ async function saveStock(){
  if(!canReceiveStock(source)){alert('Admin Finance Majesty Cell hanya dapat input Barang Masuk sumber Majesty Cell.');return;}
  const receiveOutlet=inventoryReceiveOutlet();
  const hunter=source==='HUNTER'?($('sthunter')?.value||''):null;
- const checker=source==='CHECKER'?($('stchecker')?.value||''):null;
+ const checker=(source==='CHECKER'||source==='HUNTER')?($('stchecker')?.value||''):null;
  const partnerName=$('stpartner')?.value||null;
- if(source==='HUNTER'&&!hunter)return alert('Hunter wajib dipilih.');
+ if(source==='HUNTER'&&!hunter&&!checker)return alert('Pilih Hunter atau Checker untuk sumber barang ini.');
  if(source==='CHECKER'&&!checker)return alert('Checker wajib dipilih.');
  if(source==='MAJESTY_CELL'&&!partnerName)return alert('Partner wajib dipilih.');
  if(!receiveOutlet)return alert('Outlet tujuan barang masuk wajib dipilih.');

@@ -4550,7 +4550,7 @@ function card(l){
  '<div class="small">Tanggal Lead Masuk: '+esc((()=>{const d=l.created_at?new Date(l.created_at):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';})())+'</div>'+
  '<div class="small">Tanggal Follow Up: '+esc((()=>{const raw=String(l.sales_claimed_by||'').trim()? (l.sales_follow_up_date||l.follow_up_date||l.cs_follow_up_date):(l.cs_follow_up_date||l.follow_up_date||l.sales_follow_up_date);if(!raw)return 'Belum ditentukan';const d=new Date(raw);return !isNaN(d.getTime())?d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):raw;})())+'</div>'+
  '<div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+(l.content_creator?' • Content: '+esc(l.content_creator):'')+'</div>'+
- '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+(isService?' • Teknisi: '+esc(l.service_pic||'-'):' • Sales: '+esc(l.sales_claimed_by||'-'))+'</div>'+
+ '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+(isService?' • Teknisi: '+esc(l.service_pic||'-'):' • Sales: '+esc(l.sales_claimed_by||'-'))+'</div>'+(isService&&l.service_pic===profile?.name&&l.whatsapp?'<div style="margin-top:8px;padding:10px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0"><b>📱 Kontak Customer</b><div>'+esc(l.whatsapp)+'</div><a href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank" rel="noopener">💬 Hubungi Customer via WhatsApp</a></div>':'')+
  (limited?'<p class="small">Lead sedang ditangani oleh owner lain. Detail tidak tersedia.</p>':
  '<div style="margin-top:8px">'+
  '<div><b>Lokasi Customer:</b> '+esc(l.initial_data?.customer_location||l.customer_location||'-')+'</div>'+
@@ -5315,7 +5315,7 @@ function buildEditInitialData(){
 }
 function editLead(id){
  const l=leads.find(x=>x.lead_id===id);if(!l)return;window.hmEditingLead=l;
- const wa=profile?.is_management||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name,t=l.need_type||'INFORMASI',d=l.initial_data||{};
+ const isServiceLead=String(l.need_type||'').trim().toUpperCase()==='SERVICE';const wa=profile?.is_management||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name||(isServiceLead&&l.service_pic===profile?.name),t=l.need_type||'INFORMASI',d=l.initial_data||{};
  $('mt').textContent='Lead '+l.lead_id;
  $('mb').innerHTML='<div class="small">'+esc(l.customer)+' • '+(wa?'<a href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank">📱 '+esc(l.whatsapp)+'</a>':'WhatsApp tersembunyi sampai menjadi tanggung jawab Anda.')+'</div>'+(l.qualification_result==='GAGAL'?'<div style="margin:10px 0;padding:10px;background:#fef2f2;border-radius:8px"><b>Keterangan Gagal</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+'<label>Produk Ringkas</label><input id="ep" value="'+esc(l.product||'')+'"><label>Kebutuhan / Ringkasan</label><textarea id="en">'+esc(l.need||'')+'</textarea><label>Budget Ringkas</label><input id="eb" value="'+esc(l.budget||'')+'"><label>Preference Ringkas</label><textarea id="epr">'+esc(l.preference||'')+'</textarea>'+editNeedFields(t,d)+'<label>Catatan</label><textarea id="ec">'+esc(l.catatan||'')+'</textarea><button id="updateBtn" class="success">Simpan Update</button>';
  $('updateBtn').onclick=()=>updateLead(id);$('modal').classList.remove('hidden');renderEditNeedFields();

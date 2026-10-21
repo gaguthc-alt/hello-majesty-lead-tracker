@@ -94,6 +94,22 @@
     throw new Error('Sesi login belum tersedia.');
   }
 
+  function showRestoreBootError(ex){
+    console.error('[HM] Dashboard startup timeout/error:',ex);
+    const identity=el('identity'),home=el('roleHome');
+    const message=ex?.message||'Dashboard tidak merespons.';
+    if(identity)identity.textContent='Dashboard gagal dibuka.';
+    if(home){
+      home.replaceChildren();
+      const card=document.createElement('div');card.className='box';
+      const heading=document.createElement('h3');heading.textContent='Dashboard gagal dibuka.';
+      const note=document.createElement('p');note.className='small';
+      note.textContent=message+' Muat ulang halaman lalu login kembali. Jika berulang, kirim screenshot pesan ini.';
+      const button=document.createElement('button');button.textContent='Muat ulang aplikasi';button.onclick=()=>location.reload();
+      card.append(heading,note,button);home.appendChild(card);
+    }
+  }
+
   async function waitForAppStarter(){
     // finance.js is loaded with defer after login.js. Wait until it exposes start().
     for(let i=0;i<150;i++){
@@ -239,7 +255,9 @@
       if(loginPage)loginPage.classList.add('hidden');
       if(appPage)appPage.classList.remove('hidden');
       if(roleHome)roleHome.classList.remove('hidden');
-      Promise.resolve(starter(session.user,sb)).catch(ex=>console.error('[HM] Auto restore dashboard error:',ex));
+      const startPromise=Promise.resolve().then(()=>starter(session.user,sb));
+      const startTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Dashboard tidak merespons dalam 12 detik saat memulihkan sesi login.')),12000));
+      Promise.race([startPromise,startTimeout]).catch(showRestoreBootError);
       return true;
     }catch(ex){
       console.warn('[HM] Auto restore session failed:',ex);
@@ -258,7 +276,9 @@
           if(loginPage)loginPage.classList.add('hidden');
           if(appPage)appPage.classList.remove('hidden');
           if(roleHome)roleHome.classList.remove('hidden');
-          Promise.resolve(starter(fallback.user,sb)).catch(err=>console.error('[HM] Fallback dashboard error:',err));
+          const startPromise=Promise.resolve().then(()=>starter(fallback.user,sb));
+          const startTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Dashboard tidak merespons dalam 12 detik saat memulihkan sesi tersimpan.')),12000));
+          Promise.race([startPromise,startTimeout]).catch(showRestoreBootError);
           return true;
         }
       }catch(fallbackErr){

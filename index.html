@@ -3209,6 +3209,20 @@ window.hmOpenStockistSummary=async function(){
 };
 window.hmOpenStockistInfo=function(partner){return window.hmOpenStockistWorkspace('profile',partner);};
 window.hmOpenStockistReceiving=function(){return window.hmOpenStockistWorkspace('receiving');};
+// Centralized stockist directory: stockist names are records, not permanent menu cards.
+window.hmOpenStockistDirectory=function(){
+ const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\\s+/g,' '),outlet=String(p.outlet||'').trim();
+ const mgmt=!!p.is_management||['MANAGEMENT','BUSINESS LEADER','DEVELOPER'].includes(role)||role.includes('DEVELOPER');
+ const cellUser=!mgmt&&(outlet.toUpperCase()==='MAJESTY CELL'||role.includes('STOCKIST')||role==='ADMIN FINANCE MAJESTY CELL');
+ if(!mgmt&&!cellUser){alert('Daftar Stockist hanya tersedia untuk Management dan pengguna stockist yang berwenang.');return;}
+ const partners=[{name:'Majesty Cell',status:'Aktif',account:'Atmadita',note:'Profil operasional berjalan'},{name:'Majesty Gadget',status:'Persiapan',account:'Belum ada',note:'Akun login akan ditambahkan Management'},{name:'Majesty Store',status:'Persiapan',account:'Belum ada',note:'Akun login akan ditambahkan Management'}].filter(x=>mgmt||x.name==='Majesty Cell');
+ const safe=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ const existing=document.getElementById('hmStockistCooperationGuide');if(existing)existing.remove();
+ const wrap=document.createElement('div');wrap.id='hmStockistCooperationGuide';wrap.style.cssText='position:fixed;inset:0;z-index:40000;background:rgba(15,23,42,.62);display:flex;align-items:center;justify-content:center;padding:16px';
+ const cards=partners.map(x=>'<div style="border:1px solid #d0d5dd;border-radius:12px;padding:14px;background:#fff;color:#101828"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+safe(x.name)+'</b><span style="font-size:12px;padding:4px 8px;border-radius:20px;background:'+(x.status==='Aktif'?'#dcfae6':'#fef0c7')+'">'+safe(x.status)+'</span></div><p style="margin:8px 0 4px">Akun: <b>'+safe(x.account)+'</b></p><p style="margin:0 0 12px;color:#667085;font-size:13px">'+safe(x.note)+'</p><button type="button" class="secondary" data-stockist-profile="'+safe(x.name)+'">Buka Profil →</button></div>').join('');
+ wrap.innerHTML='<div style="background:#f8fafc;width:min(960px,100%);max-height:90vh;overflow:auto;border-radius:20px;padding:20px;box-shadow:0 20px 60px #0004;color:#101828"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><h2 style="margin:0">Daftar & Profil Stockist</h2><p style="margin:6px 0 0;color:#667085">Satu direktori untuk semua mitra. Penambahan mitra baru ke daftar operasional perlu disimpan melalui Management.</p></div><button type="button" class="secondary" id="hmCloseStockistDirectory">Tutup ✕</button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:16px">'+cards+'</div><p style="font-size:12px;color:#667085;margin-top:14px">Profil Gadget dan Store masih persiapan. Belum ada akun login atau akses transaksi yang dibuat.</p></div>';
+ document.body.appendChild(wrap);wrap.querySelector('#hmCloseStockistDirectory')?.addEventListener('click',()=>wrap.remove());wrap.addEventListener('click',e=>{if(e.target===wrap)wrap.remove();});wrap.querySelectorAll('[data-stockist-profile]').forEach(btn=>btn.addEventListener('click',()=>{const name=btn.getAttribute('data-stockist-profile');wrap.remove();window.hmOpenStockistInfo(name);}));
+};
 
 window.hmOpenPartnerSettlementManagement=async function(){
  const isStockistUser=!mg&&!developer&&String(profile?.role||'').toUpperCase().replace(/_/g,' ').trim()==='MITRA STOCKIST'&&String(profile?.outlet||'').trim()!=='';
@@ -3528,9 +3542,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    ]],
    ['🤝','KERJA SAMA STOCKIST',[
      ['📋','Panduan Kerja Sama','Panduan alur stok jaringan, stok titip outlet, retur, pembagian hasil, dan settlement','hmOpenStockistCooperationGuide()'],
-     ['🏬','Profil Majesty Cell','Identitas dan ketentuan mitra Majesty Cell','hmOpenStockistInfo(\'Majesty Cell\',\'profile\')'],
-     ['🏬','Profil Majesty Gadget','Siapkan profil mitra; akun login akan ditambahkan Management nanti','hmOpenStockistInfo(\'Majesty Gadget\',\'profile\')'],
-     ['🏬','Profil Majesty Store','Siapkan profil mitra; akun login akan ditambahkan Management nanti','hmOpenStockistInfo(\'Majesty Store\',\'profile\')'],
+      ['🏢','Daftar & Profil Stockist','Kelola seluruh mitra dari satu direktori; jumlah stockist dapat bertambah tanpa menambah kartu menu','hmOpenStockistDirectory()'],
      ['💸','Pembayaran Settlement','Pantau kewajiban, permintaan pembayaran, dan verifikasi penerimaan uang','hmOpenPartnerSettlementManagement()']
    ]],
    ['⚡','TOOLS',[
@@ -3598,7 +3610,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
      allowed=g[2].filter(item=>['Persetujuan Barang Masuk','Ringkasan Stok Majesty Cell','Laporan Stok & Modal Majesty Cell'].includes(item[1]));
    }
    if(isAtmaditaAccount && g[1]==='KERJA SAMA STOCKIST'){
-     allowed=g[2].filter(item=>['Panduan Kerja Sama','Profil Majesty Cell','Pembayaran Settlement'].includes(item[1]));
+     allowed=g[2].filter(item=>['Panduan Kerja Sama','Daftar & Profil Stockist','Pembayaran Settlement'].includes(item[1]));
    }
    if(isAtmaditaAccount && ['STOCKIST CENTER','KERJA SAMA STOCKIST'].includes(g[1]) && !allowed.length)return '';
    // KINERJA & TARGET: tim biasa hanya melihat item yang benar-benar diizinkan lewat cards.

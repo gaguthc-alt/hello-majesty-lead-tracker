@@ -1,4 +1,28 @@
-<html lang="id"><head><meta name="hm-build" content="20261022-stockist-settlement-mobile-cards-1"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head>
+<script>
+/* EARLY HM DIAGNOSTIC: must execute before the large inline application script. */
+(function(){
+  window.addEventListener('error',function(e){
+    if(!e||!e.message)return;
+    console.error('[HM EARLY SCRIPT ERROR]',e.message,e.filename,e.lineno,e.colno,e.error);
+    var render=function(){
+      var home=document.getElementById('roleHome'),app=document.getElementById('app'),identity=document.getElementById('identity');
+      if(identity)identity.textContent='Kesalahan JavaScript modul utama.';
+      if(app)app.classList.remove('hidden');
+      if(home){
+        home.classList.remove('hidden');
+        home.replaceChildren();
+        var card=document.createElement('div');card.className='box';
+        var h=document.createElement('h3');h.textContent='Modul utama gagal diproses';
+        var p=document.createElement('p');p.className='small';
+        p.textContent=(e.message||'JavaScript error')+' — baris '+(e.lineno||'?')+', kolom '+(e.colno||'?');
+        card.append(h,p);home.appendChild(card);
+      }
+    };
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
+  },true);
+})();
+</script><meta name="hm-build" content="20261022-stockist-settlement-mobile-cards-1"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';

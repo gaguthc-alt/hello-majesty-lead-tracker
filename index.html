@@ -3173,13 +3173,17 @@ window.hmOpenPartnerSettlementManagement=async function(){
   }));
   document.getElementById('hmSettleSaveDraft').addEventListener('click',async()=>{
    const selected=[...b.querySelectorAll('.hmSettleUnitCheck:checked')];
-   const partner=partnerSel.value,outlet=document.getElementById('hmSettleOutlet').value,date=document.getElementById('hmSettleDate').value,note=document.getElementById('hmSettleNote').value.trim();
+   let partner=partnerSel.value,outlet=document.getElementById('hmSettleOutlet').value;
+   const date=document.getElementById('hmSettleDate').value,note=document.getElementById('hmSettleNote').value.trim();
    if(!selected.length){alert('Centang minimal satu unit SOLD.');return;}
-   if(!outlet||!date){alert('Outlet dan tanggal settlement wajib diisi.');return;}
-   const ids=selected.map(cb=>cb.value);
+   if(!date){alert('Tanggal settlement wajib diisi.');return;}
    const selectedKeys=selected.map(cb=>cb.closest('[data-settle-unit]')?.getAttribute('data-key')).filter(Boolean);
    const selectedUnits=units.filter(x=>selectedKeys.includes(x._key));
-   if(selectedUnits.some(x=>String(x._partner||x.partner_name||x.supplier||'').toLowerCase()!==partner.toLowerCase()||String(x._outlet||x.outlet||'').toLowerCase()!==outlet.toLowerCase())){alert('Ada unit dari stockist atau outlet lain. Silakan pilih ulang.');return;}
+   const selectedPartners=[...new Set(selectedUnits.map(x=>String(x._partner||x.partner_name||x.supplier||'')))];
+   const selectedOutlets=[...new Set(selectedUnits.map(x=>String(x._outlet||x.outlet||'')))];
+   if(selectedPartners.length!==1||selectedOutlets.length!==1){alert('Settlement harus dibuat untuk satu stockist dan satu outlet. Pilih unit dari satu kombinasi outlet + stockist saja.');return;}
+   partner=selectedPartners[0];outlet=selectedOutlets[0];
+   if((partnerSel.value!=='ALL'&&partnerSel.value!==partner)||(document.getElementById('hmSettleOutlet').value!=='ALL'&&document.getElementById('hmSettleOutlet').value!==outlet)){alert('Pilihan unit tidak sesuai filter outlet atau stockist.');return;}
    const total=selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0);
    if(total<=0){alert('Total modal unit harus lebih besar dari nol.');return;}
    if(!confirm('Simpan DRAFT settlement '+partner+' • '+outlet+' untuk '+selectedUnits.length+' unit dengan total '+money(total)+'? Draft belum dianggap pembayaran.'))return;

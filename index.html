@@ -6530,10 +6530,6 @@ window.addEventListener('DOMContentLoaded',function(){
         try{
           var raw=localStorage.getItem('hm_auth_session'),session=raw?JSON.parse(raw):null;
           if(!session||!session.user)throw new Error('Sesi tersimpan tidak ditemukan. Muat ulang lalu login kembali.');
-          if(typeof window.hmRestoreLogin==='function'){
-            var ok=await window.hmRestoreLogin();
-            if(ok)return;
-          }
           if(typeof window.hmStartApp==='function'&&typeof window.hmLoginClient==='function'){
             var client=await window.hmLoginClient();
             await window.hmStartApp(session.user,client);

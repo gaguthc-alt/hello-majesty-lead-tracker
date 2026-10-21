@@ -1351,14 +1351,25 @@ window.hmOpenReceivedStockList=hmOpenReceivedStockList;
 window.hmEditReceivedStock=function(i){
  if(!profile?.is_management){alert('Edit hanya untuk Management.');return;}const r=window.__hmReceivedRows?.[i];if(!r)return;const body=document.getElementById('hmMenuPanelBody');
  const field=(label,key,type='text')=>'<label style="display:block;margin:8px 0">'+label+'<input id="hmri_'+key+'" type="'+type+'" value="'+String(r[key]??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" style="width:100%"></label>';
- body.innerHTML='<div class="box"><h3>Edit Barang Masuk</h3><div class="small">ID: '+r.id+'</div>'+field('Outlet','outlet')+field('IMEI','imei_1')+field('Warna','color')+field('Grade','grade')+field('Battery Health','battery_health','number')+field('Modal','cost','number')+field('Harga jual','asking_price','number')+field('Supplier','supplier')+field('Sumber','source_type')+field('Partner/stockist','partner_name')+field('Catatan','received_source_note')+'<label style="display:block;margin:8px 0">Status<select id="hmri_status" style="width:100%">'+['READY','SOLD','RESERVED','SERVICE'].map(v=>'<option '+(r.status===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label><div class="row"><button type="button" onclick="hmSaveReceivedStock('+i+')">Simpan Perubahan</button><button type="button" class="secondary" onclick="hmOpenReceivedStockList()">Batal</button></div></div>';
+ body.innerHTML='<div class="box"><h3>Edit Barang Masuk</h3><div class="small">ID: '+r.id+'</div>'+field('Outlet','outlet')+field('IMEI','imei_1')+field('Warna','color')+field('Grade','grade')+field('Battery Health','battery_health','number')+field('Modal','cost','number')+field('Harga jual','asking_price','number')+field('Supplier','supplier')+field('Sumber','source_type')+field('Partner/stockist','partner_name')+'<label style="display:block;margin:8px 0">Alasan koreksi sumber (wajib jika sumber/partner berubah)<textarea id="hmri_source_reason" rows="3" style="width:100%" placeholder="Contoh: barang ini sebenarnya milik Majesty Cell, bukan Management"></textarea></label>'+field('Catatan','received_source_note')+'<label style="display:block;margin:8px 0">Status<select id="hmri_status" style="width:100%">'+['READY','SOLD','RESERVED','SERVICE'].map(v=>'<option '+(r.status===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label><div class="row"><button type="button" onclick="hmSaveReceivedStock('+i+')">Simpan Perubahan</button><button type="button" class="secondary" onclick="hmOpenReceivedStockList()">Batal</button></div></div>';
 };
 window.hmSaveReceivedStock=async function(i){
  if(!profile?.is_management){alert('Edit hanya untuk Management.');return;}const r=window.__hmReceivedRows?.[i];if(!r)return;const val=k=>document.getElementById('hmri_'+k)?.value??'',cost=Number(val('cost')),asking=Number(val('asking_price')),bh=val('battery_health');
  if(!Number.isFinite(cost)||cost<0||!Number.isFinite(asking)||asking<0){alert('Modal dan harga jual harus berupa angka nol atau lebih.');return;}
- const patch={outlet:val('outlet').trim(),imei_1:val('imei_1').trim()||null,color:val('color').trim()||null,grade:val('grade').trim()||null,battery_health:bh===''?null:Number(bh),cost,asking_price:asking,supplier:val('supplier').trim()||null,source_type:val('source_type').trim()||null,partner_name:val('partner_name').trim()||null,received_source_note:val('received_source_note').trim()||null,status:val('status')};
+ const patch={outlet:val('outlet').trim(),imei_1:val('imei_1').trim()||null,color:val('color').trim()||null,grade:val('grade').trim()||null,battery_health:bh===''?null:Number(bh),cost,asking_price:asking,status:val('status')};
+ const newSource=val('source_type').trim(),newPartner=val('partner_name').trim()||null,newSupplier=val('supplier').trim()||null;
+ const sourceChanged=(newSource||null)!==(r.source_type||null)||newPartner!==(r.partner_name||null)||newSupplier!==(r.supplier||null);
+ const reason=(document.getElementById('hmri_source_reason')?.value||'').trim();
+ if(sourceChanged&&!reason){alert('Sumber/partner berubah. Isi alasan koreksi agar sistem mencatat perubahan kepemilikan dan riwayat audit.');return;}
  if(!patch.outlet){alert('Outlet wajib diisi.');return;}const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
- try{const out=await db.from('stock_units').update(patch).eq('id',r.id).select('id');if(out.error)throw out.error;if(!out.data?.length)throw new Error('Tidak ada baris diperbarui. Periksa izin database/RLS.');await hmOpenReceivedStockList();}catch(e){alert('Gagal menyimpan perubahan: '+(e.message||e));}
+ try{
+  const out=await db.from('stock_units').update(patch).eq('id',r.id).select('id');if(out.error)throw out.error;if(!out.data?.length)throw new Error('Tidak ada baris diperbarui. Periksa izin database/RLS.');
+  if(sourceChanged){const corr=await db.rpc('correct_stock_source',{p_stock_unit_id:r.id,p_source_type:newSource,p_partner_name:newPartner,p_supplier:newSupplier,p_reason:reason});if(corr.error)throw corr.error;}
+  const notePatch={received_source_note:val('received_source_note').trim()||null};
+  const noteOut=await db.from('stock_units').update(notePatch).eq('id',r.id);if(noteOut.error)throw noteOut.error;
+  alert(sourceChanged?'Perubahan tersimpan. Sumber, aturan bagi hasil, dan riwayat koreksi telah diperbarui.':'Perubahan barang berhasil disimpan.');
+  await hmOpenReceivedStockList();
+ }catch(e){alert('Gagal menyimpan perubahan: '+(e.message||e));}
 };
 
 async function renderManagementStockSummary(){

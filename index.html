@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261021-stockist-summary-report-split-2"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261021-stockist-report-name-majesty-cell-1"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -3114,7 +3114,7 @@ window.hmOpenStockistSummary=async function(){
   const cards=[['READY','Siap dijual'],['SOLD','Terjual'],['RETURN','Retur']].map(([status,label])=>{const x=sum.find(v=>String(v.status||'').toUpperCase()===status)||{};return '<div class="fin-card"><div class="small">'+label+'</div><div class="fin-big">'+Number(x.units||0)+' unit</div><div class="small">Nilai modal '+money(x.cost)+'</div></div>';}).join('');
   const loc={};rows.forEach(x=>{const k=x.outlet||'Belum ditentukan';if(!loc[k])loc[k]={READY:0,SOLD:0,RETURN:0,cost:0};const s=String(x.status||'').toUpperCase();if(loc[k][s]!==undefined)loc[k][s]++;loc[k].cost+=Number(x.cost||0);});
   const outletHtml=Object.entries(loc).map(([k,v])=>'<div class="lead"><b>'+String(k).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))+'</b><div class="small">READY '+v.READY+' • SOLD '+v.SOLD+' • RETURN '+v.RETURN+' unit</div><div>Nilai modal stok tercatat: '+money(v.cost)+'</div></div>').join('')||'<div class="small">Belum ada rincian unit stok yang tersedia.</div>';
-  body.innerHTML='<div class="box"><div class="small">KONDISI SAAT INI • TANPA FILTER PERIODE</div><h3>Posisi Stok Majesty Cell</h3><div class="hmStockistGrid">'+cards+'</div><p class="small">Ini adalah snapshot posisi stok dan nilai modal. Tidak memuat daftar transaksi, modal yang harus disetor, pembayaran, atau rekonsiliasi settlement.</p></div><div class="box"><h3>Distribusi per Outlet</h3>'+outletHtml+'</div><div class="box"><button type="button" class="primary" onclick="window.openCellFinanceReport()">Buka Laporan Stok &amp; Modal Cell →</button></div>';
+  body.innerHTML='<div class="box"><div class="small">KONDISI SAAT INI • TANPA FILTER PERIODE</div><h3>Posisi Stok Majesty Cell</h3><div class="hmStockistGrid">'+cards+'</div><p class="small">Ini adalah snapshot posisi stok dan nilai modal. Tidak memuat daftar transaksi, modal yang harus disetor, pembayaran, atau rekonsiliasi settlement.</p></div><div class="box"><h3>Distribusi per Outlet</h3>'+outletHtml+'</div><div class="box"><button type="button" class="primary" onclick="window.openCellFinanceReport()">Buka Laporan Stok &amp; Modal Majesty Cell →</button></div>';
  }catch(e){console.error('[HM] Ringkasan Stok Cell',e);body.innerHTML='<div class="danger box">Ringkasan stok gagal dimuat: '+String(e?.message||e)+'</div><button type="button" class="secondary" onclick="window.hmOpenStockistSummary()">Coba Lagi</button>';}
 };
 window.hmOpenStockistInfo=function(partner){return window.hmOpenStockistWorkspace('profile',partner);};
@@ -3325,7 +3325,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
     '<div class="hm-stockist-stat"><div class="small">KODE MITRA</div><b style="font-size:18px">'+safe(sup?.supplier_code||'Belum diatur')+'</b></div>'+
     '<div class="hm-stockist-stat"><div class="small">STATUS KERJA SAMA</div><b style="font-size:18px">'+(sup?.active?'Aktif':'Perlu verifikasi')+'</b></div></div>'+
     '<p><b>Catatan kerja sama</b><br>'+safe(sup?.notes||'Belum ada catatan kerja sama pada master mitra.')+'</p>'+
-    '<p class="small">Halaman ini khusus untuk identitas dan ketentuan mitra. Untuk jumlah unit dan nilai modal, gunakan Ringkasan Stok Majesty Cell atau Laporan Stok & Modal Cell.</p></div>'+
+    '<p class="small">Halaman ini khusus untuk identitas dan ketentuan mitra. Untuk jumlah unit dan nilai modal, gunakan Ringkasan Stok Majesty Cell atau Laporan Stok & Modal Majesty Cell.</p></div>'+
     '<div class="box"><h3>💸 Riwayat Settlement</h3>'+profileSettlements+'</div>'+
     '<div class="box"><h3>📌 Alur kerja</h3><ol><li>Barang masuk diperiksa melalui Persetujuan Barang Masuk.</li><li>Posisi unit dan modal dipantau pada Ringkasan Stok.</li><li>Rincian penjualan dan modal yang belum disetor dicek di Laporan Stok & Modal.</li><li>Pengajuan dan verifikasi pembayaran dilakukan melalui Pembayaran Settlement.</li></ol></div>';
    return;
@@ -3431,7 +3431,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    ['🏬','STOCKIST CENTER',[
      ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
      ['📦','Ringkasan Stok Majesty Cell','Lihat jumlah unit, status, lokasi, dan nilai stok milik Majesty Cell',"hmOpenStockistInfo('Majesty Cell','summary')"],
-     ['📊','Laporan Stok & Modal Cell','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement','window.openCellFinanceReport()']
+     ['📊','Laporan Stok & Modal Majesty Cell','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement','window.openCellFinanceReport()']
    ]],
    ['🤝','KERJA SAMA STOCKIST',[
      ['📋','Panduan Kerja Sama','Panduan alur stok jaringan, stok titip outlet, retur, pembagian hasil, dan settlement','hmOpenStockistCooperationGuide()'],
@@ -3495,7 +3495,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
    if(isAtmaditaAccount && g[1]==='STOCKIST CENTER'){
-     allowed=g[2].filter(item=>['Persetujuan Barang Masuk','Ringkasan Stok Majesty Cell','Laporan Stok & Modal Cell'].includes(item[1]));
+     allowed=g[2].filter(item=>['Persetujuan Barang Masuk','Ringkasan Stok Majesty Cell','Laporan Stok & Modal Majesty Cell'].includes(item[1]));
    }
    if(isAtmaditaAccount && g[1]==='KERJA SAMA STOCKIST'){
      allowed=g[2].filter(item=>['Panduan Kerja Sama','Profil Majesty Cell','Pembayaran Settlement'].includes(item[1]));

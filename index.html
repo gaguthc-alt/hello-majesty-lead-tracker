@@ -1667,7 +1667,11 @@ async function start(u,authClient){
   // Bootstrap dashboard memakai REST PostgREST langsung agar tidak tertahan
   // oleh state/Auth-JS pada browser mobile. JWT tetap berasal dari login REST.
   if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
-  const token=await window.hmAccessToken();
+  // Jangan biarkan pemulihan token menahan dashboard tanpa batas waktu.
+  const token=await Promise.race([
+   window.hmAccessToken(),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error('Pengambilan sesi login macet lebih dari 8 detik. Silakan muat ulang dan login kembali.')),8000))
+  ]);
   // Pindahkan layar ke dashboard SEGERA setelah Auth sukses.
   // Jangan menunggu query profile/permission/database sebelum UI berpindah.
   $('login').classList.add('hidden');
@@ -6503,7 +6507,7 @@ window.addEventListener('DOMContentLoaded',function(){
     }catch(e){console.error('[HM] boot watchdog',e);}
   },8000);
 })();
-</script><script src="login-v9.js?v=20261022-blank-dashboard-diagnostic-1"></script>
+</script><script src="login-v9.js?v=20261022-token-timeout-diagnostic-2"></script>
 
 
 </body></html>

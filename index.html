@@ -6507,7 +6507,52 @@ window.addEventListener('DOMContentLoaded',function(){
     }catch(e){console.error('[HM] boot watchdog',e);}
   },8000);
 })();
-</script><script src="login-v9.js?v=20261022-splash-watchdog-4"></script>
+</script><script>
+/* HM INDEPENDENT DASHBOARD WATCHDOG — works even if login-v9 startup stalls */
+(function(){
+  function showStall(){
+    try{
+      var login=document.getElementById('login'),app=document.getElementById('app'),home=document.getElementById('roleHome'),identity=document.getElementById('identity');
+      if(!login||!app||!home||login.classList.contains('hidden')===false||app.classList.contains('hidden'))return;
+      var status=String(identity&&identity.textContent||'');
+      var homeText=String(home.innerText||home.textContent||'');
+      var isLoading=/Memuat dashboard|Memuat profil akun|Login berhasil/i.test(status)||/Menyiapkan dashboard|Memuat modul aplikasi/i.test(homeText);
+      if(!isLoading)return;
+      identity.textContent='Dashboard berhenti saat proses awal.';
+      home.replaceChildren();
+      var card=document.createElement('div');card.className='box';
+      var title=document.createElement('h3');title.textContent='Dashboard belum selesai dimuat';
+      var note=document.createElement('p');note.className='small';
+      note.textContent='Login berhasil, tetapi aplikasi belum menyelesaikan proses awal. Tekan Coba lagi. Jika gagal kembali, kirim screenshot pesan ini.';
+      var retry=document.createElement('button');retry.textContent='Coba buka dashboard lagi';
+      retry.onclick=async function(){
+        retry.disabled=true;retry.textContent='Mencoba membuka…';
+        try{
+          var raw=localStorage.getItem('hm_auth_session'),session=raw?JSON.parse(raw):null;
+          if(!session||!session.user)throw new Error('Sesi tersimpan tidak ditemukan. Muat ulang lalu login kembali.');
+          if(typeof window.hmRestoreLogin==='function'){
+            var ok=await window.hmRestoreLogin();
+            if(ok)return;
+          }
+          if(typeof window.hmStartApp==='function'&&typeof window.hmLoginClient==='function'){
+            var client=await window.hmLoginClient();
+            await window.hmStartApp(session.user,client);
+            return;
+          }
+          throw new Error('Modul dashboard belum tersedia di halaman ini. Muat ulang aplikasi.');
+        }catch(e){
+          note.textContent=(e&&e.message?e.message:'Dashboard gagal dibuka.')+' Silakan kirim screenshot pesan ini.';
+          retry.disabled=false;retry.textContent='Coba buka dashboard lagi';
+        }
+      };
+      var reload=document.createElement('button');reload.className='secondary';reload.style.marginLeft='8px';reload.textContent='Muat ulang';reload.onclick=function(){location.reload();};
+      card.append(title,note,retry,reload);home.appendChild(card);
+    }catch(e){console.error('[HM] independent dashboard watchdog',e);}
+  }
+  setTimeout(showStall,18000);
+  setTimeout(showStall,30000);
+})();
+</script><script src="login-v9.js?v=20261022-independent-dashboard-watchdog-5"></script>
 
 
 </body></html>

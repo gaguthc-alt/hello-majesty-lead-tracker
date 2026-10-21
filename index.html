@@ -1682,19 +1682,21 @@ async function ensureSupabase(){
 async function start(u,authClient){
  if(authClient)sb=authClient;
  try{
-  // Bootstrap dashboard memakai REST PostgREST langsung agar tidak tertahan
-  // oleh state/Auth-JS pada browser mobile. JWT tetap berasal dari login REST.
-  if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
-  // Jangan biarkan pemulihan token menahan dashboard tanpa batas waktu.
-  const token=await Promise.race([
-   window.hmAccessToken(),
-   new Promise((_,reject)=>setTimeout(()=>reject(new Error('Pengambilan sesi login macet lebih dari 8 detik. Silakan muat ulang dan login kembali.')),8000))
-  ]);
-  // Pindahkan layar ke dashboard SEGERA setelah Auth sukses.
-  // Jangan menunggu query profile/permission/database sebelum UI berpindah.
+  // Tampilkan status proses SEBELUM menunggu token agar layar splash tidak
+  // menutupi titik kegagalan ketika pemulihan sesi tertahan.
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   $('roleHome').classList.remove('hidden');
+  $('identity').textContent='Menyiapkan sesi dashboard...';
+  $('roleHome').innerHTML='<div class="box"><h3>Menyiapkan dashboard...</h3><p class="small">Memeriksa sesi login. Jika gagal, pesan penyebab akan tampil di sini.</p></div>';
+  // Bootstrap dashboard memakai REST PostgREST langsung agar tidak tertahan
+  // oleh state/Auth-JS pada browser mobile. JWT tetap berasal dari login REST.
+  if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
+  $('identity').textContent='Memeriksa sesi login...';
+  const token=await Promise.race([
+   window.hmAccessToken(),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error('Pengambilan sesi login macet lebih dari 8 detik. Silakan login kembali.')),8000))
+  ]);
   $('identity').textContent='Memuat profil akun...';
   const apiHeaders={apikey:KEY,Authorization:'Bearer '+token};
   const fetchJson=async(url,label)=>{

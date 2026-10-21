@@ -29,7 +29,7 @@ window.loadCellFinanceReport=async function(){
   box.innerHTML='<div class="small">Memuat laporan Majesty Cell...</div>';
   const [rep,stockRep,imeiActive,imeiHistorical]=await Promise.all([sb.rpc('majesty_cell_finance_report',{p_start_date:start,p_end_date:end,p_outlet:outlet}),sb.rpc('majesty_cell_stock_detail_report',{p_outlet:outlet}),sb.from('stock_units').select('id,imei_1').eq('partner_name','Majesty Cell'),sb.from('partner_historical_stock_details').select('id,imei_1').eq('partner_name','Majesty Cell')]);
   if(rep.error){box.innerHTML='<div class="danger box">Gagal memuat laporan: '+esc(String(rep.error.message||rep.error))+'</div>';return;}
-  const d=rep.data||{},stockDetail=stockRep.data||[],tot=d.stock_totals||{},rows=d.receipts||[],sales=d.sales||[],due=d.capital_due||[],historicalSales=d.historical_sales||[],historicalDue=d.historical_capital_due||[],profit=d.profit_sharing||[],cellProfile=window.profile||{},cellRole=String(cellProfile.role||'').trim().toUpperCase().replace(/_/g,' '),isAtmadita=String(cellProfile.name||'').trim().toLowerCase()==='atmadita',isProfitShareMasked=(String(cellProfile.name||'').trim().toLowerCase()==='saka'||cellRole==='FASILITATOR'),sett=(d.settlements||[]).filter(x=>!isAtmadita||!String(x.type||'').toUpperCase().includes('PROFIT')),money=v=>'Rp '+Number(v||0).toLocaleString('id-ID'),maskedMoney=v=>isProfitShareMasked?'xxxxxxxxxx':money(v),imeiMap=new Map([...(imeiActive.data||[]),...(imeiHistorical.data||[])].map(x=>[String(x.id),x.imei_1])); const soldDisplay=Number(tot.sold_units||0)+Number(historicalSales.length||0);
+  const d=rep.data||{},stockDetail=stockRep.data||[],tot=d.stock_totals||{},rows=d.receipts||[],sales=d.sales||[],due=d.capital_due||[],historicalSales=d.historical_sales||[],historicalDue=d.historical_capital_due||[],profit=d.profit_sharing||[],cellProfile=window.profile||{},cellRole=String(cellProfile.role||'').trim().toUpperCase().replace(/_/g,' '),isStockistPartner=!cellProfile.is_management&&(cellRole.includes('STOCKIST')||cellRole.startsWith('ADMIN FINANCE MAJESTY CELL')),isProfitShareMasked=isStockistPartner||(String(cellProfile.name||'').trim().toLowerCase()==='saka'||cellRole==='FASILITATOR'),sett=(d.settlements||[]).filter(x=>!isStockistPartner||!String(x.type||'').toUpperCase().includes('PROFIT')),money=v=>'Rp '+Number(v||0).toLocaleString('id-ID'),maskedMoney=v=>isProfitShareMasked?'xxxxxxxxxx':money(v),imeiMap=new Map([...(imeiActive.data||[]),...(imeiHistorical.data||[])].map(x=>[String(x.id),x.imei_1])); const soldDisplay=Number(tot.sold_units||0)+Number(historicalSales.length||0);
   const name=x=>esc(String(x||'-'));
   const stockOrder=['READY','RETURN','SOLD']; const stockHtml=stockOrder.map(st=>{const x=(d.stock_summary||[]).find(v=>String(v.status||'').toUpperCase()===st);return '<div class="fin-card"><div class="small">'+st+'</div><div class="fin-big">'+Number(x?.units||0)+' unit</div><div class="small">'+money(x?.cost||0)+'</div></div>';}).join('');
   const stockDetailHtml=stockDetail.map(x=>'<div class="lead"><div class="small"><b>'+name(x.outlet)+'</b></div><b>'+name(x.product)+(x.variant?' — '+name(x.variant):'')+'</b><div class="small">Status: '+name(x.status)+' • '+name(x.color)+(x.grade?' • Grade '+name(x.grade):'')+(x.battery_health!=null?' • BH '+Number(x.battery_health)+'%':'')+'</div><div>Modal: '+money(x.cost)+' • Jual: '+money(x.asking_price)+(x.sold_price!=null?' • Terjual: '+money(x.sold_price):'')+'</div></div>').join('')||'<div class="small">Belum ada stock Cell.</div>';
@@ -44,13 +44,14 @@ window.loadCellFinanceReport=async function(){
     '<div class="box" style="margin-top:12px"><h3>📱 2. Stock Cell</h3>'+stockHtml+'<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">Lihat detail semua unit</summary><div style="margin-top:8px">'+stockDetailHtml+'</div></details></div>'+
     '<div class="box" style="margin-top:12px"><h3>💰 3. Modal Cell Belum Disetor</h3><div class="fin-summary-line"><b>'+dueCount+' unit</b><strong>'+money(dueTotal)+'</strong></div>'+combinedDueHtml+'</div>'+
     '<div class="box" style="margin-top:12px"><h3>🧾 4. Penjualan Stock Cell</h3><div class="fin-summary-line"><b>'+salesCount+' unit</b><strong>'+money(salesNominal+historicalSalesTotal)+'</strong></div>'+combinedSalesHtml+'</div>'+
-    (isAtmadita?'':'<div class="box" style="margin-top:12px"><h3>🤝 5. Profit Sharing</h3>'+profitHtml+'</div>')+
+    (isStockistPartner?'':'<div class="box" style="margin-top:12px"><h3>🤝 5. Profit Sharing</h3>'+profitHtml+'</div>')+
     '<div class="box" style="margin-top:12px"><h3>💸 6. Riwayat Settlement</h3>'+settHtml+'</div>';
 };
 window.openPartnerSettlement=async function(){
   const p=window.profile||{};
   const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
-  if(!p.is_management && role!=='ADMIN FINANCE MAJESTY CELL'){
+  const isStockistPartner=!p.is_management&&(role.includes('STOCKIST')||role.startsWith('ADMIN FINANCE MAJESTY CELL'));
+  if(!p.is_management && !isStockistPartner){
     alert('Akses settlement tidak diizinkan.');
     return;
   }
@@ -75,15 +76,18 @@ window.openPartnerSettlement=async function(){
       const outlet=String(x.outlet||'');
       const capital=Number(x.capital_due||0), profit=Number(x.profit_share_due||0);
       const isCell=partner.trim().toUpperCase()==='MAJESTY CELL';
+      const hideProfit=!p.is_management;
       let buttons='';
-      if(isCell && outlet==='Majesty Refill Phone'){
+      if(isCell && outlet==='Majesty Refill Phone' && !hideProfit){
         buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Refill Phone\')">📋 Rincian & Setor Modal</button><button class="secondary" type="button" onclick="window.loadPartnerProfitSettlement(\'Majesty Refill Phone\')">🤝 Setor Profit Sharing</button></div>';
+      }else if(isCell && outlet==='Majesty Refill Phone' && hideProfit){
+        buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\\'Majesty Refill Phone\\')">📋 Rincian & Setor Modal</button></div>';
       }else if(isCell && outlet==='Majesty Plaza iPhone'){
         buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Plaza iPhone\')">📋 Rincian & Setor Modal</button></div>';
       }else{
         buttons='<div class="small" style="margin-top:10px">Informasi kewajiban ditampilkan. Tombol settlement belum diaktifkan untuk kombinasi ini agar tidak salah membuat jurnal atau menandai pembayaran.</div>';
       }
-      return '<div class="box" style="margin-top:12px"><h3>'+outlet+'</h3><div class="small">Stockist: <b>'+partner+'</b></div><div class="fin-grid" style="margin-top:8px"><div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+money(capital)+'</div></div><div class="fin-card"><div class="small">Profit Sharing</div><div class="fin-big">'+money(profit)+'</div></div></div><div style="margin-top:10px"><b>Total Kewajiban: '+money(capital+profit)+'</b></div>'+buttons+'</div>';
+      return '<div class="box" style="margin-top:12px"><h3>'+outlet+'</h3><div class="small">Stockist: <b>'+partner+'</b></div><div class="fin-grid" style="margin-top:8px"><div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+money(capital)+'</div></div>'+(hideProfit?'':'<div class="fin-card"><div class="small">Profit Sharing</div><div class="fin-big">'+money(profit)+'</div></div>')+'</div><div style="margin-top:10px"><b>Total Kewajiban: '+money(hideProfit?capital:capital+profit)+'</b></div>'+buttons+'</div>';
     };
     const sorted=list.slice().sort((a,b)=>String(a.outlet).localeCompare(String(b.outlet))||String(a.partner_name).localeCompare(String(b.partner_name)));
     body.innerHTML='<div class="small">Kewajiban dipisahkan berdasarkan outlet dan stockist. Settlement hanya tersedia untuk alur yang sudah diverifikasi.</div>'+
@@ -143,6 +147,8 @@ window.payPartnerCapitalSettlement=async function(){
   window.openPartnerSettlement();
 };
 window.loadPartnerProfitSettlement=async function(){
+  const p=window.profile||{};const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
+  if(!p.is_management&&(role.includes('STOCKIST')||role.startsWith('ADMIN FINANCE MAJESTY CELL'))){alert('Rincian profit sharing tidak tersedia pada akun mitra stockist.');return;}
   const box=document.getElementById('partnerSettlementDetail');if(!box)return;
   const now=new Date(),start=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
   const {data:r}=await sb.from('partner_profit_share_monthly').select('*').eq('outlet','Majesty Refill Phone').eq('partner_name','Majesty Cell').eq('period_start',start).maybeSingle();

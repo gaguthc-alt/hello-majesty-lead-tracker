@@ -5,8 +5,10 @@ window.hmRp=hmRp;
 window.hmDateRange=hmDateRange;
 function hmDateRange(mode){const d=new Date(),iso=x=>{const y=x.getFullYear(),m=String(x.getMonth()+1).padStart(2,'0'),day=String(x.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};if(mode==='today'){const s=new Date(d.getFullYear(),d.getMonth(),d.getDate());return[iso(s),iso(s)];}if(mode==='year')return[d.getFullYear()+'-01-01',d.getFullYear()+'-12-31'];return[iso(new Date(d.getFullYear(),d.getMonth(),1)),iso(new Date(d.getFullYear(),d.getMonth()+1,0))];}
 window.openCellFinanceReport=async function(){
-  const p=window.profile||(typeof profile!=='undefined'?profile:{}),role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
-  if(!p.is_management && role!=='ADMIN FINANCE MAJESTY CELL' && role!=='MITRA STOCKIST' && role!=='FASILITATOR'){alert('Akses laporan tidak diizinkan.');return;}
+  const gp=(typeof profile!=='undefined'&&profile&&typeof profile==='object')?profile:{},wp=window.profile&&typeof window.profile==='object'?window.profile:{},p={...gp,...wp};
+  const role=String(wp.role||gp.role||p.team_role||p.position||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
+  const isManagement=!!(wp.is_management||gp.is_management);
+  if(!isManagement && role!=='ADMIN FINANCE MAJESTY CELL' && role!=='MITRA STOCKIST' && role!=='FASILITATOR'){alert('Akses laporan tidak diizinkan. Role terbaca: '+(role||'kosong')+'. Silakan refresh aplikasi.');return;}
   const m=document.getElementById('modal');
   const inlinePanel=document.getElementById('hmMenuPanel'),inlineBody=document.getElementById('hmMenuPanelBody'),inlineTitle=document.getElementById('hmMenuPanelTitle');
   // Laporan Finance Cell selalu dibuka inline di bawah Menu Utama.

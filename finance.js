@@ -77,9 +77,9 @@ window.openPartnerSettlement=async function(){
       const isCell=partner.trim().toUpperCase()==='MAJESTY CELL';
       let buttons='';
       if(isCell && outlet==='Majesty Refill Phone'){
-        buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\\'Majesty Refill Phone\\')">📋 Rincian & Setor Modal</button><button class="secondary" type="button" onclick="window.loadPartnerProfitSettlement(\\'Majesty Refill Phone\\')">🤝 Setor Profit Sharing</button></div>';
+        buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Refill Phone\')">📋 Rincian & Setor Modal</button><button class="secondary" type="button" onclick="window.loadPartnerProfitSettlement(\'Majesty Refill Phone\')">🤝 Setor Profit Sharing</button></div>';
       }else if(isCell && outlet==='Majesty Plaza iPhone'){
-        buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\\'Majesty Plaza iPhone\\')">📋 Rincian & Setor Modal</button></div>';
+        buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Plaza iPhone\')">📋 Rincian & Setor Modal</button></div>';
       }else{
         buttons='<div class="small" style="margin-top:10px">Informasi kewajiban ditampilkan. Tombol settlement belum diaktifkan untuk kombinasi ini agar tidak salah membuat jurnal atau menandai pembayaran.</div>';
       }
@@ -285,7 +285,7 @@ window.openFinance=async function(){
       '<div class="small">Finance • periode '+start+' s/d '+end+'</div>'+
       '<div class="fin-grid" style="margin-top:10px">'+cards.map(c=>'<div class="fin-card"><div class="small">'+c[0]+'</div><div class="fin-big">'+money(c[1])+'</div></div>').join('')+'</div>'+
       '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">🧾 Transaksi Finance</h3><div class="small">Transaksi yang sudah tercatat dan POSTED.</div><div id="hmFinanceTransactions" style="margin-top:8px">Memuat...</div></div>'+
-      '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">💵 Posisi Kas & Bank</h3><div class="small">Pilih akun untuk melihat mutasi.</div><div style="margin-top:8px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="hmOpenCash(\''+String(a.code||'').replace(/'/g,"\\'")+'\')"><div class="row" style="justify-content:space-between"><span><b>'+esc(String(a.code||''))+'</b> '+esc(String(a.name||''))+'</span><b>'+money(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+'</div></div>'+
+      '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">💵 Posisi Kas & Bank</h3><div class="small">Pilih akun untuk melihat mutasi.</div><div style="margin-top:8px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="hmOpenCash(\''+String(a.code||'').replace(/'/g,"\'")+'\')"><div class="row" style="justify-content:space-between"><span><b>'+esc(String(a.code||''))+'</b> '+esc(String(a.name||''))+'</span><b>'+money(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+'</div></div>'+
       '<div class="box" style="margin-top:12px"><h3 style="margin-top:0">⚡ Aksi Finance</h3><div class="row"><button class="secondary" type="button" onclick="window.openFinanceDisbursement()">💳 Pencairan Finance</button><button class="secondary" type="button" onclick="window.openPartnerSettlement()">🤝 Kewajiban & Settlement Cell</button></div></div>';
     window.hmCashAccounts=accounts;
     const jr=await sb.from('journal_entries').select('id,journal_no,journal_date,source_type,description,posted').eq('posted',true).order('journal_date',{ascending:false}).limit(50);

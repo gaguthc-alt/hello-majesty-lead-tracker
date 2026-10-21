@@ -3474,6 +3474,10 @@ window.hmOpenStockistInfo=async function(name){
  }).join('');
  const roleCards='';
  const kpis='';
+ const isAtmaditaStockistHome=String(profile?.name||'').trim().toLowerCase()==='atmadita' && String(profile?.role||'').toUpperCase().replace(/_/g,' ').includes('MITRA STOCKIST');
+ const homeStatus=isAtmaditaStockistHome?'':''+homeStatus+'';
+ const homePerformance=isAtmaditaStockistHome?'':''+homePerformance+'';
+
 
  const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
  const divisionMenu=(roles.includes('DIVISI')||rawRole==='DIVISI')?'<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>🏛️ MENU DIVISI</span></div><div class="role-home-submenu">'+[

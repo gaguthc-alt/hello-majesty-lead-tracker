@@ -3,7 +3,7 @@
   const escx=v=>typeof window.esc==='function'?window.esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID');
   const role=()=>String(window.profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
-  function can(){return !!window.profile?.is_management||['DEVELOPER','DEVELOPER APLIKASI','FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJESTY CELL'].includes(role());}
+  function can(){return !!window.profile?.is_management||['DEVELOPER','DEVELOPER APLIKASI','FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJESTY CELL','MITRA STOCKIST'].includes(role());}
   function panel(title,html){
     const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
     if(!p||!b) throw new Error('Panel Menu Utama belum siap.');

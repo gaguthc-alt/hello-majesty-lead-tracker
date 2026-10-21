@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261021-stockist-menu-separation-1"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261021-stockist-menu-actions-fix-1"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -2510,6 +2510,8 @@ function hmRunMainMenuAction(action){
   case "hmOpenStockistInfo('Majesty Cell')": return window.hmOpenStockistInfo('Majesty Cell');
   case "hmOpenStockistInfo('Majesty Gadget')": return window.hmOpenStockistInfo('Majesty Gadget');
   case "hmOpenStockistInfo('Majesty Store')": return window.hmOpenStockistInfo('Majesty Store');
+  case "hmOpenStockistInfo('Majesty Cell','summary')": return window.hmOpenStockistInfo('Majesty Cell','summary');
+  case "hmOpenStockistInfo('Majesty Cell','profile')": return window.hmOpenStockistInfo('Majesty Cell','profile');
   case 'hmOpenStockistReceiving()': return window.hmOpenStockistReceiving();
   case 'hmOpenPartnerSettlementManagement()': return window.hmOpenPartnerSettlementManagement();
   case 'window.openCellFinanceReport()': return window.openCellFinanceReport();
@@ -3092,7 +3094,7 @@ function renderRoleHome(){
  }
  wrap.innerHTML='<div style="background:#f8fafc;width:min(900px,100%);max-height:90vh;overflow:auto;border-radius:20px;padding:20px;box-shadow:0 20px 60px #0004"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 style="margin:0">'+title+'</h2><button type="button" class="secondary" id="hmCloseStockistWorkspace">Tutup ✕</button></div><style>.hmStockistGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}.hmStockistGrid p{margin-bottom:0;color:#475467;line-height:1.5}</style>'+body+'</div>';
  document.body.appendChild(wrap);document.getElementById('hmCloseStockistWorkspace')?.addEventListener('click',()=>wrap.remove());wrap.addEventListener('click',e=>{if(e.target===wrap)wrap.remove()});
- document.getElementById('hmStockistOpenExistingApproval')?.addEventListener('click',()=>{if(typeof window.openInventoryApprovals==='function')window.openInventoryApprovals();else if(typeof window.openFinanceInventoryApprovals==='function')window.openFinanceInventoryApprovals();else alert('Modul persetujuan barang masuk belum tersedia.');});
+ document.getElementById('hmStockistOpenExistingApproval')?.addEventListener('click',async()=>{try{wrap.remove();if(typeof window.openInventoryApprovals==='function')return await window.openInventoryApprovals();if(typeof window.openFinanceInventoryApprovals==='function')return await window.openFinanceInventoryApprovals();if(typeof window.hmLoadModule==='function'){await window.hmLoadModule('finance');if(typeof window.openInventoryApprovals==='function')return await window.openInventoryApprovals();if(typeof window.openFinanceInventoryApprovals==='function')return await window.openFinanceInventoryApprovals();}throw new Error('Modul Persetujuan Barang Masuk tidak tersedia setelah modul Finance dimuat.');}catch(err){console.error('[HM] Stockist approval menu',err);alert('Persetujuan Barang Masuk gagal dibuka: '+(err?.message||err));}});
 };
 window.hmOpenStockistCooperationGuide=function(){return window.hmOpenStockistWorkspace('guide');};
 window.hmOpenStockistInfo=function(partner){return window.hmOpenStockistWorkspace('profile',partner);};

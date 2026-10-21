@@ -618,7 +618,7 @@ function invStat(label,val){
   : String(val??'');
  return '<div class="stat"><div class="small">'+label+'</div><div class="num">'+display+'</div></div>';
 }
-function filterHunterOptions(){ const sel=$('sthunter'); if(!sel)return; const outlet=String($('stoutlet')?.value||profile?.outlet||'').trim().toLowerCase(); const opts=[...sel.options].filter(o=>o.value); const matches=opts.filter(o=>String(o.getAttribute('data-hunter-outlet')||'').trim().toLowerCase()===outlet); /* Jangan kosongkan pilihan Hunter jika outlet profil/label tidak sinkron; tampilkan daftar aktif sebagai fallback. */ opts.forEach(o=>{o.hidden=!!outlet&&matches.length>0&&String(o.getAttribute('data-hunter-outlet')||'').trim().toLowerCase()!==outlet;}); if(sel.selectedOptions[0]?.hidden)sel.value=''; }
+function filterHunterOptions(){ const sel=$('sthunter'); if(!sel)return; /* Dropdown Barang Masuk menampilkan semua Hunter aktif yang diizinkan untuk Plaza. Jangan menyembunyikan nama hanya karena variasi label outlet antar tabel. */ for(const o of [...sel.options])if(o.value)o.hidden=false; }
 async function refreshCheckerOptions(){
  const sel=$('stchecker');if(!sel)return;
  const previous=sel.value;
@@ -626,18 +626,22 @@ async function refreshCheckerOptions(){
  try{
   const [directory,profiles]=await Promise.all([
    sb.from('team_directory').select('*').order('name'),
-   sb.from('team_profiles').select('user_id,name,is_management,active')
+   sb.from('team_profiles').select('user_id,name,is_management,active').eq('active',true)
   ]);
   if(directory.error)throw directory.error;
   if(profiles.error)throw profiles.error;
   const rows=[...(directory.data||[]),...(profiles.data||[])];
   const managementIds=new Set((profiles.data||[]).filter(x=>x.is_management===true||String(x.is_management).toLowerCase()==='true').map(x=>String(x.user_id||'')));
-  const byId=new Map();
+  const byId=new Map(), byName=new Map();
   for(const row of rows){
    const id=String(row.user_id||'').trim(),name=String(row.name||row.full_name||row.display_name||'').trim();
-   if(!id||!name||managementIds.has(id)||row.is_management===true||String(row.is_management).toLowerCase()==='true')continue;
-   if(!byId.has(id))byId.set(id,name);
+   if(!name||row.is_management===true||String(row.is_management).toLowerCase()==='true')continue;
+   if(id&&!managementIds.has(id)&&!byId.has(id))byId.set(id,name);
+   const key=name.toLocaleLowerCase('id');
+   if(!byName.has(key))byName.set(key,{id,name});
   }
+  /* Bila team_directory menyimpan nama tanpa user_id, cocokkan ke profil aktif agar pilihan tetap memakai ID akun yang benar. */
+  for(const row of rows){const name=String(row.name||row.full_name||row.display_name||'').trim();if(!name)continue;const key=name.toLocaleLowerCase('id');if(byId.size&&byName.has(key)){const profileRow=(profiles.data||[]).find(p=>String(p.name||'').trim().toLocaleLowerCase('id')===key&&p.user_id&&!managementIds.has(String(p.user_id)));if(profileRow&&!byId.has(String(profileRow.user_id)))byId.set(String(profileRow.user_id),name);}}
   const options=Array.from(byId.entries()).sort((a,b)=>a[1].localeCompare(b[1],'id'));
   sel.innerHTML='<option value="">Pilih Checker</option>'+options.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(name)+'</option>').join('');
   if(previous&&byId.has(previous))sel.value=previous;
@@ -1057,7 +1061,7 @@ window.openReceiveStock=async function openReceiveStock(){
  const selected=inventoryProducts.find(p=>p.id===$('stprod')?.value);
  const selectedCategory=receiveProductCategory(selected);
  const isIphoneNew=selectedCategory==='IPHONE_NEW',isIphoneSecond=selectedCategory==='IPHONE_SECOND',isAndroidNew=selectedCategory==='ANDROID_NEW';
- const teamRows=teams.data||[]; const profs=await sb.from('team_profiles').select('user_id,name,is_management,active').eq('active',true); if(profs.error)return alert(profs.error.message); const activeProfiles=profs.data||[]; const mgmtIds=new Set(activeProfiles.filter(x=>x.is_management).map(x=>x.user_id)); const perm=await sb.from('team_permissions').select('name,outlet,can_hunter,active').eq('active',true).eq('can_hunter',true); if(perm.error)return alert(perm.error.message); const allowed=perm.data||[]; /* Hak Hunter ditentukan can_hunter aktif. Perbedaan label outlet antar tabel tidak boleh mengosongkan daftar Hunter. */ const hunterRows=teamRows.filter(t=>!mgmtIds.has(t.user_id)&&allowed.some(x=>String(x.name||'').trim().toLowerCase()===String(t.name||'').trim().toLowerCase())); /* Fallback Ebi: aktif Hunter Majesty Plaza, jika team_directory dibatasi RLS atau datanya tidak ikut terbaca. */ /* Fallback Hunter Plaza yang dikonfirmasi pengguna. Hanya memperbaiki opsi dropdown Barang Masuk; tidak mengubah alur stok, penjualan, atau komisi. */ const plazaHunterFallback=[{user_id:'66d416c6-107e-41ec-840c-2caa8349db93',name:'Aal',outlet:'Majesty Plaza iPhone'},{user_id:'f5b6b58b-cf10-4905-b0ca-bfd6be4f8cb4',name:'Ebi',outlet:'Majesty Plaza iPhone'},{user_id:'bac5277a-6a3f-4235-b386-db7cfe7d92d7',name:'Imas',outlet:'Majesty Plaza iPhone'},{user_id:'02fa3f73-2060-48fc-9b38-603b58185c3b',name:'Tyo',outlet:'Majesty Plaza iPhone'}]; for(const h of plazaHunterFallback){if(!hunterRows.some(t=>String(t.user_id||'')===h.user_id))hunterRows.push(h);} const hunters=hunterRows.map(t=>'<option value="'+t.user_id+'" data-hunter-outlet="'+esc(t.outlet||'')+'">'+esc(t.name)+'</option>').join('');
+ const teamRows=teams.data||[]; const profs=await sb.from('team_profiles').select('user_id,name,is_management,active,outlet').eq('active',true); if(profs.error)return alert(profs.error.message); const activeProfiles=profs.data||[]; const mgmtIds=new Set(activeProfiles.filter(x=>x.is_management===true||String(x.is_management).toLowerCase()==='true').map(x=>String(x.user_id||''))); const perm=await sb.from('team_permissions').select('name,outlet,can_hunter,active').eq('active',true).eq('can_hunter',true); if(perm.error)return alert(perm.error.message); const allowed=perm.data||[]; const normName=v=>String(v||'').trim().toLocaleLowerCase('id'); const normOutlet=v=>String(v||'').trim().toLocaleLowerCase('id').replace(/[^a-z0-9]/g,''); const plazaAliases=['majestyplazaiphone','plazaiphone','plaza']; const plazaAllowed=allowed.filter(x=>plazaAliases.some(a=>normOutlet(x.outlet).includes(a))||normOutlet(x.outlet).includes('majestyplaza')); const directoryByName=new Map(teamRows.filter(t=>t.user_id&&t.name).map(t=>[normName(t.name),t])); const hunterById=new Map(); for(const t of [...activeProfiles,...teamRows]){const uid=String(t.user_id||'').trim(),name=String(t.name||t.full_name||t.display_name||'').trim(); if(!uid||!name||mgmtIds.has(uid)||t.is_management===true||String(t.is_management).toLowerCase()==='true')continue; const permitted=plazaAllowed.some(x=>normName(x.name)===normName(name)); if(!permitted)continue; const dir=directoryByName.get(normName(name)); const row={user_id:uid,name,outlet:t.outlet||dir?.outlet||'Majesty Plaza iPhone'}; if(!hunterById.has(uid))hunterById.set(uid,row);} const hunterRows=Array.from(hunterById.values()); /* Fallback hanya untuk anggota Plaza yang sudah ditetapkan sebelumnya; tidak mengubah transaksi atau komisi. */ const plazaHunterFallback=[{user_id:'66d416c6-107e-41ec-840c-2caa8349db93',name:'Aal',outlet:'Majesty Plaza iPhone'},{user_id:'f5b6b58b-cf10-4905-b0ca-bfd6be4f8cb4',name:'Ebi',outlet:'Majesty Plaza iPhone'},{user_id:'bac5277a-6a3f-4235-b386-db7cfe7d92d7',name:'Imas',outlet:'Majesty Plaza iPhone'},{user_id:'02fa3f73-2060-48fc-9b38-603b58185c3b',name:'Tyo',outlet:'Majesty Plaza iPhone'}]; for(const h of plazaHunterFallback){if(!hunterRows.some(t=>String(t.user_id||'')===h.user_id))hunterRows.push(h);} const hunters=hunterRows.map(t=>'<option value="'+esc(t.user_id)+'" data-hunter-outlet="'+esc(t.outlet||'')+'">'+esc(t.name)+'</option>').join('');
  const isMgmt=!!profile?.is_management;const hunterOptions=hunters;
  /* Checker dropdown: merge active team profiles and team directory because RLS/active flags can make team_profiles incomplete. Exclude management accounts and deduplicate by user_id. */
  const checkerById=new Map();

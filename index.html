@@ -3541,6 +3541,11 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    // Developer tetap melihat seluruh kelompok menu.
    if(!forceVisible && !developer && !mg && !isAccountingGroup && gi>1 && g[1]!=='KINERJA DIVISI' && !(g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))) && !(g[1]==='INVENTORY & STOCK' && inventoryAccess))return '';
    let allowed=(forceVisible || isAccountingGroup || g[1]==='KINERJA DIVISI') ? g[2] : g[2].filter(item=>cards.some(x=>x[1]===item[1]));
+   // Grup Audit & Kontrol Inventory khusus Management/Developer; tampilkan semua item grup ini meskipun belum ada di cards umum.
+   if(g[1]==='AUDIT & KONTROL INVENTORY'){
+     if(mg || developer) allowed=g[2];
+     else return '';
+   }
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
    if(isAtmaditaAccount && g[1]==='STOCKIST CENTER'){

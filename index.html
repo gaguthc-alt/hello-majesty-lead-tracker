@@ -3349,21 +3349,17 @@ window.hmOpenStockistInfo=async function(name){
      ['📦','Cek Barang Accurate','Baca daftar barang Accurate tanpa mengubah transaksi','hmCheckAccurateItems()']
    ]],
    ['🏬','STOCKIST CENTER',[
-     ['📦','Stok Semua Stockist','Cari dan pantau stok berdasarkan sumber mitra','openInventorySection(\'stock\')'],
-     ['📊','Laporan Finance Cell','Stock, modal & profit sharing Majesty Cell','window.openCellFinanceReport()'],
-     ['🤝','Stockist Management','Modal, kewajiban & settlement semua stockist','window.openPartnerSettlement()'],
-     ['🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari mitra','window.openInventoryApprovals()'],
-     ['🏬','Majesty Cell','Stockist aktif — laporan stok, modal & profit sharing','window.openCellFinanceReport()'],
-     ['🏬','Majesty Gadget','Stockist — ringkasan stok, lokasi, status, dan settlement','hmOpenStockistInfo(\'Majesty Gadget\')'],
-     ['🏬','Majesty Store','Stockist — ringkasan stok, lokasi, status, dan settlement','hmOpenStockistInfo(\'Majesty Store\')']
+     ['📦','Stok Semua Stockist','Pantau stok per mitra, outlet, dan status unit','openInventorySection(\\'stock\\')'],
+     ['🔔','Persetujuan Barang Masuk','Verifikasi barang masuk sebelum stok menjadi READY','window.openInventoryApprovals()'],
+     ['🤝','Stockist Management','Rekonsiliasi modal, kewajiban, dan settlement per outlet + mitra','window.openPartnerSettlement()'],
+     ['📊','Laporan Finance Cell','Laporan khusus Majesty Cell: stok, modal, dan profit sharing','window.openCellFinanceReport()']
    ]],
    ['🤝','KERJA SAMA STOCKIST',[
-     ['📋','Panduan Kerja Sama','Alur standar penerimaan, penjualan, kewajiban, dan settlement','hmOpenStockistCooperationGuide()'],
-     ['🏬','Profil Majesty Cell','Ringkasan stok, penjualan, kewajiban, dan settlement Cell',"hmOpenStockistInfo('Majesty Cell')"],
-     ['🏬','Profil Majesty Gadget','Ringkasan stok, penjualan, kewajiban, dan settlement Gadget',"hmOpenStockistInfo('Majesty Gadget')"],
-     ['🏬','Profil Majesty Store','Ringkasan stok, penjualan, kewajiban, dan settlement Store',"hmOpenStockistInfo('Majesty Store')"],
-     ['💸','Pembayaran Settlement','Rencana pembayaran, konfirmasi pembayaran, dan riwayat per stockist','hmOpenPartnerSettlementManagement()'],
-     ['📦','Penerimaan & Persetujuan','Antrean pemeriksaan stok seluruh stockist','hmOpenStockistReceiving()']
+     ['📋','Panduan Kerja Sama','Alur penerimaan, penjualan, retur, dan settlement','hmOpenStockistCooperationGuide()'],
+     ['🏬','Profil Majesty Cell','Profil dan ringkasan transaksi khusus Majesty Cell',"hmOpenStockistInfo('Majesty Cell')"],
+     ['🏬','Profil Majesty Gadget','Profil dan ringkasan transaksi khusus Majesty Gadget',"hmOpenStockistInfo('Majesty Gadget')"],
+     ['🏬','Profil Majesty Store','Profil dan ringkasan transaksi khusus Majesty Store',"hmOpenStockistInfo('Majesty Store')"],
+     ['💸','Pembayaran Settlement','Riwayat dan konfirmasi pembayaran setelah rekonsiliasi','hmOpenPartnerSettlementManagement()']
    ]],
    ['⚡','TOOLS',[
      ['🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()'],

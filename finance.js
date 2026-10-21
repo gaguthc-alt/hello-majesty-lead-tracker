@@ -7,8 +7,12 @@ function hmDateRange(mode){const d=new Date(),iso=x=>{const y=x.getFullYear(),m=
 window.openCellFinanceReport=async function(){
   const gp=(typeof profile!=='undefined'&&profile&&typeof profile==='object')?profile:{},wp=window.profile&&typeof window.profile==='object'?window.profile:{},p={...gp,...wp};
   const role=String(wp.role||gp.role||p.team_role||p.position||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
+  const outlet=String(wp.outlet||gp.outlet||'').trim().toUpperCase();
   const isManagement=!!(wp.is_management||gp.is_management);
-  if(!isManagement && role!=='ADMIN FINANCE MAJESTY CELL' && role!=='MITRA STOCKIST' && role!=='FASILITATOR'){alert('Akses laporan tidak diizinkan. Role terbaca: '+(role||'kosong')+'. Silakan refresh aplikasi.');return;}
+  const isCellStockist=role.includes('STOCKIST') && (!outlet || outlet==='MAJESTY CELL');
+  const isCellFinance=role==='ADMIN FINANCE MAJESTY CELL';
+  const isFacilitator=role==='FASILITATOR';
+  if(!isManagement && !isCellStockist && !isCellFinance && !isFacilitator){alert('Akses laporan tidak diizinkan. Role terbaca: '+(role||'kosong')+' • Outlet: '+(outlet||'kosong')+'.');return;}
   const m=document.getElementById('modal');
   const inlinePanel=document.getElementById('hmMenuPanel'),inlineBody=document.getElementById('hmMenuPanelBody'),inlineTitle=document.getElementById('hmMenuPanelTitle');
   // Laporan Finance Cell selalu dibuka inline di bawah Menu Utama.

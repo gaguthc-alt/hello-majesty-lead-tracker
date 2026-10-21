@@ -1317,6 +1317,21 @@ main{
 <div id="leadTrackerBox" class="box"><h3>📋 DATA LEAD</h3><div class="small" style="margin-bottom:10px">Seluruh lead dari AVAILABLE sampai HASIL. Lead yang sudah CLOSING atau GAGAL tetap tersimpan dan ditampilkan sebagai hasil.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
 
 
+
+async function hmOpenOutgoingStockList(){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+ if(!panel||!body)return;if(!profile?.is_management){alert('Daftar Barang Keluar hanya dapat diakses Management.');return;}
+ title.textContent='📤 Daftar Barang Keluar';panel.classList.remove('hidden');body.innerHTML='<div class="box">Memuat barang keluar…</div>';panel.scrollIntoView({behavior:'smooth',block:'start'});
+ try{
+  const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;if(!db)throw new Error('Koneksi database belum siap.');
+  const [sr,pr]=await Promise.all([db.from('stock_units').select('id,product_id,outlet,imei_1,color,cost,asking_price,status,received_at,partner_name,source_type').eq('status','SOLD').order('received_at',{ascending:false}).limit(500),db.from('product_master').select('id,product,variant')]);
+  if(sr.error)throw sr.error;if(pr.error)throw pr.error;
+  const products=new Map((pr.data||[]).map(p=>[p.id,p])),rows=sr.data||[],safe=v=>typeof esc==='function'?esc(String(v??'—')):String(v??'—'),money=n=>'Rp'+Number(n||0).toLocaleString('id-ID');
+  body.innerHTML='<div class="box"><div class="small">Menampilkan maksimal 500 unit berstatus SOLD. Ini adalah daftar unit terjual dari data stok, bukan laporan jurnal atau settlement.</div><div style="overflow:auto;margin-top:10px"><table style="width:100%;border-collapse:collapse;min-width:780px"><thead><tr><th>Tanggal masuk tercatat</th><th>Outlet</th><th>Produk</th><th>IMEI</th><th>Sumber/Stockist</th><th>Modal</th><th>Harga jual</th><th>Status</th></tr></thead><tbody>'+rows.map(r=>{const p=products.get(r.product_id)||{};return '<tr><td>'+safe(r.received_at?new Date(r.received_at).toLocaleString('id-ID'):'—')+'</td><td>'+safe(r.outlet)+'</td><td>'+safe([p.product,p.variant,r.color].filter(Boolean).join(' · '))+'</td><td>'+safe(r.imei_1)+'</td><td>'+safe(r.partner_name||r.source_type)+'</td><td>'+money(r.cost)+'</td><td>'+money(r.asking_price)+'</td><td>'+safe(r.status)+'</td></tr>'}).join('')+'</tbody></table></div></div>';
+ }catch(e){console.error('[HM] Daftar Barang Keluar:',e);body.innerHTML='<div class="box" style="color:#b42318"><b>Daftar Barang Keluar gagal dimuat</b><div>'+ (typeof esc==='function'?esc(e.message||String(e)):String(e.message||e))+'</div></div>';}
+}
+window.hmOpenOutgoingStockList=hmOpenOutgoingStockList;
+
 async function hmOpenReceivedStockList(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
  if(!panel||!body)return;
@@ -3413,6 +3428,12 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
      ['🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()'],
      ['📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()'],
      ['💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()']
+   ]],
+   ['🛡️','AUDIT & KONTROL INVENTORY',[
+     ['🗂️','Daftar Barang Masuk','Audit riwayat penerimaan stok dan edit data (Management)','hmOpenReceivedStockList()'],
+     ['📤','Daftar Barang Keluar','Periksa unit berstatus SOLD dari seluruh outlet (Management)','hmOpenOutgoingStockList()'],
+     ['🔎','Audit Stok','Pemeriksaan stok fisik dan selisih stok',"hmOpenInventoryFeature('opname')"],
+     ['🕘','Riwayat Stok','Riwayat aktivitas barang masuk, keluar dan mutasi',"hmOpenInventoryFeature('riwayat')"]
    ]],
    ['📦','INVENTORY & STOCK',[
      ['📊','Dashboard Inventory','Ringkasan stok dan inventory seluruh outlet','openInventoryDashboard()'],

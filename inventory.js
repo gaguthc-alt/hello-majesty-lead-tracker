@@ -386,7 +386,7 @@ async function renderStandaloneHunterStock(){
       const sourceStyle=isHunter?'background:#e8f1ff;color:#174ea6':'background:#f3e8ff;color:#6b21a8';
       const personLabel=isHunter?'Hunter':'Checker';
       return '<div class="lead" style="margin-bottom:12px">'+img+
-       '<div style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;'+sourceStyle+'">'+sourceLabel+'</div>'+
+       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px"><span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#e8f1ff;color:#174ea6">🏹 HUNTER · KOMISI 10%</span><span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#f3e8ff;color:#6b21a8">🔎 CHECKER · KOMISI 5%</span></div>'+
        '<div style="margin-top:7px"><b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b></div>'+
        '<div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div>'+
        '<div class="small">👤 '+personLabel+': <b>'+esc(x.hunter_name||'-')+'</b></div>'+(isHunter&&checkerByStock[x.id]?'<div class="small">🔎 Checker: <b>'+esc(checkerByStock[x.id])+'</b></div>':'')+

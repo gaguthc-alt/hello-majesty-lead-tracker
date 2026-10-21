@@ -1371,7 +1371,7 @@ window.hmSaveReceivedStock=async function(i){
  const sourceChanged=(newSource||null)!==(r.source_type||null)||newPartner!==(r.partner_name||null)||newSupplier!==(r.supplier||null);
  const reason=(document.getElementById('hmri_source_reason')?.value||'').trim();
  if(sourceChanged&&!reason){alert('Sumber/partner berubah. Isi alasan koreksi agar sistem mencatat perubahan kepemilikan dan riwayat audit.');return;}
- if(sourceChanged&&(r.status==='SOLD'||r.sale_id)){alert('Barang sudah terjual. Koreksi sumber harus melalui proses khusus agar penjualan, komisi, dan jurnal tidak berubah sepihak.');return;}
+ if(sourceChanged&&(r.status==='SOLD'||r.sale_id)&&!confirm('Barang ini sudah SOLD. Koreksi hanya akan memperbarui sumber/pemilik dan aturan bagi hasil serta mencatat audit. Data penjualan, komisi, dan jurnal yang sudah terbentuk tidak diubah otomatis. Lanjutkan koreksi sumber?'))return;
  if(!patch.outlet){alert('Outlet wajib diisi.');return;}const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
  try{
   if(sourceChanged){const corr=await db.rpc('correct_stock_source',{p_stock_unit_id:r.id,p_source_type:newSource,p_partner_name:newPartner,p_supplier:newSupplier,p_reason:reason});if(corr.error)throw corr.error;}

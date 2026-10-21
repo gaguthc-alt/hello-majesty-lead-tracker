@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261021-handover-idempotent-1"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261021-stockist-workspace-1"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -3395,17 +3395,14 @@ window.hmOpenStockistInfo=async function(name){
      ['📦','Cek Barang Accurate','Baca daftar barang Accurate tanpa mengubah transaksi','hmCheckAccurateItems()']
    ]],
    ['🏬','STOCKIST CENTER',[
-     ['📦','Stok Semua Stockist','Pantau stok per mitra, outlet, dan status unit','openInventorySection(\'stock\')'],
-     ['🔔','Persetujuan Barang Masuk','Verifikasi barang masuk sebelum stok menjadi READY','window.openInventoryApprovals()'],
-     ['🤝','Stockist Management','Rekonsiliasi modal, kewajiban, dan settlement per outlet + mitra','window.openPartnerSettlement()'],
-     ['📊','Laporan Finance Cell','Laporan khusus Majesty Cell: stok, modal, dan profit sharing','window.openCellFinanceReport()']
+     ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
+     ['📦','Ringkasan Stok Majesty Cell','Lihat stok milik Majesty Cell: READY, SOLD, RETURN, dan lokasi unit',"hmOpenStockistInfo('Majesty Cell')"],
+     ['📊','Laporan Stok & Modal Cell','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement','window.openCellFinanceReport()']
    ]],
    ['🤝','KERJA SAMA STOCKIST',[
-     ['📋','Panduan Kerja Sama','Alur penerimaan, penjualan, retur, dan settlement','hmOpenStockistCooperationGuide()'],
+     ['📋','Panduan Kerja Sama','Panduan alur stok jaringan, stok titip outlet, retur, pembagian hasil, dan settlement','hmOpenStockistCooperationGuide()'],
      ['🏬','Profil Majesty Cell','Profil dan ringkasan transaksi khusus Majesty Cell',"hmOpenStockistInfo('Majesty Cell')"],
-     ['🏬','Profil Majesty Gadget','Profil dan ringkasan transaksi khusus Majesty Gadget',"hmOpenStockistInfo('Majesty Gadget')"],
-     ['🏬','Profil Majesty Store','Profil dan ringkasan transaksi khusus Majesty Store',"hmOpenStockistInfo('Majesty Store')"],
-     ['💸','Pembayaran Settlement','Riwayat dan konfirmasi pembayaran setelah rekonsiliasi','hmOpenPartnerSettlementManagement()']
+     ['💸','Pembayaran Settlement','Pantau kewajiban, permintaan pembayaran, dan verifikasi penerimaan uang','hmOpenPartnerSettlementManagement()']
    ]],
    ['⚡','TOOLS',[
      ['🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()'],
@@ -3464,7 +3461,7 @@ window.hmOpenStockistInfo=async function(name){
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
    if(isAtmaditaAccount && g[1]==='STOCKIST CENTER'){
-     allowed=g[2].filter(item=>item[1]==='Persetujuan Barang Masuk');
+     allowed=g[2].filter(item=>['Persetujuan Barang Masuk','Ringkasan Stok Majesty Cell','Laporan Stok & Modal Cell'].includes(item[1]));
    }
    if(isAtmaditaAccount && g[1]==='KERJA SAMA STOCKIST'){
      allowed=g[2].filter(item=>['Panduan Kerja Sama','Profil Majesty Cell','Pembayaran Settlement'].includes(item[1]));

@@ -1,4 +1,4 @@
-<html lang="id"><head><meta name="hm-build" content="20261021-stockist-guard-5"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+<html lang="id"><head><meta name="hm-build" content="20261021-stockist-menu-separation-1"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -3247,7 +3247,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
 
 
 window.hmFilterStockistRows=function(){const loc=document.getElementById('hmStockistLocation')?.value||'ALL',st=document.getElementById('hmStockistStatus')?.value||'ALL',cat=document.getElementById('hmStockistCategory')?.value||'ALL',per=document.getElementById('hmStockistPeriod')?.value||'MONTH',now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),1),prev=new Date(now.getFullYear(),now.getMonth()-1,1),end=new Date(now.getFullYear(),now.getMonth()+1,1),rows=[...document.querySelectorAll('[data-stockist-row]')];let shown=0;rows.forEach(r=>{const date=r.getAttribute('data-date'),d=date?new Date(date):null,okDate=per==='ALL'||(d&&!isNaN(d)&&(per==='MONTH'?d>=start&&d<end:d>=prev&&d<start)),ok=(loc==='ALL'||r.getAttribute('data-location')===loc)&&(st==='ALL'||r.getAttribute('data-status')===st)&&(cat==='ALL'||r.getAttribute('data-category')===cat)&&okDate;r.style.display=ok?'':'none';if(ok)shown++;});const out=document.getElementById('hmStockistFilterCount');if(out)out.textContent='Menampilkan '+shown+' dari '+rows.length+' unit. Unit tanpa tanggal aktivitas tidak masuk filter periode sampai datanya dilengkapi.';};
-window.hmOpenStockistInfo=async function(name){
+window.hmOpenStockistInfo=async function(name,mode='summary'){
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
@@ -3296,6 +3296,18 @@ window.hmOpenStockistInfo=async function(name){
   const settlementRows=settles.length?settles.map(x=>'<div class="lead"><b>'+safe(x.settlement_type||'Settlement')+' • '+money(x.amount)+'</b><div class="small">'+safe(x.settlement_date||'-')+' • '+safe(x.status||'Belum ada status')+(x.period_start?' • Periode '+safe(x.period_start)+' s/d '+safe(x.period_end||x.period_start):'')+'</div></div>').join(''):'<div class="small">Belum ada catatan settlement untuk stockist ini.</div>';
   const checklist='<div class="box"><b>Status alur stockist</b><ul><li>Master stockist: '+(sup?.active?'Aktif':'Periksa status di master supplier')+'</li><li>Persetujuan barang masuk: menggunakan modul Persetujuan Barang Masuk yang sudah ada; periksa status persetujuan per unit di tabel.</li><li>Settlement: riwayat ditampilkan dari data settlement stockist. Tombol pembayaran khusus Gadget/Store belum diaktifkan.</li><li>Accurate: jangan anggap jurnal stockist sudah teruji hanya dari status koneksi; perlu verifikasi mapping akun dan hasil sinkron transaksi.</li></ul></div>';
   const reportStyle='<style>.hm-stockist-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.hm-stockist-stat{border:1px solid var(--border,#d0d5dd);border-radius:14px;background:#fff;padding:14px;min-height:92px;box-shadow:0 2px 7px rgba(0,0,0,.06)}.hm-stockist-stat b{font-size:23px;display:block;margin:6px 0}.hm-stockist-table{width:100%;border-collapse:collapse;min-width:600px}.hm-stockist-table th,.hm-stockist-table td{padding:9px 8px;text-align:left;border-bottom:1px solid var(--border,#ddd);vertical-align:top;overflow-wrap:anywhere}.hm-stockist-table th{font-size:14px;line-height:1.25}.hm-stockist-table td{font-size:14px;line-height:1.35}.hm-stockist-table td:first-child{min-width:180px}.hm-stockist-table td:nth-child(2){min-width:130px}.hm-stockist-table td:nth-child(3),.hm-stockist-table td:nth-child(4){min-width:92px}.hm-stockist-table td:last-child{min-width:110px;white-space:normal}@media(max-width:699px){.hm-stockist-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.hm-stockist-stat{padding:10px;min-height:78px}.hm-stockist-stat b{font-size:18px;overflow-wrap:anywhere}.hm-stockist-table{min-width:620px}.hm-stockist-table th,.hm-stockist-table td{padding:10px 8px}.hm-stockist-table th{font-size:13px}}@media(min-width:700px){.hm-stockist-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(min-width:1100px){.hm-stockist-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}</style>';
+  if(mode==='profile'){
+   const profileSettlements=settles.length?settles.map(x=>'<div class="lead"><b>'+safe(x.settlement_type||'Settlement')+' • '+money(x.amount)+'</b><div class="small">'+safe(x.settlement_date||'-')+' • '+safe(x.status||'Status belum dicatat')+'</div>'+(x.note?'<div>'+safe(x.note)+'</div>':'')+'</div>').join(''):'<div class="small">Belum ada riwayat settlement tercatat.</div>';
+   b.innerHTML='<div class="box"><h3>🏬 Profil Mitra</h3><div class="hm-stockist-stats">'+
+    '<div class="hm-stockist-stat"><div class="small">NAMA MITRA</div><b style="font-size:18px">'+safe(sup?.name||name)+'</b></div>'+
+    '<div class="hm-stockist-stat"><div class="small">KODE MITRA</div><b style="font-size:18px">'+safe(sup?.supplier_code||'Belum diatur')+'</b></div>'+
+    '<div class="hm-stockist-stat"><div class="small">STATUS KERJA SAMA</div><b style="font-size:18px">'+(sup?.active?'Aktif':'Perlu verifikasi')+'</b></div></div>'+
+    '<p><b>Catatan kerja sama</b><br>'+safe(sup?.notes||'Belum ada catatan kerja sama pada master mitra.')+'</p>'+
+    '<p class="small">Halaman ini khusus untuk identitas dan ketentuan mitra. Untuk jumlah unit dan nilai modal, gunakan Ringkasan Stok Majesty Cell atau Laporan Stok & Modal Cell.</p></div>'+
+    '<div class="box"><h3>💸 Riwayat Settlement</h3>'+profileSettlements+'</div>'+
+    '<div class="box"><h3>📌 Alur kerja</h3><ol><li>Barang masuk diperiksa melalui Persetujuan Barang Masuk.</li><li>Posisi unit dan modal dipantau pada Ringkasan Stok.</li><li>Rincian penjualan dan modal yang belum disetor dicek di Laporan Stok & Modal.</li><li>Pengajuan dan verifikasi pembayaran dilakukan melalui Pembayaran Settlement.</li></ol></div>';
+   return;
+  }
   b.innerHTML=reportStyle+
    '<div class="small">Ringkasan stockist • '+safe(sup?.supplier_code||'-')+' • '+(sup?.active?'Aktif':'Periksa status')+'</div>'+
    '<div class="hm-stockist-stats">'+
@@ -3396,12 +3408,12 @@ window.hmOpenStockistInfo=async function(name){
    ]],
    ['🏬','STOCKIST CENTER',[
      ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
-     ['📦','Ringkasan Stok Majesty Cell','Lihat stok milik Majesty Cell: READY, SOLD, RETURN, dan lokasi unit',"hmOpenStockistInfo('Majesty Cell')"],
+     ['📦','Ringkasan Stok Majesty Cell','Lihat jumlah unit, status, lokasi, dan nilai stok milik Majesty Cell',"hmOpenStockistInfo('Majesty Cell','summary')"],
      ['📊','Laporan Stok & Modal Cell','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement','window.openCellFinanceReport()']
    ]],
    ['🤝','KERJA SAMA STOCKIST',[
      ['📋','Panduan Kerja Sama','Panduan alur stok jaringan, stok titip outlet, retur, pembagian hasil, dan settlement','hmOpenStockistCooperationGuide()'],
-     ['🏬','Profil Majesty Cell','Profil dan ringkasan transaksi khusus Majesty Cell',"hmOpenStockistInfo('Majesty Cell')"],
+     ['🏬','Profil Majesty Cell','Identitas mitra, status kerja sama, catatan, dan riwayat settlement',"hmOpenStockistInfo('Majesty Cell','profile')"],
      ['💸','Pembayaran Settlement','Pantau kewajiban, permintaan pembayaran, dan verifikasi penerimaan uang','hmOpenPartnerSettlementManagement()']
    ]],
    ['⚡','TOOLS',[

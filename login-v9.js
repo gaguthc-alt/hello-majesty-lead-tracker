@@ -177,7 +177,9 @@
       };
       try{
         const starter=await waitForAppStarter();
-        Promise.resolve(starter(session.user,sb)).catch(ex=>{
+        const startPromise=Promise.resolve().then(()=>starter(session.user,sb));
+        const startTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Proses dashboard tidak merespons selama 12 detik. Kemungkinan permintaan profil/database macet atau modul dashboard bermasalah.')),12000));
+        Promise.race([startPromise,startTimeout]).catch(ex=>{
           console.error('[HM] Dashboard start error:',ex);
           showBootError('Dashboard gagal dibuka.',ex?.message||'Terjadi kesalahan saat memulai dashboard.');
         });

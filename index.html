@@ -2919,7 +2919,7 @@ function renderRoleHome(){
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
-   add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
+   add('🤝','Stockist Management','Modal, kewajiban & settlement stockist','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Barang masuk yang menunggu verifikasi','openInventoryApprovals()');
    add('🚶','Persetujuan Walk-In','Semua penjualan tanpa Lead & CS yang menunggu persetujuan','openWalkinApprovals()');
    add('💰','Komisi Tim','Seluruh komisi tim, bukan hanya Sales','openTeamCommission()');
@@ -2972,7 +2972,7 @@ function renderRoleHome(){
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
    add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
-   add('🤝','Kewajiban Cell','Modal & profit sharing','window.openPartnerSettlement()');
+   add('🤝','Stockist Management','Modal, kewajiban & settlement stockist','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari Majesty Cell','window.openInventoryApprovals()');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
  }else if(has('ADMIN FINANCE')){
@@ -3351,7 +3351,7 @@ window.hmOpenStockistInfo=async function(name){
    ['🏬','STOCKIST CENTER',[
      ['📦','Stok Semua Stockist','Cari dan pantau stok berdasarkan sumber mitra','openInventorySection(\'stock\')'],
      ['📊','Laporan Finance Cell','Stock, modal & profit sharing Majesty Cell','window.openCellFinanceReport()'],
-     ['🤝','Kewajiban Cell','Modal & profit sharing Majesty Cell','window.openPartnerSettlement()'],
+     ['🤝','Stockist Management','Modal, kewajiban & settlement semua stockist','window.openPartnerSettlement()'],
      ['🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari mitra','window.openInventoryApprovals()'],
      ['🏬','Majesty Cell','Stockist aktif — laporan stok, modal & profit sharing','window.openCellFinanceReport()'],
      ['🏬','Majesty Gadget','Stockist — ringkasan stok, lokasi, status, dan settlement','hmOpenStockistInfo(\'Majesty Gadget\')'],
@@ -3851,7 +3851,7 @@ window.hmOpenStockistInfo=async function(name){
        hmActiveMainMenu='';
        void Promise.resolve()
          .then(()=>{
-           if(typeof window.openPartnerSettlement!=='function')throw new Error('Fungsi Kewajiban Cell belum termuat.');
+           if(typeof window.openPartnerSettlement!=='function')throw new Error('Fungsi Stockist Management belum termuat.');
            return window.openPartnerSettlement();
          })
          .then(()=>{
@@ -3870,11 +3870,11 @@ window.hmOpenStockistInfo=async function(name){
            if(panel){panel.classList.remove('hidden');requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));}
          })
          .catch(ex=>{
-           console.error('[HM] Kewajiban Cell gagal dibuka:',ex);
+           console.error('[HM] Stockist Management gagal dibuka:',ex);
            const panel=document.getElementById('hmMenuPanel');
            const body=document.getElementById('hmMenuPanelBody');
            if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Kewajiban Cell: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
-           else alert('Kewajiban Cell gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
+           else alert('Stockist Management gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
          });
        return;
      }

@@ -93,6 +93,7 @@ window.openPartnerSettlement=async function(){
     body.innerHTML='<div class="small">Kewajiban dipisahkan berdasarkan outlet dan stockist. Settlement hanya tersedia untuk alur yang sudah diverifikasi.</div>'+
       (sorted.length?sorted.map(card).join(''):'<div class="box" style="margin-top:12px">Belum ada data kewajiban stockist.</div>')+
       '<div id="partnerSettlementDetail" style="margin-top:14px"></div>';
+    if(p.is_management) window.loadPartnerBusinessRules();
     panel.classList.remove('hidden');
     requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
   }catch(ex){
@@ -101,6 +102,42 @@ window.openPartnerSettlement=async function(){
     panel.classList.remove('hidden');
   }
 };
+
+window.loadPartnerBusinessRules=async function(){
+  const p=window.profile||{};
+  if(!p.is_management){alert('Pengaturan profit sharing hanya dapat diakses Management.');return;}
+  const body=document.getElementById('hmMenuPanelBody');if(!body||!window.sb)return;
+  let host=document.getElementById('hmPartnerRulesConfig');
+  if(!host){host=document.createElement('div');host.id='hmPartnerRulesConfig';host.className='box';host.style.marginTop='14px';body.appendChild(host);}
+  host.innerHTML='<h3>⚙️ Pengaturan Kerja Sama Stockist</h3><div class="small">Persentase yang diubah berlaku mulai tanggal efektif. Transaksi/settlement lama tidak diubah otomatis.</div><div class="small" style="margin-top:8px">⏳ Memuat aturan...</div>';
+  const {data,error}=await window.sb.from('partner_business_rules').select('id,partner_name,outlet,profit_share_pct,loss_share_pct,capital_share_pct,profit_settlement_cycle,active,effective_from,updated_at').order('partner_name').order('outlet');
+  if(error){host.innerHTML+='<div class="small">Gagal memuat aturan: '+String(error.message||error)+'</div>';return;}
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML='<h3>⚙️ Pengaturan Kerja Sama Stockist</h3><div class="small">Management dapat mengubah profit sharing dan tanggal efektif. Perubahan tercatat dalam riwayat. Jangan ubah transaksi lama secara retroaktif.</div>'+
+    ((data||[]).map(r=>'<div class="lead" style="margin-top:10px"><b>'+esc(r.partner_name)+' → '+esc(r.outlet)+'</b><div class="row" style="margin-top:8px;align-items:end"><label style="flex:1;min-width:110px"><span class="small">Profit sharing (%)</span><input type="number" min="0" max="100" step="0.01" id="hmProfitPct_'+r.id+'" value="'+Number(r.profit_share_pct||0)+'"></label><label style="flex:1;min-width:130px"><span class="small">Tanggal efektif</span><input type="date" id="hmProfitDate_'+r.id+'" value="'+esc(r.effective_from||new Date().toISOString().slice(0,10))+'"></label><button class="primary" type="button" onclick="window.savePartnerBusinessRule(\''+r.id+'\')">Simpan</button></div><div class="small">Aturan saat ini: '+Number(r.profit_share_pct||0)+'% • Modal '+Number(r.capital_share_pct||0)+'% • '+esc(r.profit_settlement_cycle||'NONE')+'</div></div>').join('')||'<div class="small">Belum ada aturan kerja sama.</div>')+
+    '<button class="secondary" type="button" style="margin-top:10px" onclick="window.loadPartnerBusinessRuleHistory()">Lihat riwayat perubahan</button><div id="hmPartnerRulesHistory" style="margin-top:10px"></div>';
+};
+window.savePartnerBusinessRule=async function(id){
+  const p=window.profile||{};if(!p.is_management){alert('Hanya Management yang dapat mengubah aturan.');return;}
+  const pctEl=document.getElementById('hmProfitPct_'+id),dateEl=document.getElementById('hmProfitDate_'+id);
+  const pct=Number(pctEl?.value),effective=dateEl?.value;
+  if(!Number.isFinite(pct)||pct<0||pct>100){alert('Persentase harus antara 0 sampai 100.');return;}
+  if(!effective){alert('Tanggal efektif wajib diisi.');return;}
+  if(!confirm('Simpan profit sharing '+pct+'% mulai '+effective+'? Transaksi lama tidak diubah otomatis.'))return;
+  const {error}=await window.sb.from('partner_business_rules').update({profit_share_pct:pct,effective_from:effective}).eq('id',id);
+  if(error){alert('Gagal menyimpan aturan: '+error.message);return;}
+  alert('Aturan profit sharing berhasil disimpan.');
+  await window.loadPartnerBusinessRules();
+};
+window.loadPartnerBusinessRuleHistory=async function(){
+  const p=window.profile||{};if(!p.is_management){alert('Akses ditolak.');return;}
+  const host=document.getElementById('hmPartnerRulesHistory');if(!host)return;
+  host.innerHTML='<div class="small">Memuat riwayat...</div>';
+  const {data,error}=await window.sb.from('partner_business_rule_history').select('partner_name,outlet,old_profit_share_pct,new_profit_share_pct,old_effective_from,new_effective_from,changed_at,note').order('changed_at',{ascending:false}).limit(100);
+  if(error){host.innerHTML='<div class="small">Riwayat belum dapat dibaca: '+String(error.message||error)+'</div>';return;}
+  host.innerHTML=(data||[]).length?(data||[]).map(r=>'<div class="lead"><b>'+String(r.partner_name||'')+' → '+String(r.outlet||'')+'</b><div>'+Number(r.old_profit_share_pct||0)+'% → <b>'+Number(r.new_profit_share_pct||0)+'%</b></div><div class="small">Efektif: '+String(r.old_effective_from||'-')+' → '+String(r.new_effective_from||'-')+' • Diubah: '+new Date(r.changed_at).toLocaleString('id-ID')+'</div></div>').join(''):'<div class="small">Belum ada riwayat perubahan.</div>';
+};
+
 window.updatePartnerCapitalSelection=function(){
   const checks=[...document.querySelectorAll('.partner-capital-check:checked')];
   const total=checks.reduce((s,x)=>s+Number(x.dataset.amount||0),0);

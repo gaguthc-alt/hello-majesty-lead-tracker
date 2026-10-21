@@ -3226,14 +3226,15 @@ window.hmOpenStockistInfo=async function(name){
  const renderError=e=>{b.innerHTML='<div class="box"><b>'+safe(name)+'</b><p>Data belum dapat dimuat: '+safe(e?.message||e)+'</p><button type="button" class="secondary" onclick="hmOpenStockistInfo(\''+safe(name)+'\')">↻ Coba Lagi</button></div>';};
  try{
   if(!window.sb)throw new Error('Koneksi database belum siap. Login ulang bila diperlukan.');
-  const [sr,ur,pr]=await Promise.all([
+  const [sr,partnerUnits,supplierUnits,pr]=await Promise.all([
    window.sb.from('suppliers').select('supplier_code,name,active,notes').ilike('name',name),
-   window.sb.from('stock_units').select('id,product_id,product_master(category,product,variant),outlet,imei_1,grade,condition,battery_health,cost,asking_price,sold_price,status,received_at,sold_at,created_at,source_type,partner_name,supplier,accurate_item_no').or('partner_name.ilike.'+name+',supplier.ilike.'+name).order('created_at',{ascending:false}).limit(200),
+   window.sb.from('stock_units').select('id,product_id,product_master(category,product,variant),outlet,imei_1,grade,condition,battery_health,cost,asking_price,sold_price,status,received_at,sold_at,created_at,source_type,partner_name,supplier,accurate_item_no').ilike('partner_name',name).order('created_at',{ascending:false}).limit(200),
+   window.sb.from('stock_units').select('id,product_id,product_master(category,product,variant),outlet,imei_1,grade,condition,battery_health,cost,asking_price,sold_price,status,received_at,sold_at,created_at,source_type,partner_name,supplier,accurate_item_no').is('partner_name',null).ilike('supplier',name).order('created_at',{ascending:false}).limit(200),
    window.sb.from('partner_settlements').select('id,amount,status,settlement_date,settlement_type,period_start,period_end,note').ilike('partner_name',name).order('created_at',{ascending:false}).limit(100)
   ]);
-  if(sr.error)throw sr.error;if(ur.error)throw ur.error;if(pr.error)throw pr.error;
+  if(sr.error)throw sr.error;if(partnerUnits.error)throw partnerUnits.error;if(supplierUnits.error)throw supplierUnits.error;if(pr.error)throw pr.error;
   const sup=(sr.data||[]).find(x=>String(x.name).toLowerCase()===name.toLowerCase());
-  const units=ur.data||[],settles=pr.data||[];
+  const units=[...(partnerUnits.data||[]),...(supplierUnits.data||[])].filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,200),settles=pr.data||[];
   const [ar,rr]=units.length?await Promise.all([
    window.sb.from('inventory_receive_approvals').select('stock_unit_id,status,requested_at,reviewed_at,review_note').in('stock_unit_id',units.map(x=>x.id)),
    window.sb.from('stock_supplier_returns').select('stock_unit_id,return_date').in('stock_unit_id',units.map(x=>x.id))

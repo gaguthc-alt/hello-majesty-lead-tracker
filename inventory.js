@@ -622,34 +622,14 @@ function filterHunterOptions(){ const sel=$('sthunter'); if(!sel)return; /* Drop
 async function refreshCheckerOptions(){
  const sel=$('stchecker');if(!sel)return;
  const previous=sel.value;
- sel.innerHTML='<option value="">Memuat daftar Checker...</option>';
- try{
-  const [directory,profiles]=await Promise.all([
-   sb.from('team_directory').select('*').order('name'),
-   sb.from('team_profiles').select('user_id,name,is_management,active').eq('active',true)
-  ]);
-  if(directory.error)throw directory.error;
-  if(profiles.error)throw profiles.error;
-  const rows=[...(directory.data||[]),...(profiles.data||[])];
-  const managementIds=new Set((profiles.data||[]).filter(x=>x.is_management===true||String(x.is_management).toLowerCase()==='true').map(x=>String(x.user_id||'')));
-  const byId=new Map(), byName=new Map();
-  for(const row of rows){
-   const id=String(row.user_id||'').trim(),name=String(row.name||row.full_name||row.display_name||'').trim();
-   if(!name||row.is_management===true||String(row.is_management).toLowerCase()==='true')continue;
-   if(id&&!managementIds.has(id)&&!byId.has(id))byId.set(id,name);
-   const key=name.toLocaleLowerCase('id');
-   if(!byName.has(key))byName.set(key,{id,name});
-  }
-  /* Bila team_directory menyimpan nama tanpa user_id, cocokkan ke profil aktif agar pilihan tetap memakai ID akun yang benar. */
-  for(const row of rows){const name=String(row.name||row.full_name||row.display_name||'').trim();if(!name)continue;const key=name.toLocaleLowerCase('id');if(byId.size&&byName.has(key)){const profileRow=(profiles.data||[]).find(p=>String(p.name||'').trim().toLocaleLowerCase('id')===key&&p.user_id&&!managementIds.has(String(p.user_id)));if(profileRow&&!byId.has(String(profileRow.user_id)))byId.set(String(profileRow.user_id),name);}}
-  const options=Array.from(byId.entries()).sort((a,b)=>a[1].localeCompare(b[1],'id'));
-  sel.innerHTML='<option value="">Pilih Checker</option>'+options.map(([id,name])=>'<option value="'+esc(id)+'">'+esc(name)+'</option>').join('');
-  if(previous&&byId.has(previous))sel.value=previous;
-  if(!options.length)sel.innerHTML='<option value="">Nama tim belum terbaca — coba tutup dan buka formulir</option>';
- }catch(e){
-  console.error('[HM] Gagal memuat daftar Checker',e);
-  sel.innerHTML='<option value="">Gagal memuat Checker — coba pilih ulang</option>';
+ /* Gunakan daftar yang sudah dimuat oleh openReceiveStock. Query ulang dari sesi fasilitator terkena RLS dan hanya mengembalikan akun sendiri (contoh: Ifa). */
+ const cached=Array.isArray(window.hmReceiveCheckerOptions)?window.hmReceiveCheckerOptions:[];
+ if(cached.length){
+  sel.innerHTML='<option value="">Pilih Checker</option>'+cached.map(x=>'<option value="'+esc(x.user_id)+'">'+esc(x.name)+'</option>').join('');
+  if(previous&&cached.some(x=>String(x.user_id)===previous))sel.value=previous;
+  return;
  }
+ sel.innerHTML='<option value="">Daftar Checker belum tersedia — tutup dan buka Barang Masuk kembali</option>';
 }
 function toggleHunterField(){
  const source=$('stsource')?.value||'MANAGEMENT';
@@ -1071,7 +1051,7 @@ window.openReceiveStock=async function openReceiveStock(){
   if(!uid||!name||t.is_management===true||mgmtIds.has(uid))continue;
   if(!checkerById.has(uid))checkerById.set(uid,{user_id:uid,name});
  }
- const checkerOptions=Array.from(checkerById.values()).sort((a,b)=>a.name.localeCompare(b.name,'id')).map(x=>'<option value="'+esc(x.user_id)+'">'+esc(x.name)+'</option>').join('');
+ const checkerOptionRows=Array.from(checkerById.values()).sort((a,b)=>a.name.localeCompare(b.name,'id')); window.hmReceiveCheckerOptions=checkerOptionRows; window.hmReceiveHunterOptions=hunterRows; const checkerOptions=checkerOptionRows.map(x=>'<option value="'+esc(x.user_id)+'">'+esc(x.name)+'</option>').join('');
  $('mt').textContent='📦 Barang Masuk';
  $('mb').innerHTML=(isMgmt?'<label>Barang Masuk Ke</label><select id="stoutlet" onchange="filterHunterOptions()">'+[...new Set(inventoryStock.map(s=>s.outlet).filter(Boolean).concat(['Majesty Plaza iPhone','Majesty Refill Phone']))].sort().map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select>':'<div class="small" style="margin-bottom:8px">📍 Barang masuk ke: <b>'+esc(profile?.outlet||'-')+'</b></div>')+
  '<label>Kategori Barang</label><select id="stcategory" onchange="filterReceiveCategory()"><option value="">Pilih kategori dulu</option>'+receiveCategories.map(c=>'<option value="'+c[0]+'">'+c[1]+'</option>').join('')+'</select><label>Produk</label><input id="stprodsearch" disabled placeholder="Pilih kategori terlebih dahulu" oninput="filterReceiveProducts()"><select id="stprod" disabled onchange="toggleReceiveFields()">'+products+'</select><label>Varian / Storage</label><input id="stvariant" readonly placeholder="Otomatis dari Master Produk">'+

@@ -6559,7 +6559,35 @@ window.addEventListener('DOMContentLoaded',function(){
   setTimeout(showStall,18000);
   setTimeout(showStall,30000);
 })();
-</script><script src="login-v9.js?v=20261022-independent-dashboard-watchdog-5"></script>
+</script><script>
+/* HM STARTUP ERROR DIAGNOSTICS — capture parse/runtime errors from deferred modules */
+(function(){
+  function showError(message,source,line){
+    try{
+      console.error('[HM] Startup script error:',message,source,line);
+      const identity=document.getElementById('identity');
+      const home=document.getElementById('roleHome');
+      if(identity)identity.textContent='Kesalahan modul aplikasi.';
+      if(!home)return;
+      const card=document.createElement('div');card.className='box';
+      const heading=document.createElement('h3');heading.textContent='Modul aplikasi gagal dijalankan';
+      const note=document.createElement('p');note.className='small';
+      note.textContent=String(message||'Kesalahan JavaScript')+(source?' • '+String(source).split('/').pop():'')+(line?' • baris '+line:'');
+      const button=document.createElement('button');button.textContent='Muat ulang aplikasi';button.onclick=function(){location.reload();};
+      card.append(heading,note,button);home.replaceChildren(card);
+      document.getElementById('app')?.classList.remove('hidden');
+      home.classList.remove('hidden');
+    }catch(e){console.error('[HM] cannot render startup error',e);}
+  }
+  window.addEventListener('error',function(e){
+    if(e && (e.error || e.message))showError(e.message,e.filename,e.lineno);
+  },true);
+  window.addEventListener('unhandledrejection',function(e){
+    const reason=e&&e.reason; if(reason)showError(reason.message||String(reason),'Promise',0);
+  });
+})();
+</script>
+<script src="login-v9.js?v=20261022-independent-dashboard-watchdog-5"></script>
 
 
 </body></html>

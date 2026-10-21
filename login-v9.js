@@ -191,6 +191,14 @@
         const button=document.createElement('button');button.textContent='Muat ulang aplikasi';button.onclick=()=>location.reload();
         card.append(heading,note,button);roleHome.appendChild(card);
       };
+      // Independent watchdog: start() handles many of its own errors, so the
+      // Promise.race below alone may not reveal a stalled startup. Never leave
+      // the user on the splash screen indefinitely.
+      const startupWatchdog=setTimeout(()=>{
+        if(identity?.textContent==='Login berhasil • Memuat dashboard…'){
+          showBootError('Dashboard belum merespons.','Login berhasil, tetapi fungsi pembuka dashboard belum mengubah status dalam 15 detik. Muat ulang aplikasi lalu coba lagi. Jika berulang, kirim screenshot pesan ini.');
+        }
+      },15000);
       try{
         const starter=await waitForAppStarter();
         const startPromise=Promise.resolve().then(()=>starter(session.user,sb));

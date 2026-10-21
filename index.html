@@ -3445,7 +3445,6 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
      ['🧑‍💼','Stock Hunter & Checker','Daftar stok Hunter (komisi 10%) dan Checker (komisi 5%) yang masih READY','openHunterStock()'],
      ['🚶','Persetujuan Walk-In','Semua penjualan tanpa Lead & CS yang menunggu persetujuan','openWalkinApprovals()'],
         ['🔄','Mutasi Stok','Perpindahan stok antar outlet',"hmOpenInventoryFeature('mutasi')"],
-     ['📋','Riwayat Stok','Riwayat aktivitas barang masuk, keluar & mutasi',"hmOpenInventoryFeature('riwayat')"],
      ['⚠️','Penyesuaian Stok','Koreksi selisih stok dengan alasan',"hmOpenInventoryFeature('penyesuaian')"],
      ['🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')"]
    ]],
@@ -3576,7 +3575,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    // Laporan Performa Tim hanya ditampilkan di grup KINERJA & TARGET.
    // Fungsi inventory utama wajib tampil dengan urutan yang sama seperti menu utama.
    if(inventoryAccess && g[1]==='INVENTORY & STOCK'){
-     const order=['Dashboard Inventory','Master Produk','Stok Siap Jual','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter & Checker','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok','Stock Opname'];
+     const order=['Dashboard Inventory','Master Produk','Stok Siap Jual','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter & Checker','Persetujuan Walk-In','Mutasi Stok','Penyesuaian Stok'];
      allowed=order.map(name=>g[2].find(x=>x[1]===name)).filter(Boolean).filter(item=>cards.some(x=>x[1]===item[1]));
    }
    if(!allowed.length)return '';

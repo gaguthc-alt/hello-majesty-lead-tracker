@@ -1848,7 +1848,7 @@ function hmResetMainMenuButtonLabels(){
      void Promise.resolve().then(()=>{
        if(typeof window.openFinance==='function') return run();
        const s=document.createElement('script');
-       s.src='finance.js?v=20261021-cell-date-ddmmyyyy-1';
+       s.src='finance.js?v=20261022-settlement-finance-deduction-1';
        return new Promise((resolve,reject)=>{
          s.onload=()=>{try{resolve(run())}catch(ex){reject(ex)}};
          s.onerror=()=>reject(new Error('Modul Finance gagal dimuat.'));
@@ -3971,7 +3971,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
        void Promise.resolve().then(async()=>{
          if(typeof window.openCellFinanceReport!=='function'){
            await new Promise((resolve,reject)=>{
-             const src='finance.js?v=20261021-cell-date-ddmmyyyy-1';
+             const src='finance.js?v=20261022-settlement-finance-deduction-1';
              const existing=[...document.scripts].find(s=>String(s.src||'').includes('finance.js'));
              if(existing && existing.dataset.hmReloading==='1'){
                existing.addEventListener('load',resolve,{once:true});

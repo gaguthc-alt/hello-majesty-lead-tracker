@@ -643,11 +643,22 @@ window.openFinanceSection=async function(section){
       let commission=Number(x.commission||x.total_commission||0);
       let commissionRows=[];
       try{
-        const cr=await window.sb.rpc('management_team_commission_report',{p_month_start:startDate});
+        const cr=await window.sb.rpc('management_team_commission_report_v2',{p_month_start:startDate});
         if(!cr.error){
           commissionRows=Array.isArray(cr.data)?cr.data:[];
-          const keys=['cs_commission','cs_closing_commission','sales_commission','hunter_commission','content_creator_commission','facilitator_commission'];
-          commission=commissionRows.reduce((sum,row)=>sum+keys.reduce((s,k)=>s+Number(row[k]||0),0),0);
+          // CS Handover is the remainder after CS Closing; do not double-count cs_commission.
+          // Keep Payroll aligned with Komisi Tim, including Freelance Internal and Checker.
+          commission=commissionRows.reduce((sum,row)=>{
+            const handover=Math.max(Number(row.cs_commission||0)-Number(row.cs_closing_commission||0),0);
+            return sum+handover+
+              Number(row.cs_closing_commission||0)+
+              Number(row.sales_commission||0)+
+              Number(row.freelance_internal_commission||row.freelance_commission||0)+
+              Number(row.hunter_commission||0)+
+              Number(row.checker_commission||0)+
+              Number(row.content_creator_commission||0)+
+              Number(row.facilitator_commission||0);
+          },0);
         }
       }catch(e){console.warn('[HM] Commission report:',e);}
       const payroll=Number(x.payroll||x.total_payroll||0);

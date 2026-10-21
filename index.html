@@ -3234,9 +3234,13 @@ window.hmOpenStockistInfo=async function(name){
   if(sr.error)throw sr.error;if(ur.error)throw ur.error;if(pr.error)throw pr.error;
   const sup=(sr.data||[]).find(x=>String(x.name).toLowerCase()===name.toLowerCase());
   const units=ur.data||[],settles=pr.data||[];
-  const ar=units.length?await window.sb.from('inventory_receive_approvals').select('stock_unit_id,status,requested_at,reviewed_at,review_note').in('stock_unit_id',units.map(x=>x.id)): {data:[],error:null};
-  if(ar.error)throw ar.error;
+  const [ar,rr]=units.length?await Promise.all([
+   window.sb.from('inventory_receive_approvals').select('stock_unit_id,status,requested_at,reviewed_at,review_note').in('stock_unit_id',units.map(x=>x.id)),
+   window.sb.from('stock_supplier_returns').select('stock_unit_id,return_date').in('stock_unit_id',units.map(x=>x.id))
+  ]):[{data:[],error:null},{data:[],error:null}];
+  if(ar.error)throw ar.error;if(rr.error)throw rr.error;
   const approvalMap=new Map((ar.data||[]).map(a=>[String(a.stock_unit_id),a]));
+  const returnDateMap=new Map((rr.data||[]).map(r=>[String(r.stock_unit_id),r.return_date]));
   const ready=units.filter(x=>String(x.status||'').toUpperCase()==='READY');
   const sold=units.filter(x=>String(x.status||'').toUpperCase()==='SOLD');
   const returned=units.filter(x=>String(x.status||'').toUpperCase()==='RETURN');
@@ -3250,7 +3254,9 @@ window.hmOpenStockistInfo=async function(name){
   const rows=units.map(x=>{
    const st=String(x.status||'').toUpperCase(),ap=approvalMap.get(String(x.id));
    const category=String(x.product_master?.category||'');
-   const activity=st==='SOLD'?(x.sold_at||x.received_at):(x.received_at||x.created_at);
+   // RETURN harus memakai tanggal retur supplier, bukan tanggal barang pertama kali masuk.
+   // Jika memakai received_at, retur stok awal bulan ini bisa hilang dari filter periode.
+   const activity=st==='SOLD'?(x.sold_at||x.received_at):st==='RETURN'?(returnDateMap.get(String(x.id))||x.updated_at||x.received_at||x.created_at):(x.received_at||x.created_at);
     const pm=x.product_master||{},productName=[pm.product||'Nama produk belum terhubung',pm.variant].filter(Boolean).join(' — ');
     return '<tr data-stockist-row data-location="'+safe(x.outlet||'')+'" data-status="'+safe(st)+'" data-category="'+safe(category||'ALL')+'" data-date="'+safe(activity||'')+'"><td><b>'+safe(productName)+'</b>'+(x.color?'<div class="small">'+safe(x.color)+'</div>':'')+'<div class="small">IMEI: '+safe(x.imei_1||x.accurate_item_no||'-')+'</div></td><td>'+safe(x.outlet||'-')+'</td><td>'+safe(st||'-')+'</td><td>'+safe(ap?.status||'—')+'</td><td>'+money(x.cost)+'</td></tr>';
   }).join('');

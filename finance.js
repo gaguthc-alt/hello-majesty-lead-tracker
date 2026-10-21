@@ -60,7 +60,7 @@ window.openPartnerSettlement=async function(){
   const modal=document.getElementById('modal');
   if(!panel||!body) throw new Error('Panel Menu Utama belum siap.');
   if(modal){modal.classList.add('hidden');modal.style.display='none';}
-  if(title)title.textContent='🤝 Kewajiban Majesty Cell';
+  if(title)title.textContent='🤝 Stockist Management';
   panel.classList.remove('hidden');
   body.innerHTML='<div class="box"><div class="small">⏳ Memuat kewajiban Majesty Cell...</div></div>';
   const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
@@ -69,16 +69,25 @@ window.openPartnerSettlement=async function(){
     const res=await window.sb.rpc('partner_obligation_summary');
     if(res.error)throw res.error;
     const rows=Array.isArray(res.data)?res.data:[];
-    const list=rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()==='MAJESTY CELL');
-    const refill=list.find(x=>String(x.outlet||'')==='Majesty Refill Phone')||{};
-    const plaza=list.find(x=>String(x.outlet||'')==='Majesty Plaza iPhone')||{};
-    const card=(label,x,buttons)=>{
+    const list=rows.filter(x=>String(x.partner_name||'').trim() && String(x.outlet||'').trim());
+    const card=(x)=>{
+      const partner=String(x.partner_name||'');
+      const outlet=String(x.outlet||'');
       const capital=Number(x.capital_due||0), profit=Number(x.profit_share_due||0);
-      return '<div class="box" style="margin-top:12px"><h3>'+label+'</h3><div class="fin-grid"><div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+money(capital)+'</div></div><div class="fin-card"><div class="small">Profit Sharing</div><div class="fin-big">'+money(profit)+'</div></div></div><div style="margin-top:10px"><b>Total Kewajiban: '+money(capital+profit)+'</b></div>'+buttons+'</div>';
+      const isCell=partner.trim().toUpperCase()==='MAJESTY CELL';
+      let buttons='';
+      if(isCell && outlet==='Majesty Refill Phone'){
+        buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\\'Majesty Refill Phone\\')">📋 Rincian & Setor Modal</button><button class="secondary" type="button" onclick="window.loadPartnerProfitSettlement(\\'Majesty Refill Phone\\')">🤝 Setor Profit Sharing</button></div>';
+      }else if(isCell && outlet==='Majesty Plaza iPhone'){
+        buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\\'Majesty Plaza iPhone\\')">📋 Rincian & Setor Modal</button></div>';
+      }else{
+        buttons='<div class="small" style="margin-top:10px">Informasi kewajiban ditampilkan. Tombol settlement belum diaktifkan untuk kombinasi ini agar tidak salah membuat jurnal atau menandai pembayaran.</div>';
+      }
+      return '<div class="box" style="margin-top:12px"><h3>'+outlet+'</h3><div class="small">Stockist: <b>'+partner+'</b></div><div class="fin-grid" style="margin-top:8px"><div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+money(capital)+'</div></div><div class="fin-card"><div class="small">Profit Sharing</div><div class="fin-big">'+money(profit)+'</div></div></div><div style="margin-top:10px"><b>Total Kewajiban: '+money(capital+profit)+'</b></div>'+buttons+'</div>';
     };
-    body.innerHTML='<div class="small">Kewajiban Majesty Cell dipisahkan berdasarkan outlet.</div>'+
-      card('📱 Majesty Refill Phone',refill,'<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Refill Phone\')">📋 Rincian & Setor Modal</button><button class="secondary" type="button" onclick="window.loadPartnerProfitSettlement(\'Majesty Refill Phone\')">🤝 Setor Profit Sharing</button></div>')+
-      card('📱 Majesty Plaza iPhone',plaza,'<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Plaza iPhone\')">📋 Rincian & Setor Modal</button></div>')+
+    const sorted=list.slice().sort((a,b)=>String(a.outlet).localeCompare(String(b.outlet))||String(a.partner_name).localeCompare(String(b.partner_name)));
+    body.innerHTML='<div class="small">Kewajiban dipisahkan berdasarkan outlet dan stockist. Settlement hanya tersedia untuk alur yang sudah diverifikasi.</div>'+
+      (sorted.length?sorted.map(card).join(''):'<div class="box" style="margin-top:12px">Belum ada data kewajiban stockist.</div>')+
       '<div id="partnerSettlementDetail" style="margin-top:14px"></div>';
     panel.classList.remove('hidden');
     requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));

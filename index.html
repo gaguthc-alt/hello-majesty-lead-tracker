@@ -1331,6 +1331,7 @@ async function hmOpenOutgoingStockList(){
  }catch(e){console.error('[HM] Daftar Barang Keluar:',e);body.innerHTML='<div class="box" style="color:#b42318"><b>Daftar Barang Keluar gagal dimuat</b><div>'+ (typeof esc==='function'?esc(e.message||String(e)):String(e.message||e))+'</div></div>';}
 }
 window.hmOpenOutgoingStockList=hmOpenOutgoingStockList;
+window.hmOpenReceivedStockList=hmOpenReceivedStockList;
 
 async function hmOpenReceivedStockList(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
@@ -1869,6 +1870,26 @@ function hmResetMainMenuButtonLabels(){
      });
    },true);
  }
+ const auditMenuTitles=['Daftar Barang Masuk','Daftar Barang Keluar'];
+ auditMenuTitles.forEach(menuTitle=>{
+   const auditBtn=host.querySelector('[data-hm-menu-title="'+menuTitle+'"]');
+   if(!auditBtn || auditBtn.dataset.hmAuditCapture)return;
+   auditBtn.dataset.hmAuditCapture='1';
+   auditBtn.addEventListener('click',function(e){
+     e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+     hmCloseMainMenu();hmActiveMainMenu=menuTitle;hmSetMainMenuButtonOpen(menuTitle);
+     const fnName=menuTitle==='Daftar Barang Masuk'?'hmOpenReceivedStockList':'hmOpenOutgoingStockList';
+     Promise.resolve().then(()=>{
+       if(typeof window[fnName]!=='function')throw new Error('Fungsi '+menuTitle+' belum tersedia. Refresh aplikasi lalu coba lagi.');
+       return window[fnName]();
+     }).catch(ex=>{
+       console.error('[HM] '+menuTitle+' gagal dibuka:',ex);
+       const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+       if(panel&&body){if(title)title.textContent='⚠️ '+menuTitle;body.innerHTML='<div class="box" style="color:#b42318"><b>'+esc(menuTitle)+' gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div></div>';panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}
+       else alert(menuTitle+' gagal dibuka: '+(ex?.message||ex));
+     });
+   },true);
+ });
  const receiveBtn=host.querySelector('[data-hm-menu-title="Persetujuan Barang Masuk"]');
  if(receiveBtn && !receiveBtn.dataset.hmReceiveCapture){
    receiveBtn.dataset.hmReceiveCapture='1';

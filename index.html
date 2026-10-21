@@ -1316,6 +1316,35 @@ main{
 </script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="roleHome"></div><div id="workspace" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Finance Cell</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="contentPerformance" class="hidden"></div><section id="inventoryDashboardSection" class="hidden" aria-hidden="true"><div id="inventoryDashboardPanel" class="box hidden"></div></section><section id="hunterStockSection" class="hidden" aria-hidden="true"><div id="hunterStockPanel" class="box hidden"></div></section><div id="inventorySection" class="hidden" aria-hidden="true"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Kelola stok siap jual, stock hunter, dan master produk.</div></div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button><button class="secondary" type="button" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTodayBoard"></div>
 <div id="leadTrackerBox" class="box"><h3>📋 DATA LEAD</h3><div class="small" style="margin-bottom:10px">Seluruh lead dari AVAILABLE sampai HASIL. Lead yang sudah CLOSING atau GAGAL tetap tersimpan dan ditampilkan sebagai hasil.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
 
+
+async function hmOpenReceivedStockList(){
+ const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+ if(!panel||!body)return;
+ if(!profile?.is_management){alert('Menu Daftar Barang Masuk hanya dapat diakses Management.');return;}
+ title.textContent='🗂️ Daftar Barang Masuk';panel.classList.remove('hidden');body.innerHTML='<div class="box">Memuat daftar barang masuk…</div>';panel.scrollIntoView({behavior:'smooth',block:'start'});
+ try{
+  const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;if(!db)throw new Error('Koneksi database belum siap.');
+  const [sr,pr]=await Promise.all([db.from('stock_units').select('id,product_id,outlet,imei_1,color,grade,battery_health,supplier,source_type,cost,asking_price,status,received_at,received_source_note,partner_name').order('received_at',{ascending:false}).limit(500),db.from('product_master').select('id,product,variant')]);
+  if(sr.error)throw sr.error;if(pr.error)throw pr.error;
+  const products=new Map((pr.data||[]).map(p=>[p.id,p])),rows=sr.data||[],money=n=>'Rp'+Number(n||0).toLocaleString('id-ID'),safe=v=>typeof esc==='function'?esc(String(v??'—')):String(v??'—');
+  window.__hmReceivedRows=rows;
+  body.innerHTML='<div class="box"><div class="small">Maksimal 500 catatan terbaru. Pilih Edit untuk memeriksa atau memperbarui data penerimaan.</div><div style="overflow:auto;margin-top:10px"><table style="width:100%;border-collapse:collapse;min-width:850px"><thead><tr><th>Tanggal</th><th>Outlet</th><th>Produk</th><th>IMEI</th><th>Sumber</th><th>Modal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+rows.map((r,i)=>{const p=products.get(r.product_id)||{};return '<tr><td>'+safe(r.received_at?new Date(r.received_at).toLocaleString('id-ID'):'—')+'</td><td>'+safe(r.outlet)+'</td><td>'+safe([p.product,p.variant,r.color].filter(Boolean).join(' · '))+'</td><td>'+safe(r.imei_1)+'</td><td>'+safe(r.partner_name||r.supplier||r.source_type)+'</td><td>'+money(r.cost)+'</td><td>'+safe(r.status)+'</td><td><button type="button" class="secondary" onclick="hmEditReceivedStock('+i+')">Edit</button></td></tr>'}).join('')+'</tbody></table></div></div>';
+ }catch(e){console.error('[HM] Daftar Barang Masuk:',e);body.innerHTML='<div class="box" style="color:#b42318"><b>Daftar Barang Masuk gagal dimuat</b><div>'+ (typeof esc==='function'?esc(e.message||String(e)):String(e.message||e))+'</div></div>';}
+}
+window.hmOpenReceivedStockList=hmOpenReceivedStockList;
+window.hmEditReceivedStock=function(i){
+ if(!profile?.is_management){alert('Edit hanya untuk Management.');return;}const r=window.__hmReceivedRows?.[i];if(!r)return;const body=document.getElementById('hmMenuPanelBody');
+ const field=(label,key,type='text')=>'<label style="display:block;margin:8px 0">'+label+'<input id="hmri_'+key+'" type="'+type+'" value="'+String(r[key]??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" style="width:100%"></label>';
+ body.innerHTML='<div class="box"><h3>Edit Barang Masuk</h3><div class="small">ID: '+r.id+'</div>'+field('Outlet','outlet')+field('IMEI','imei_1')+field('Warna','color')+field('Grade','grade')+field('Battery Health','battery_health','number')+field('Modal','cost','number')+field('Harga jual','asking_price','number')+field('Supplier','supplier')+field('Sumber','source_type')+field('Partner/stockist','partner_name')+field('Catatan','received_source_note')+'<label style="display:block;margin:8px 0">Status<select id="hmri_status" style="width:100%">'+['READY','SOLD','RESERVED','SERVICE'].map(v=>'<option '+(r.status===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label><div class="row"><button type="button" onclick="hmSaveReceivedStock('+i+')">Simpan Perubahan</button><button type="button" class="secondary" onclick="hmOpenReceivedStockList()">Batal</button></div></div>';
+};
+window.hmSaveReceivedStock=async function(i){
+ if(!profile?.is_management){alert('Edit hanya untuk Management.');return;}const r=window.__hmReceivedRows?.[i];if(!r)return;const val=k=>document.getElementById('hmri_'+k)?.value??'',cost=Number(val('cost')),asking=Number(val('asking_price')),bh=val('battery_health');
+ if(!Number.isFinite(cost)||cost<0||!Number.isFinite(asking)||asking<0){alert('Modal dan harga jual harus berupa angka nol atau lebih.');return;}
+ const patch={outlet:val('outlet').trim(),imei_1:val('imei_1').trim()||null,color:val('color').trim()||null,grade:val('grade').trim()||null,battery_health:bh===''?null:Number(bh),cost,asking_price:asking,supplier:val('supplier').trim()||null,source_type:val('source_type').trim()||null,partner_name:val('partner_name').trim()||null,received_source_note:val('received_source_note').trim()||null,status:val('status')};
+ if(!patch.outlet){alert('Outlet wajib diisi.');return;}const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
+ try{const out=await db.from('stock_units').update(patch).eq('id',r.id).select('id');if(out.error)throw out.error;if(!out.data?.length)throw new Error('Tidak ada baris diperbarui. Periksa izin database/RLS.');await hmOpenReceivedStockList();}catch(e){alert('Gagal menyimpan perubahan: '+(e.message||e));}
+};
+
 async function renderManagementStockSummary(){
  if(!profile?.is_management)return;
  const [s,p]=await Promise.all([
@@ -3046,6 +3075,7 @@ function renderRoleHome(){
       ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"],
    ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
    ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()'],
+   ['🗂️','Daftar Barang Masuk','Lihat, periksa, dan edit riwayat penerimaan stok (Management)','hmOpenReceivedStockList()'],
    ['🧑‍💼','Stock Hunter & Checker','Daftar stok Hunter (komisi 10%) dan Checker (komisi 5%) yang masih READY','openHunterStock()'],
    ['💸','Komisi Checker','Laporan komisi Checker dan penandaan pembayaran','openCheckerCommission()'],
    ['🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')"],
@@ -3389,6 +3419,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
           ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"],
      ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
      ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()'],
+   ['🗂️','Daftar Barang Masuk','Lihat, periksa, dan edit riwayat penerimaan stok (Management)','hmOpenReceivedStockList()'],
      ['🔔','Persetujuan Barang Masuk','Verifikasi barang yang sudah diinput dan menunggu persetujuan','window.openFinanceInventoryApprovals()'],
      ['🧑‍💼','Stock Hunter & Checker','Daftar stok Hunter (komisi 10%) dan Checker (komisi 5%) yang masih READY','openHunterStock()'],
      ['🚶','Persetujuan Walk-In','Semua penjualan tanpa Lead & CS yang menunggu persetujuan','openWalkinApprovals()'],

@@ -153,7 +153,7 @@ window.updatePartnerCapitalSelection=function(){
   const finance=checks.reduce((s,x)=>s+Number(x.dataset.finance||0),0);
   const net=checks.reduce((s,x)=>s+Number(x.dataset.amount||0),0);
   const box=document.getElementById('partnerCapitalSelectionTotal');
-  if(box)box.innerHTML='<b>Unit terpilih: '+checks.length+'</b><br>Modal awal: '+hmRp(gross)+'<br>Finance diterima Cell: − '+hmRp(finance)+'<br><b>Sisa settlement: '+hmRp(net)+'</b>';
+  if(box)box.innerHTML='<div style="font-weight:800;font-size:15px;margin-bottom:8px">Ringkasan pilihan</div><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Unit terpilih</span><b>'+checks.length+'</b></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Modal awal</span><b>'+hmRp(gross)+'</b></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Finance diterima Cell</span><b>− '+hmRp(finance)+'</b></div><div style="display:flex;justify-content:space-between;gap:12px;border-top:1px solid #d0d5dd;padding-top:10px;margin-top:10px;font-size:15px"><b>Sisa settlement indikatif</b><b>'+hmRp(net)+'</b></div>';
 };
 window.sharePartnerCapitalSelectionWhatsApp=async function(){
   const checks=[...document.querySelectorAll('.partner-capital-check:checked')];

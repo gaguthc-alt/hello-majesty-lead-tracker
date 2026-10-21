@@ -3153,6 +3153,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    '</div><div style="overflow:auto;margin-top:12px"><table class="hmSettleTable"><thead><tr><th>Pilih</th><th>Produk / IMEI</th><th>Stockist</th><th>Outlet</th><th>Tanggal SOLD</th><th>Modal settlement</th></tr></thead><tbody>'+(unitRows||'<tr><td colspan="6">Tidak ada unit SOLD yang tersedia untuk settlement baru.</td></tr>')+'</tbody></table></div>'+
    '<div class="box" style="margin-top:12px"><b id="hmSettleSelectedCount">0 unit dipilih</b><h3 id="hmSettleSelectedTotal">'+money(0)+'</h3><p class="small">Pilih unit sesuai pembayaran yang akan dilakukan. Settlement sebagian dilakukan dengan memilih sebagian unit; unit lain tetap tersedia untuk settlement berikutnya.</p><button type="button" id="hmSettleSaveDraft" '+(available.length?'':'disabled')+'>Simpan pilihan sebagai DRAFT</button></div></div>'+
    '<div class="box"><h3>2. Riwayat settlement</h3><div style="overflow:auto"><table class="hmSettleTable"><thead><tr><th>Stockist</th><th>Outlet</th><th>Tanggal</th><th>Nominal</th><th>Status</th><th>Produk / IMEI</th><th>Aksi</th></tr></thead><tbody>'+(historyRows||'<tr><td colspan="7">Belum ada riwayat settlement.</td></tr>')+'</tbody></table></div></div>');
+  // Form pemilihan unit SOLD hanya tersedia untuk Management. Akun mitra hanya melihat riwayat dan aksi konfirmasi.
+  if(!isStockistUser){
   const partnerSel=document.getElementById('hmSettlePartner');
   document.getElementById('hmSettleOutlet').value='ALL';
   partnerSel.value='ALL';
@@ -3207,6 +3209,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    alert('Draft settlement tersimpan beserta unit terpilih. Belum dianggap pembayaran dan belum membuat jurnal Accurate.');
    window.hmOpenPartnerSettlementManagement();
   });
+  }
   b.querySelectorAll('[data-request-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
    if(!confirm('Kirim permintaan konfirmasi kewajiban ini kepada mitra?'))return;
    const {error}=await window.sb.rpc('request_partner_settlement_confirmation',{p_settlement_id:btn.dataset.requestConfirm});

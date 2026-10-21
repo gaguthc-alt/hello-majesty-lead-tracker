@@ -1758,7 +1758,18 @@ if(typeof hmRenderHomePerformance==='function'){ void hmRenderHomePerformance();
  }catch(ex){
   console.error('[HM] Start error',ex);
   $('login').classList.add('hidden');$('app').classList.remove('hidden');$('roleHome').classList.remove('hidden');
-  $('identity').textContent='RoleHome gagal memuat profil: '+(ex?.message||ex);
+  const message=String(ex?.message||ex||'Kesalahan tidak diketahui');
+  $('identity').textContent='Dashboard gagal dimuat.';
+  const home=$('roleHome');
+  if(home){
+   home.replaceChildren();
+   const card=document.createElement('div');card.className='box';
+   const heading=document.createElement('h3');heading.textContent='Dashboard gagal dimuat';
+   const note=document.createElement('p');note.className='small';note.textContent=message;
+   const retry=document.createElement('button');retry.textContent='Coba lagi';retry.onclick=()=>start(u,sb);
+   const reload=document.createElement('button');reload.className='secondary';reload.style.marginLeft='8px';reload.textContent='Muat ulang';reload.onclick=()=>location.reload();
+   card.append(heading,note,retry,reload);home.appendChild(card);
+  }
  }
 }
 // Expose the login entry point immediately after its definition, before later UI code runs.

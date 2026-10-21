@@ -32,7 +32,6 @@ window.openCellFinanceReport=async function(){
 };
 window.loadCellFinanceReport=async function(){
   const box=document.getElementById('cellFinanceReportBody'),sb=window.sb;if(!box||!sb)return;
-  const start=document.getElementById('cellReportStart')?.value,end=document.getElementById('cellReportEnd')?.value,outlet=document.getElementById('cellReportOutlet')?.value||'ALL';
   const parseDate=value=>{const v=String(value||'').trim();let m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(year,month-1,day);if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)return null;return year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');}m=v.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?v:null;};
   const startInput=document.getElementById('cellReportStart')?.value,endInput=document.getElementById('cellReportEnd')?.value,outlet=document.getElementById('cellReportOutlet')?.value||'ALL';
   const start=parseDate(startInput),end=parseDate(endInput);

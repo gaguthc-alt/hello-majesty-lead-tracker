@@ -3400,7 +3400,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    if((partnerSel.value!=='ALL'&&partnerSel.value!==partner)||(document.getElementById('hmSettleOutlet').value!=='ALL'&&document.getElementById('hmSettleOutlet').value!==outlet)){alert('Pilihan unit tidak sesuai filter outlet atau stockist.');return;}
    const total=selectedUnits.reduce((n,x)=>n+Number(x._settlementCost??x.cost??0),0);
    if(total<=0){alert('Total modal unit harus lebih besar dari nol.');return;}
-   const financeTotal=selectedUnits.reduce((n,x)=>n+Number(x._financeReceived||0),0);\n    if(!confirm('Simpan DRAFT settlement '+partner+' • '+outlet+' untuk '+selectedUnits.length+' unit? Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0))+', finance/paylater yang sudah diterima '+money(financeTotal)+', sisa settlement '+money(total)+'. Draft belum dianggap pembayaran.'))return;
+   const financeTotal=selectedUnits.reduce((n,x)=>n+Number(x._financeReceived||0),0);
+    if(!confirm('Simpan DRAFT settlement '+partner+' • '+outlet+' untuk '+selectedUnits.length+' unit? Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0))+', finance/paylater yang sudah diterima '+money(financeTotal)+', sisa settlement '+money(total)+'. Draft belum dianggap pembayaran.'))return;
    const {data:userData}=await window.sb.auth.getUser();
    const {data:settlement,error:settleError}=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet,settlement_type:'SOLD_UNITS',settlement_date:date,amount:total,note:[note||'Dipilih berdasarkan unit SOLD','Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0)),'Finance/paylater diterima dan dikurangkan '+money(financeTotal)].join(' | '),status:'DRAFT',created_by:userData?.user?.id}).select('id').single();
    if(settleError){alert('Gagal menyimpan draft settlement: '+settleError.message);return;}

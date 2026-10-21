@@ -3322,7 +3322,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const key=String(tx.stock_unit_id),prev=financeByUnit.get(key)||{gross:0,cashout:0,transactions:[]};
    prev.gross+=amount;prev.cashout+=Number(tx.finance_cashout_amount||0);prev.transactions.push(tx);financeByUnit.set(key,prev);
   });
-  liveUnits.forEach(x=>{const fin=financeByUnit.get(String(x.id));x._financeGross=Number(fin?.gross||0);x._financeCashout=Number(fin?.cashout||0);x._financeReceived=Math.max(0,x._financeGross-x._financeCashout);x._financeApplied=Math.min(Number(x.cost||0),x._financeReceived);x._settlementCost=Math.max(0,Number(x.cost||0)-x._financeApplied);});
+  liveUnits.forEach(x=>{const fin=financeByUnit.get(String(x.id));x._financeGross=Number(fin?.gross||0);x._financeCashout=Number(fin?.cashout||0);x._financeReceived=Math.max(0,x._financeGross-x._financeCashout);x._financeApplied=x._financeGross;x._settlementCost=Number(x.cost||0)-x._financeGross;});
   historicalUnits.forEach(x=>{x._financeGross=0;x._financeCashout=0;x._financeReceived=0;x._financeApplied=0;x._settlementCost=Number(x.cost||0);});
   const settlementById=new Map(settles.map(x=>[String(x.id),x]));
   const allocated=new Set();
@@ -3399,7 +3399,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    partner=selectedPartners[0];outlet=selectedOutlets[0];
    if((partnerSel.value!=='ALL'&&partnerSel.value!==partner)||(document.getElementById('hmSettleOutlet').value!=='ALL'&&document.getElementById('hmSettleOutlet').value!==outlet)){alert('Pilihan unit tidak sesuai filter outlet atau stockist.');return;}
    const total=selectedUnits.reduce((n,x)=>n+Number(x._settlementCost??x.cost??0),0);
-   if(total<=0){alert('Total modal unit harus lebih besar dari nol.');return;}
+   if(total<=0){alert('Total settlement '+money(total)+'. Pencairan finance bruto melebihi atau sama dengan modal unit. Nilai negatif ini menunjukkan kelebihan pencairan, bukan tagihan settlement biasa ke Stockist. Draft settlement biasa tidak dibuat; catat kelebihan tersebut sebagai kompensasi/piutang terpisah sesuai konfirmasi Management.');return;}
    const financeNetTotal=selectedUnits.reduce((n,x)=>n+Number(x._financeReceived||0),0);
     const financeAppliedTotal=selectedUnits.reduce((n,x)=>n+Number(x._financeApplied||0),0);
     if(!confirm('Simpan DRAFT settlement '+partner+' • '+outlet+' untuk '+selectedUnits.length+' unit? Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0))+', finance/paylater neto diterima setelah cashout '+money(financeNetTotal)+', bagian yang mengurangi modal '+money(financeAppliedTotal)+', sisa settlement '+money(total)+'. Draft belum dianggap pembayaran.'))return;

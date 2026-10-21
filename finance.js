@@ -6,7 +6,7 @@ window.hmDateRange=hmDateRange;
 function hmDateRange(mode){const d=new Date(),iso=x=>{const y=x.getFullYear(),m=String(x.getMonth()+1).padStart(2,'0'),day=String(x.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};if(mode==='today'){const s=new Date(d.getFullYear(),d.getMonth(),d.getDate());return[iso(s),iso(s)];}if(mode==='year')return[d.getFullYear()+'-01-01',d.getFullYear()+'-12-31'];return[iso(new Date(d.getFullYear(),d.getMonth(),1)),iso(new Date(d.getFullYear(),d.getMonth()+1,0))];}
 window.openCellFinanceReport=async function(){
   const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
-  if(!p.is_management && role!=='ADMIN FINANCE MAJESTY CELL' && role!=='FASILITATOR'){alert('Akses laporan tidak diizinkan.');return;}
+  if(!p.is_management && role!=='ADMIN FINANCE MAJESTY CELL' && role!=='MITRA STOCKIST' && role!=='FASILITATOR'){alert('Akses laporan tidak diizinkan.');return;}
   const m=document.getElementById('modal');
   const inlinePanel=document.getElementById('hmMenuPanel'),inlineBody=document.getElementById('hmMenuPanelBody'),inlineTitle=document.getElementById('hmMenuPanelTitle');
   // Laporan Finance Cell selalu dibuka inline di bawah Menu Utama.
@@ -228,7 +228,7 @@ window.openFinanceInventoryApprovals=async function(){
   const p=window.profile||{};
   const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
   const roles=Array.isArray(window.hmRoles)?window.hmRoles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' ')):[role];
-  const canApprove=role==='FASILITATOR'||role==='ADMIN FINANCE MAJESTY CELL'||roles.includes('FASILITATOR')||roles.includes('ADMIN FINANCE MAJESTY CELL');
+  const canApprove=role==='FASILITATOR'||role==='ADMIN FINANCE MAJESTY CELL'||role==='MITRA STOCKIST'||roles.includes('FASILITATOR')||roles.includes('ADMIN FINANCE MAJESTY CELL')||roles.includes('MITRA STOCKIST');
   if(!canApprove){alert('Persetujuan Barang Masuk hanya dapat dilakukan Fasilitator atau Admin Finance Majesty Cell.');return;}
   const fn=window.openInventoryApprovals;
   if(typeof fn!=='function')throw new Error('Modul Inventory untuk approval belum siap.');
@@ -246,7 +246,7 @@ window.openFinanceInventoryApprovals=async function(){
 window.openFinance=async function(){
   const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
   const isDeveloper=!!window.developer||role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
-  const financeAllowed=isDeveloper||!!p.is_management||['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJESTY CELL'].includes(role);
+  const financeAllowed=isDeveloper||!!p.is_management||['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJESTY CELL','MITRA STOCKIST'].includes(role);
   if(!financeAllowed){alert('Akses Finance tidak diizinkan.');return;}
   const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle'),modal=document.getElementById('modal');
   if(!panel||!body)return;

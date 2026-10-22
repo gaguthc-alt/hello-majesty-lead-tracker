@@ -3755,6 +3755,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    if(isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
    else if(isStockistUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm="'+safe(x.id)+'">Uang sudah masuk</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
+   else if(!isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
    else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-sent="'+safe(x.id)+'">Catat transfer</button>';
    const details=[x.transfer_reference?'Ref transfer: '+x.transfer_reference:'',x.transfer_proof_note||'',x.received_note||''].filter(Boolean).join(' • ');
    return '<tr><td>'+safe(x.partner_name)+'</td><td>'+safe(x.outlet||'—')+'</td><td>'+safe(x.settlement_date||'—')+'</td><td>'+money(x.amount)+'</td><td>'+safe(st)+'</td><td>'+safe(productSummary||x.note||'—')+(details?'<div class="small">'+safe(details)+'</div>':'')+'</td><td>'+actions+'</td></tr>';
@@ -3843,6 +3844,12 @@ window.hmOpenPartnerSettlementManagement=async function(){
    if(!confirm('Kirim permintaan konfirmasi kewajiban ini kepada mitra?'))return;
    const {error}=await window.sb.rpc('request_partner_settlement_confirmation',{p_settlement_id:btn.dataset.requestConfirm});
    if(error){alert('Gagal meminta konfirmasi: '+error.message);return;} const row=btn.closest('tr'); const cells=row?row.querySelectorAll('td'):[]; const partner=cells[0]?.textContent?.trim()||'Majesty Cell'; const outlet=cells[1]?.textContent?.trim()||'Majesty Plaza'; const date=cells[2]?.textContent?.trim()||''; const amount=cells[3]?.textContent?.trim()||''; const item=cells[5]?.textContent?.trim()||''; const msg=['*PERMINTAAN KONFIRMASI SETTLEMENT*','*HELLO MAJESTY*','','Yth. '+partner+', mohon konfirmasi nominal settlement berikut:','','• Outlet: '+outlet,'• Tanggal: '+date,'• Nominal: '+amount,'• Produk / IMEI: '+item,'• Status saat ini: MENUNGGU KONFIRMASI','','Mohon periksa nominal tersebut dan lakukan konfirmasi melalui aplikasi Hello Majesty. Pesan ini hanya permintaan konfirmasi, bukan bukti transfer atau pemberitahuan bahwa pembayaran sudah dilakukan.','','Hello Majesty — Built on Trust'].join('\\n'); window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
+  }));
+  b.querySelectorAll('[data-send-confirm-wa]').forEach(btn=>btn.addEventListener('click',()=>{
+   const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
+   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'Majesty Plaza',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const msg=['*PERMINTAAN KONFIRMASI SETTLEMENT*','*HELLO MAJESTY*','','Yth. '+partner+', mohon konfirmasi nominal settlement berikut:','','• Outlet: '+outlet,'• Tanggal: '+date,'• Nominal: '+amount,'• Produk / IMEI: '+item,'• Status: MENUNGGU KONFIRMASI','','Mohon periksa nominal dan lakukan konfirmasi melalui aplikasi Hello Majesty. Pesan ini hanya permintaan konfirmasi, bukan bukti transfer atau pemberitahuan pembayaran.','','Hello Majesty — Built on Trust'].join(String.fromCharCode(10));
+   const url='https://wa.me/?text='+encodeURIComponent(msg);const w=window.open(url,'_blank');if(!w)window.location.href=url;
   }));
   b.querySelectorAll('[data-obligation-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
    const note=prompt('Catatan konfirmasi nominal (opsional):');if(note===null)return;

@@ -279,17 +279,23 @@ window.loadPartnerSettlementDetail=async function(outlet){
   outlet=outlet||'Majesty Refill Phone';
   window.hmPartnerCapitalOutlet=outlet;
   if(outlet==='Majesty Plaza iPhone'){
-    const {data:rows,error}=await sb.from('partner_historical_stock_details').select('*').eq('outlet',outlet).eq('partner_name','Majesty Cell').order('created_at',{ascending:true});
-    if(error){box.innerHTML='<div class="small">'+error.message+'</div>';return;}
-    const units=rows||[], total=units.reduce((s,r)=>s+Number(r.cost||0),0), unpaid=units.filter(r=>!r.settlement_id), unpaidTotal=unpaid.reduce((s,r)=>s+Number(r.cost||0),0);
+    const [histRep,activeRep]=await Promise.all([
+      sb.from('partner_historical_stock_details').select('*').eq('outlet',outlet).eq('partner_name','Majesty Cell').eq('sold_status','SOLD').order('created_at',{ascending:true}),
+      sb.rpc('partner_capital_due_detail',{p_outlet:outlet})
+    ]);
+    if(histRep.error||activeRep.error){box.innerHTML='<div class="small">Gagal memuat rincian settlement Plaza: '+esc(String(histRep.error?.message||activeRep.error?.message||'Kesalahan query'))+'</div>';return;}
+    const historical=(histRep.data||[]).map(r=>({...r,_source:'historical',_id:r.id,_cost:Number(r.cost||0),_settled:!!r.settlement_id,_product:r.product_name||'Produk historis',_variant:r.storage_gb?(r.storage_gb+'GB'):'',_color:r.color||'',_imei:r.imei_1||''}));
+    const active=(activeRep.data||[]).filter(r=>String(r.partner_name||'').trim().toLowerCase()==='majesty cell').map(r=>({...r,_source:'active',_id:r.stock_unit_id,_cost:Number(r.capital_due||0),_settled:false,_product:r.product_name||'Produk',_variant:r.variant||'',_color:r.color||'',_imei:r.imei_1||''}));
+    const units=[...historical,...active];
+    const unpaid=units.filter(r=>!r._settled), total=units.reduce((s,r)=>s+r._cost,0), unpaidTotal=unpaid.reduce((s,r)=>s+r._cost,0);
     const escV=v=>esc(String(v??''));
     box.innerHTML=units.length?
-      '<div class="small">5 unit historis stock Majesty Cell yang sudah terjual di Plaza. Centang unit yang ingin dibayar sekarang.</div>'+
-      units.map((r,i)=>'<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd;'+(r.settlement_id?'opacity:.55':'')+'"><input class="partner-plaza-capital-check" type="checkbox" value="'+r.id+'" data-amount="'+Number(r.cost||0)+'" '+(r.settlement_id?'disabled':'')+' style="width:auto;margin-right:8px">'+
-      '<b>'+String(i+1)+'. '+escV(r.product_name)+' '+escV(r.color||'')+' '+(r.storage_gb?escV(r.storage_gb)+'GB':'')+'</b><br><span class="small">'+escV(r.condition||'')+(r.grade?' • Grade '+escV(r.grade):'')+' • Modal '+hmRp(r.cost)+' • IMEI '+escV(r.imei_1||'-')+(r.settlement_id?' • SUDAH DISETOR':'')+'</span></label>').join('')+
-      '<div style="margin-top:10px"><b>Total 5 unit: '+hmRp(total)+'</b><br><span class="small">Belum disetor: '+hmRp(unpaidTotal)+'</span></div>'+
-      (unpaid.length?'<button class="success" style="margin-top:12px" onclick="window.payPartnerPlazaHistoricalCapital()">💸 Setor Modal Terpilih</button>':'<div class="small" style="margin-top:10px">Semua modal historis Plaza sudah disetor.</div>')
-      :'<div class="small">Rincian historis Plaza belum tersedia.</div>';
+      '<div class="small">Rekap gabungan stok historis dan stok aktif Majesty Cell yang terjual di Plaza. Pilih unit yang akan dimasukkan ke settlement.</div>'+
+      units.map((r,i)=>'<label style="display:block;padding:11px 0;border-bottom:1px solid #ddd;'+(r._settled?'opacity:.55':'')+'"><input class="partner-plaza-capital-check" type="checkbox" value="'+r._id+'" data-amount="'+r._cost+'" '+(r._settled?'disabled':'')+' style="width:auto;margin-right:8px">'+
+      '<b>'+String(i+1)+'. '+escV(r._product)+' '+escV(r._variant)+' '+escV(r._color)+'</b><br><span class="small">'+(r._source==='historical'?'Historis':'Stok aktif')+' • Modal '+hmRp(r._cost)+' • IMEI '+escV(r._imei||'-')+(r._settled?' • SUDAH DISETOR':' • BELUM DISETOR')+'</span></label>').join('')+
+      '<div style="margin-top:10px"><b>Total '+units.length+' unit: '+hmRp(total)+'</b><br><span class="small">Belum disetor: '+hmRp(unpaidTotal)+' ('+unpaid.length+' unit)</span></div>'+
+      (unpaid.length?'<button class="success" style="margin-top:12px" onclick="window.payPartnerPlazaHistoricalCapital()">💸 Buat Settlement Modal Terpilih</button>':'<div class="small" style="margin-top:10px">Semua modal Plaza sudah disetor.</div>')
+      :'<div class="small">Belum ada unit terjual Majesty Cell yang menunggu settlement di Plaza.</div>';
     return;
   }
   const {data:rows,error}=await sb.rpc('partner_capital_due_detail',{p_outlet:outlet});
@@ -347,10 +353,10 @@ window.loadPartnerSettlementDetail=async function(outlet){
 window.payPartnerPlazaHistoricalCapital=async function(){
   const ids=[...document.querySelectorAll('.partner-plaza-capital-check:checked')].map(x=>x.value);
   if(!ids.length){alert('Pilih minimal 1 unit.');return;}
-  if(!confirm('Setor modal Plaza untuk '+ids.length+' unit terpilih sekarang?'))return;
-  const {data,error}=await sb.rpc('create_partner_historical_capital_settlement',{p_ids:ids,p_settlement_date:new Date().toISOString().slice(0,10),p_note:'Pembayaran modal historis Majesty Cell - Plaza'});
+  if(!confirm('Buat settlement modal Plaza untuk '+ids.length+' unit terpilih sekarang?'))return;
+  const {data,error}=await sb.rpc('create_partner_capital_settlement',{p_stock_unit_ids:ids,p_settlement_date:new Date().toISOString().slice(0,10),p_note:'Settlement modal Majesty Cell - Plaza (stok aktif + historis)'});
   if(error){alert(error.message);return;}
-  alert('Settlement modal Plaza berhasil. '+hmRp(data?.amount||0)+' disetor.');
+  alert('Settlement modal Plaza berhasil dibuat untuk '+(data?.units||ids.length)+' unit senilai '+hmRp(data?.amount||0)+'.');
   window.openPartnerSettlement();
 };
 window.payPartnerCapitalBalance=async function(outlet,amount){

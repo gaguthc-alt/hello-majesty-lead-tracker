@@ -2477,7 +2477,7 @@ function hmMoveViewsInline(key){
 function hmOpenTradeInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
  if(!panel||!body)return; panel.classList.remove('hidden');
- const title=document.getElementById('hmMenuPanelTitle'); if(title)title.textContent='🔄 Tukar Tambah';
+ const title=document.getElementById('hmMenuPanelTitle'); if(title)title.textContent='🔄 Form Tukar Tambah';
  body.innerHTML='<div class="box"><h3 style="margin-top:0">📱 FORM DATA TUKAR TAMBAH</h3>'+
  '<div style="font-weight:700;margin-bottom:12px">HELLO MAJESTY</div>'+
  '<div class="small">Mohon bantu isi data HP yang ingin ditukar:</div>'+
@@ -2507,7 +2507,7 @@ function hmOpenTradeInline(){
  '<div style="margin-top:12px;font-weight:700">Hello Majesty<br>Management System<br>Built on Trust</div>'+
  '<button id="hmtt_wa" style="width:100%;margin-top:8px" type="button" onclick="sendTradeInlineWA()">📤 Share ke WhatsApp</button>'+
  '<p id="hmtt_msg" class="small"></p></div>';
- requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Tukar Tambah');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{if(typeof hmMoveViewsInline==='function')hmMoveViewsInline('Form Tukar Tambah');panel.scrollIntoView({behavior:'smooth',block:'start'});}));
 }
 function hmOpenFollowupTemplateInline(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
@@ -2652,7 +2652,7 @@ async function hmMainMenuClick(title,fn,actionKey){
    else if(rr.includes("showfollowuptoday('overdue')"))panelTitle.textContent='🔴 Follow-up Terlambat';
    else if(rr.includes('showneedsattention()'))panelTitle.textContent='🔴 Perlu Perhatian';
   }
-  if(key==='Tukar Tambah')hmOpenTradeInline();
+  if(key==='Tukar Tambah'||key==='Form Tukar Tambah')hmOpenTradeInline();
   // Semua menu utama tetap menggunakan panel mengambang/modal.
   // Jangan memindahkan panel ke bawah roleHome dan jangan menggeser layar.
   const openedPanel=document.getElementById('hmMenuPanel');
@@ -3134,7 +3134,7 @@ function hmOpenQuickAction(){
  '<div class="role-home-grid" style="margin-top:0">'+
  '<button class="role-home-card" type="button" onclick="addLead();"><b>📱 Lead Baru</b><span>Input lead customer</span></button>'+
  '<button class="role-home-card" type="button" onclick="openLeadSearch();"><b>🔎 Search Lead</b><span>Cari dan kelola lead</span></button>'+
- '<button class="role-home-card" type="button" onclick="hmOpenTradeInline();"><b>🔄 Tukar Tambah</b><span>Buka form trade-in</span></button>'+
+ '<button class="role-home-card" type="button" onclick="hmOpenTradeInline();"><b>🔄 Form Tukar Tambah</b><span>Buka form trade-in</span></button>'+
  '<button class="role-home-card" type="button" onclick="hmOpenFollowupInline(\'TODAY\');"><b>🔔 Follow Up</b><span>Kerjakan follow-up hari ini</span></button>'+
  '</div><button class="secondary" style="width:100%;margin-top:10px" onclick="closeModal()">Tutup</button>';
  modal.classList.remove('hidden');
@@ -3451,7 +3451,7 @@ function renderRoleHome(){
    add('🔎','Pencarian Lead','Cari lead berdasarkan ID, nama, WhatsApp, kebutuhan, outlet, atau status','openLeadSearch()');
    add('📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')');
    add('📋','Closing Saya','Semua closing saya: Lead, Walk-In & Closing Stock','openMyClosings()');
-   add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
+   add('🔄','Form Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
    add('📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()');
    add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
    add('👤','Database Customer','Database customer khusus Developer Aplikasi','hmOpenCustomerDatabase()');
@@ -3515,7 +3515,7 @@ function renderRoleHome(){
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan CS','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
-   add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
+   add('🔄','Form Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
    add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
    add('🔴','Perlu Perhatian','Lead aktif yang perlu segera ditindaklanjuti','showNeedsAttention()');
@@ -3557,7 +3557,7 @@ function renderRoleHome(){
  if(!mg && !isAtmadita){
    add('🏪','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
    add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
-   add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
+   add('🔄','Form Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
    add('📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()');
    add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
  }
@@ -3587,7 +3587,7 @@ function renderRoleHome(){
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan CS & Sales','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
-   add('🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
+   add('🔄','Form Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
    add('🔴','Perlu Perhatian','Lead aktif yang perlu segera ditindaklanjuti','showNeedsAttention()');
  }
@@ -4086,7 +4086,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    ['🛒','SALES & PENJUALAN',[
      ['📊','Laporan Penjualan','Hasil penjualan seluruh outlet','openInventorySection(\'sales\')'],
      ['📋','Closing Saya','Semua closing saya: Lead, Walk-In & Closing Stock','openMyClosings()'],
-     ['🔄','Tukar Tambah','Form tukar tambah','hmOpenTradeInline()'],
+     ['🔄','Form Tukar Tambah','Form tukar tambah','hmOpenTradeInline()'],
      ['📱','Form Data Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()'],
      ['💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()']
    ]],

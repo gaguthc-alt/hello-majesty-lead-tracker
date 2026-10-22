@@ -3140,6 +3140,11 @@ function renderRoleHome(){
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
+  // Ensure authorized facilitators always receive the Stockist Management card.
+  if(facilitator && !mg && !developer){
+    add('🤝','Stockist Management','Penerimaan stok, verifikasi IMEI, barang terjual & persiapan settlement sesuai outlet','window.openPartnerSettlement()');
+  }
+
  // SALES & PENJUALAN dibuka untuk seluruh tim kecuali Atmadita.
  // Management/Developer tetap memakai akses penuh; Atmadita tetap tanpa menu.
  if(!mg && !isAtmadita){

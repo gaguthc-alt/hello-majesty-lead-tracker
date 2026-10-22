@@ -27,14 +27,30 @@ window.openCellFinanceReport=async function(){window.hmEnsureCellReportStyles();
   const iso=x=>{const y=x.getFullYear(),m=String(x.getMonth()+1).padStart(2,'0'),day=String(x.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};
   const displayDate=x=>{const [y,m,d]=iso(x).split('-');return d+'/'+m+'/'+y;};
   target.innerHTML='<div class="cell-report-actions"><button class="secondary" type="button" onclick="hmCloseMainMenu()">✖ Tutup</button><button class="primary" type="button" onclick="window.loadCellFinanceReport()">🔄 Refresh</button></div>'+
-    '<div class="cell-report-filters"><label>Dari<input id="cellReportStart" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" value="'+displayDate(start)+'" autocomplete="off"></label><label>Sampai<input id="cellReportEnd" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" value="'+displayDate(end)+'" autocomplete="off"></label><label class="cell-report-outlet">Outlet yang Dipantau<select id="cellReportOutlet" onchange="window.loadCellFinanceReport()"><option value="ALL">Semua Outlet Cell</option><option value="Majesty Refill Phone">Majesty Refill Phone</option><option value="Majesty Plaza iPhone">Majesty Plaza iPhone</option></select></label></div>'+
-    '<div class="small" style="margin-top:6px">Format tanggal: DD/MM/YYYY (hari/bulan/tahun).</div><div id="cellFinanceReportBody" class="cell-report-body">Memuat...</div>';
+    '<div class="cell-report-filters" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;padding:14px;border:1px solid #dbe3ef;border-radius:16px;background:#f8fafc;margin:10px 0">'+
+    '<label>Periode Dari<input id="cellReportStart" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" value="'+displayDate(start)+'" autocomplete="off" style="width:100%;box-sizing:border-box"></label>'+
+    '<label>Periode Sampai<input id="cellReportEnd" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" value="'+displayDate(end)+'" autocomplete="off" style="width:100%;box-sizing:border-box"></label>'+
+    '<label>Outlet<select id="cellReportOutlet" style="width:100%;box-sizing:border-box"><option value="ALL">Semua Outlet Cell</option><option value="Majesty Refill Phone">Majesty Refill Phone</option><option value="Majesty Plaza iPhone">Majesty Plaza iPhone</option></select></label>'+
+    '<label>Kategori<select id="cellReportCategory" style="width:100%;box-sizing:border-box"><option value="ALL">Semua Kategori</option><option>iPhone New</option><option>iPhone Second</option><option>Android New</option><option>Android Second</option></select></label>'+
+    '<label>Produk<input id="cellReportProduct" type="search" placeholder="Cari nama produk..." style="width:100%;box-sizing:border-box"></label>'+
+    '<label>IMEI<input id="cellReportImei" type="search" inputmode="numeric" placeholder="Cari IMEI..." style="width:100%;box-sizing:border-box"></label>'+
+    '<label>Status<select id="cellReportStatus" style="width:100%;box-sizing:border-box"><option value="ALL">Semua Status</option><option value="READY">READY</option><option value="SOLD">SOLD</option><option value="RETURN">RETURN</option></select></label>'+
+    '<div style="display:flex;gap:8px;align-items:end"><button type="button" class="secondary" onclick="window.resetCellFinanceFilters()" style="flex:1">↺ Reset</button><button type="button" class="primary" onclick="window.loadCellFinanceReport()" style="flex:1">🔎 Tampilkan</button></div></div>'+
+    '<div class="small" style="margin-top:6px">Tanggal DD/MM/YYYY • Filter diterapkan pada ringkasan dan rincian stok/penjualan yang terkait.</div><div id="cellFinanceReportBody" class="cell-report-body">Memuat...</div>';
   await window.loadCellFinanceReport();
+};
+window.resetCellFinanceFilters=function(){
+  const d=new Date(),start=new Date(d.getFullYear(),d.getMonth(),1);
+  const fmt=x=>String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();
+  const a=document.getElementById('cellReportStart'),b=document.getElementById('cellReportEnd'),o=document.getElementById('cellReportOutlet'),c=document.getElementById('cellReportCategory'),p=document.getElementById('cellReportProduct'),i=document.getElementById('cellReportImei'),s=document.getElementById('cellReportStatus');
+  if(a)a.value=fmt(start);if(b)b.value=fmt(d);if(o)o.value='ALL';if(c)c.value='ALL';if(p)p.value='';if(i)i.value='';if(s)s.value='ALL';
+  window.loadCellFinanceReport();
 };
 window.loadCellFinanceReport=async function(){
   const box=document.getElementById('cellFinanceReportBody'),sb=window.sb;if(!box||!sb)return;
   const parseDate=value=>{const v=String(value||'').trim();let m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(year,month-1,day);if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)return null;return year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');}m=v.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?v:null;};
   const startInput=document.getElementById('cellReportStart')?.value,endInput=document.getElementById('cellReportEnd')?.value,outlet=document.getElementById('cellReportOutlet')?.value||'ALL';
+  const categoryFilter=document.getElementById('cellReportCategory')?.value||'ALL',productFilter=String(document.getElementById('cellReportProduct')?.value||'').trim().toLowerCase(),imeiFilter=String(document.getElementById('cellReportImei')?.value||'').trim().toLowerCase(),statusFilter=document.getElementById('cellReportStatus')?.value||'ALL';
   const start=parseDate(startInput),end=parseDate(endInput);
   if(!start||!end){box.innerHTML='<div class="danger box">Format tanggal harus DD/MM/YYYY, contoh 01/10/2026.</div>';return;}
   if(start>end){box.innerHTML='<div class="danger box">Tanggal Dari tidak boleh melewati tanggal Sampai.</div>';return;}
@@ -51,7 +67,15 @@ window.loadCellFinanceReport=async function(){
   ]);
   const err=[stockRep,salesRep,receiptRep,historicalRep,settRep,productsRep].find(x=>x.error);
   if(err){box.innerHTML='<div class="danger box">Gagal memuat laporan Majesty Cell: '+esc(err.error.message||'kesalahan query')+'</div>';return;}
-  const productMap=new Map((productsRep.data||[]).map(p=>[String(p.id),p])),formatVariant=value=>{const v=String(value||'').trim();if(!v)return '';return /^\d{2,4}$/.test(v)?v+'GB':v.replace(/\s*GB\b/gi,'GB');},allStock=(stockRep.data||[]).map(x=>{const master=productMap.get(String(x.product_id))||{};return {...x,product:master.product||x.product_name||'Produk tidak ditemukan',variant:[formatVariant(master.variant),x.color,x.grade&&String(x.grade).toLowerCase()!=='new'?('Grade '+x.grade):''].filter(Boolean).map(v=>String(v).trim()).filter((v,i,a)=>a.indexOf(v)===i).join(' • ')};}),stockDetail=allStock.filter(x=>!outletFilter||x.outlet===outletFilter),stockIds=new Set(stockDetail.map(x=>String(x.id)));
+  const productMap=new Map((productsRep.data||[]).map(p=>[String(p.id),p])),formatVariant=value=>{const v=String(value||'').trim();if(!v)return '';return /^\d{2,4}$/.test(v)?v+'GB':v.replace(/\s*GB\b/gi,'GB');},allStock=(stockRep.data||[]).map(x=>{const master=productMap.get(String(x.product_id))||{};return {...x,product:master.product||x.product_name||'Produk tidak ditemukan',variant:[formatVariant(master.variant),x.color,x.grade&&String(x.grade).toLowerCase()!=='new'?('Grade '+x.grade):''].filter(Boolean).map(v=>String(v).trim()).filter((v,i,a)=>a.indexOf(v)===i).join(' • ')};}),stockDetail=allStock.filter(x=>{
+    if(outletFilter&&x.outlet!==outletFilter)return false;
+    const master=productMap.get(String(x.product_id))||{},category=String(master.category||x.category||'').trim();
+    if(categoryFilter!=='ALL'&&category.toLowerCase()!==categoryFilter.toLowerCase())return false;
+    if(productFilter&&!String(x.product||'').toLowerCase().includes(productFilter)&&!String(x.variant||'').toLowerCase().includes(productFilter))return false;
+    if(imeiFilter&&!String(x.imei_1||'').toLowerCase().includes(imeiFilter)&&!String(x.imei_2||'').toLowerCase().includes(imeiFilter))return false;
+    if(statusFilter!=='ALL'&&String(x.status||'').toUpperCase()!==statusFilter)return false;
+    return true;
+  }),stockIds=new Set(stockDetail.map(x=>String(x.id)));
   const allSales=salesRep.data||[],sales=allSales.filter(x=>stockIds.has(String(x.stock_unit_id))),allReceipts=receiptRep.data||[],receiptIds=new Set(allReceipts.map(x=>String(x.stock_unit_id))),rows=stockDetail.filter(x=>receiptIds.has(String(x.id))).map(x=>{const a=allReceipts.find(y=>String(y.stock_unit_id)===String(x.id))||{};return {...x,requested_at:a.requested_at,status:a.status,requester:a.requested_by,reviewer:a.reviewed_by,review_note:a.review_note};});
   const historicalSales=(historicalRep.data||[]).filter(x=>x.sold_status==='SOLD'&&(!outletFilter||x.outlet===outletFilter)).map(x=>({product:x.product_name,variant:[x.storage_gb,x.color].filter(Boolean).join(' '),sold_at:x.settled_at||x.created_at,capital_due:x.cost,sale_price:0}));
   const historicalDue=(historicalRep.data||[]).filter(x=>x.sold_status==='SOLD'&&!x.settlement_id&&(!outletFilter||x.outlet===outletFilter)).map(x=>({product:x.product_name,variant:[x.storage_gb,x.color].filter(Boolean).join(' '),sold_at:x.created_at,capital_due:x.cost}));

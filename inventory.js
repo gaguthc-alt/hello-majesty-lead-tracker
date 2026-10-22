@@ -1139,6 +1139,14 @@ async function saveStock(){
  }else{
   data={product_id:$('stprod').value,imei_1:$('stimei1').value.trim()||null,imei_2:$('stimei2').value.trim()||null,grade:selectedProduct?.grade||null,color:$('stcolor').value.trim()||null,condition:$('stcondition').value.trim()||null,battery_health:$('stbh').value?Number($('stbh').value):null,completeness:$('stcomplete').value.trim()||null,minus:$('stminus').value.trim()||null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='MAJESTY_CELL'?partnerName:null,cost:Number($('stcost').value||0),asking_price:Number($('stprice').value||0),notes:$('stnotes').value.trim()||null,receipt_ref:$('stref')?.value.trim()||null,received_source_note:source==='HUNTER'?'Hunter':source==='CHECKER'?'Checker':source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
  }
+ // Normalisasi nilai sumber UI ke enum database. Form Admin Finance memakai
+ // nilai STOCKIST, sedangkan stock_units hanya menerima MAJESTY_CELL.
+ if(source==='STOCKIST'){
+  data.source_type='MAJESTY_CELL';
+  data.partner_name=partnerName;
+  data.received_source_note=partnerName||'Majesty Cell';
+ }
+
  const saveBtn=document.getElementById('saveStockBtn');
  if(window.hmSavingStock)return;
  window.hmSavingStock=true;

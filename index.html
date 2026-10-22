@@ -1540,6 +1540,61 @@ html,body{color-scheme:light}
     min-height:54px!important;
   }
 }
+
+/* hm-mobile-menu-layout-v6 — target the actual role-home category markup */
+@media screen and (min-width:381px) and (max-width:700px){
+  section.role-home-menu.role-home-category > .role-home-submenu{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    align-items:stretch!important;
+    gap:8px!important;
+    padding:9px!important;
+    margin:0!important;
+  }
+  section.role-home-menu.role-home-category > .role-home-submenu > button.role-home-submenu-item{
+    display:flex!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:72px!important;
+    height:auto!important;
+    margin:0!important;
+    padding:9px!important;
+    box-sizing:border-box!important;
+    justify-content:center!important;
+    overflow-wrap:anywhere!important;
+  }
+  section.role-home-menu.role-home-category > .role-home-submenu > button.role-home-submenu-item b{
+    font-size:12px!important;
+    line-height:1.25!important;
+  }
+  section.role-home-menu.role-home-category > .role-home-submenu > button.role-home-submenu-item span{
+    font-size:10px!important;
+    line-height:1.3!important;
+    margin-top:4px!important;
+    -webkit-line-clamp:2!important;
+  }
+  section.role-home-menu.role-home-category{
+    margin-bottom:9px!important;
+    border-radius:18px!important;
+  }
+  section.role-home-menu.role-home-category > .role-home-category-title{
+    min-height:58px!important;
+    padding:10px 13px!important;
+    font-size:14px!important;
+  }
+}
+@media screen and (max-width:380px){
+  section.role-home-menu.role-home-category > .role-home-submenu{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:7px!important;
+    padding:8px!important;
+  }
+  section.role-home-menu.role-home-category > .role-home-submenu > button.role-home-submenu-item{
+    min-height:56px!important;
+    padding:8px 10px!important;
+  }
+}
 </style>
 
 </head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">

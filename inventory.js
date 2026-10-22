@@ -1139,12 +1139,17 @@ async function saveStock(){
  }else{
   data={product_id:$('stprod').value,imei_1:$('stimei1').value.trim()||null,imei_2:$('stimei2').value.trim()||null,grade:selectedProduct?.grade||null,color:$('stcolor').value.trim()||null,condition:$('stcondition').value.trim()||null,battery_health:$('stbh').value?Number($('stbh').value):null,completeness:$('stcomplete').value.trim()||null,minus:$('stminus').value.trim()||null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='MAJESTY_CELL'?partnerName:null,cost:Number($('stcost').value||0),asking_price:Number($('stprice').value||0),notes:$('stnotes').value.trim()||null,receipt_ref:$('stref')?.value.trim()||null,received_source_note:source==='HUNTER'?'Hunter':source==='CHECKER'?'Checker':source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
  }
- // Normalisasi nilai sumber UI ke enum database. Form Admin Finance memakai
- // nilai STOCKIST, sedangkan stock_units hanya menerima MAJESTY_CELL.
+ // Semua partner dipilih melalui sumber UI STOCKIST. Untuk kompatibilitas
+ // dengan constraint database yang sudah ada, source_type tetap MAJESTY_CELL;
+ // identitas pemilik barang yang sebenarnya disimpan terpisah di partner_name.
+ // Dengan begitu Majesty Cell, Majesty Gadget, dan Majesty Store tidak tertukar.
  if(source==='STOCKIST'){
+  const stockistNames=['Majesty Cell','Majesty Gadget','Majesty Store'];
+  const selectedStockist=stockistNames.find(name=>name===String(partnerName||'').trim());
+  if(!selectedStockist)return alert('Pilih partner Stockist yang valid: Majesty Cell, Majesty Gadget, atau Majesty Store.');
   data.source_type='MAJESTY_CELL';
-  data.partner_name=partnerName;
-  data.received_source_note=partnerName||'Majesty Cell';
+  data.partner_name=selectedStockist;
+  data.received_source_note=selectedStockist;
  }
 
  const saveBtn=document.getElementById('saveStockBtn');
@@ -1161,8 +1166,8 @@ async function saveStock(){
   if(x.error)throw new Error(x.error.message);
   const stockId=x.data?.id;
   if(!stockId)throw new Error('ID stock tidak dikembalikan oleh database.');
-  // Hanya stok yang bersumber dari Majesty Cell yang wajib menunggu persetujuan.
-  // Sumber Management/Hunter/Fasilitator langsung masuk sebagai Stock READY.
+  // Semua partner pada pilihan STOCKIST wajib menunggu persetujuan sebelum READY.
+  // Partner spesifik disimpan pada partner_name; Management/Hunter/Checker langsung READY.
   if(String(source).toUpperCase()==='STOCKIST'){
    const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
    if(ap.error){

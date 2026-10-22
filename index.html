@@ -1489,6 +1489,57 @@ html,body{color-scheme:light}
     font-size:11px!important;
   }
 }
+
+/* hm-mobile-menu-compact-v5 — compact, readable mobile navigation cards */
+@media(max-width:700px){
+  .role-home-menu{
+    border-radius:17px!important;
+    padding:10px!important;
+    margin:8px 0!important;
+  }
+  .role-home-function{
+    min-height:54px!important;
+    padding:8px 6px!important;
+    gap:8px!important;
+  }
+  .role-home-function-title{
+    font-size:15px!important;
+    line-height:1.25!important;
+  }
+  .role-home-function-arrow{
+    font-size:20px!important;
+    flex:0 0 auto;
+  }
+  .role-home-submenu{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important;
+    margin-top:7px!important;
+    padding-top:7px!important;
+  }
+  .role-home-submenu-item{
+    min-height:66px!important;
+    padding:9px!important;
+    border-radius:13px!important;
+    line-height:1.3!important;
+  }
+  .role-home-submenu-item b{
+    font-size:13px!important;
+    line-height:1.3!important;
+  }
+  .role-home-submenu-item span{
+    font-size:10px!important;
+    line-height:1.35!important;
+    margin-top:3px!important;
+  }
+}
+@media(max-width:380px){
+  .role-home-submenu{
+    grid-template-columns:1fr!important;
+  }
+  .role-home-submenu-item{
+    min-height:54px!important;
+  }
+}
 </style>
 
 </head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">

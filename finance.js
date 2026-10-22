@@ -25,18 +25,18 @@ window.openCellFinanceReport=async function(){window.hmEnsureCellReportStyles();
   inlinePanel.classList.remove('hidden');
   const d=new Date(),start=new Date(d.getFullYear(),d.getMonth(),1),end=d;
   const iso=x=>{const y=x.getFullYear(),m=String(x.getMonth()+1).padStart(2,'0'),day=String(x.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};
-  const displayDate=x=>{const [y,m,d]=iso(x).split('-');return d+'/'+m+'/'+y;};
+  const displayDate=x=>iso(x);
   target.innerHTML='<div class="cell-report-actions"><button class="secondary" type="button" onclick="hmCloseMainMenu()">✖ Tutup</button><button class="primary" type="button" onclick="window.loadCellFinanceReport()">🔄 Refresh</button></div>'+
     '<div class="cell-report-filters" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;padding:14px;border:1px solid #dbe3ef;border-radius:16px;background:#f8fafc;margin:10px 0">'+
-    '<label>Periode Dari<input id="cellReportStart" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" value="'+displayDate(start)+'" autocomplete="off" style="width:100%;box-sizing:border-box"></label>'+
-    '<label>Periode Sampai<input id="cellReportEnd" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" value="'+displayDate(end)+'" autocomplete="off" style="width:100%;box-sizing:border-box"></label>'+
+    '<label>Periode Dari<input id="cellReportStart" type="date" value="'+displayDate(start)+'" autocomplete="off" style="width:100%;box-sizing:border-box"></label>'+
+    '<label>Periode Sampai<input id="cellReportEnd" type="date" value="'+displayDate(end)+'" autocomplete="off" style="width:100%;box-sizing:border-box"></label>'+
     '<label>Outlet<select id="cellReportOutlet" style="width:100%;box-sizing:border-box"><option value="ALL">Semua Outlet Cell</option><option value="Majesty Refill Phone">Majesty Refill Phone</option><option value="Majesty Plaza iPhone">Majesty Plaza iPhone</option></select></label>'+
     '<label>Kategori<select id="cellReportCategory" style="width:100%;box-sizing:border-box"><option value="ALL">Semua Kategori</option><option>iPhone New</option><option>iPhone Second</option><option>Android New</option><option>Android Second</option></select></label>'+
     '<label>Produk<input id="cellReportProduct" type="search" placeholder="Cari nama produk..." style="width:100%;box-sizing:border-box"></label>'+
     '<label>IMEI<input id="cellReportImei" type="search" inputmode="numeric" placeholder="Cari IMEI..." style="width:100%;box-sizing:border-box"></label>'+
     '<label>Status<select id="cellReportStatus" style="width:100%;box-sizing:border-box"><option value="ALL">Semua Status</option><option value="READY">READY</option><option value="SOLD">SOLD</option><option value="RETURN">RETURN</option></select></label>'+
     '<div style="display:flex;gap:8px;align-items:end"><button type="button" class="secondary" onclick="window.resetCellFinanceFilters()" style="flex:1">↺ Reset</button><button type="button" class="primary" onclick="window.loadCellFinanceReport()" style="flex:1">🔎 Tampilkan</button></div></div>'+
-    '<div class="small" style="margin-top:6px">Tanggal DD/MM/YYYY • Filter diterapkan pada ringkasan dan rincian stok/penjualan yang terkait.</div><div id="cellFinanceReportBody" class="cell-report-body">Memuat...</div>';
+    '<div class="small" style="margin-top:6px">Pilih tanggal melalui kalender • Filter diterapkan pada ringkasan dan rincian stok/penjualan yang terkait.</div><div id="cellFinanceReportBody" class="cell-report-body">Memuat...</div>';
   await window.loadCellFinanceReport();
 };
 window.resetCellFinanceFilters=function(){

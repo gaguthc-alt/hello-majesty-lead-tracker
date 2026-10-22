@@ -59,8 +59,10 @@ window.loadCellFinanceReport=async function(){
 window.openPartnerSettlement=async function(){
   const p=window.profile||{};
   const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
+  const isFacilitator=!p.is_management&&role==='FASILITATOR';
   const isStockistPartner=!p.is_management&&(role.includes('STOCKIST')||role.startsWith('ADMIN FINANCE MAJESTY CELL'));
-  if(!p.is_management && !isStockistPartner){
+  const isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
+  if(!p.is_management && !isStockistPartner && !isFacilitator && !isDeveloper){
     alert('Akses settlement tidak diizinkan.');
     return;
   }
@@ -79,7 +81,12 @@ window.openPartnerSettlement=async function(){
     const res=await window.sb.rpc('partner_obligation_summary');
     if(res.error)throw res.error;
     const rows=Array.isArray(res.data)?res.data:[];
-    const list=rows.filter(x=>String(x.partner_name||'').trim() && String(x.outlet||'').trim());
+    const list=rows.filter(x=>{
+      if(!String(x.partner_name||'').trim()||!String(x.outlet||'').trim())return false;
+      if(isFacilitator)return String(x.outlet||'').trim().toLowerCase()===String(p.outlet||'').trim().toLowerCase();
+      if(isStockistPartner)return String(x.partner_name||'').trim().toLowerCase()===String(p.outlet||'').trim().toLowerCase();
+      return true;
+    });
     const card=(x)=>{
       const partner=String(x.partner_name||'');
       const outlet=String(x.outlet||'');

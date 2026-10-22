@@ -3859,7 +3859,12 @@ window.hmOpenPartnerSettlementManagement=async function(){
   b.querySelectorAll('[data-obligation-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
    const note=prompt('Catatan konfirmasi nominal (opsional):');if(note===null)return;
    const {error}=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:btn.dataset.obligationConfirm,p_confirm:true,p_note:note});
-   if(error){alert('Konfirmasi gagal: '+error.message);return;}alert('Nominal disetujui. Menunggu transfer.');window.hmOpenPartnerSettlementManagement();
+   if(error){alert('Konfirmasi gagal: '+error.message);return;}
+   const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
+   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const msg=['*PERSETUJUAN SETTLEMENT*','*MAJESTY CELL*','','Yth. tim Hello Majesty, kami mengonfirmasi bahwa nominal settlement berikut telah kami periksa dan setujui:','','• Stockist: '+partner,'• Outlet: '+outlet,'• Tanggal: '+date,'• Nominal disetujui: '+amount,'• Rincian produk: '+item,'• Status aplikasi: PARTNER_CONFIRMED','',note.trim()?'• Catatan: '+note.trim():'','Silakan lanjutkan proses transfer. Setelah transfer dilakukan, kirim bukti transfer melalui WhatsApp dan catat prosesnya di aplikasi. Persetujuan nominal ini bukan konfirmasi pembayaran.','','Majesty Cell — Mitra Stockist'].filter(Boolean).join(String.fromCharCode(10));
+   alert('Nominal disetujui. WhatsApp akan dibuka untuk memberi kabar kepada Hello Majesty.');
+   window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
   }));
   b.querySelectorAll('[data-obligation-reject]').forEach(btn=>btn.addEventListener('click',async()=>{
    const note=prompt('Jelaskan koreksi yang diminta:');if(note===null||!note.trim()){alert('Catatan koreksi wajib diisi.');return;}

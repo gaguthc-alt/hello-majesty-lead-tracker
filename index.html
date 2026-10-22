@@ -3816,17 +3816,27 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const financeNetTotal=selectedUnits.reduce((n,x)=>n+Number(x._financeReceived||0),0);
     const financeAppliedTotal=selectedUnits.reduce((n,x)=>n+Number(x._financeApplied||0),0);
     if(!confirm('Simpan DRAFT settlement '+partner+' • '+outlet+' untuk '+selectedUnits.length+' unit? Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0))+', finance/paylater neto diterima setelah cashout '+money(financeNetTotal)+', bagian yang mengurangi modal '+money(financeAppliedTotal)+', sisa settlement '+money(total)+'. Draft belum dianggap pembayaran.'))return;
-   const {data:userData}=await window.sb.auth.getUser();
-   const {data:settlement,error:settleError}=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet,settlement_type:'SOLD_UNITS',settlement_date:date,amount:total,note:[note||'Dipilih berdasarkan unit SOLD','Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0)),'Finance/paylater neto diterima setelah cashout '+money(financeNetTotal),'Finance/paylater yang mengurangi modal '+money(financeAppliedTotal)].join(' | '),status:'DRAFT',created_by:userData?.user?.id}).select('id').single();
-   if(settleError){alert('Gagal menyimpan draft settlement: '+settleError.message);return;}
-   const itemRows=selectedUnits.map(x=>({settlement_id:settlement.id,stock_unit_id:x._source==='LIVE'?x.id:null,historical_stock_detail_id:x._source==='HISTORICAL'?x.id:null,capital_amount:Number(x._settlementCost??x.cost??0),profit_amount:0,partner_profit_share:0}));
-   const {error:itemError}=await window.sb.from('partner_settlement_items').insert(itemRows);
-   if(itemError){
-    alert('Draft settlement tersimpan, tetapi rincian unit gagal disimpan: '+itemError.message+'. Jangan buat draft duplikat; hubungi Management untuk rekonsiliasi draft '+settlement.id+'.');
-    return;
+   try{
+    if(!window.sb)throw new Error('Koneksi database belum siap. Muat ulang halaman lalu coba lagi.');
+    const {data:authResult,error:authError}=await window.sb.auth.getUser();
+    if(authError)throw new Error('Gagal memeriksa sesi login: '+authError.message);
+    const userId=authResult?.user?.id;
+    if(!userId)throw new Error('Sesi login tidak ditemukan. Silakan login ulang sebelum menyimpan draft.');
+    const {data:settlement,error:settleError}=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet,settlement_type:'SOLD_UNITS',settlement_date:date,amount:total,note:[note||'Dipilih berdasarkan unit SOLD','Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0)),'Finance/paylater neto diterima setelah cashout '+money(financeNetTotal),'Finance/paylater yang mengurangi modal '+money(financeAppliedTotal)].join(' | '),status:'DRAFT',created_by:userId}).select('id').single();
+    if(settleError)throw new Error('Gagal menyimpan draft settlement: '+settleError.message);
+    if(!settlement?.id)throw new Error('Database tidak mengembalikan ID draft settlement.');
+    const itemRows=selectedUnits.map(x=>({settlement_id:settlement.id,stock_unit_id:x._source==='LIVE'?x.id:null,historical_stock_detail_id:x._source==='HISTORICAL'?x.id:null,capital_amount:Number(x._settlementCost??x.cost??0),profit_amount:0,partner_profit_share:0}));
+    const {error:itemError}=await window.sb.from('partner_settlement_items').insert(itemRows);
+    if(itemError){
+     alert('Draft tersimpan dengan ID '+settlement.id+', tetapi rincian unit gagal disimpan: '+itemError.message+'. Jangan klik simpan lagi agar tidak ganda. Draft perlu direkonsiliasi.');
+     return;
+    }
+    alert('Draft settlement tersimpan beserta unit terpilih. Belum dianggap pembayaran dan belum membuat jurnal Accurate.');
+    await window.hmOpenPartnerSettlementManagement();
+   }catch(saveError){
+    console.error('[HM] Gagal menyimpan draft settlement:',saveError);
+    alert('Draft settlement TIDAK berhasil dipastikan tersimpan. Detail: '+(saveError?.message||String(saveError))+'\nTidak ada pembayaran yang dicatat. Periksa pesan ini sebelum mencoba ulang.');
    }
-   alert('Draft settlement tersimpan beserta unit terpilih. Belum dianggap pembayaran dan belum membuat jurnal Accurate.');
-   window.hmOpenPartnerSettlementManagement();
   });
   }
   b.querySelectorAll('[data-request-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{

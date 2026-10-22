@@ -3759,7 +3759,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    else if(isFinanceUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm="'+safe(x.id)+'">Uang sudah masuk</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
    else if(st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
-   else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-sent="'+safe(x.id)+'">Catat transfer</button>';
+   else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-sent="'+safe(x.id)+'">Catat transfer</button> <button type="button" data-proof-wa="'+safe(x.id)+'">Kirim bukti TF foto via WA</button>';
+   else if(st==='TRANSFER_SENT') actions=(actions==='—'?'':actions+' ')+'<button type="button" data-proof-wa="'+safe(x.id)+'">Kirim bukti TF foto via WA</button>';
    const details=[x.transfer_reference?'Ref transfer: '+x.transfer_reference:'',x.transfer_proof_note||'',x.received_note||''].filter(Boolean).join(' • ');
    if(!['COMPLETED','SETTLED','PAID','LUNAS'].includes(st)&&!String(actions).includes('data-send-confirm-wa')) actions=(actions==='—'?'':actions+' ' )+'<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Lanjutkan via WhatsApp</button>';
    return '<tr><td>'+safe(x.partner_name)+'</td><td>'+safe(x.outlet||'—')+'</td><td>'+safe(x.settlement_date||'—')+'</td><td>'+money(x.amount)+'</td><td>'+safe(st)+'</td><td>'+safe(productSummary||x.note||'—')+(details?'<div class="small">'+safe(details)+'</div>':'')+'</td><td>'+actions+'</td></tr>';
@@ -3865,6 +3866,26 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const note=prompt('Jelaskan koreksi yang diminta:');if(note===null||!note.trim()){alert('Catatan koreksi wajib diisi.');return;}
    const {error}=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:btn.dataset.obligationReject,p_confirm:false,p_note:note});
    if(error){alert('Permintaan koreksi gagal: '+error.message);return;}alert('Settlement dikembalikan untuk koreksi.');window.hmOpenPartnerSettlementManagement();
+  }));
+  b.querySelectorAll('[data-proof-wa]').forEach(btn=>btn.addEventListener('click',()=>{
+   const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
+   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',status=cells[4]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const msg='*BUKTI TRANSFER SETTLEMENT — HELLO MAJESTY*\\n\\nYth. '+partner+', berikut bukti transfer untuk settlement ini.\\n\\n• Outlet: '+outlet+'\\n• Tanggal: '+date+'\\n• Nominal: '+amount+'\\n• Rincian produk: '+item+'\\n• Status aplikasi: '+status+'\\n\\nMohon konfirmasi setelah dana benar-benar terlihat di rekening. Foto ini dikirim langsung melalui WhatsApp dan tidak disimpan di database Hello Majesty.\\n\\nHello Majesty — Built on Trust';
+   const input=document.createElement('input');input.type='file';input.accept='image/*';input.style.display='none';document.body.appendChild(input);
+   input.addEventListener('change',async()=>{
+    const file=input.files&&input.files[0];input.remove();if(!file)return;
+    if(!file.type.startsWith('image/')){alert('Pilih file foto/gambar.');return;}
+    try{
+     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Bukti transfer settlement',text:msg});
+      return;
+     }
+    }catch(e){if(e&&e.name==='AbortError')return;console.warn('Share file unsupported:',e);}
+    const url='https://wa.me/?text='+encodeURIComponent(msg);
+    window.open(url,'_blank');
+    alert('WhatsApp dibuka dengan pesan settlement. Untuk browser ini, lampiran foto tidak bisa disisipkan otomatis. Di WhatsApp, lampirkan foto yang tadi dipilih lalu kirim. Foto tidak diunggah atau disimpan oleh Hello Majesty.');
+   });
+   input.click();
   }));
   b.querySelectorAll('[data-transfer-sent]').forEach(btn=>btn.addEventListener('click',async()=>{
    const ref=prompt('Masukkan referensi transfer/bukti pembayaran:');if(ref===null||!ref.trim())return;

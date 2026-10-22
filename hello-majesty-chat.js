@@ -76,19 +76,55 @@ function addBubble(box,m){
 }
 
 async function getMainAuth(){
+  const readSession=()=>{
+    try{return JSON.parse(localStorage.getItem('hm_auth_session')||'null');}
+    catch(_e){return null;}
+  };
   try{
-    const raw=localStorage.getItem('hm_auth_session');
-    const s=raw?JSON.parse(raw):null;
+    let s=readSession();
     if(!s?.access_token||!s?.user)throw new Error('Sesi login Hello Majesty tidak tersedia.');
-    const now=Math.floor(Date.now()/1000);
+    let now=Math.floor(Date.now()/1000);
     if(Number(s.expires_at||0)>now+90)return s;
-    if(!s.refresh_token)throw new Error('Sesi login Hello Majesty sudah kedaluwarsa. Silakan login kembali.');
-    const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
-    const data=await res.json().catch(()=>null);
-    if(!res.ok||!data?.access_token)throw new Error(data?.error_description||data?.msg||'Sesi login Hello Majesty sudah kedaluwarsa.');
-    const next={...s,...data,user:data.user||s.user,expires_at:data.expires_at||Math.floor(Date.now()/1000)+Number(data.expires_in||3600)};
-    localStorage.setItem('hm_auth_session',JSON.stringify(next));
-    return next;
+
+    // The main login module owns refresh-token rotation. Reuse it so the chat
+    // module cannot race the dashboard and consume the same single-use token.
+    if(typeof window.hmAccessToken==='function'){
+      try{
+        await window.hmAccessToken();
+        const latest=readSession();
+        now=Math.floor(Date.now()/1000);
+        if(latest?.access_token&&latest?.user&&Number(latest.expires_at||0)>now+30)return latest;
+      }catch(e){console.warn('[HM Chat] shared session refresh unavailable; checking stored session',e);}
+    }
+
+    // Safe fallback for standalone/older page loads: serialize refreshes across
+    // tabs and reread storage after acquiring the same lock as login-v9.js.
+    const refresh=async()=>{
+      s=readSession();
+      now=Math.floor(Date.now()/1000);
+      if(!s?.access_token||!s?.user)throw new Error('Sesi login Hello Majesty tidak tersedia.');
+      if(Number(s.expires_at||0)>now+90)return s;
+      if(!s.refresh_token)throw new Error('Sesi login Hello Majesty sudah kedaluwarsa. Silakan login kembali.');
+      const usedRefreshToken=s.refresh_token;
+      const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{
+        method:'POST',
+        headers:{apikey:SUPABASE_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({refresh_token:usedRefreshToken})
+      });
+      const data=await res.json().catch(()=>null);
+      if(!res.ok||!data?.access_token){
+        const latest=readSession();
+        now=Math.floor(Date.now()/1000);
+        if(latest?.access_token&&latest?.user&&latest.refresh_token!==usedRefreshToken&&Number(latest.expires_at||0)>now+30)return latest;
+        throw new Error(data?.error_description||data?.msg||'Sesi login Hello Majesty sudah kedaluwarsa. Silakan login kembali.');
+      }
+      const next={...s,...data,user:data.user||s.user,expires_at:data.expires_at||Math.floor(Date.now()/1000)+Number(data.expires_in||3600)};
+      localStorage.setItem('hm_auth_session',JSON.stringify(next));
+      return next;
+    };
+    return await (navigator?.locks?.request
+      ? navigator.locks.request('hello-majesty-auth-refresh',{mode:'exclusive'},refresh)
+      : refresh());
   }catch(e){throw new Error(e?.message||'Sesi login Hello Majesty tidak tersedia.');}
 }
 async function ensureClient(){

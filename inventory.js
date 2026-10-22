@@ -389,7 +389,7 @@ async function renderStandaloneHunterStock(){
        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px">'+(isHunter?'<span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#e8f1ff;color:#174ea6">🏹 HUNTER · KOMISI 10%</span>':'')+'<span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#f3e8ff;color:#6b21a8">🔎 CHECKER · KOMISI 5%</span></div>'+
        '<div style="margin-top:7px"><b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b></div>'+
        '<div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div>'+
-       '<div class="small">👤 '+personLabel+': <b>'+esc(x.hunter_name||'-')+'</b></div>'+(isHunter&&checkerByStock[x.id]?'<div class="small">🔎 Checker: <b>'+esc(checkerByStock[x.id])+'</b></div>':'')+
+       '<div class="small">👤 '+personLabel+': <b>'+esc(x.hunter_name||'-')+'</b></div>'+(checkerByStock[x.id]?.hunters?'<div class="small">🏹 Hunter: <b>'+esc(checkerByStock[x.id].hunters)+'</b></div>':'')+(checkerByStock[x.id]?.checkers?'<div class="small">🔎 Checker: <b>'+esc(checkerByStock[x.id].checkers)+'</b></div>':'')+
        '<div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div>'+
        '<div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div>'+
        '<div class="small" style="margin-top:5px">🟢 READY — belum laku</div></div>';

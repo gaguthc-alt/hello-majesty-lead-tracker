@@ -41,7 +41,7 @@
   }
 
   let refreshInFlight=null;
-  async function refreshAccessToken(){
+  async function refreshAccessToken(forceRefresh=false){
     if(refreshInFlight)return refreshInFlight;
     refreshInFlight=(async()=>{
       const runRefresh=async()=>{
@@ -51,7 +51,7 @@
           const latest=JSON.parse(localStorage.getItem('hm_auth_session')||'null');
           if(latest?.refresh_token && latest.refresh_token!==activeSession?.refresh_token){
             const latestExpiry=Number(latest.expires_at||0);
-            if(latest.access_token && latestExpiry>Math.floor(Date.now()/1000)+90){
+            if(!forceRefresh && latest.access_token && latestExpiry>Math.floor(Date.now()/1000)+90){
               activeSession={...latest};
               return activeSession.access_token;
             }
@@ -117,6 +117,29 @@
         if((activeSession.expires_at||0)-now<90)await refreshAccessToken();
         return activeSession.access_token;
       },
+      // Perbaiki sesi tersimpan yang terlihat masih berlaku di browser tetapi
+      // ditolak Supabase (401). Refresh satu kali lalu ulangi request dengan JWT baru.
+      global:{fetch:async(input,init)=>{
+        const response=await fetch(input,init);
+        if(response.status!==401)return response;
+        try{
+          await refreshAccessToken(true);
+          const headers=new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
+          headers.set('Authorization','Bearer '+activeSession.access_token);
+          return await fetch(input,{...init,headers});
+        }catch(refreshError){
+          console.warn('[HM] Auth token rejected; require fresh login:',refreshError);
+          try{
+            localStorage.removeItem('hm_auth_session');
+            localStorage.removeItem('hm_auth_session_backup');
+            sessionStorage.removeItem('hm_auth_session');
+            localStorage.setItem('hm_auth_logout_marker','1');
+          }catch(storageError){console.warn('[HM] clear rejected session',storageError);}
+          // One reload to show login; the persisted session has been cleared first.
+          setTimeout(()=>location.reload(),0);
+          return response;
+        }
+      }},
       auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
     });
   }

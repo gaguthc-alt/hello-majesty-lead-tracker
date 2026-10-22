@@ -1404,6 +1404,91 @@ html,body{color-scheme:light}
   .hm-home-perf-head{margin-bottom:6px!important}
   .hm-home-perf-card{border-radius:12px!important}
 }
+
+/* hm-mobile-all-modules-v4 — responsive standards for all operational modules */
+@media(max-width:700px){
+  /* All module content stays within the phone viewport. */
+  #workspace,#workspace>*,
+  #hmMenuPanelBody,#hmMenuPanelBody>*,
+  .hm-menu-panel-bottom,.hm-menu-panel-bottom *{
+    min-width:0;
+    box-sizing:border-box;
+  }
+  #workspace .row,
+  #hmMenuPanelBody .row,
+  .hm-menu-panel-bottom .row{
+    flex-wrap:wrap;
+    align-items:stretch;
+  }
+  #workspace .row>button,
+  #hmMenuPanelBody .row>button,
+  .hm-menu-panel-bottom .row>button{
+    flex:1 1 130px;
+    min-width:0;
+  }
+  /* Filters and forms stack instead of squeezing labels and inputs. */
+  #workspace [style*="grid-template-columns"],
+  #hmMenuPanelBody [style*="grid-template-columns"],
+  .hm-menu-panel-bottom [style*="grid-template-columns"]{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  #workspace input,#workspace select,#workspace textarea,
+  #hmMenuPanelBody input,#hmMenuPanelBody select,#hmMenuPanelBody textarea,
+  .hm-menu-panel-bottom input,.hm-menu-panel-bottom select,.hm-menu-panel-bottom textarea{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    font-size:16px!important;
+  }
+  /* Every report table scrolls within its own module rather than widening the page. */
+  #workspace table,#hmMenuPanelBody table,.hm-menu-panel-bottom table{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch;
+    border-collapse:separate;
+  }
+  #workspace table th,#workspace table td,
+  #hmMenuPanelBody table th,#hmMenuPanelBody table td,
+  .hm-menu-panel-bottom table th,.hm-menu-panel-bottom table td{
+    white-space:nowrap;
+  }
+  #workspace img,#hmMenuPanelBody img,.hm-menu-panel-bottom img{
+    max-width:100%;
+    height:auto;
+  }
+  #workspace .box,#workspace .lead,
+  #hmMenuPanelBody .box,.hm-menu-panel-bottom .box{
+    max-width:100%;
+  }
+  /* Keep modals and module panels reachable above mobile browser controls. */
+  .hm-menu-panel-bottom{
+    width:calc(100vw - 16px)!important;
+    max-height:calc(100dvh - env(safe-area-inset-top,0px) - 18px)!important;
+    padding:12px!important;
+    overscroll-behavior:contain;
+  }
+  .hm-menu-panel-head{
+    gap:8px!important;
+    flex-wrap:wrap;
+  }
+}
+@media(max-width:420px){
+  #workspace [style*="grid-template-columns"],
+  #hmMenuPanelBody [style*="grid-template-columns"],
+  .hm-menu-panel-bottom [style*="grid-template-columns"]{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  #workspace .row>button,
+  #hmMenuPanelBody .row>button,
+  .hm-menu-panel-bottom .row>button{
+    flex-basis:100%;
+  }
+  #workspace table,#hmMenuPanelBody table,.hm-menu-panel-bottom table{
+    font-size:11px!important;
+  }
+}
 </style>
 
 </head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">

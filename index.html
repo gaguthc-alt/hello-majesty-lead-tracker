@@ -3698,8 +3698,9 @@ window.hmOpenStockistDirectory=function(){
 
 window.hmOpenPartnerSettlementManagement=async function(){
  const roleKey=String(profile?.role||'').toUpperCase().replace(/_/g,' ').trim();
- const isStockistUser=!mg&&!developer&&roleKey==='MITRA STOCKIST'&&String(profile?.outlet||'').trim()!=='';
- const isFinanceUser=!mg&&!developer&&(roleKey.includes('ADMIN FINANCE')||String(profile?.name||'').trim().toLowerCase()==='atmadita');
+ const isAtmaditaFinance=String(profile?.name||'').trim().toLowerCase()==='atmadita';
+ const isFinanceUser=!mg&&!developer&&(roleKey.includes('ADMIN FINANCE')||isAtmaditaFinance);
+ const isStockistUser=!mg&&!developer&&!isFinanceUser&&roleKey==='MITRA STOCKIST'&&String(profile?.outlet||'').trim()!=='';
  if(!(mg||developer||isStockistUser||isFinanceUser)){alert('Menu Pembayaran Settlement tidak tersedia untuk role ini.');return;}
  const stockistName=isStockistUser?String(profile.outlet).trim():null;
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');

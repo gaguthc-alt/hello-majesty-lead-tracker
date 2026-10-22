@@ -41,7 +41,7 @@ window.loadCellFinanceReport=async function(){
   const cellProfile=window.profile||{},cellRole=String(cellProfile.role||'').trim().toUpperCase().replace(/_/g,' '),isStockistPartner=!cellProfile.is_management&&(cellRole.includes('STOCKIST')||cellRole.startsWith('ADMIN FINANCE MAJESTY CELL')),isProfitShareMasked=isStockistPartner||(String(cellProfile.name||'').trim().toLowerCase()==='saka'||cellRole==='FASILITATOR');
   const outletFilter=outlet==='ALL'?null:outlet;
   const [stockRep,salesRep,receiptRep,historicalRep,settRep,productsRep]=await Promise.all([
-    sb.from('stock_units').select('*').eq('partner_name','Majesty Cell').gte('created_at',start+'T00:00:00').lte('created_at',end+'T23:59:59'),
+    sb.from('stock_units').select('*').eq('partner_name','Majesty Cell'),
     sb.from('sales_transactions').select('*').gte('sold_at',start+'T00:00:00').lte('sold_at',end+'T23:59:59'),
     sb.from('inventory_receive_approvals').select('*').gte('requested_at',start+'T00:00:00').lte('requested_at',end+'T23:59:59'),
     sb.from('partner_historical_stock_details').select('*').eq('partner_name','Majesty Cell'),

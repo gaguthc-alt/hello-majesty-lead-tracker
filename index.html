@@ -3742,7 +3742,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
   historicalUnits.forEach(x=>{x._financeGross=0;x._financeCashout=0;x._financeReceived=0;x._financeApplied=0;x._settlementCost=Number(x.cost||0);});
   const settlementById=new Map(settles.map(x=>[String(x.id),x]));
   const allocated=new Set();
-  items.forEach(it=>{const st=settlementById.get(String(it.settlement_id));if(st&&['DRAFT','PENDING','PAID','SETTLED','COMPLETED','LUNAS'].includes(String(st.status||'').toUpperCase())){if(it.stock_unit_id)allocated.add('live:'+it.stock_unit_id);if(it.historical_stock_detail_id)allocated.add('hist:'+it.historical_stock_detail_id);}});
+  items.forEach(it=>{const st=settlementById.get(String(it.settlement_id));if(st&&['DRAFT','PENDING','AWAITING_PARTNER_CONFIRMATION','PARTNER_CONFIRMED','TRANSFER_SENT','RECEIVED','PAID','SETTLED','COMPLETED','LUNAS'].includes(String(st.status||'').toUpperCase())){if(it.stock_unit_id)allocated.add('live:'+it.stock_unit_id);if(it.historical_stock_detail_id)allocated.add('hist:'+it.historical_stock_detail_id);}});
   (hRes.data||[]).forEach(x=>{if(x.settlement_id||x.settled_at)allocated.add('hist:'+x.id);});
   const units=[...liveUnits,...historicalUnits];
   const available=units.filter(x=>!allocated.has(x._key));

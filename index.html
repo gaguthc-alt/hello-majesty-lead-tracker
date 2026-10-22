@@ -3697,8 +3697,10 @@ window.hmOpenStockistDirectory=function(){
 };
 
 window.hmOpenPartnerSettlementManagement=async function(){
- const isStockistUser=!mg&&!developer&&String(profile?.role||'').toUpperCase().replace(/_/g,' ').trim()==='MITRA STOCKIST'&&String(profile?.outlet||'').trim()!=='';
- if(!(mg||developer||isStockistUser)){alert('Menu Pembayaran Settlement tidak tersedia untuk role ini.');return;}
+ const roleKey=String(profile?.role||'').toUpperCase().replace(/_/g,' ').trim();
+ const isStockistUser=!mg&&!developer&&roleKey==='MITRA STOCKIST'&&String(profile?.outlet||'').trim()!=='';
+ const isFinanceUser=!mg&&!developer&&(roleKey.includes('ADMIN FINANCE')||String(profile?.name||'').trim().toLowerCase()==='atmadita');
+ if(!(mg||developer||isStockistUser||isFinanceUser)){alert('Menu Pembayaran Settlement tidak tersedia untuk role ini.');return;}
  const stockistName=isStockistUser?String(profile.outlet).trim():null;
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -3752,8 +3754,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const its=items.filter(it=>String(it.settlement_id)===String(x.id));
    const productSummary=its.map(it=>{const u=units.find(z=>String(z.id)===String(it.stock_unit_id));return u?(u.imei_1||productName(u)):'Unit';}).join(', ');
    const st=String(x.status||'').toUpperCase();let actions='—';
-   if(isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
-   else if(isStockistUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm="'+safe(x.id)+'">Uang sudah masuk</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
+   if((isStockistUser||isFinanceUser)&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
+   else if(isFinanceUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm="'+safe(x.id)+'">Uang sudah masuk</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
    else if(!isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
    else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-sent="'+safe(x.id)+'">Catat transfer</button>';

@@ -3818,10 +3818,10 @@ window.hmOpenPartnerSettlementManagement=async function(){
     if(!confirm('Simpan DRAFT settlement '+partner+' • '+outlet+' untuk '+selectedUnits.length+' unit? Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0))+', finance/paylater neto diterima setelah cashout '+money(financeNetTotal)+', bagian yang mengurangi modal '+money(financeAppliedTotal)+', sisa settlement '+money(total)+'. Draft belum dianggap pembayaran.'))return;
    try{
     if(!window.sb)throw new Error('Koneksi database belum siap. Muat ulang halaman lalu coba lagi.');
-    const {data:authResult,error:authError}=await window.sb.auth.getUser();
-    if(authError)throw new Error('Gagal memeriksa sesi login: '+authError.message);
-    const userId=authResult?.user?.id;
-    if(!userId)throw new Error('Sesi login tidak ditemukan. Silakan login ulang sebelum menyimpan draft.');
+    // Aplikasi menggunakan JWT access-token provider, bukan Supabase Auth JS session lokal.
+    // Ambil ID pengguna dari profil dashboard yang sudah diverifikasi saat bootstrap.
+    const userId=profile?.user_id||window.hmProfile?.user_id||window.currentProfile?.user_id;
+    if(!userId)throw new Error('ID pengguna belum tersedia dari profil login. Muat ulang dashboard dan login kembali sebelum menyimpan draft.');
     const {data:settlement,error:settleError}=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet,settlement_type:'SOLD_UNITS',settlement_date:date,amount:total,note:[note||'Dipilih berdasarkan unit SOLD','Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0)),'Finance/paylater neto diterima setelah cashout '+money(financeNetTotal),'Finance/paylater yang mengurangi modal '+money(financeAppliedTotal)].join(' | '),status:'DRAFT',created_by:userId}).select('id').single();
     if(settleError)throw new Error('Gagal menyimpan draft settlement: '+settleError.message);
     if(!settlement?.id)throw new Error('Database tidak mengembalikan ID draft settlement.');

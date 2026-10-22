@@ -207,7 +207,7 @@ window.loadPartnerProfitSettlement=async function(){
   const {data:r}=await sb.from('partner_profit_share_monthly').select('*').eq('outlet','Majesty Refill Phone').eq('partner_name','Majesty Cell').eq('period_start',start).maybeSingle();
   const isMasked=String((window.profile||{}).name||'').trim().toLowerCase()==='saka'||String((window.profile||{}).role||'').trim().toUpperCase().replace(/_/g,' ')==='FASILITATOR';
   const gross=Number(r?.partner_profit_share||0);
-  const {data:p}=await sb.from('partner_settlements').select('amount').eq('partner_name','Majesty Cell').eq('outlet','Majesty Refill Phone').eq('settlement_type','PROFIT_SHARING').eq('status','PAID').eq('period_start',start);
+  const {data:settlements}=await sb.from('partner_settlements').select('amount').eq('partner_name','Majesty Cell').eq('outlet','Majesty Refill Phone').eq('settlement_type','PROFIT_SHARING').eq('status','PAID').eq('period_start',start);
   const paid=(p||[]).reduce((s,x)=>s+Number(x.amount||0),0),due=Math.max(gross-paid,0);
   box.innerHTML='<div class="lead"><b>Profit Sharing '+start+'</b><br>Hak Majesty Cell: '+(isMasked?'xxxxxxxxxx':hmRp(gross))+'<br>Sudah disetor: '+(isMasked?'xxxxxxxxxx':hmRp(paid))+'<br><b>Sisa: '+(isMasked?'xxxxxxxxxx':hmRp(due))+'</b>'+(due>0?'<div style="margin-top:10px"><button class="success" onclick="window.payPartnerProfitSettlement(\''+start+'\')">💸 Setor Sekarang</button></div>':'<div class="small" style="margin-top:8px">Tidak ada profit sharing yang perlu disetor.</div>')+'</div>';
 };

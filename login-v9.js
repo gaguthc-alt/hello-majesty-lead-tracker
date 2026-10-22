@@ -40,26 +40,63 @@
     }finally{clearTimeout(timer);}
   }
 
+  let refreshInFlight=null;
   async function refreshAccessToken(){
-    if(!activeSession?.refresh_token)throw new Error('Sesi login sudah tidak tersedia. Silakan login kembali.');
-    const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{
-      method:'POST',
-      headers:{apikey:KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({refresh_token:activeSession.refresh_token})
-    });
-    let data=null; try{data=await res.json();}catch(_e){}
-    if(!res.ok||!data?.access_token){
-      throw new Error('Sesi login sudah berakhir. Silakan login kembali.');
-    }
-    activeSession={
-      ...activeSession,
-      ...data,
-      expires_at:data.expires_at||Math.floor(Date.now()/1000)+(data.expires_in||3600)
-    };
-    // Simpan refresh token terbaru. Supabase dapat melakukan token rotation;
-    // jika token baru tidak disimpan, refresh halaman berikutnya akan logout.
-    try{localStorage.setItem('hm_auth_session',JSON.stringify(activeSession));}catch(e){console.warn('[HM] save refreshed session',e);}
-    return activeSession.access_token;
+    if(refreshInFlight)return refreshInFlight;
+    refreshInFlight=(async()=>{
+      const runRefresh=async()=>{
+        // Tab lain mungkin sudah merotasi refresh token. Selalu baca sesi terbaru
+        // sesaat sebelum refresh agar token lama tidak dipakai ulang.
+        try{
+          const latest=JSON.parse(localStorage.getItem('hm_auth_session')||'null');
+          if(latest?.refresh_token && latest.refresh_token!==activeSession?.refresh_token){
+            const latestExpiry=Number(latest.expires_at||0);
+            if(latest.access_token && latestExpiry>Math.floor(Date.now()/1000)+90){
+              activeSession={...latest};
+              return activeSession.access_token;
+            }
+            activeSession={...activeSession,...latest};
+          }
+        }catch(e){console.warn('[HM] read latest auth session',e);}
+        if(!activeSession?.refresh_token)throw new Error('Sesi login sudah tidak tersedia. Silakan login kembali.');
+        const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{
+          method:'POST',
+          headers:{apikey:KEY,'Content-Type':'application/json'},
+          body:JSON.stringify({refresh_token:activeSession.refresh_token})
+        });
+        let data=null;try{data=await res.json();}catch(_e){}
+        if(!res.ok||!data?.access_token){
+          // Jika tab lain menang refresh lebih dahulu, gunakan sesi baru yang
+          // sudah tersimpan, bukan langsung menganggap akun harus login ulang.
+          try{
+            const latest=JSON.parse(localStorage.getItem('hm_auth_session')||'null');
+            if(latest?.access_token && latest?.refresh_token &&
+               latest.refresh_token!==activeSession?.refresh_token &&
+               Number(latest.expires_at||0)>Math.floor(Date.now()/1000)+30){
+              activeSession={...latest};
+              return activeSession.access_token;
+            }
+          }catch(_e){}
+          console.warn('[HM] refresh token rejected:',data?.message||data?.msg||data?.error_description||res.status);
+          throw new Error('Sesi login sudah berakhir atau perlu login ulang. Silakan login kembali.');
+        }
+        activeSession={
+          ...activeSession,
+          ...data,
+          expires_at:data.expires_at||Math.floor(Date.now()/1000)+(data.expires_in||3600)
+        };
+        try{localStorage.setItem('hm_auth_session',JSON.stringify(activeSession));}catch(e){console.warn('[HM] save refreshed session',e);}
+        return activeSession.access_token;
+      };
+      // Web Locks mencegah beberapa tab HP memakai refresh token yang sama
+      // pada saat bersamaan. Browser tanpa Web Locks tetap memakai single-flight.
+      if(navigator?.locks?.request){
+        return await navigator.locks.request('hello-majesty-auth-refresh',{mode:'exclusive'},runRefresh);
+      }
+      return await runRefresh();
+    })();
+    try{return await refreshInFlight;}
+    finally{refreshInFlight=null;}
   }
 
   window.hmAccessToken=async()=>{if(!activeSession?.access_token)throw new Error('Sesi login tidak tersedia.'); if((activeSession.expires_at||0)-Math.floor(Date.now()/1000)<90)await refreshAccessToken(); return activeSession.access_token;};

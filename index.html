@@ -3758,7 +3758,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    if((isStockistUser||isFinanceUser)&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
    else if(isFinanceUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm="'+safe(x.id)+'">Uang sudah masuk</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
-   else if(!isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
+   else if(st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
    else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-sent="'+safe(x.id)+'">Catat transfer</button>';
    const details=[x.transfer_reference?'Ref transfer: '+x.transfer_reference:'',x.transfer_proof_note||'',x.received_note||''].filter(Boolean).join(' • ');
    return '<tr><td>'+safe(x.partner_name)+'</td><td>'+safe(x.outlet||'—')+'</td><td>'+safe(x.settlement_date||'—')+'</td><td>'+money(x.amount)+'</td><td>'+safe(st)+'</td><td>'+safe(productSummary||x.note||'—')+(details?'<div class="small">'+safe(details)+'</div>':'')+'</td><td>'+actions+'</td></tr>';

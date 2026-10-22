@@ -22,7 +22,7 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
   },true);
 })();
-</script><meta name="hm-build" content="20261022-facilitator-stockist-menu-fix-1"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+</script><meta name="hm-build" content="20261022-facilitator-stockist-menu-fix-2"><meta name="hm-ui-build" content="service-claim-type-fallback-20261011-1"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -3019,7 +3019,7 @@ function hmOpenHelloMajestyChat(){
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI',developer=rawRole==='DEVELOPER APLIKASI',has=r=>roles.includes(r);
- const facilitator=has('FASILITATOR')||rawRole==='FASILITATOR',sales=has('SALES'),cs=has('CS')||has('CUSTOMER SERVICE')||rawRole.includes('CS')||rawRole.includes('CUSTOMER SERVICE'),creator=has('CONTENT CREATOR');
+ const facilitator=has('FASILITATOR')||rawRole==='FASILITATOR'||!!window.hmCanFacilitator,sales=has('SALES'),cs=has('CS')||has('CUSTOMER SERVICE')||rawRole.includes('CS')||rawRole.includes('CUSTOMER SERVICE'),creator=has('CONTENT CREATOR');
  const title=developer?'Developer Aplikasi':(mg?'Management':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty'));
  const sub=mg?'Pusat kendali bisnis • seluruh outlet':(profile?.outlet||'Workspace sesuai peran aktif');
 

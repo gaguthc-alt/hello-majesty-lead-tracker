@@ -3842,7 +3842,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
   b.querySelectorAll('[data-request-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
    if(!confirm('Kirim permintaan konfirmasi kewajiban ini kepada mitra?'))return;
    const {error}=await window.sb.rpc('request_partner_settlement_confirmation',{p_settlement_id:btn.dataset.requestConfirm});
-   if(error){alert('Gagal meminta konfirmasi: '+error.message);return;} alert('Permintaan konfirmasi dikirim.'); window.hmOpenPartnerSettlementManagement();
+   if(error){alert('Gagal meminta konfirmasi: '+error.message);return;} const row=btn.closest('tr'); const cells=row?row.querySelectorAll('td'):[]; const partner=cells[0]?.textContent?.trim()||'Majesty Cell'; const outlet=cells[1]?.textContent?.trim()||'Majesty Plaza'; const date=cells[2]?.textContent?.trim()||''; const amount=cells[3]?.textContent?.trim()||''; const item=cells[5]?.textContent?.trim()||''; const msg=['*PERMINTAAN KONFIRMASI SETTLEMENT*','*HELLO MAJESTY*','','Yth. '+partner+', mohon konfirmasi nominal settlement berikut:','','• Outlet: '+outlet,'• Tanggal: '+date,'• Nominal: '+amount,'• Produk / IMEI: '+item,'• Status saat ini: MENUNGGU KONFIRMASI','','Mohon periksa nominal tersebut dan lakukan konfirmasi melalui aplikasi Hello Majesty. Pesan ini hanya permintaan konfirmasi, bukan bukti transfer atau pemberitahuan bahwa pembayaran sudah dilakukan.','','Hello Majesty — Built on Trust'].join('\\n'); window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
   }));
   b.querySelectorAll('[data-obligation-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
    const note=prompt('Catatan konfirmasi nominal (opsional):');if(note===null)return;

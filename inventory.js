@@ -1166,25 +1166,18 @@ async function saveStock(){
   if(x.error)throw new Error(x.error.message);
   const stockId=x.data?.id;
   if(!stockId)throw new Error('ID stock tidak dikembalikan oleh database.');
-  // Semua partner pada pilihan STOCKIST wajib menunggu persetujuan sebelum READY.
-  // Partner spesifik disimpan pada partner_name; Management/Hunter/Checker langsung READY.
-  if(String(source).toUpperCase()==='STOCKIST'){
-   const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
-   if(ap.error){
-    // Jika respons RPC bermasalah, cek dulu apakah pengajuan sebenarnya sudah tercatat.
-    const verify=await sb.from('inventory_receive_approvals').select('id,status').eq('stock_unit_id',stockId).maybeSingle();
-    if(!verify.data){
-     await sb.from('stock_units').delete().eq('id',stockId);
-     throw new Error('Barang masuk Majesty Cell belum berhasil dikirim untuk persetujuan: '+ap.error.message);
-    }
+  // Setiap Barang Masuk wajib diajukan untuk persetujuan sebelum menjadi Stock READY.
+  const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
+  if(ap.error){
+   // Jika respons RPC bermasalah, cek dulu apakah pengajuan sebenarnya sudah tercatat.
+   const verify=await sb.from('inventory_receive_approvals').select('id,status').eq('stock_unit_id',stockId).maybeSingle();
+   if(!verify.data){
+    await sb.from('stock_units').delete().eq('id',stockId);
+    throw new Error('Barang masuk belum berhasil dikirim untuk persetujuan: '+ap.error.message);
    }
   }
   closeModal();
-  if(String(source).toUpperCase()==='STOCKIST'){
-   alert('Barang Masuk '+partnerName+' berhasil diajukan dan menunggu persetujuan Mitra atau Divisi.');
-  }else{
-   alert('Barang Masuk berhasil disimpan. Status stock: READY. Tidak memerlukan persetujuan tambahan.');
-  }
+  alert('Barang Masuk berhasil diajukan. Status: MENUNGGU PERSETUJUAN. Stok belum siap dijual sampai disetujui.');
   await renderInventory();
  }catch(e){
   alert(e?.message||e);

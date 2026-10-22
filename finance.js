@@ -97,7 +97,7 @@ window.openPartnerSettlement=async function(){
       if(isCell && outlet==='Majesty Refill Phone' && !hideProfit){
         buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Refill Phone\')">📋 Rincian & Setor Modal</button><button class="secondary" type="button" onclick="window.loadPartnerProfitSettlement(\'Majesty Refill Phone\')">🤝 Setor Profit Sharing</button></div>';
       }else if(isCell && outlet==='Majesty Refill Phone' && hideProfit){
-        buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\\'Majesty Refill Phone\\')">📋 Rincian & Setor Modal</button></div>';
+        buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Refill Phone\')">📋 Rincian & Setor Modal</button></div>';
       }else if(isCell && outlet==='Majesty Plaza iPhone'){
         buttons='<div class="row" style="margin-top:12px"><button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(\'Majesty Plaza iPhone\')">📋 Rincian & Setor Modal</button></div>';
       }else{

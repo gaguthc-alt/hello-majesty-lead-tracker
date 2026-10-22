@@ -3086,6 +3086,7 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
    add('💰','Finance','Finance & kontrol keuangan','openFinance()');
+   add('💳','Konfirmasi Pencairan Finance','Catat dana finance/paylater yang benar-benar masuk','window.openFinanceDisbursement()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(sales){
    add('👥','Lead Tracker','Lead tanggung jawab','hmOpenLeadTracker()');
@@ -3119,11 +3120,13 @@ function renderRoleHome(){
    add('🤖','Tanya AI','Ide content & DM','openAI()');
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
+   add('💳','Konfirmasi Pencairan Finance','Catat dana finance/paylater yang benar-benar masuk','window.openFinanceDisbursement()');
    add('📊','Laporan Finance Cell','Stock, modal & profit sharing','window.openCellFinanceReport()');
    add('🤝','Stockist Management','Modal, kewajiban & settlement stockist','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari Majesty Cell','window.openInventoryApprovals()');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
  }else if(has('ADMIN FINANCE')){
+   add('💳','Konfirmasi Pencairan Finance','Catat dana finance/paylater yang benar-benar masuk','window.openFinanceDisbursement()');
    add('💰','Finance','Finance outlet','openFinance()');
    add('📊','Laporan Finance','Laporan keuangan','hmOpenFinanceReport()');
    add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');

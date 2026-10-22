@@ -3373,7 +3373,7 @@ async function hmRenderHomePerformance(){
  const period=monthStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
  const monthKey=monthStart.getFullYear()+'-'+String(monthStart.getMonth()+1).padStart(2,'0')+'-01';
  const card=(label,value,icon)=>'<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(value)+'</div></div>';
- const section=(title,data,sub,targets)=>{const metric=(label,key,icon)=>{const target=Number(targets?.[key]||0),actual=Number(data[key]||0);return '<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(actual)+(target>0?' <span style="font-size:12px;color:#667085;font-weight:600">/ '+fmt(target)+'</span>':'')+'</div><div class="small" style="margin-top:3px">'+(target>0?Math.round(actual/target*100)+'% dari target':'Target belum diatur')+'</div></div>';};return '<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+title+'</b><span>'+sub+'</span></div></div><div class="hm-home-perf-grid">'+metric('Claim CS','claim_cs','📲')+metric('Handover CS','handover','🤝')+metric('Sales Closing','sales_closing','🏆')+'</div></div>';};
+ const section=(title,data,sub,targets)=>{const metric=(label,key,icon)=>{const target=Number(targets?.[key]||0),actual=Number(data[key]||0);return '<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(actual)+(target>0?' <span style="font-size:12px;color:#667085;font-weight:600">/ '+fmt(target)+'</span>':'')+'</div><div class="small" style="margin-top:3px">'+(target>0?Math.round(actual/target*100)+'%':'—')+'</div></div>';};return '<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+title+'</b><span>'+sub+'</span></div></div><div class="hm-home-perf-grid">'+metric('Claim CS','claim_cs','📲')+metric('Handover CS','handover','🤝')+metric('Sales Closing','sales_closing','🏆')+'</div></div>';};
  try{
    const {data,error}=await db.rpc('home_performance_summary',{
      p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),
@@ -3406,13 +3406,13 @@ async function hmRenderHomePerformance(){
        const q=Array.isArray(od)?od[0]:od,t=targetByOutlet[outlet]||{};
        const actual={claim_cs:Number(q?.total_claim_cs||0),handover:Number(q?.total_handover||0),cs_closing:Number(q?.total_cs_closing||0),sales_closing:Number(q?.total_sales_closing||0)};
        const targets={claim_cs:Number(t.wa_target||0),handover:Number(t.qualified_target||0),cs_closing:Number(t.closing_target||0),sales_closing:Number(t.closing_target||0)};
-       const metric=(label,key)=>'<div class="hm-home-perf-card"><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+actual[key].toLocaleString('id-ID')+' <span style="font-size:12px;color:#667085;font-weight:600">/ '+targets[key].toLocaleString('id-ID')+'</span></div><div class="small" style="margin-top:3px">'+(targets[key]>0?Math.round(actual[key]/targets[key]*100)+'% dari target':'Target belum diatur')+'</div></div>';
+       const metric=(label,key)=>'<div class="hm-home-perf-card"><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+actual[key].toLocaleString('id-ID')+' <span style="font-size:12px;color:#667085;font-weight:600">/ '+targets[key].toLocaleString('id-ID')+'</span></div><div class="small" style="margin-top:3px">'+(targets[key]>0?Math.round(actual[key]/targets[key]*100)+'%':'—')+'</div></div>';
        return '<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+escH(outlet)+'</b><span>Realisasi / Target</span></div></div><div class="hm-home-perf-grid">'+metric('Claim CS','claim_cs')+metric('Handover CS','handover')+metric('Sales Closing','sales_closing')+'</div></div>';
      }));
      outletSections=rowsByOutlet.join('');
    }
    if(renderToken!==(window.__hmPerfRenderToken||0))return;
-   block.innerHTML='<div class="hm-home-perf-title">📊 '+(isManagement?'COMMAND CENTER • ':'PERFORMA ')+escH(period).toUpperCase()+'</div>'+(isManagement?'':section('PERFORMA SAYA',own,'Aktivitas akun ini'))+section(isManagement?'TOTAL SELURUH OUTLET':'TOTAL OUTLET',total,scopeLabel,isManagement?null:outletTargets)+(isManagement?outletSections:'');
+   block.innerHTML='<div class="hm-home-perf-title">📊 '+(isManagement?'COMMAND CENTER • ':'PERFORMA ')+escH(period).toUpperCase()+'</div>'+section(isManagement?'TOTAL SELURUH OUTLET':'PERFORMA TIM',total,scopeLabel,isManagement?null:outletTargets)+(isManagement?outletSections:'');
  }catch(e){
    console.error('[HM] Home performance:',e);
    if(renderToken!==(window.__hmPerfRenderToken||0))return;

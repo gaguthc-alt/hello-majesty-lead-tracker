@@ -1641,6 +1641,74 @@ html,body{color-scheme:light}
     grid-template-columns:minmax(0,1fr)!important;
   }
 }
+
+/* hm-mobile-lead-tracker-v8 — compact Lead Tracker modal on phones */
+@media screen and (max-width:700px){
+  #mb #hmLeadTrackerRoot{
+    width:100%;
+    min-width:0;
+  }
+  #mb #hmLeadTrackerRoot > .box{
+    padding:13px!important;
+    border-radius:17px!important;
+    margin-bottom:10px!important;
+  }
+  #mb #hmLeadTrackerRoot > .stats{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+    margin-bottom:10px!important;
+  }
+  #mb #hmLeadTrackerRoot > .stats > .stat{
+    display:block!important;
+    min-width:0!important;
+    width:100%!important;
+    padding:12px!important;
+    border-radius:15px!important;
+    box-sizing:border-box!important;
+  }
+  #mb #hmLeadTrackerRoot > .stats .small{
+    font-size:12px!important;
+    line-height:1.3!important;
+  }
+  #mb #hmLeadTrackerRoot > .stats .num{
+    font-size:23px!important;
+    line-height:1.2!important;
+    margin-top:3px!important;
+  }
+  #mb #hmLeadTrackerRoot > .box > div[style*="grid-template-columns"]{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+  }
+  #mb #hmLeadTrackerRoot label{
+    min-width:0!important;
+    font-size:12px!important;
+    line-height:1.35!important;
+  }
+  #mb #hmLeadTrackerRoot select,
+  #mb #hmLeadTrackerRoot input{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+    font-size:14px!important;
+    padding:10px!important;
+  }
+  #mb #hmLeadTrackerRoot button{
+    max-width:100%;
+    box-sizing:border-box;
+  }
+  #mb #hmLeadTrackerRoot .row{
+    flex-wrap:wrap;
+    gap:8px!important;
+  }
+}
+@media screen and (max-width:380px){
+  #mb #hmLeadTrackerRoot > .box > div[style*="grid-template-columns"]{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}
 </style>
 
 </head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">

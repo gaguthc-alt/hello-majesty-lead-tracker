@@ -1374,6 +1374,19 @@ button,input,select,textarea{max-width:100%}
   button:hover{filter:none!important}
   button:active{filter:brightness(.97)}
 }
+
+/* Mobile contrast refinement: keep dashboard report cards readable on dark-mode phones. */
+html,body{color-scheme:light}
+@media(max-width:700px){
+  .hm-home-performance{background:#fff!important;color:#101828!important;border-color:#e4e7ec!important}
+  .hm-home-perf-title,.hm-home-perf-head b,.hm-home-perf-value{color:#101828!important}
+  .hm-home-perf-head span,.hm-home-perf-label{color:#475467!important}
+  .hm-home-perf-card{background:#f8fafc!important;border-color:#d0d5dd!important}
+  .hm-home-perf-value{font-size:clamp(16px,4.2vw,20px)!important;overflow-wrap:anywhere}
+  .hm-home-perf-label{font-size:clamp(8px,2.4vw,10px)!important}
+  .hm-home-perf-grid{gap:6px!important}
+  .hm-home-perf-card{padding:9px 4px!important}
+}
 </style>
 
 </head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">

@@ -3898,7 +3898,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
     if(!file.type.startsWith('image/')){alert('Pilih file foto/gambar.');return;}
     const ref=overlay.querySelector('#hmTransferProofRef').value.trim();
     const note=overlay.querySelector('#hmTransferProofNote').value.trim();
-    const msg='*KONFIRMASI TRANSFER SETTLEMENT — HELLO MAJESTY*\\n\\nYth. '+partner+', kami menginformasikan bahwa transfer settlement telah dilakukan. Mohon konfirmasi setelah dana benar-benar terlihat di rekening Anda.\\n\\n• Outlet: '+outlet+'\\n• Tanggal: '+date+'\\n• Nominal: '+amount+'\\n• Rincian produk: '+item+'\\n• Referensi transfer: '+(ref||'Tidak dicantumkan')+'\\n'+(note?'• Catatan: '+note+'\\n':'')+'\\nBukti foto terlampir pada pesan ini. Mohon balas untuk mengonfirmasi penerimaan dana. Pesan ini bukan pengganti pengecekan saldo rekening.\\n\\nHello Majesty — Built on Trust';
+    const msg='*KONFIRMASI TRANSFER SETTLEMENT — HELLO MAJESTY*\n\nYth. '+partner+', kami menginformasikan bahwa transfer settlement telah dilakukan. Mohon konfirmasi setelah dana benar-benar terlihat di rekening Anda.\n\n• Outlet: '+outlet+'\n• Tanggal: '+date+'\n• Nominal: '+amount+'\n• Rincian produk: '+item+'\n• Referensi transfer: '+(ref||'Tidak dicantumkan')+'\n'+(note?'• Catatan: '+note+'\n':'')+'\nBukti foto terlampir pada pesan ini. Mohon balas untuk mengonfirmasi penerimaan dana. Pesan ini bukan pengganti pengecekan saldo rekening.\n\nHello Majesty — Built on Trust';
     sendBtn.disabled=true;sendBtn.textContent='Memproses…';
     let shared=false;
     try{

@@ -3756,7 +3756,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const productSummary=its.map(it=>{const u=units.find(z=>String(z.id)===String(it.stock_unit_id))||units.find(z=>String(z.id)===String(it.historical_stock_detail_id));if(!u)return 'Detail unit belum tersedia';const name=productName(u);const variant=u._variant||u.product_master?.variant||'';const category=u.product_master?.category||u.category||'';const detail=[name,category&&category!==name?category:null,u.condition?'Kondisi '+u.condition:null,u.grade?'Grade '+u.grade:null,u.color?'Warna '+u.color:null,u.storage_gb?u.storage_gb+'GB':null,u.imei_1?'IMEI '+u.imei_1:null].filter(Boolean);return [...new Set(detail)].join(' | ');}).join('\n');
    const st=String(x.status||'').toUpperCase();let actions='—';
    if((isStockistUser||isFinanceUser)&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
-   else if(isFinanceUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm="'+safe(x.id)+'">Uang sudah masuk</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
+   else if((isFinanceUser||isStockistUser)&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
    else if(st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
    else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-proof-wa="'+safe(x.id)+'">Konfirmasi transfer + foto WA</button>';
@@ -3918,6 +3918,17 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const proof=prompt('Catatan bukti transfer (opsional):');if(proof===null)return;
    const {error}=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferSent,p_reference:ref,p_proof_note:proof});
    if(error){alert('Pencatatan transfer gagal: '+error.message);return;}alert('Transfer dicatat. Menunggu Atmadita memverifikasi uang masuk.');window.hmOpenPartnerSettlementManagement();
+  }));
+  b.querySelectorAll('[data-received-confirm-wa]').forEach(btn=>btn.addEventListener('click',async()=>{
+   const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
+   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   if(!confirm('Pastikan dana benar-benar terlihat di rekening Majesty Cell sebelum menyatakan diterima. Lanjutkan?'))return;
+   const note=prompt('Catatan penerimaan (opsional):');if(note===null)return;
+   const {error}=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:btn.dataset.receivedConfirmWa,p_received:true,p_note:note});
+   if(error){alert('Konfirmasi penerimaan gagal: '+error.message);return;}
+   const msg='*KONFIRMASI PENERIMAAN TRANSFER SETTLEMENT*\\n*HELLO MAJESTY*\\n\\nYth. tim Hello Majesty, kami dari '+partner+' mengonfirmasi bahwa transfer settlement telah kami terima dan dana sudah terlihat di rekening.\\n\\n• Outlet: '+outlet+'\\n• Tanggal settlement: '+date+'\\n• Nominal: '+amount+'\\n• Rincian produk: '+item+'\\n'+(note.trim()?'• Catatan: '+note.trim()+'\\n':'')+'\\nPenerimaan juga telah dikonfirmasi di aplikasi Hello Majesty.\\n\\nMajesty Cell';
+   alert('Penerimaan tercatat. WhatsApp akan dibuka untuk mengirim pemberitahuan ke tim Hello Majesty.');
+   window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
   }));
   b.querySelectorAll('[data-received-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
    const note=prompt('Catatan verifikasi uang masuk (opsional):');if(note===null)return;

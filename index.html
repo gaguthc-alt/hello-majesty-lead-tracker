@@ -3316,7 +3316,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
   }
   const financeByUnit=new Map();
   financeRows.forEach(tx=>{
-   if(String(tx.finance_status||'').toUpperCase()!=='COMPLETED')return;
+   if(!['COMPLETED','PAID'].includes(String(tx.finance_status||'').toUpperCase()))return;
    const amount=Number(tx.finance_actual_disbursement||tx.finance_estimated_disbursement||0);
    if(amount<=0)return;
    const key=String(tx.stock_unit_id),prev=financeByUnit.get(key)||{gross:0,cashout:0,transactions:[]};

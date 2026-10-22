@@ -3373,7 +3373,7 @@ async function hmRenderHomePerformance(){
  const period=monthStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
  const monthKey=monthStart.getFullYear()+'-'+String(monthStart.getMonth()+1).padStart(2,'0')+'-01';
  const card=(label,value,icon)=>'<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(value)+'</div></div>';
- const section=(title,data,sub)=>'<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+title+'</b><span>'+sub+'</span></div></div><div class="hm-home-perf-grid">'+card('Claim CS',data.claim_cs,'📲')+card('Handover CS',data.handover,'🤝')+card('Sales Closing',data.sales_closing,'🏆')+'</div></div>';
+ const section=(title,data,sub,targets)=>{const metric=(label,key,icon)=>targets?'<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(data[key])+' <span style="font-size:12px;color:#667085;font-weight:600">/ '+fmt(targets[key])+'</span></div><div class="small" style="margin-top:3px">'+(Number(targets[key])>0?Math.round(Number(data[key]||0)/Number(targets[key])*100)+'% dari target':'Target belum diatur')+'</div></div>':card(label,data[key],icon);return '<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+title+'</b><span>'+sub+'</span></div></div><div class="hm-home-perf-grid">'+metric('Claim CS','claim_cs','📲')+metric('Handover CS','handover','🤝')+metric('Sales Closing','sales_closing','🏆')+'</div></div>';};
  try{
    const {data,error}=await db.rpc('home_performance_summary',{
      p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),
@@ -3385,10 +3385,12 @@ async function hmRenderHomePerformance(){
    const own={claim_cs:r.own_claim_cs||0,handover:r.own_handover||0,cs_closing:r.own_cs_closing||0,sales_closing:r.own_sales_closing||0};
    const total={claim_cs:r.total_claim_cs||0,handover:r.total_handover||0,cs_closing:r.total_cs_closing||0,sales_closing:r.total_sales_closing||0};
    const scopeLabel=isManagement?'Seluruh outlet':'Outlet • '+(profile.outlet||'-');
+   const {data:targetRows,error:targetError}=await db.from('monthly_outlet_targets').select('outlet,wa_target,qualified_target,closing_target').eq('month_start',monthKey).eq('active',true).order('outlet');
+   if(targetError)throw targetError;
+   const ownOutletTarget=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()===String(profile.outlet||'').trim().toLowerCase())||{};
+   const outletTargets={claim_cs:Number(ownOutletTarget.wa_target||0),handover:Number(ownOutletTarget.qualified_target||0),cs_closing:Number(ownOutletTarget.closing_target||0),sales_closing:Number(ownOutletTarget.closing_target||0)};
    let outletSections='';
    if(isManagement){
-     const {data:targetRows,error:targetError}=await db.from('monthly_outlet_targets').select('outlet,wa_target,qualified_target,closing_target').eq('month_start',monthKey).eq('active',true).order('outlet');
-     if(targetError)throw targetError;
      /* Divisi/Management needs a breakdown for every outlet, even when an outlet has no active target row this month. */
      const outletSet=new Set((targetRows||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean));
      try{
@@ -3410,7 +3412,7 @@ async function hmRenderHomePerformance(){
      outletSections=rowsByOutlet.join('');
    }
    if(renderToken!==(window.__hmPerfRenderToken||0))return;
-   block.innerHTML='<div class="hm-home-perf-title">📊 '+(isManagement?'COMMAND CENTER • ':'PERFORMA ')+escH(period).toUpperCase()+'</div>'+(isManagement?'':section('PERFORMA SAYA',own,'Aktivitas akun ini'))+section(isManagement?'TOTAL SELURUH OUTLET':'TOTAL OUTLET',total,scopeLabel)+(isManagement?outletSections:'');
+   block.innerHTML='<div class="hm-home-perf-title">📊 '+(isManagement?'COMMAND CENTER • ':'PERFORMA ')+escH(period).toUpperCase()+'</div>'+(isManagement?'':section('PERFORMA SAYA',own,'Aktivitas akun ini'))+section(isManagement?'TOTAL SELURUH OUTLET':'TOTAL OUTLET',total,scopeLabel,isManagement?null:outletTargets)+(isManagement?outletSections:'');
  }catch(e){
    console.error('[HM] Home performance:',e);
    if(renderToken!==(window.__hmPerfRenderToken||0))return;

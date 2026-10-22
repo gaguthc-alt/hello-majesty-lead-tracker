@@ -536,7 +536,7 @@ function renderMasterProductView(){
    (canManage?'<button class="success" type="button" onclick="openAddProduct()">＋ Tambah Produk</button>':'')+
    '</div></div>'+
    '<div class="row" style="margin-top:12px"><input id="hmMasterProductSearch" placeholder="🔎 Cari produk / varian / kategori / warna" value="'+esc(q)+'" oninput="renderMasterProductView()">'+
-   '<select id="hmMasterProductCategory" onchange="renderMasterProductView()"><option value="">Semua Kategori</option><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option><option value="STOCK_NEW_MAJESTY_CELL">Stock New Pusat</option><option value="STOCK_SECOND_MAJESTY_CELL">Stock Second Pusat</option></select></div>'+
+   '<select id="hmMasterProductCategory" onchange="renderMasterProductView()"><option value="">Semua Kategori</option><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option></select></div>'+
    '<div class="small" style="margin-top:10px">Menampilkan '+rows.length+' produk master</div>'+
    '<div style="margin-top:10px">'+(rows.length?rows.map(p=>'<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(masterProductLabel(p))+'</b><div class="small">'+esc(invCategory(p.category))+'</div></div><div class="row">'+(canManage?'<button class="secondary" type="button" onclick="openEditProduct(\''+p.id+'\')">✏️ Edit</button>':'')+(management?'<button class="danger" type="button" onclick="deactivateProduct(\''+p.id+'\')">Hapus</button>':'')+'</div></div></div>').join(''):'<div class="small">Tidak ada produk yang sesuai.</div>')+'</div>';
  const sel=document.getElementById('hmMasterProductCategory'); if(sel)sel.value=cat;
@@ -702,7 +702,7 @@ function renderInventoryDashboardBody(){
  const age=s=>Math.max(0,Math.floor((Date.now()-new Date(s.received_at||s.created_at).getTime())/86400000));
  const receivedToday=ready.filter(s=>sameDay(s.received_at||s.created_at)).length,old30=ready.filter(s=>age(s)>30).length,old60=ready.filter(s=>age(s)>60).length;
  const outlets=[...new Set(inventoryStock.map(s=>s.outlet).filter(Boolean))].sort();
- const cats=['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND','STOCK_NEW_MAJESTY_CELL','STOCK_SECOND_MAJESTY_CELL'];
+ const cats=['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'];
  const byCategory=cats.map(cat=>{const a=ready.filter(s=>s.category===cat);return {cat,units:a.length,cost:a.reduce((x,s)=>x+inventoryNumber(s.cost),0),jual:a.reduce((x,s)=>x+inventoryNumber(s.asking_price),0)}}).filter(x=>x.units);
  const byOutlet=outlets.map(o=>{const a=ready.filter(s=>s.outlet===o);return {o,units:a.length,cost:a.reduce((x,s)=>x+inventoryNumber(s.cost),0),jual:a.reduce((x,s)=>x+inventoryNumber(s.asking_price),0)}}).filter(x=>!outletSel||x.o===outletSel);
  const oldest=[...ready].sort((a,b)=>new Date(a.received_at||a.created_at)-new Date(b.received_at||b.created_at)).slice(0,8);

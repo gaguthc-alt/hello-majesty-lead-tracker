@@ -5889,11 +5889,11 @@ async function hmFilterBuybackProducts(){
    const isIphone=/IPHONE/.test(name)||pc==='IPHONE_SECOND';
    return cat==='IPHONE_SECOND'?isIphone:cat==='ANDROID_SECOND'?!isIphone:false;
  });
- sel.innerHTML='<option value="">'+(rows.length?'Pilih produk':'Tidak ada produk Second aktif')+'</option>'+rows.map(p=>'<option value="'+esc(p.id)+'">'+esc([p.product,p.variant,p.color].filter(Boolean).join(' — '))+'</option>').join('');
+ sel.innerHTML='<option value="">'+(rows.length?'Pilih produk':'Tidak ada produk Second aktif')+'</option>'+rows.map(p=>'<option value="'+esc(p.id)+'">'+esc([p.product,p.variant].filter(Boolean).join(' — '))+'</option>').join('');
  sel.disabled=!cat;
 }
 async function hmLoadBuybackProducts(){
- const r=await sb.from('product_master').select('id,category,product,variant,color,active').eq('active',true).order('product');
+ const r=await sb.from('product_master').select('id,category,product,variant,active').eq('active',true).order('product');
  if(r.error){console.warn('[HM] Master produk buyback:',r.error);return;}
  window.hmBuybackProducts=(r.data||[]).filter(p=>['IPHONE_SECOND','ANDROID_SECOND','STOCK_SECOND_MAJESTY_CELL'].includes(String(p.category||'').toUpperCase())||/\bSECOND\b/i.test(p.product||''));
 }

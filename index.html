@@ -3477,7 +3477,7 @@ function renderRoleHome(){
    add('🔔','Persetujuan Barang Masuk','Barang masuk yang menunggu verifikasi','openInventoryApprovals()');
    add('🚶','Persetujuan Walk-In','Semua penjualan tanpa Lead & CS yang menunggu persetujuan','openWalkinApprovals()');
    add('💰','Komisi Tim','Seluruh komisi tim, bukan hanya Sales','openTeamCommission()');
-   add('💰','Komisi Saya','Komisi pribadi sesuai hak akses','openCommission()');
+   // Komisi Saya disembunyikan dari akun Divisi Management; akses payroll/komisi tim tetap tersedia.
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
  }else if(facilitator){

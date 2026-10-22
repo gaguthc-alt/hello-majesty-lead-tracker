@@ -3954,7 +3954,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const note=prompt('Catatan penerimaan (opsional):');if(note===null)return;
    const {error}=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:btn.dataset.receivedConfirmWa,p_received:true,p_note:note});
    if(error){alert('Konfirmasi penerimaan gagal: '+error.message);return;}
-   const msg='*KONFIRMASI PENERIMAAN TRANSFER SETTLEMENT*\\n*HELLO MAJESTY*\\n\\nYth. tim Hello Majesty, kami dari '+partner+' mengonfirmasi bahwa transfer settlement telah kami terima dan dana sudah terlihat di rekening.\\n\\n• Outlet: '+outlet+'\\n• Tanggal settlement: '+date+'\\n• Nominal: '+amount+'\\n• Rincian produk: '+item+'\\n'+(note.trim()?'• Catatan: '+note.trim()+'\\n':'')+'\\nPenerimaan juga telah dikonfirmasi di aplikasi Hello Majesty.\\n\\nMajesty Cell';
+   const msg='*KONFIRMASI PENERIMAAN TRANSFER SETTLEMENT*\n*HELLO MAJESTY*\n\nYth. tim Hello Majesty, kami dari '+partner+' mengonfirmasi bahwa transfer settlement telah kami terima dan dana sudah terlihat di rekening.\n\n• Outlet: '+outlet+'\n• Tanggal settlement: '+date+'\n• Nominal: '+amount+'\n• Rincian produk: '+item+'\n'+(note.trim()?'• Catatan: '+note.trim()+'\n':'')+'\nPenerimaan juga telah dikonfirmasi di aplikasi Hello Majesty.\n\nMajesty Cell';
    alert('Penerimaan tercatat. WhatsApp akan dibuka untuk mengirim pemberitahuan ke tim Hello Majesty.');
    window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
   }));

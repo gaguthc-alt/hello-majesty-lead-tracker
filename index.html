@@ -3759,8 +3759,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    else if(isFinanceUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm="'+safe(x.id)+'">Uang sudah masuk</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
    else if(st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
-   else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-sent="'+safe(x.id)+'">Catat transfer</button> <button type="button" data-proof-wa="'+safe(x.id)+'">Kirim bukti TF foto via WA</button>';
-   else if(st==='TRANSFER_SENT') actions=(actions==='—'?'':actions+' ')+'<button type="button" data-proof-wa="'+safe(x.id)+'">Kirim bukti TF foto via WA</button>';
+   else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-proof-wa="'+safe(x.id)+'">Konfirmasi transfer + foto WA</button>';
+   else if(st==='TRANSFER_SENT') actions='<button type="button" data-proof-wa="'+safe(x.id)+'">Kirim ulang bukti foto WA</button>';
    const details=[x.transfer_reference?'Ref transfer: '+x.transfer_reference:'',x.transfer_proof_note||'',x.received_note||''].filter(Boolean).join(' • ');
    if(!['COMPLETED','SETTLED','PAID','LUNAS'].includes(st)&&!String(actions).includes('data-send-confirm-wa')) actions=(actions==='—'?'':actions+' ' )+'<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Lanjutkan via WhatsApp</button>';
    return '<tr><td>'+safe(x.partner_name)+'</td><td>'+safe(x.outlet||'—')+'</td><td>'+safe(x.settlement_date||'—')+'</td><td>'+money(x.amount)+'</td><td>'+safe(st)+'</td><td>'+safe(productSummary||x.note||'—')+(details?'<div class="small">'+safe(details)+'</div>':'')+'</td><td>'+actions+'</td></tr>';
@@ -3866,6 +3866,32 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const note=prompt('Jelaskan koreksi yang diminta:');if(note===null||!note.trim()){alert('Catatan koreksi wajib diisi.');return;}
    const {error}=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:btn.dataset.obligationReject,p_confirm:false,p_note:note});
    if(error){alert('Permintaan koreksi gagal: '+error.message);return;}alert('Settlement dikembalikan untuk koreksi.');window.hmOpenPartnerSettlementManagement();
+  }));
+  b.querySelectorAll('[data-transfer-proof-wa]').forEach(btn=>btn.addEventListener('click',()=>{
+   const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
+   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const ref=prompt('Masukkan referensi transfer (opsional; jangan masukkan data rahasia):');if(ref===null)return;
+   const note=prompt('Catatan transfer (opsional):');if(note===null)return;
+   const msg='*KONFIRMASI TRANSFER SETTLEMENT — HELLO MAJESTY*\\n\\nYth. '+partner+', kami menginformasikan bahwa transfer settlement telah dilakukan. Mohon konfirmasi setelah dana benar-benar terlihat di rekening Anda.\\n\\n• Outlet: '+outlet+'\\n• Tanggal: '+date+'\\n• Nominal: '+amount+'\\n• Rincian produk: '+item+'\\n• Referensi transfer: '+(ref.trim()||'Tidak dicantumkan')+'\\n'+(note.trim()?'• Catatan: '+note.trim()+'\\n':'')+'\\nBukti foto terlampir pada pesan ini. Mohon balas untuk mengonfirmasi penerimaan dana. Pesan ini bukan pengganti pengecekan saldo rekening.\\n\\nHello Majesty — Built on Trust';
+   const input=document.createElement('input');input.type='file';input.accept='image/*';input.style.display='none';document.body.appendChild(input);
+   input.addEventListener('change',async()=>{
+    const file=input.files&&input.files[0];input.remove();if(!file)return;
+    if(!file.type.startsWith('image/')){alert('Pilih file foto/gambar.');return;}
+    let shared=false;
+    try{
+     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Bukti transfer settlement',text:msg});shared=true;
+     }
+    }catch(e){if(e&&e.name==='AbortError')return;console.warn('Share file unsupported:',e);}
+    if(!shared){
+     window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+     if(!confirm('WhatsApp dibuka dengan pesan teks. Lampirkan foto yang dipilih dan kirim secara manual. Setelah foto benar-benar dikirim, tekan OK untuk mencatat transfer di aplikasi. Jika belum terkirim, tekan Cancel.'))return;
+    }
+    const {error}=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferProofWa,p_reference:ref.trim()||'Bukti foto dikirim via WhatsApp',p_proof_note:note.trim()||'Bukti foto dibagikan langsung via WhatsApp; file tidak disimpan di database.'});
+    if(error){alert('Foto/pesan sudah dibagikan atau dibuka, tetapi pencatatan transfer gagal: '+error.message+'. Jangan klik ulang sebelum memeriksa status settlement.');return;}
+    alert('Transfer dicatat. Foto tidak disimpan di database Hello Majesty. Menunggu Majesty Cell mengonfirmasi uang masuk.');window.hmOpenPartnerSettlementManagement();
+   });
+   input.click();
   }));
   b.querySelectorAll('[data-proof-wa]').forEach(btn=>btn.addEventListener('click',()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];

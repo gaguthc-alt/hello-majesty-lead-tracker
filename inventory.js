@@ -367,12 +367,12 @@ async function renderStandaloneHunterStock(){
   const stockIds=rows.map(x=>x.id).filter(Boolean);
   const checkerByStock={};
   if(stockIds.length){
-   const sr=await sb.from('stock_units').select('id,checker_user_id').in('id',stockIds);
+   const sr=await sb.from('stock_units').select('id,hunter_user_id,checker_user_id,hunter_user_ids,checker_user_ids').in('id',stockIds);
    if(sr.error)throw sr.error;
-   const checkerIds=[...new Set((sr.data||[]).map(x=>x.checker_user_id).filter(Boolean))];
+   const peopleIds=[...new Set((sr.data||[]).flatMap(x=>[...(x.hunter_user_ids||[]),...(x.checker_user_ids||[]),x.hunter_user_id,x.checker_user_id].filter(Boolean)))];
    const names={};
-   if(checkerIds.length){const ur=await sb.from('team_profiles').select('user_id,name').in('user_id',checkerIds);if(ur.error)throw ur.error;(ur.data||[]).forEach(u=>names[u.user_id]=u.name);}
-   (sr.data||[]).forEach(x=>checkerByStock[x.id]=names[x.checker_user_id]||'');
+   if(peopleIds.length){const ur=await sb.from('team_directory').select('user_id,name').in('user_id',peopleIds);if(ur.error)throw ur.error;(ur.data||[]).forEach(u=>names[u.user_id]=u.name);}
+   (sr.data||[]).forEach(x=>checkerByStock[x.id]={hunters:[...new Set([...(x.hunter_user_ids||[]),x.hunter_user_id].filter(Boolean))].map(id=>names[id]).filter(Boolean).join(', '),checkers:[...new Set([...(x.checker_user_ids||[]),x.checker_user_id].filter(Boolean))].map(id=>names[id]).filter(Boolean).join(', ')});
   }
   panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧑‍💼 STOCK HUNTER & CHECKER</h2><div class="small">Daftar unit Hunter dan Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneHunterStock()">↻ Refresh</button></div>'+
    '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#e8f1ff;color:#174ea6;font-weight:700">🏹 Hunter · Komisi 10%</span><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#f3e8ff;color:#6b21a8;font-weight:700">🔎 Checker · Komisi 5%</span></div>'+

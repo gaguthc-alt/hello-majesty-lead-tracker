@@ -4960,7 +4960,7 @@ async function logout(){
   location.reload();
 }
 async function loadLeads(){
- // Tandai gagal otomatis bila tanggal follow-up PIC aktif sudah lewat lebih dari 3 hari.
+ // Tandai gagal otomatis bila tanggal follow-up PIC aktif sudah lewat lebih dari 7 hari.
  // Closing/Gagal yang sudah tercatat dan lead Service dikecualikan oleh fungsi database.
  const overdue=await sb.rpc('auto_fail_overdue_leads');
  if(overdue.error)console.warn('[HM] Auto-fail follow-up:',overdue.error.message);
@@ -5148,7 +5148,7 @@ async function render(){
   ['🔴 Follow-up Terlambat',followupItems('OVERDUE').length,"showFollowupToday('OVERDUE')"]
  ].map(x=>stat(x[0],x[1],x[2])).join('');
  // Sembunyikan lead dari bulan sebelumnya pada tampilan operasional,
- // kecuali follow-up PIC masih baru (tanggal follow-up dalam 3 hari terakhir).
+ // kecuali follow-up PIC masih baru (tanggal follow-up dalam 7 hari terakhir).
  // Data sumber tidak dihapus dan tetap tersedia untuk laporan/histori.
  const hmLeadVisibleByMonth=(l)=>{
   const created=l?.created_at?new Date(l.created_at):null;

@@ -1762,6 +1762,17 @@ main{background:transparent!important}
 .role-home-category:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-submenu-item b{color:#ecfdf5!important}
 .role-home-category:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-submenu-item span{color:#b7f7df!important}
 </style>
+<style id="hm-tactile-3d-menu">
+.role-home-category{position:relative!important;border-radius:18px!important;box-shadow:0 8px 0 #020617aa,0 14px 22px #0008,inset 0 1px 1px #ffffff24!important;transition:transform .15s ease,box-shadow .15s ease!important}
+.role-home-category .role-home-category-title{border-radius:14px!important;border:1px solid #ffffff55!important;box-shadow:inset 0 2px 1px #ffffff45,inset 0 -4px 8px #0003,0 4px 0 #02061788,0 7px 12px #0005!important}
+.role-home-category .role-home-submenu{border-radius:14px!important;box-shadow:inset 0 3px 8px #02061788,inset 0 1px 1px #ffffff18!important}
+.role-home-category .role-home-submenu-item{position:relative!important;border-radius:13px!important;border:1px solid #ffffff42!important;box-shadow:inset 0 2px 1px #ffffff26,inset 0 -5px 8px #02061755,0 4px 0 #020617aa,0 7px 12px #0005!important;transition:transform .12s ease,box-shadow .12s ease,filter .12s ease!important}
+.role-home-category .role-home-submenu-item:hover{transform:translateY(-2px)!important;filter:brightness(1.1)!important;box-shadow:inset 0 2px 1px #ffffff35,0 6px 0 #020617aa,0 10px 15px #0006!important}
+.role-home-category .role-home-submenu-item:active{transform:translateY(3px)!important;box-shadow:inset 0 3px 8px #02061766,0 1px 0 #020617aa,0 2px 5px #0005!important}
+.role-home-category.hm-tools-3d{background:linear-gradient(145deg,#7c2d12,#431407)!important;border-color:#fb923c!important}.role-home-category.hm-tools-3d .role-home-category-title{background:linear-gradient(115deg,#f97316,#c2410c)!important;border-color:#fed7aa!important}.role-home-category.hm-tools-3d .role-home-submenu{background:linear-gradient(145deg,#431c12,#29140f)!important;border-color:#c2410c!important}.role-home-category.hm-tools-3d .role-home-submenu-item{background:linear-gradient(145deg,#78350f,#42251d)!important;border-color:#fb923c!important}
+.role-home-category.hm-crm-3d{background:linear-gradient(145deg,#581c87,#2e1065)!important;border-color:#d8b4fe!important}.role-home-category.hm-crm-3d .role-home-category-title{background:linear-gradient(115deg,#a21caf,#6d28d9)!important;border-color:#e9d5ff!important}.role-home-category.hm-crm-3d .role-home-submenu{background:linear-gradient(145deg,#35134a,#211032)!important;border-color:#a855f7!important}.role-home-category.hm-crm-3d .role-home-submenu-item{background:linear-gradient(145deg,#552b72,#32164c)!important;border-color:#d8b4fe!important}
+.role-home-category.hm-divisi-3d{background:linear-gradient(145deg,#065f46,#042f2e)!important;border-color:#6ee7b7!important}.role-home-category.hm-divisi-3d .role-home-category-title{background:linear-gradient(115deg,#10b981,#0e7490)!important;border-color:#a7f3d0!important}.role-home-category.hm-divisi-3d .role-home-submenu{background:linear-gradient(145deg,#082f35,#064e3b)!important;border-color:#2dd4bf!important}.role-home-category.hm-divisi-3d .role-home-submenu-item{background:linear-gradient(145deg,#155e63,#164e63)!important;border-color:#5eead4!important}
+</style>
 </head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
 <div class="login-shell">
   <div class="login-brand">
@@ -7226,4 +7237,5 @@ window.addEventListener('DOMContentLoaded',function(){
 <script src="login-v9.js?v=20261022-imas-auth-retry-2"></script>
 
 
+<script id="hm-assign-tactile-menu-palettes">(function(){function styleMenus(){document.querySelectorAll('.role-home-category').forEach(function(el){var t=(el.querySelector('.role-home-category-title')?.innerText||'').toLowerCase();el.classList.remove('hm-tools-3d','hm-crm-3d','hm-divisi-3d');if(t.includes('tools'))el.classList.add('hm-tools-3d');else if(t.includes('database')||t.includes('crm'))el.classList.add('hm-crm-3d');else if(t.includes('menu divisi'))el.classList.add('hm-divisi-3d')})}styleMenus();new MutationObserver(styleMenus).observe(document.body,{childList:true,subtree:true})})();</script>
 </body></html>

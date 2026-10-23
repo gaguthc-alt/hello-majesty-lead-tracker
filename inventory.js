@@ -1315,7 +1315,7 @@ async function openSalesReport(){
    return {
      ...r,
      display_product:[pm.product||r.product_name||'Produk tidak ditemukan',pm.variant].filter(Boolean).join(' — '),
-     display_cs:r.customer_source==='WALK-IN'?'Walk-In':(peopleMap[r.id]?.cs_name||r.cs_closing||lead?.cs||lead?.cs_claimed_by||'-'),
+     display_cs:r.customer_source==='WALK-IN'?'Walk-In':(r.lead_id?(r.cs_closing||r.cs_pic||peopleMap[r.id]?.cs_name||lead?.cs||lead?.cs_claimed_by||'-'):(peopleMap[r.id]?.cs_name||r.cs_closing||lead?.cs||lead?.cs_claimed_by||'-')),
      display_sales:peopleMap[r.id]?.sales_name||r.sales_closing||'-'
    };
  });

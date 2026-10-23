@@ -3251,14 +3251,17 @@ async function hmRenderManagementMessage(){
  const primary=raw;
  const roleSet=[...new Set([primary,...roles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' '))].filter(Boolean))];
  const hasRole=(...needles)=>roleSet.some(r=>needles.some(n=>r===n||r.includes(n)));
- // Hanya Management berhak mendapat ringkasan lintas outlet; role Divisi tetap dibatasi pada divisi masing-masing.
- const allOutlet=!!profile?.is_management||hasRole('MANAGEMENT');
- const isFacilitator=hasRole('FASILITATOR');
  const name=String(profile?.name||'').trim().split(/\s+/)[0]||'Tim';
+ const nameKey=name.toUpperCase();
+ const assignedDivision=String(({WAWAN:'MAJESTY',TYAR:'HELLO',GAGUT:'REFILL'})[nameKey]||'').toUpperCase();
+ const isDivisionManagement=!!assignedDivision;
+ // Ketiganya Management Hello Majesty, dengan fokus dan data sesuai divisi masing-masing.
+ const allOutlet=!isDivisionManagement&&(!!profile?.is_management||hasRole('MANAGEMENT'));
+ const isFacilitator=hasRole('FASILITATOR');
  const outlet=String(profile?.outlet||'').trim();
  const divisionName=String(profile?.division||profile?.divisi||profile?.department||'').trim().toUpperCase();
- const assignedDivision=String(({TYAR:'HELLO',GAGUT:'REFILL',WAWAN:'MAJESTY'})[name.toUpperCase()]||'').toUpperCase();
- const divisionKey=divisionName||assignedDivision;
+ const divisionKey=assignedDivision||divisionName;
+ const managementLabel=isDivisionManagement?'Management Hello Majesty — Divisi '+divisionKey:(allOutlet?'Management Hello Majesty':'');
  const monthStart=new Date(new Date().getFullYear(),new Date().getMonth(),1);
  const monthEnd=new Date(new Date().getFullYear(),new Date().getMonth()+1,1);
  const today=new Date();today.setHours(0,0,0,0);
@@ -3268,7 +3271,7 @@ async function hmRenderManagementMessage(){
  const context={
    generated_at:new Date().toISOString(),
    period:monthLabel,
-   profile:{name:profile?.name||'',role:profile?.role||'',active_roles:roles,outlet,division:divisionKey},
+   profile:{name:profile?.name||'',role:profile?.role||'',active_roles:roles,outlet,division:divisionKey,management_label:managementLabel,is_division_management:isDivisionManagement},
    data_scope:allOutlet?'data lintas outlet yang benar-benar dikembalikan database sesuai hak akses':isFacilitator?'data outlet fasilitator yang benar-benar dikembalikan database':'aktivitas yang terkait dengan PIC sendiri sesuai hak akses database',
    performance:null,
    lead_attention:{active:0,follow_up_due:0,follow_up_overdue:0,unassigned_next_action:0,potential:0},
@@ -3345,7 +3348,7 @@ async function hmRenderManagementMessage(){
    return;
  }
  try{
-   const question='Susun SATU pesan beranda Hello Majesty yang relevan dan spesifik berdasarkan DATA TERKINI. Maksimal 1-2 kalimat, 15-35 kata. WAJIB hormati profil.role, profile.active_roles, profile.division dan data_scope; role tambahan juga diperhitungkan untuk menentukan tugas yang memang dapat dilakukan, tetapi jangan memberi akses atau tugas di luar kewenangan. Jika Management global, beri ringkasan lintas outlet dan prioritas terbesar. Jika role Divisi, batasi pesan pada divisi tersebut, jangan menganggap Divisi berarti akses semua outlet. Fokus divisi: MAJESTY = penjualan, Sales Closing dan pencapaian target closing; HELLO = promosi, leads baru dan WA masuk; REFILL = handover sebagai target operasional, pengembangan aplikasi/developer, Admin Finance dan Management System sesuai role aktif. Untuk role individu, pilih tindakan dari fungsi yang sesuai: CS pada WA masuk/lead dan handover; Sales pada follow-up dan closing; Content Creator pada konten/promosi/leads; Admin Finance pada akurasi finance/rekonsiliasi; Developer/Data Control pada fungsi aplikasi, data dan error sistem; Fasilitator pada kontrol outlet dan handover. Jangan mengasumsikan orang memiliki kemampuan/izin hanya karena nama divisi—ikuti role utama dan tambahan yang tercantum. WARNING hanya bila data menunjukkan masalah aktual; pengingat bila ada tugas jatuh tempo; apresiasi bila hasil aktual baik dan tidak ada masalah mendesak. Sebut target atau persentase hanya jika target dan pencapaian tersedia di data; jangan mengarang target. Beri satu tindakan yang bisa dilakukan oleh role itu. Jangan menyebut data kosong sebagai masalah atau mengklaim sudah memeriksa sumber yang unavailable. DATA TERKINI: '+JSON.stringify(context);
+   const question='Susun SATU pesan beranda Hello Majesty yang relevan dan spesifik berdasarkan DATA TERKINI. Maksimal 1-2 kalimat, 15-35 kata. WAJIB hormati profil.role, profile.active_roles, profile.division dan data_scope; role tambahan juga diperhitungkan untuk menentukan tugas yang memang dapat dilakukan, tetapi jangan memberi akses atau tugas di luar kewenangan. Jika profile.is_division_management=true, anggap pengguna sebagai Management Hello Majesty pada divisi di profile.division dan fokus hanya pada tanggung jawab divisi itu; Wawan=MAJESTY (penjualan/target closing), Tyar=HELLO (promosi/WA masuk/lead baru), Gagut=REFILL (handover, developer aplikasi, Admin Finance dan Management System sesuai role aktif). Ketiganya adalah Management Hello Majesty, tetapi pesan tidak boleh mencampur KPI semua divisi. Jika Management global lain, beri ringkasan lintas outlet sesuai hak akses. Jika role Divisi, batasi pesan pada divisi tersebut, jangan menganggap Divisi berarti akses semua outlet. Fokus divisi: MAJESTY = penjualan, Sales Closing dan pencapaian target closing; HELLO = promosi, leads baru dan WA masuk; REFILL = handover sebagai target operasional, pengembangan aplikasi/developer, Admin Finance dan Management System sesuai role aktif. Untuk role individu, pilih tindakan dari fungsi yang sesuai: CS pada WA masuk/lead dan handover; Sales pada follow-up dan closing; Content Creator pada konten/promosi/leads; Admin Finance pada akurasi finance/rekonsiliasi; Developer/Data Control pada fungsi aplikasi, data dan error sistem; Fasilitator pada kontrol outlet dan handover. Jangan mengasumsikan orang memiliki kemampuan/izin hanya karena nama divisi—ikuti role utama dan tambahan yang tercantum. WARNING hanya bila data menunjukkan masalah aktual; pengingat bila ada tugas jatuh tempo; apresiasi bila hasil aktual baik dan tidak ada masalah mendesak. Sebut target atau persentase hanya jika target dan pencapaian tersedia di data; jangan mengarang target. Beri satu tindakan yang bisa dilakukan oleh role itu. Jangan menyebut data kosong sebagai masalah atau mengklaim sudah memeriksa sumber yang unavailable. DATA TERKINI: '+JSON.stringify(context);
    const result=await db.functions.invoke('hello-majesty-ai-gemini',{body:{question,lead:null}});
    if(result?.error)throw result.error;
    const answer=String(result?.data?.answer||'').trim();

@@ -1711,6 +1711,32 @@ html,body{color-scheme:light}
 }
 </style>
 
+<style id="hm-no-white-dashboard-theme">
+/* Hello Majesty: reduce white surfaces on the role dashboard */
+body{background:#0b1220!important;color:#e5edf8!important}
+main{background:transparent!important}
+.role-home-menu{background:linear-gradient(145deg,#101c31,#17243b)!important;border:1px solid #334155!important;box-shadow:0 8px 24px #0005!important}
+.role-home-category .role-home-submenu{background:linear-gradient(145deg,#101b30,#17263e)!important}
+.role-home-category:nth-child(n) .role-home-submenu{background:linear-gradient(145deg,#111d32,#1a2943)!important}
+.role-home-category .role-home-submenu-item,
+.role-home-category:nth-child(n) .role-home-submenu-item{background:linear-gradient(145deg,#263650,#1b2940)!important;border:1px solid #3d5270!important;color:#e8f0ff!important;box-shadow:0 3px 10px #0003!important}
+.role-home-category .role-home-submenu-item b,
+.role-home-category:nth-child(n) .role-home-submenu-item b{color:#f1f5ff!important}
+.role-home-category .role-home-submenu-item span,
+.role-home-category:nth-child(n) .role-home-submenu-item span{color:#b4c4dc!important}
+.role-home-category .role-home-category-title{color:#fff!important}
+.role-home-section,.role-home-menu-title{color:#cbd5e1!important}
+.role-home-card{background:linear-gradient(145deg,#1c2a40,#263750)!important;border:1px solid #3b4f6b!important;color:#edf4ff!important;box-shadow:0 4px 12px #0003!important}
+.role-home-card b{color:#f8fafc!important}
+.role-home-card span{color:#bdcbe0!important}
+.role-home-submenu{border-top-color:#34445d!important}
+.dashboard-actions.management-actions{background:linear-gradient(145deg,#101b2d,#1b2b43)!important;border:1px solid #334155!important}
+.dashboard-actions.management-actions button{background:linear-gradient(145deg,#263650,#1a2940)!important;color:#edf4ff!important;border-color:#405572!important;box-shadow:none!important}
+.dashboard-actions.management-actions .success{background:linear-gradient(135deg,#047857,#0f766e)!important;color:#fff!important}
+.box,.lead,.stat{background:#152238;color:#e5edf8;border-color:#334155}
+.small{color:#a9bad1}
+@media(max-width:600px){.role-home-category .role-home-submenu{padding:9px!important}}
+</style>
 </head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
 <div class="login-shell">
   <div class="login-brand">

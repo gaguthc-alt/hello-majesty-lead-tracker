@@ -3321,7 +3321,7 @@ async function hmRenderManagementMessage(){
        const [queueRes,conflictRes,failedSalesRes]=await Promise.all([
          db.from('accurate_sync_queue').select('status',{count:'exact'}).not('status','in','("SYNCED","CANCELLED")').limit(100),
          db.from('accurate_sync_conflicts').select('status',{count:'exact'}).neq('status','RESOLVED').limit(100),
-         db.from('sales_transactions').select('id',{count:'exact',head:true}).eq('accurate_sync_status','FAILED').gte('sold_at',monthStart.toISOString()).lt('sold_at',monthEnd.toISOString())
+         db.from('accurate_sync_queue').select('sale_id',{count:'exact',head:true}).eq('status','FAILED')
        ]);
        if(!queueRes.error&&!conflictRes.error&&!failedSalesRes.error){
          context.accurate_sync={available:true,failed_or_pending:Number(queueRes.count||0),open_conflicts:Number(conflictRes.count||0),failed_sales_sync:Number(failedSalesRes.count||0)};

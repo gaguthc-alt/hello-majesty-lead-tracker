@@ -242,9 +242,16 @@
   window.__hmAccurateMapProducts = [];
   window.hmFilterAccurateMappings = function(value){
     const q=String(value||'').trim().toLowerCase();
+    const status=String(document.getElementById('hm-accurate-map-status')?.value||'ALL');
     document.querySelectorAll('[data-hm-accurate-map-card]').forEach(function(card){
-      card.style.display=(!q||String(card.getAttribute('data-search')||'').includes(q))?'':'none';
+      const matchesSearch=!q||String(card.getAttribute('data-search')||'').includes(q);
+      const mapped=card.getAttribute('data-mapped')==='1';
+      const matchesStatus=status==='ALL'||(status==='MAPPED'&&mapped)||(status==='UNMAPPED'&&!mapped);
+      card.style.display=matchesSearch&&matchesStatus?'':'none';
     });
+    const visible=[...document.querySelectorAll('[data-hm-accurate-map-card]')].filter(card=>card.style.display!=='none').length;
+    const count=document.getElementById('hm-accurate-map-visible-count');
+    if(count) count.textContent=visible+' produk ditampilkan';
   };
   window.hmOpenAccurateProductMapping=async function(){
     try{
@@ -276,6 +283,12 @@
       }).filter(function(p){return p && ['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(String(p.category||'').toUpperCase());}).sort(function(a,b){return String(a.category).localeCompare(String(b.category))||String(a.product).localeCompare(String(b.product))||String(a.variant).localeCompare(String(b.variant))||String(a.hm_grade).localeCompare(String(b.hm_grade))||String(a.hm_color).localeCompare(String(b.hm_color));});
       window.__hmAccurateMapItems=Array.isArray(data.items)?data.items:[];
       const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;
+      // Show unmapped products first, then mapped products.
+      products.sort(function(a,b){
+        const aMapped=!!(a.accurate_item_id||a.accurate_item_no), bMapped=!!(b.accurate_item_id||b.accurate_item_no);
+        if(aMapped!==bMapped) return aMapped?1:-1;
+        return String(a.category).localeCompare(String(b.category))||String(a.product).localeCompare(String(b.product))||String(a.variant).localeCompare(String(b.variant));
+      });
       const mapped=products.filter(p=>p.accurate_item_id||p.accurate_item_no).length;
       const optionsFor=function(current){
         return '<option value="">— Pilih barang Accurate —</option>'+items.map(function(x){
@@ -287,7 +300,8 @@
         const current=items.find(function(x){return (p.accurate_item_id&&String(x.id)===String(p.accurate_item_id))||(p.accurate_item_no&&String(x.no)===String(p.accurate_item_no));});
         const label=[p.product,p.variant,p.hm_color||null,p.hm_grade?'Grade '+p.hm_grade:null].filter(Boolean).join(' • ');
         const search=[p.category,p.product,p.variant,p.hm_color,p.hm_grade,p.accurate_item_no,current&&current.name,current&&current.category].filter(Boolean).join(' ').toLowerCase();
-        return '<div class="lead" data-hm-accurate-map-card="1" data-search="'+esc(search)+'" style="margin-bottom:9px">'+
+        const isMapped=!!(p.accurate_item_id||p.accurate_item_no);
+        return '<div class="lead" data-hm-accurate-map-card="1" data-mapped="'+(isMapped?'1':'0')+'" data-search="'+esc(search)+'" style="margin-bottom:9px">'+
           '<div style="font-weight:800">'+esc(label)+'</div><div class="small" style="margin:3px 0 8px">Kategori: '+esc(p.category||'-')+' • Stok READY: '+esc(p.hm_ready_stock||0)+' unit</div>'+
           '<div class="small" style="margin-bottom:5px">'+(current?'Barang Accurate saat ini: '+esc(current.no)+' — '+esc(current.name):((p.accurate_item_no||p.accurate_item_id)?'Mapping tersimpan: '+esc(p.accurate_item_no||p.accurate_item_id)+' (tidak ditemukan dalam daftar saat ini)':'Belum dipetakan'))+'</div>'+
           '<select id="hm-accurate-map-'+esc(p.id)+'-'+esc(p.hm_grade||'none')+'-'+esc(p.hm_color||'none')+'" style="width:100%;min-height:42px;padding:8px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827">'+optionsFor(p)+'</select>'+
@@ -297,7 +311,9 @@
       openModal('🧩 Pemetaan Produk Accurate',
         '<div class="box"><b>Mapping stok Plaza (non-Majesty Cell): '+mapped+' / '+products.length+'</b><div class="small">Tahap 1 hanya menampilkan kategori iPhone/Android New dan Second dengan stok READY di Majesty Plaza iPhone. Stok titipan/kategori Majesty Cell dikecualikan. Barang Accurate tersedia untuk dipilih: '+items.length+'.</div><div class="small" style="margin-top:6px">Stok pusat dan outlet lain tidak masuk tahap ini. Mapping produk yang tersembunyi tetap tersimpan. Tidak membuat barang baru, tidak mengubah stok, dan tidak mengirim transaksi.</div></div>'+
         '<input type="search" placeholder="Cari produk, varian, kategori..." oninput="window.hmFilterAccurateMappings(this.value)" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:12px;margin:10px 0">'+
+        '<div class="row" style="align-items:center;gap:10px;margin-bottom:8px"><select id="hm-accurate-map-status" onchange="window.hmFilterAccurateMappings(document.querySelector(\'input[placeholder^=\"Cari produk, varian, kategori\"]\')?.value||\'\')" style="flex:1;min-width:0;padding:11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827"><option value="UNMAPPED" selected>Belum mapping</option><option value="MAPPED">Sudah mapping</option><option value="ALL">Semua produk</option></select><span id="hm-accurate-map-visible-count" class="small">'+(products.length-mapped)+' produk ditampilkan</span></div>'+
         '<div style="max-height:55vh;overflow:auto;padding-right:3px">'+(cards||'<div class="box">Tidak ada produk aktif.</div>')+'</div>');
+
     }catch(e){
       console.error('[HM Accurate mapping]',e);
       openModal('🧩 Pemetaan Produk Accurate','<div class="danger box"><b>Gagal membuka pemetaan</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>');

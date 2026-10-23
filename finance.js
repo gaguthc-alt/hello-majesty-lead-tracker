@@ -667,7 +667,7 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
     const pm=ids.length?await window.sb.from('payment_methods').select('id,code,name').in('id',ids):{data:[]};
     const map={};(pm.data||[]).forEach(x=>map[x.id]=x);
     const fa=await window.sb.from('financial_accounts').select('id,name,outlet').eq('active',true).order('name');
-    const accounts=(fa.data||[]).map(x=>'<option value="'+escF(x.id)+'">'+escF(x.name)+(x.outlet?' — '+escF(x.outlet):'')+'</option>').join('');
+    const accounts='<option value="">Pilih akun kas/bank penerima pencairan</option>'+(fa.data||[]).map(x=>'<option value="'+escF(x.id)+'">'+escF(x.name)+(x.outlet?' — '+escF(x.outlet):'')+'</option>').join('');
     const b=document.getElementById('mb'),t=document.getElementById('mt'),m=document.getElementById('modal');
     t.textContent='💳 Pencairan Finance';
     b.innerHTML=(rows||[]).length?rows.map(r=>{
@@ -676,7 +676,7 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
         '<div class="small">'+escF(r.outlet)+' • '+new Date(r.sold_at).toLocaleString('id-ID')+'</div>'+
         '<div style="margin-top:5px">Harga HP: <b>Rp'+Number(r.sale_price||0).toLocaleString('id-ID')+'</b> • Finance: <b>Rp'+Number(r.finance_requested_amount||0).toLocaleString('id-ID')+'</b> • Cash: Rp'+Number(r.finance_cash_payment||0).toLocaleString('id-ID')+(Number(r.finance_cashout_amount||0)>0?' • Tarik Tunai: <b>Rp'+Number(r.finance_cashout_amount||0).toLocaleString('id-ID')+'</b>':'')+'</div>'+
         '<label>Potongan Aktual</label><input id="ff-'+r.id+'" type="number" min="0" step="1000" value="'+Number(r.finance_estimated_fee||0)+'">'+
-        '<label>Akun Pencairan</label><select id="fa-'+r.id+'">'+accounts+'</select>'+
+        '<label>Akun Pencairan (wajib dipilih)</label><select id="fa-'+r.id+'" required>'+accounts+'</select>'+
         '<label>Tanggal Cair</label><input id="fd-'+r.id+'" type="date" value="'+new Date().toISOString().slice(0,10)+'">'+
         '<button class="success" onclick="window.hmDisburseFinance(\''+r.id+'\')">💸 Catat Dana Cair</button></div>';
     }).join(''):'<div class="small">Tidak ada pencairan finance yang menunggu.</div>';
@@ -687,6 +687,9 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
     const fee=Number(document.getElementById('ff-'+id)?.value||0);
     const account=document.getElementById('fa-'+id)?.value;
     const date=document.getElementById('fd-'+id)?.value;
+    if(!account)return alert('Pilih akun kas/bank penerima pencairan Finance terlebih dahulu. Transaksi belum disimpan.');
+    if(!date)return alert('Tanggal pencairan wajib diisi. Transaksi belum disimpan.');
+    if(!Number.isFinite(fee)||fee<0)return alert('Potongan aktual tidak valid. Transaksi belum disimpan.');
     const x=await window.sb.rpc('disburse_finance_sale',{p_sale_id:id,p_actual_fee:fee,p_financial_account_id:account,p_disbursement_date:date,p_notes:'Pencairan Finance aktual'});
     if(x.error)return alert('Pencairan gagal: '+x.error.message);
     alert(x.data?.provider+' cair Rp'+Number(x.data?.actual_disbursement||0).toLocaleString('id-ID')+' • Potongan aktual Rp'+Number(x.data?.actual_fee||0).toLocaleString('id-ID'));

@@ -261,16 +261,20 @@
       openModal('🧩 Pemetaan Produk Accurate','<div class="box"><b>⏳ Memuat produk Hello Majesty dan barang Accurate...</b><div class="small">Belum ada data yang diubah.</div></div>');
       const results=await Promise.all([
         sb.from('product_master').select('id,category,product,variant,grade,accurate_item_id,accurate_item_no').eq('active',true).order('category').order('product'),
-        sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no').eq('status','READY').eq('outlet','Majesty Plaza iPhone'),
-        sb.functions.invoke('accurate-sync',{body:{action:'list_items'}})
+        sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no,status').in('status',['READY','SOLD']).eq('outlet','Majesty Plaza iPhone'),
+        sb.functions.invoke('accurate-sync',{body:{action:'list_items'}}),
+        sb.from('sales_transactions').select('stock_unit_id').eq('outlet','Majesty Plaza iPhone').eq('accurate_sync_status','FAILED')
       ]);
       if(results[0].error) throw results[0].error;
       if(results[1].error) throw results[1].error;
       if(results[2].error) throw results[2].error;
+      if(results[3].error) throw results[3].error;
       const data=results[2].data||{};
       if(!data.ok) throw new Error(data.error||'Daftar barang Accurate gagal dimuat.');
+      const failedStockIds=new Set((results[3].data||[]).map(function(s){return String(s.stock_unit_id||'');}).filter(Boolean));
+      const mappingUnits=(results[1].data||[]).filter(function(u){return u.status==='READY'||failedStockIds.has(String(u.id));});
       const readyGroups={};
-      (results[1].data||[]).forEach(function(unit){
+      mappingUnits.forEach(function(unit){
         if(!unit.product_id) return;
         const key=String(unit.product_id)+'|'+String(unit.grade||'')+'|'+String(unit.color||'');
         if(!readyGroups[key]) readyGroups[key]={product_id:String(unit.product_id),grade:unit.grade||'',color:unit.color||'',units:[],accurate_item_id:unit.accurate_item_id||'',accurate_item_no:unit.accurate_item_no||''};
@@ -334,7 +338,7 @@
       if(!item||!product) throw new Error('Produk atau barang Accurate tidak ditemukan. Buka ulang pemetaan.');
       say('Menyimpan...',true);
       let query=sb.from('stock_units').update({accurate_item_id:String(item.id),accurate_item_no:String(item.no||'')})
-        .eq('product_id',productId).eq('outlet','Majesty Plaza iPhone').eq('status','READY');
+        .eq('product_id',productId).eq('outlet','Majesty Plaza iPhone').in('status',['READY','SOLD']);
       query=grade?query.eq('grade',grade):query.is('grade',null);
       query=color?query.eq('color',color):query.is('color',null);
       const result=await query.select('id,accurate_item_id,accurate_item_no');

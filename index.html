@@ -3728,19 +3728,25 @@ window.hmOpenPartnerSettlementManagement=async function(){
   const liveIds=liveUnits.map(x=>x.id).filter(Boolean);
   let financeRows=[];
   if(liveIds.length){
-   const fr=await window.sb.from('sales_transactions').select('id,stock_unit_id,finance_status,finance_actual_disbursement,finance_estimated_disbursement,finance_cashout_amount,finance_notes,finance_disbursement_date').in('stock_unit_id',liveIds).limit(3000);
+   const fr=await window.sb.from('sales_transactions').select('id,stock_unit_id,sale_price,finance_status,finance_actual_disbursement,finance_estimated_disbursement,finance_cashout_amount,finance_notes,finance_payment_method_id,finance_cash_payment,finance_disbursement_date').in('stock_unit_id',liveIds).limit(3000);
    if(fr.error)throw fr.error;
    financeRows=fr.data||[];
   }
+  const methodRes=await window.sb.from('payment_methods').select('id,name,code').limit(500);
+  if(methodRes.error)throw methodRes.error;
+  const financeMethodById=new Map((methodRes.data||[]).map(m=>[String(m.id),String(m.name||m.code||'Finance')]));
   const financeByUnit=new Map();
   financeRows.forEach(tx=>{
-   if(!['COMPLETED','PAID'].includes(String(tx.finance_status||'').toUpperCase()))return;
-   const amount=Number(tx.finance_actual_disbursement||tx.finance_estimated_disbursement||0);
-   if(amount<=0)return;
-   const key=String(tx.stock_unit_id),prev=financeByUnit.get(key)||{gross:0,cashout:0,transactions:[]};
-   prev.gross+=amount;prev.cashout+=Number(tx.finance_cashout_amount||0);prev.transactions.push(tx);financeByUnit.set(key,prev);
+   const key=String(tx.stock_unit_id),prev=financeByUnit.get(key)||{gross:0,cashout:0,transactions:[],salePrice:0,cashPayment:0};
+   prev.salePrice=Math.max(prev.salePrice,Number(tx.sale_price||0));prev.cashPayment+=Number(tx.finance_cash_payment||0);
+   const status=String(tx.finance_status||'').toUpperCase();
+   if(['COMPLETED','PAID'].includes(status)){
+    const amount=Number(tx.finance_actual_disbursement||tx.finance_estimated_disbursement||0);
+    if(amount>0){prev.gross+=amount;prev.cashout+=Number(tx.finance_cashout_amount||0);prev.transactions.push(tx);}
+   }
+   financeByUnit.set(key,prev);
   });
-  liveUnits.forEach(x=>{const fin=financeByUnit.get(String(x.id));x._financeGross=Number(fin?.gross||0);x._financeCashout=Number(fin?.cashout||0);x._financeReceived=Math.max(0,x._financeGross-x._financeCashout);x._financeApplied=x._financeGross;x._settlementCost=Number(x.cost||0)-x._financeGross;});
+  liveUnits.forEach(x=>{const fin=financeByUnit.get(String(x.id));x._salePrice=Number(fin?.salePrice||0);x._financeGross=Number(fin?.gross||0);x._financeCashout=Number(fin?.cashout||0);x._financeReceived=Math.max(0,x._financeGross-x._financeCashout);x._financeApplied=x._financeGross;x._financeProvider=[...new Set((fin?.transactions||[]).map(tx=>financeMethodById.get(String(tx.finance_payment_method_id))||String(tx.finance_notes||'').trim()).filter(Boolean))].join(' + ')||((fin?.transactions||[]).length?'Finance (provider belum terpetakan)':'Tidak ada pencairan finance tercatat');x._settlementCost=Number(x.cost||0)-x._financeGross;});
   historicalUnits.forEach(x=>{x._financeGross=0;x._financeCashout=0;x._financeReceived=0;x._financeApplied=0;x._settlementCost=Number(x.cost||0);});
   const settlementById=new Map(settles.map(x=>[String(x.id),x]));
   const allocated=new Set();
@@ -3755,7 +3761,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const unitRows=available.map(x=>'<article data-settle-unit data-key="'+safe(x._key)+'" data-source="'+safe(x._source)+'" data-partner="'+safe(x._partner||x.partner_name||x.supplier||'')+'" data-outlet="'+safe(x._outlet||x.outlet||'')+'" data-cost="'+Number(x._settlementCost??x.cost??0)+'" data-gross="'+Number(x.cost||0)+'" data-finance="'+Number(x._financeApplied||0)+'" style="display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;align-items:start;padding:13px;margin:8px 0;border:1px solid #e4e7ec;border-radius:14px;background:#fff;box-shadow:0 2px 6px #10182808"><input type="checkbox" class="hmSettleUnitCheck" value="'+safe(x.id)+'" aria-label="Pilih unit '+safe(x.imei_1||x.id)+'" style="width:20px;height:20px;margin:3px 0;accent-color:#175cd3"><div style="min-width:0"><div style="font-weight:800;color:#101828;line-height:1.35;overflow-wrap:anywhere">'+safe(productName(x))+'</div><div style="font-size:11px;color:#667085;margin-top:4px;overflow-wrap:anywhere">IMEI: '+safe(x.imei_1||'—')+'</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px"><div style="background:#f8fafc;border-radius:9px;padding:8px;min-width:0"><div style="font-size:10px;color:#667085">Stockist</div><div style="font-size:12px;font-weight:700;overflow-wrap:anywhere">'+safe(x.partner_name||x.supplier||'—')+'</div></div><div style="background:#f8fafc;border-radius:9px;padding:8px;min-width:0"><div style="font-size:10px;color:#667085">Outlet</div><div style="font-size:12px;font-weight:700;overflow-wrap:anywhere">'+safe(x._outlet||x.outlet||'—')+'</div></div><div style="background:#f8fafc;border-radius:9px;padding:8px;min-width:0"><div style="font-size:10px;color:#667085">Tanggal SOLD</div><div style="font-size:12px;font-weight:600;overflow-wrap:anywhere">'+safe(fmtSoldDate(x.sold_at||x.created_at))+'</div></div><div style="background:#ecfdf3;border-radius:9px;padding:8px;min-width:0"><div style="font-size:10px;color:#027a48">Modal settlement</div><div style="font-size:14px;font-weight:800;color:#027a48;overflow-wrap:anywhere">'+money(x._settlementCost??x.cost)+'</div><div style="font-size:10px;color:#667085;margin-top:3px;line-height:1.5">Modal awal: '+money(x.cost)+' · Pencairan bruto: '+money(x._financeGross||0)+' · Cashout: '+money(x._financeCashout||0)+' · Neto diterima: '+money(x._financeReceived||0)+' · Pengurang modal: '+money(x._financeApplied||0)+'</div></div></div></div></article>').join('');
   const historyRows=settles.map(x=>{
    const its=items.filter(it=>String(it.settlement_id)===String(x.id));
-   const productSummary=its.map(it=>{const u=units.find(z=>String(z.id)===String(it.stock_unit_id))||units.find(z=>String(z.id)===String(it.historical_stock_detail_id));if(!u)return 'Detail unit belum tersedia';const name=productName(u);const variant=u._variant||u.product_master?.variant||'';const category=u.product_master?.category||u.category||'';const detail=[name,category&&category!==name?category:null,u.condition?'Kondisi '+u.condition:null,u.grade?'Grade '+u.grade:null,u.color?'Warna '+u.color:null,u.storage_gb?u.storage_gb+'GB':null,u.imei_1?'IMEI '+u.imei_1:null].filter(Boolean);return [...new Set(detail)].join(' | ');}).join('\n');
+   const productSummary=its.map(it=>{const u=units.find(z=>String(z.id)===String(it.stock_unit_id))||units.find(z=>String(z.id)===String(it.historical_stock_detail_id));if(!u)return 'Detail unit belum tersedia';const name=productName(u);const variant=u._variant||u.product_master?.variant||'';const category=u.product_master?.category||u.category||'';const detail=[name,category&&category!==name?category:null,u.condition?'Kondisi '+u.condition:null,u.grade?'Grade '+u.grade:null,u.color?'Warna '+u.color:null,u.storage_gb?u.storage_gb+'GB':null,u.imei_1?'IMEI '+u.imei_1:null,'Nominal penjualan '+money(u._salePrice||0),'Finance '+(u._financeProvider||'Belum ada data finance')+' '+money(u._financeGross||0),'Settlement bersih '+money(u._settlementCost??u.cost??0)].filter(Boolean);return [...new Set(detail)].join(' | ');}).join('\n');
    const st=String(x.status||'').toUpperCase();const displayStatus=st==='RECEIVED'?'LUNAS':st;let actions='—';
    if((isStockistUser||isFinanceUser)&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
    else if((isFinanceUser||isStockistUser)&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';

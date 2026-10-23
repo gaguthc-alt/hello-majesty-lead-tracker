@@ -1738,23 +1738,29 @@ main{background:transparent!important}
 @media(max-width:600px){.role-home-category .role-home-submenu{padding:9px!important}}
 </style>
 <style id="hm-dashboard-category-color-refresh">
+/* Keep each dashboard group visually distinct rather than repeating one palette */
 .role-home-category{border-radius:18px!important;overflow:hidden!important;box-shadow:0 8px 22px #02061766!important}
 .role-home-category .role-home-category-title{border-radius:13px!important;box-shadow:inset 0 1px #ffffff18!important}
 .role-home-category .role-home-submenu{border-radius:13px!important;padding:9px!important;gap:9px!important}
 .role-home-category .role-home-submenu-item{border-radius:12px!important;transition:filter .15s ease,transform .15s ease!important}
 .role-home-category .role-home-submenu-item:hover{filter:brightness(1.12)!important;transform:translateY(-1px)!important}
-/* Tools and CRM: vivid blue-indigo */
-.role-home-category:not(:last-of-type){background:linear-gradient(135deg,#172554,#312e81)!important;border-color:#6366f1!important}
-.role-home-category:not(:last-of-type) .role-home-category-title{background:linear-gradient(105deg,#2563eb,#6d28d9)!important;border-color:#818cf8!important}
-.role-home-category:not(:last-of-type) .role-home-submenu{background:linear-gradient(145deg,#101b38,#1e1b4b)!important;border-color:#4f46e5!important}
-.role-home-category:not(:last-of-type) .role-home-submenu-item{background:linear-gradient(135deg,#263c66,#25265a)!important;border-color:#4f63a5!important}
-/* Divisi: brighter teal-cyan */
-.role-home-category:last-of-type{background:linear-gradient(135deg,#042f2e,#164e63)!important;border:1px solid #14b8a6!important}
-.role-home-category:last-of-type .role-home-category-title{background:linear-gradient(105deg,#0f766e,#0891b2)!important;border-color:#5eead4!important}
-.role-home-category:last-of-type .role-home-submenu{background:linear-gradient(145deg,#082f35,#123c4a)!important;border-color:#0f9b8e!important}
-.role-home-category:last-of-type .role-home-submenu-item{background:linear-gradient(135deg,#155e75,#164e63)!important;border-color:#2dd4bf!important}
-.role-home-category:last-of-type .role-home-submenu-item b{color:#ecfeff!important}
-.role-home-category:last-of-type .role-home-submenu-item span{color:#c3f2f5!important}
+/* Tools: amber-orange, energetic */
+.role-home-category:has([data-hm-menu-title="Tanya AI"]){background:linear-gradient(135deg,#431407,#7c2d12)!important;border:1px solid #fb923c!important}
+.role-home-category:has([data-hm-menu-title="Tanya AI"]) .role-home-category-title{background:linear-gradient(105deg,#ea580c,#c2410c)!important;border-color:#fdba74!important}
+.role-home-category:has([data-hm-menu-title="Tanya AI"]) .role-home-submenu{background:linear-gradient(145deg,#29140f,#431c12)!important;border-color:#9a3412!important}
+.role-home-category:has([data-hm-menu-title="Tanya AI"]) .role-home-submenu-item{background:linear-gradient(135deg,#63321e,#42251d)!important;border-color:#b45309!important}
+/* Database & CRM: violet / magenta, technology feel */
+.role-home-category:has([data-hm-menu-title="Database Customer"]){background:linear-gradient(135deg,#3b0764,#581c87)!important;border:1px solid #c084fc!important}
+.role-home-category:has([data-hm-menu-title="Database Customer"]) .role-home-category-title{background:linear-gradient(105deg,#7e22ce,#a21caf)!important;border-color:#d8b4fe!important}
+.role-home-category:has([data-hm-menu-title="Database Customer"]) .role-home-submenu{background:linear-gradient(145deg,#211032,#35134a)!important;border-color:#9333ea!important}
+.role-home-category:has([data-hm-menu-title="Database Customer"]) .role-home-submenu-item{background:linear-gradient(135deg,#4b2865,#39234e)!important;border-color:#a855f7!important}
+/* Menu Divisi: emerald / teal, management identity */
+.role-home-category:has([data-hm-menu-title="Kinerja Divisi"]){background:linear-gradient(135deg,#052e2b,#064e3b)!important;border:1px solid #34d399!important}
+.role-home-category:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-category-title{background:linear-gradient(105deg,#047857,#0f766e)!important;border-color:#6ee7b7!important}
+.role-home-category:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-submenu{background:linear-gradient(145deg,#082c2b,#0b3b35)!important;border-color:#059669!important}
+.role-home-category:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-submenu-item{background:linear-gradient(135deg,#155e52,#164e63)!important;border-color:#34d399!important}
+.role-home-category:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-submenu-item b{color:#ecfdf5!important}
+.role-home-category:has([data-hm-menu-title="Kinerja Divisi"]) .role-home-submenu-item span{color:#b7f7df!important}
 </style>
 </head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
 <div class="login-shell">

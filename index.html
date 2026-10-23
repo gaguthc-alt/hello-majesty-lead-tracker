@@ -3249,8 +3249,11 @@ async function hmRenderManagementMessage(){
  const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
  const raw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const primary=raw;
- const allOutlet=!!profile?.is_management||roles.includes('MANAGEMENT')||roles.includes('DIVISI')||raw.includes('MANAGEMENT')||raw==='DIVISI';
- const isFacilitator=roles.includes('FASILITATOR')||primary==='FASILITATOR';
+ const roleSet=[...new Set([primary,...roles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' '))].filter(Boolean))];
+ const hasRole=(...needles)=>roleSet.some(r=>needles.some(n=>r===n||r.includes(n)));
+ // Hanya Management berhak mendapat ringkasan lintas outlet; role Divisi tetap dibatasi pada divisi masing-masing.
+ const allOutlet=!!profile?.is_management||hasRole('MANAGEMENT');
+ const isFacilitator=hasRole('FASILITATOR');
  const name=String(profile?.name||'').trim().split(/\s+/)[0]||'Tim';
  const outlet=String(profile?.outlet||'').trim();
  const divisionName=String(profile?.division||profile?.divisi||profile?.department||'').trim().toUpperCase();
@@ -3303,7 +3306,7 @@ async function hmRenderManagementMessage(){
      const {data,error}=await q;
      if(!error&&Array.isArray(data)){
        const rows=data;
-       const ownRole=roles.includes('CS')||primary==='CS'?'CS':roles.includes('SALES')||primary==='SALES'?'SALES':roles.includes('CONTENT CREATOR')||primary==='CONTENT CREATOR'?'CONTENT CREATOR':'OTHER';
+       const ownRole=hasRole('CS')?'CS':hasRole('SALES')?'SALES':hasRole('CONTENT CREATOR')?'CONTENT CREATOR':'OTHER';
        const dateFor=row=>ownRole==='SALES'?(row.sales_follow_up_date||row.follow_up_date):ownRole==='CS'?(row.cs_follow_up_date||row.follow_up_date):row.follow_up_date;
        const active=rows.filter(x=>!['HASIL','CLOSING','GAGAL','CLOSED','SOLD','SELESAI'].includes(String(ownRole==='SALES'?(x.sales_result||x.status_lead):(x.status_lead)||'').toUpperCase()));
        const due=active.filter(x=>dateKey(dateFor(x))===dateKey(today));
@@ -3315,7 +3318,7 @@ async function hmRenderManagementMessage(){
    }
  }catch(e){context.data_limitations.push('ringkasan lead tidak tersedia');console.warn('[HM] Ringkasan lead pesan beranda:',e);}
  // Status Accurate hanya dibaca untuk Management/Divisi/Finance; tidak mengubah transaksi.
- if(allOutlet||primary.includes('ADMIN FINANCE')){
+ if(allOutlet||hasRole('ADMIN FINANCE','FINANCE')){
    try{
      if(db&&typeof db.from==='function'){
        const [queueRes,conflictRes,failedSalesRes]=await Promise.all([
@@ -3342,7 +3345,7 @@ async function hmRenderManagementMessage(){
    return;
  }
  try{
-   const question='Susun SATU pesan singkat untuk beranda Hello Majesty berdasarkan DATA TERKINI di bawah. Maksimal 1-2 kalimat, sekitar 15-35 kata. Harus spesifik untuk orang, role, outlet/divisi dan data aktualnya. Pilih nada yang tepat: WARNING tegas bila ada follow-up terlambat, antrean/error Accurate, konflik, atau pekerjaan tertunda; PENGINGAT bila ada pekerjaan jatuh tempo; APRESIASI bila hasil nyata baik dan tidak ada masalah mendesak; selain itu beri arahan tegas yang relevan. Dahulukan masalah nyata paling penting daripada pujian. Sebut angka hanya jika tersedia. Berikan satu tindakan jelas. Jangan mengarang, jangan mengklaim sudah memeriksa Accurate bila available=false, jangan menyebut data kosong sebagai masalah, jangan memberi pesan generik jika angka spesifik tersedia. Tidak perlu judul, emoji berlebihan, atau penjelasan panjang. DATA TERKINI: '+JSON.stringify(context);
+   const question='Susun SATU pesan beranda Hello Majesty yang relevan dan spesifik berdasarkan DATA TERKINI. Maksimal 1-2 kalimat, 15-35 kata. WAJIB hormati profil.role, profile.active_roles, profile.division dan data_scope; role tambahan juga diperhitungkan untuk menentukan tugas yang memang dapat dilakukan, tetapi jangan memberi akses atau tugas di luar kewenangan. Jika Management global, beri ringkasan lintas outlet dan prioritas terbesar. Jika role Divisi, batasi pesan pada divisi tersebut, jangan menganggap Divisi berarti akses semua outlet. Fokus divisi: MAJESTY = penjualan, Sales Closing dan pencapaian target closing; HELLO = promosi, leads baru dan WA masuk; REFILL = handover sebagai target operasional, pengembangan aplikasi/developer, Admin Finance dan Management System sesuai role aktif. Untuk role individu, pilih tindakan dari fungsi yang sesuai: CS pada WA masuk/lead dan handover; Sales pada follow-up dan closing; Content Creator pada konten/promosi/leads; Admin Finance pada akurasi finance/rekonsiliasi; Developer/Data Control pada fungsi aplikasi, data dan error sistem; Fasilitator pada kontrol outlet dan handover. Jangan mengasumsikan orang memiliki kemampuan/izin hanya karena nama divisi—ikuti role utama dan tambahan yang tercantum. WARNING hanya bila data menunjukkan masalah aktual; pengingat bila ada tugas jatuh tempo; apresiasi bila hasil aktual baik dan tidak ada masalah mendesak. Sebut target atau persentase hanya jika target dan pencapaian tersedia di data; jangan mengarang target. Beri satu tindakan yang bisa dilakukan oleh role itu. Jangan menyebut data kosong sebagai masalah atau mengklaim sudah memeriksa sumber yang unavailable. DATA TERKINI: '+JSON.stringify(context);
    const result=await db.functions.invoke('hello-majesty-ai-gemini',{body:{question,lead:null}});
    if(result?.error)throw result.error;
    const answer=String(result?.data?.answer||'').trim();

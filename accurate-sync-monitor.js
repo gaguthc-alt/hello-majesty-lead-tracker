@@ -241,8 +241,10 @@
   window.__hmAccurateMapItems = [];
   window.__hmAccurateMapProducts = [];
   window.hmFilterAccurateMappings = function(value){
-    const q=String(value||'').trim().toLowerCase();
-    const status=String(document.getElementById('hm-accurate-map-status')?.value||'ALL');
+    const searchInput=document.getElementById('hm-accurate-map-search');
+    const q=String(value===undefined?(searchInput?searchInput.value:''):value||'').trim().toLowerCase();
+    const statusEl=document.getElementById('hm-accurate-map-status');
+    const status=String(statusEl?statusEl.value:'UNMAPPED');
     document.querySelectorAll('[data-hm-accurate-map-card]').forEach(function(card){
       const matchesSearch=!q||String(card.getAttribute('data-search')||'').includes(q);
       const mapped=card.getAttribute('data-mapped')==='1';
@@ -311,7 +313,7 @@
       openModal('🧩 Pemetaan Produk Accurate',
         '<div class="box"><b>Mapping stok Plaza (non-Majesty Cell): '+mapped+' / '+products.length+'</b><div class="small">Tahap 1 hanya menampilkan kategori iPhone/Android New dan Second dengan stok READY di Majesty Plaza iPhone. Stok titipan/kategori Majesty Cell dikecualikan. Barang Accurate tersedia untuk dipilih: '+items.length+'.</div><div class="small" style="margin-top:6px">Stok pusat dan outlet lain tidak masuk tahap ini. Mapping produk yang tersembunyi tetap tersimpan. Tidak membuat barang baru, tidak mengubah stok, dan tidak mengirim transaksi.</div></div>'+
         '<input id="hm-accurate-map-search" type="search" placeholder="Cari produk, varian, kategori..." oninput="window.hmFilterAccurateMappings(this.value)" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:12px;margin:10px 0">'+
-        '<div class="row" style="align-items:center;gap:10px;margin-bottom:8px"><select id="hm-accurate-map-status" onchange="window.hmFilterAccurateMappings(document.getElementById(\'hm-accurate-map-search\')?.value||\'\')" style="flex:1;min-width:0;padding:11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827"><option value="UNMAPPED" selected>Belum mapping</option><option value="MAPPED">Sudah mapping</option><option value="ALL">Semua produk</option></select><span id="hm-accurate-map-visible-count" class="small">'+(products.length-mapped)+' produk ditampilkan</span></div>'+
+        '<div class="row" style="align-items:center;gap:10px;margin-bottom:8px"><select id="hm-accurate-map-status" onchange="window.hmFilterAccurateMappings()" style="flex:1;min-width:0;padding:11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827"><option value="UNMAPPED" selected>Belum mapping</option><option value="MAPPED">Sudah mapping</option><option value="ALL">Semua produk</option></select><span id="hm-accurate-map-visible-count" class="small">'+(products.length-mapped)+' produk ditampilkan</span></div>'+
         '<div style="max-height:55vh;overflow:auto;padding-right:3px">'+(cards||'<div class="box">Tidak ada produk aktif.</div>')+'</div>');
 
     }catch(e){

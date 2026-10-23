@@ -7358,4 +7358,44 @@ window.addEventListener('DOMContentLoaded',function(){
 
 
 <script id="hm-assign-tactile-menu-palettes">(function(){function styleMenus(){document.querySelectorAll('.role-home-category').forEach(function(el){var t=(el.querySelector('.role-home-category-title')?.innerText||'').toLowerCase();el.classList.remove('hm-tools-3d','hm-crm-3d','hm-divisi-3d');if(t.includes('tools'))el.classList.add('hm-tools-3d');else if(t.includes('database')||t.includes('crm'))el.classList.add('hm-crm-3d');else if(t.includes('menu divisi'))el.classList.add('hm-divisi-3d')})}styleMenus();new MutationObserver(styleMenus).observe(document.body,{childList:true,subtree:true})})();</script>
+<style id="hm-final-dark-select-fix">
+/* HM FINAL DARK SELECT FIX 20261023: override older white dropdown rules, especially menu panels */
+html body select,
+html body .modal select,
+html body #hmMenuPanel select,
+html body #hmMenuPanelBody select,
+html body .hm-menu-panel-bottom #hmMenuPanelBody select,
+html body select:focus,
+html body .modal select:focus,
+html body #hmMenuPanelBody select:focus {
+  background:#13243a !important;
+  background-color:#13243a !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  border-color:#647b98 !important;
+  color-scheme:dark !important;
+}
+html body select option,
+html body select optgroup,
+html body .modal select option,
+html body #hmMenuPanelBody select option {
+  background:#13243a !important;
+  background-color:#13243a !important;
+  color:#ffffff !important;
+}
+html body input, html body textarea,
+html body .modal input, html body .modal textarea,
+html body #hmMenuPanelBody input, html body #hmMenuPanelBody textarea {
+  background:#13243a !important;
+  background-color:#13243a !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  caret-color:#ffffff !important;
+}
+html body input::placeholder, html body textarea::placeholder {
+  color:#b9c8dc !important;
+  -webkit-text-fill-color:#b9c8dc !important;
+  opacity:1 !important;
+}
+</style>
 </body></html>

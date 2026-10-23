@@ -190,9 +190,10 @@ function renderDivisions(){
   html+=renderDivisionAnalysis(detail.id,rows);
  }else{
   const totalTarget={wa_target:total(rows,'wa_target'),lead_actual:leads,handover_target:total(rows,'handover_target'),handover_actual:handover,closing_target:total(rows,'closing_target'),unit_actual:unit,profit_target:total(rows,'profit_target'),profit_actual:profit};
-  html+=renderDataQuality(rows);
+  // Pemeriksaan kualitas disembunyikan sampai sumber tervalidasi.
   // Buku Keputusan Management dihilangkan dari halaman Kinerja Divisi.
-  html+='<div class="hm-kd-summary"><div><span>Outlet dipantau</span><b>'+num(rows.length)+'</b></div><div><span>Rata-rata pencapaian lead</span><b>'+avg(rows,'lead_actual','wa_target')+'%</b><small>Lead baru · outlet</small></div><div><span>Rata-rata pencapaian handover</span><b>'+avg(rows,'handover_actual','handover_target')+'%</b><small>Handover · outlet</small></div><div><span>Rata-rata pencapaian closing</span><b>'+avg(rows,'lead_closing_actual','closing_target')+'%</b><small>Closing lead · outlet</small></div><div><span>Rata-rata pencapaian unit</span><b>'+avg(rows,'unit_actual','closing_target')+'%</b><small>Unit terjual · outlet</small></div><div><span>Rata-rata pencapaian laba</span><b>'+avg(rows,'profit_actual','profit_target')+'%</b><small>Laba aktual · outlet</small></div></div>';
+  // Statistik rata-rata tambahan disembunyikan sampai rumus dan sumber data tervalidasi.
+
   const pace=monthPace(latestData.month_start);
   html+='<div class="hm-kd-panel hm-kd-ai-analysis"><h3>🎯 Arah & Keputusan Management</h3><p class="hm-kd-note">'+(pace.valid?'Periode: hari '+pace.elapsed+' dari '+pace.days+' · Sisa '+pace.remaining+' hari.':'Tanggal periode tidak valid; laju target tidak dapat dinilai.')+' Analisis dihitung ulang dari data terbaru saat menu dibuka, di-refresh, dan pembaruan otomatis.</p><ol class="hm-kd-advice">'+advice(rows,totalTarget).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol><p class="hm-kd-note">Gunakan rekomendasi sebagai agenda keputusan: tetapkan PIC, tindakan, tenggat, lalu verifikasi hasilnya. Sistem belum mencatat keputusan atau PIC otomatis.</p></div>';
   html+='<div class="hm-kd-panel"><h3>Target Hasil</h3><div class="hm-kd-grid">'+metric('Unit terjual',unit,totalTarget.closing_target,'num')+metric('Nominal laba',profit,totalTarget.profit_target,'money')+'</div></div>';

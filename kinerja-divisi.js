@@ -30,16 +30,19 @@ function paceLine(actual,target,pace){
  return 'Tertinggal sekitar '+num(gap)+' dari laju yang seharusnya sudah dicapai hari ini.';
 }
 function advice(rows, totals){
- const out=[],pace=monthPace(latestData?.month_start);
+ const out=[],pace=monthPace(latestData?.month_start), pacePct=Math.round(pace.ratio*100);
  const leadPct=pct(totals.lead_actual,totals.wa_target), handPct=pct(totals.handover_actual,totals.handover_target), closePct=pct(totals.unit_actual,totals.closing_target), profitPct=pct(totals.profit_actual,totals.profit_target);
- if(leadPct<Math.round(pace.ratio*100)) out.push('PRIORITAS HELLO: lead '+leadPct+'% dari target, sedangkan waktu bulan berjalan sudah '+Math.round(pace.ratio*100)+'%. '+paceLine(totals.lead_actual,totals.wa_target,pace)+' Perbanyak konten dengan CTA WhatsApp dan ukur lead valid per sumber.');
- if(handPct<leadPct) out.push('PRIORITAS REFILL: handover '+handPct+'% tertinggal dari lead '+leadPct+'%. Audit antrean, kecepatan respons, kelengkapan kualifikasi, PIC, dan jadwal follow-up.');
- if(closePct<handPct) out.push('PRIORITAS MAJESTY: unit '+closePct+'% tertinggal dari handover '+handPct+'%. Tinjau lead potensial, waktu respons Sales, stok yang cocok, penawaran, dan alasan lost.');
- if(profitPct<closePct) out.push('PERLINDUNGAN LABA: laba '+profitPct+'% tertinggal dari unit '+closePct+'%. Audit margin, diskon, biaya finance/tarik tunai, dan transaksi bermargin rendah sebelum mendorong volume.');
- const metrics=[['Lead',r=>pct(r.lead_actual,r.wa_target)],['Handover',r=>pct(r.handover_actual,r.handover_target)],['Unit',r=>pct(r.unit_actual,r.closing_target)],['Laba',r=>pct(r.profit_actual,r.profit_target)]];
- const ranking=rows.flatMap(r=>metrics.map(([label,fn])=>({outlet:r.outlet,label,p:fn(r)}))).sort((a,b)=>a.p-b.p);
- if(ranking[0])out.push('KEPUTUSAN MANAGEMENT: mulai dari '+ranking[0].outlet+' — indikator '+ranking[0].label+' baru '+ranking[0].p+'% dari target. Tetapkan PIC, tindakan harian, dan tenggat; periksa kembali pada refresh berikutnya.');
- if(!out.length)out.push('Indikator utama tidak menunjukkan ketertinggalan relatif yang terdeteksi. Pastikan kualitas lead, laba per unit, dan validitas data tetap terjaga; angka agregat saja belum membuktikan seluruh proses sehat.');
+ const gap=(a,t)=>Math.max(0,Number(t||0)-Number(a||0));
+ const val=(a,t)=>num(a)+'/'+num(t)+' ('+pct(a,t)+'%)';
+ out.push('RINGKASAN EKSEKUTIF: Lead/WA '+val(totals.lead_actual,totals.wa_target)+', Handover CS '+val(totals.handover_actual,totals.handover_target)+', Sales Closing '+val(totals.unit_actual,totals.closing_target)+', laba '+val(totals.profit_actual,totals.profit_target)+'. Laju waktu bulan berjalan '+pacePct+'%. CS Closing dari lead adalah indikator terpisah dan tidak boleh disamakan dengan unit Sales Closing.');
+ if(!pace.valid)out.push('VALIDASI PERIODE: tanggal periode belum dapat dipastikan; jangan menilai ketertinggalan berdasarkan laju bulan sebelum tanggal diperiksa.');
+ out.push('1. DIVISI HELLO — LEAD BERKUALITAS: '+val(totals.lead_actual,totals.wa_target)+', kekurangan '+num(gap(totals.lead_actual,totals.wa_target))+' dari target. Arahkan konten ke materi produk/penawaran dengan CTA WhatsApp. Tinjau hasil berdasarkan lead valid per sumber, bukan tayangan saja. Ukur lead valid dan handover yang bisa ditelusuri; hentikan atau ubah format yang tidak menghasilkan lead berkualitas.');
+ out.push('2. DIVISI REFILL — HANDOVER & KENDALI PROSES: '+val(totals.handover_actual,totals.handover_target)+', kekurangan '+num(gap(totals.handover_actual,totals.handover_target))+' handover. Prioritaskan antrean lead yang belum memiliki handover valid; pastikan CS, Sales, dan waktu handover tercatat. Review harian berdasarkan status, umur lead, dan PIC. Service boleh masuk hitungan handover bila valid, tetapi bukan Sales Closing.');
+ out.push('3. DIVISI MAJESTY — KONVERSI PENJUALAN: '+val(totals.unit_actual,totals.closing_target)+', kekurangan '+num(gap(totals.unit_actual,totals.closing_target))+' unit. Fokus pada lead potensial, tindak lanjut terjadwal, kecocokan stok dan status setiap peluang. Review alasan lost hanya berdasarkan catatan yang tersedia. Closing unit harus didukung transaksi penjualan yang sah, bukan status lead semata.');
+ out.push('4. PERLINDUNGAN LABA: pencapaian laba '+profitPct+'% dibanding pencapaian unit '+closePct+'%. Ini adalah perbedaan pencapaian target, bukan bukti penyebab. Periksa margin per unit, diskon, biaya finance/tarik tunai dan biaya terkait sebelum mendorong volume. Jangan menyatakan ada transaksi bermargin rendah tanpa audit transaksi.');
+ const ranking=rows.flatMap(r=>[['Lead',r.lead_actual,r.wa_target],['Handover CS',r.handover_actual,r.handover_target],['Sales Closing (unit)',r.unit_actual,r.closing_target],['Laba',r.profit_actual,r.profit_target]].map(([label,a,t])=>({outlet:r.outlet,label,p:pct(a,t),actual:Number(a||0),target:Number(t||0)}))).sort((a,b)=>a.p-b.p);
+ if(ranking[0])out.push('5. URUTAN PEMERIKSAAN MANAGEMENT: indikator dengan persentase terendah pada data saat ini adalah '+ranking[0].label+' di '+ranking[0].outlet+' ('+ranking[0].p+'%; '+num(ranking[0].actual)+'/'+num(ranking[0].target)+'). Jadikan titik awal audit, bukan kesimpulan penyebab. Management menetapkan PIC dan tenggat; bandingkan hasil pada refresh berikutnya.');
+ out.push('6. VERIFIKASI & TINDAK LANJUT: ringkasan KPI tidak membuktikan penyebab lost, isi percakapan pelanggan, status pencairan finance, atau rekonsiliasi Accurate. Verifikasi sumber terkait sebelum keputusan finansial. Catat PIC, tenggat, bukti sebelum/sesudah, dan hasil aktual; sistem tidak boleh menganggap keputusan sudah dibuat.');
  return out;
 }
 function divisionAdvice(id,rows){

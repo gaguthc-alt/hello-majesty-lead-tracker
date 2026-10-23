@@ -231,6 +231,28 @@ window.hmRefreshKinerjaDivisi=async function(){
 };
 window.hmOpenKinerjaDivision=async function(id){await window.hmOpenKinerjaDivisi();window.hmKinerjaDivision(id);};
 window.hmOpenKinerjaDivisi=async function(){
+ // Pastikan kontras isi analisis tetap terbaca meskipun ada aturan warna/opacity global.
+ if(!document.getElementById('hmKdReadableAnalysisStyle')){
+  const style=document.createElement('style');
+  style.id='hmKdReadableAnalysisStyle';
+  style.textContent=`
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis,
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis *{
+    opacity:1!important;
+    -webkit-text-fill-color:currentColor!important;
+   }
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis{color:#172236!important;background:#fff!important}
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis h3,
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis h4,
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis p,
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis li,
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis b,
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis span{color:#172236!important}
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis .hm-kd-note{color:#344054!important}
+   #hmKinerjaDivisiPanel .hm-kd-ai-analysis .hm-kd-advice{color:#172236!important}
+  `;
+  document.head.appendChild(style);
+ }
  const panel=$('hmMenuPanel'),body=$('hmMenuPanelBody'),title=$('hmMenuPanelTitle');
  if(!panel||!body){alert('Panel menu belum siap.');return;}
  if(title)title.textContent='📊 Kinerja Divisi';

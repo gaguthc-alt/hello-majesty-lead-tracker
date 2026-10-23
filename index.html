@@ -6741,7 +6741,7 @@ function showNeedsAttention(){
    );
  }).join('');
 
- $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between"><div><h3>🔴 Perlu Perhatian</h3><div class="small">Lead aktif yang terlambat atau belum memiliki jadwal follow-up.</div></div><button class="secondary" onclick="render()">← Kembali</button></div></div>'+
+ $('leads').innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div class="small" style="font-weight:500">Lead aktif yang terlambat atau belum memiliki jadwal follow-up.</div><button class="secondary" onclick="render()">← Kembali</button></div></div>'+
  (cards||'<p class="small">Tidak ada lead aktif yang perlu perhatian. 👍</p>');
 }
 

@@ -444,6 +444,13 @@ async function renderInventory(){
   host.id='inventoryPanel';host.className='box';
   const dash=document.getElementById('dashboard'),stats=document.getElementById('stats');
   const inlineBody=document.getElementById('hmMenuPanelBody');
+  // Hide only the generic close control in the outer menu header for this view;
+  // the dedicated Tutup button beside Refresh remains available inside Product & Stock.
+  const menuPanel=document.getElementById('hmMenuPanel');
+  const menuTitle=document.getElementById('hmMenuPanelTitle');
+  const menuHeader=menuTitle?.parentElement;
+  const headerClose=menuHeader?.querySelector('button');
+  if(headerClose)headerClose.style.display='none';
   // Product & Stock can be hosted inside the active menu panel. Do not move it
   // back to the dashboard while the menu owns it; that causes competing UI renders.
   if(dash&&!dash.contains(host)&&!(inlineBody&&inlineBody.contains(host)))dash.insertBefore(host,stats||null);
@@ -459,7 +466,7 @@ async function renderInventory(){
   const canManage=!!profile?.is_management || inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR' || (Array.isArray(window.hmRoles) && window.hmRoles.some(r=>String(r).toUpperCase()==='FASILITATOR'));
   const isCellFinance=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='ADMIN FINANCE MAJESTY CELL'||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='MITRA STOCKIST';
   if(isCellFinance) inventoryView='stock';
-  host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Stok READY yang tersedia per outlet</div></div><div class="row" style="gap:8px;align-items:center"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button></div></div>'+
+  host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Stok READY yang tersedia per outlet</div></div><div class="row" style="gap:8px;align-items:center"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button><button class="secondary" type="button" onclick="document.getElementById(\'hmMenuPanel\')?.classList.add(\'hidden\');document.getElementById(\'inventoryDashboardSection\')?.classList.add(\'hidden\');document.getElementById(\'hunterStockSection\')?.classList.add(\'hidden\')">✕ Tutup</button></div></div>'+
   '<div class="stats" style="margin-top:10px">'+
   invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('↩️ Retur',returned)+'</div>'+
   '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button>'+(inventoryCanHunter?'<button class="secondary" onclick="openHunterStock()">🧑‍💼 Stock Hunter</button><button class="secondary" onclick="openCheckerStock()">🧾 Stock Checker</button>':'')+'</div>'+

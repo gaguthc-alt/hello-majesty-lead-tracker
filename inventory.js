@@ -1159,6 +1159,8 @@ async function saveStock(){
   data.source_type='MAJESTY_CELL';
   data.partner_name=selectedStockist;
   data.received_source_note=selectedStockist;
+  // Stockist harus masuk antrean persetujuan sejak insert, tidak pernah READY langsung.
+  data.status='PENDING_APPROVAL';
  }
 
  const saveBtn=document.getElementById('saveStockBtn');

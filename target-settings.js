@@ -55,7 +55,7 @@
   function enforceVisibility(){
     const canSee=allowed();
     document.querySelectorAll('button,a,[role="button"],.role-home-submenu-item').forEach(el=>{
-      const label=(el.innerText||el.textContent||'').replace(/\\s+/g,' ').trim();
+      const label=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
       if(label.includes('Pengaturan Target Outlet')){
         el.style.display=canSee?'':'none';
         el.setAttribute('aria-hidden',canSee?'false':'true');
@@ -83,7 +83,7 @@
   function parseProfit(text){
     const m=text.match(/Realisasi\\s*([\\d.,]+)\\s*(jt|juta|m|rb|ribu)?/i);
     if(!m)return null;
-    let n=Number(String(m[1]).replace(/\\./g,'').replace(',','.'))||0;
+    let n=Number(String(m[1]).replace(/\./g,'').replace(',','.'))||0;
     const unit=String(m[2]||'').toLowerCase();
     if(unit==='jt'||unit==='juta'||unit==='m')n*=1000000;
     else if(unit==='rb'||unit==='ribu')n*=1000;
@@ -100,7 +100,7 @@
     const profitTargetMatch=text.match(/Target Laba\\s*([\\d.,]+)\\s*(jt|juta|m|rb|ribu)?/i);
     let profitTarget=0;
     if(profitTargetMatch){
-      profitTarget=Number(String(profitTargetMatch[1]).replace(/\\./g,'').replace(',','.'))||0;
+      profitTarget=Number(String(profitTargetMatch[1]).replace(/\./g,'').replace(',','.'))||0;
       const u=String(profitTargetMatch[2]||'').toLowerCase();
       if(u==='jt'||u==='juta'||u==='m')profitTarget*=1000000;else if(u==='rb'||u==='ribu')profitTarget*=1000;
     }
@@ -120,7 +120,7 @@
       if(card.dataset.hmTargetShareAdded==='1')return;
       const heading=card.querySelector('h1,h2,h3,h4,b,strong');
       const headingText=String(heading?.innerText||heading?.textContent||'').trim();
-      if(!/^TARGET\\s+(Majesty Plaza iPhone|Majesty Refill Phone)/i.test(headingText))return;
+      if(!/TARGET\s+(Majesty Plaza iPhone|Majesty Refill Phone)/i.test(headingText))return;
       if(!card.innerText||!/Closing/i.test(card.innerText)||!/WA/i.test(card.innerText))return;
       // Hindari memilih pembungkus besar yang berisi beberapa kartu target.
       const parent=card.parentElement;

@@ -2612,25 +2612,41 @@ function hmResetMainMenuButtonLabels(){
   if(b&&item)b.innerHTML=item[0]+' '+esc(item[1]);
  });
 }
-// STOCKIST CENTER CLICK FIX: tangani tombol berdasarkan judul, tidak bergantung pada indeks kartu/permission lama.
+// STOCKIST CENTER CLICK FIX: route cards explicitly, including lazy-loading Inventory.
 if(!window.__hmStockistClickCapture){
  window.__hmStockistClickCapture=true;
  document.addEventListener('click',function(e){
   const btn=e.target&&e.target.closest?e.target.closest('[data-hm-menu-title]'):null;
   if(!btn)return;
   const title=String(btn.getAttribute('data-hm-menu-title')||'').trim();
-  if(title!=='Majesty Gadget'&&title!=='Majesty Store')return;
+  const isReceive=title==='Ajukan Barang Masuk Stockist';
+  const isPartnerInfo=title==='Majesty Gadget'||title==='Majesty Store';
+  if(!isReceive&&!isPartnerInfo)return;
   e.preventDefault();
   e.stopPropagation();
   if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+  if(isReceive){
+   try{if(typeof hmCloseMainMenu==='function')hmCloseMainMenu();}catch(_){}
+   hmActiveMainMenu='Barang Masuk';
+   if(typeof hmSetMainMenuButtonOpen==='function')hmSetMainMenuButtonOpen('Barang Masuk');
+   const run=()=>{
+    if(typeof window.openReceiveStock!=='function')throw new Error('Fungsi Barang Masuk belum tersedia setelah modul Inventory dimuat.');
+    return window.openReceiveStock();
+   };
+   Promise.resolve().then(()=>typeof window.openReceiveStock==='function'?run():hmLoadModule('inventory').then(run)).catch(ex=>{
+    console.error('[HM] Ajukan Barang Masuk Stockist gagal:',ex);
+    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),pt=document.getElementById('hmMenuPanelTitle');
+    if(panel&&body){if(pt)pt.textContent='⚠️ Ajukan Barang Masuk Stockist';body.innerHTML='<div class="box"><b>Ajukan Barang Masuk Stockist gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:10px" onclick="window.location.reload()">Muat ulang aplikasi</button></div>';panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}
+    else alert('Ajukan Barang Masuk Stockist gagal dibuka: '+(ex?.message||ex));
+   });
+   return;
+  }
   if(typeof window.hmOpenStockistInfo==='function'){
    Promise.resolve(window.hmOpenStockistInfo(title)).catch(ex=>{
     console.error('[HM] Stockist Center:',ex);
     alert('Stockist gagal dibuka: '+(ex?.message||ex));
    });
-  }else{
-   alert('Modul Stockist Center belum siap. Silakan refresh aplikasi.');
-  }
+  }else alert('Modul Stockist Center belum siap. Silakan refresh aplikasi.');
  },true);
 }
 function hmSetMainMenuButtonOpen(key){

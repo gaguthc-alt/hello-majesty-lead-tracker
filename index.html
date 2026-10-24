@@ -6072,8 +6072,8 @@ async function salesResult(id){
    const cashInput=document.getElementById('financeCashPayment');
    const cashoutInput=document.getElementById('financeCashoutAmount');
    const price=Math.max(Number(priceInput?.value||0)-(isTradeIn?Number(document.getElementById('tiValue')?.value||0):0),0), cash=Math.max(Number(cashInput?.value||0),0), cashout=Math.max(Number(cashoutInput?.value||0),0);
-   // Tarif biaya yang dibebankan kepada customer: Akulaku 1,5%, Kredivo 3%, SPayLater 0%.
-   const feeRate=code==='AKULAKU'?0.015:code==='KREDIVO'?0.03:0;
+   // Tarif potongan Finance: Akulaku 3%, Kredivo 3%, SPayLater 0%.
+   const feeRate=(code==='AKULAKU'||code==='KREDIVO')?0.03:0;
    // Nominal Finance otomatis dihitung agar dana bersih setelah biaya + cash menutup harga HP dan tarik tunai.
    const base=Math.max(price+cashout-cash,0);
    const fin=feeRate>0?Math.round(base/(1-feeRate)):base;

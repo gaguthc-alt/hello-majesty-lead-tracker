@@ -6060,7 +6060,14 @@ async function salesResult(id){
    const isFinance=$('salePayment')?.value==='PAY_LATER' && ['SPAYLATER','KREDIVO','AKULAKU'].includes(code);
    financeBox?.classList.toggle('hidden',!isFinance);
    if(!isFinance)return;
-   const price=Math.max(Number($('sap')?.value||0)-(isTradeIn?Number($('tiValue')?.value||0):0),0), fin=Number($('financeRequestedAmount')?.value||0), cash=Number($('financeCashPayment')?.value||0), cashout=Number($('financeCashoutAmount')?.value||0), fee=Math.max(Number($('financeEstimatedFee')?.value||0),0);
+   const price=Math.max(Number($('sap')?.value||0)-(isTradeIn?Number($('tiValue')?.value||0):0),0), fin=Number($('financeRequestedAmount')?.value||0), cash=Number($('financeCashPayment')?.value||0), cashout=Number($('financeCashoutAmount')?.value||0);
+   // Tarif biaya yang dibebankan ke customer: Akulaku 1,5%, Kredivo 3%, SPayLater 0%.
+   const feeRate=code==='AKULAKU'?0.015:code==='KREDIVO'?0.03:0;
+   const fee=Math.round(fin*feeRate);
+   const feeInput=$('financeEstimatedFee');
+   if(feeInput){feeInput.value=String(fee);feeInput.readOnly=true;feeInput.title='Otomatis sesuai tarif provider';}
+   const feeLabel=financeBox?.querySelector('label[for="financeEstimatedFee"]')||null;
+   if(feeLabel)feeLabel.textContent='Biaya Finance Customer ('+(feeRate*100).toLocaleString('id-ID')+'%)';
    const balance=(fin-fee+cash)-(price+cashout), st=$('financeSplitStatus');
    if(st)st.textContent=balance===0?'✅ Pembagian seimbang':(price||fin||cash||cashout?'⚠️ Selisih Rp'+Math.abs(balance).toLocaleString('id-ID'):'');
    const net=$('financeEstimatedNet'); if(net)net.textContent='Estimasi dana bersih Finance: Rp'+Math.max(fin-fee,0).toLocaleString('id-ID')+' • Menunggu Pencairan';

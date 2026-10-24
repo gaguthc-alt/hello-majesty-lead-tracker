@@ -957,18 +957,17 @@ function openEditProduct(id){
  if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
  const p=inventoryProducts.find(x=>x.id===id);if(!p)return;
  $('mt').textContent='✏️ Edit Master Produk';
- $('mb').innerHTML='<label>Kategori</label><select id="epmcat" onchange="toggleEditProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option><option value="STOCK_NEW_MAJESTY_CELL">Stock New Pusat</option><option value="STOCK_SECOND_MAJESTY_CELL">Stock Second Pusat</option></select><label>Produk</label><input id="epmprod" value="'+esc(p.product||'')+'"><label>Varian</label><input id="epmvar" value="'+esc(p.variant||'')+'"><div id="epmcolorBox"><label>Warna</label><input id="epmcolor" value="'+esc(p.color||'')+'"></div><button class="success" onclick="saveEditProduct(\''+id+'\')">Simpan Perubahan</button>';
+ $('mb').innerHTML='<label>Kategori</label><select id="epmcat" required onchange="toggleEditProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option><option value="STOCK_NEW_MAJESTY_CELL">Stock New Pusat</option><option value="STOCK_SECOND_MAJESTY_CELL">Stock Second Pusat</option></select><label>Produk</label><input id="epmprod" required value="'+esc(p.product||'')+'"><div id="epmcolorBox"><label>Warna</label><input id="epmcolor" required value="'+esc(p.color||'')+'"></div><label>Varian / Storage</label><input id="epmvar" required value="'+esc(p.variant||'')+'"><button class="success" onclick="saveEditProduct(\\''+id+'\\')">Simpan Perubahan</button>';
  $('epmcat').value=p.category||'ANDROID_NEW';toggleEditProductFields();$('modal').classList.remove('hidden');
 }
-function toggleEditProductFields(){
- const cat=$('epmcat')?.value||'';
- $('epmcolorBox')?.classList.toggle('hidden',cat!=='IPHONE_NEW');
-}
+function toggleEditProductFields(){const cat=$('epmcat')?.value||'',color=$('epmcolor');$('epmcolorBox')?.classList.toggle('hidden',cat!=='IPHONE_NEW');if(color)color.required=cat==='IPHONE_NEW'}
 async function saveEditProduct(id){
  if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
- const cat=$('epmcat').value,isIphone=cat.startsWith('IPHONE'),rawProduct=$('epmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('epmvar').value.trim();
- if(!product||!variant)return alert('Produk dan Storage wajib diisi.');
- const color=cat==='IPHONE_NEW'?String($('epmcolor')?.value||'').trim():null;if(cat==='IPHONE_NEW'&&!color)return alert('Warna wajib diisi untuk iPhone New.');const x=await sb.from('product_master').update({category:cat,product,variant,color,updated_at:new Date().toISOString()}).eq('id',id);
+ const cat=$('epmcat').value,rawProduct=$('epmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('epmvar').value.trim();
+ const color=cat==='IPHONE_NEW'?String($('epmcolor')?.value||'').trim():null;
+ if(!cat||!rawProduct||!variant)return alert('Kategori, Produk, dan Varian / Storage wajib diisi.');
+ if(cat==='IPHONE_NEW'&&!color)return alert('Warna wajib diisi untuk iPhone New.');
+ const x=await sb.from('product_master').update({category:cat,product,variant,color,updated_at:new Date().toISOString()}).eq('id',id);
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
 async function deactivateProduct(id){
@@ -983,9 +982,9 @@ async function deactivateProduct(id){
  const x=await sb.from('product_master').update({active:false,updated_at:new Date().toISOString()}).eq('id',id);
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
-function openAddProduct(){$('mt').textContent='＋ Master Produk';$('mb').innerHTML='<label>Kategori</label><select id="pmcat" onchange="toggleProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option><option value="STOCK_NEW_MAJESTY_CELL">Stock New Pusat</option><option value="STOCK_SECOND_MAJESTY_CELL">Stock Second Pusat</option></select><label>Produk</label><input id="pmprod" placeholder="Contoh: iPhone 17 Pro Max"><div id="pmcolorBox"><label>Warna</label><input id="pmcolor" placeholder="Contoh: Black, Natural Titanium, Lavender"></div><label>Varian / Storage</label><input id="pmvar" placeholder="256"><button class="success" onclick="saveProduct()">Simpan Produk</button>';$('modal').classList.remove('hidden');toggleProductFields()}
-function toggleProductFields(){const cat=$('pmcat')?.value||'';$('pmcolorBox')?.classList.toggle('hidden',cat!=='IPHONE_NEW')}
-async function saveProduct(){const cat=$('pmcat').value,rawProduct=$('pmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('pmvar').value.trim(),color=cat==='IPHONE_NEW'?String($('pmcolor')?.value||'').trim():null;if(!product||!variant)return alert('Produk dan Storage wajib diisi.');if(cat==='IPHONE_NEW'&&!color)return alert('Warna wajib diisi untuk iPhone New.');const grade=null;const x=await sb.from('product_master').insert({category:cat,product,variant,color,grade});if(x.error)return alert(x.error.message);closeModal();await renderInventory();openProductMaster()}
+function openAddProduct(){$('mt').textContent='＋ Master Produk';$('mb').innerHTML='<label>Kategori</label><select id="pmcat" required onchange="toggleProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option><option value="STOCK_NEW_MAJESTY_CELL">Stock New Pusat</option><option value="STOCK_SECOND_MAJESTY_CELL">Stock Second Pusat</option></select><label>Produk</label><input id="pmprod" required placeholder="Contoh: iPhone 17 Pro Max"><div id="pmcolorBox"><label>Warna</label><input id="pmcolor" required placeholder="Contoh: Black, Natural Titanium, Lavender"></div><label>Varian / Storage</label><input id="pmvar" required placeholder="256"><button class="success" onclick="saveProduct()">Simpan Produk</button>';$('modal').classList.remove('hidden');toggleProductFields()}
+function toggleProductFields(){const cat=$('pmcat')?.value||'',color=$('pmcolor');$('pmcolorBox')?.classList.toggle('hidden',cat!=='IPHONE_NEW');if(color)color.required=cat==='IPHONE_NEW'}
+async function saveProduct(){const cat=$('pmcat').value,rawProduct=$('pmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('pmvar').value.trim(),color=cat==='IPHONE_NEW'?String($('pmcolor')?.value||'').trim():null;if(!cat||!rawProduct||!variant)return alert('Kategori, Produk, dan Varian / Storage wajib diisi.');if(cat==='IPHONE_NEW'&&!color)return alert('Warna wajib diisi untuk iPhone New.');const grade=null;const x=await sb.from('product_master').insert({category:cat,product,variant,color,grade});if(x.error)return alert(x.error.message);closeModal();await renderInventory();openProductMaster()}
 function filterReceiveCategory(){
  const cat=$('stcategory')?.value||'',sel=$('stprod'),search=$('stprodsearch');
  if(!sel)return;

@@ -1918,6 +1918,16 @@ main{background:transparent!important}
 #modal #mb [style*="color:#fff"], #modal #mb [style*="color: #fff"],
 #modal #mb [style*="color:white"] { color:#fff !important; }
 </style>
+
+<style id="hm-form-text-contrast-fix">
+/* Ensure entered/selected text remains readable in every modal, including Closing Stock Siap Jual. */
+#modal input,#modal select,#modal textarea,.modal input,.modal select,.modal textarea,
+#mt~* input,#mt~* select,#mt~* textarea,
+input,select,textarea{color:#172033!important;-webkit-text-fill-color:#172033!important;background-color:#f8fafc!important;caret-color:#172033!important;}
+input::placeholder,textarea::placeholder{color:#64748b!important;-webkit-text-fill-color:#64748b!important;opacity:1!important;}
+select option{color:#172033!important;background:#fff!important;}
+input:disabled,select:disabled,textarea:disabled{color:#475569!important;-webkit-text-fill-color:#475569!important;opacity:1!important;}
+</style>
 </head><body><header><b>HELLO MAJESTY — Management System</b><div id="identity" class="small"></div></header><main><section id="tradePublic" class="box hidden" style="max-width:650px;margin:5vh auto"><h2>📱 Form Tukar Tambah</h2><p class="small">Isi data perangkat yang ingin ditukar. Harga unit akan dicek dan ditentukan oleh tim Sales/majestic pusat setelah data diterima.</p><div id="tradePublicBody"></div></section><section id="login" class="login-page">
 <div class="login-shell">
   <div class="login-brand">

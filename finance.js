@@ -948,3 +948,40 @@ function patchAfterInline(){
     if(e.target?.id==='saveLeadBtn')setTimeout(installLeadSaveGuard,0);
   },true);
 })();
+
+/* HM PAY-LATER DEFAULT BANK PATCH: choose active Bank Mandiri automatically. */
+(function hmPayLaterMandiriDefault(){
+  if(window.__hmPayLaterMandiriDefaultInstalled)return;
+  window.__hmPayLaterMandiriDefaultInstalled=true;
+  function applyMandiriDefault(){
+    const payment=document.getElementById('salePayment');
+    const account=document.getElementById('saleAccount');
+    const box=document.getElementById('saleAccountBox');
+    const hint=document.getElementById('saleAccountHint');
+    if(!payment||!account||payment.value!=='PAY_LATER')return;
+    if(box)box.classList.remove('hidden');
+    const options=[...account.options].filter(o=>o.value);
+    options.forEach(o=>{
+      const type=String(o.dataset.accountType||'').trim().toUpperCase();
+      if(type==='BANK')o.hidden=false;
+    });
+    const mandiri=options.find(o=>{
+      const type=String(o.dataset.accountType||'').trim().toUpperCase();
+      return type==='BANK' && /mandiri/i.test(o.textContent||'');
+    });
+    if(mandiri){
+      account.value=mandiri.value;
+      if(hint)hint.textContent='Rekening pencairan otomatis: Bank Mandiri.';
+    }else if(hint){
+      hint.textContent='Rekening Bank Mandiri belum tersedia pada akun aktif. Management perlu menambahkan atau mengaktifkan akun Bank Mandiri.';
+    }
+  }
+  document.addEventListener('change',function(e){
+    if(e.target?.id==='salePayment'||e.target?.id==='payLaterProvider'){
+      setTimeout(applyMandiriDefault,0);
+    }
+  },true);
+  const observer=new MutationObserver(()=>setTimeout(applyMandiriDefault,0));
+  const start=()=>{if(document.body)observer.observe(document.body,{childList:true,subtree:true});applyMandiriDefault();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();

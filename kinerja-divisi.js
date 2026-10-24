@@ -185,11 +185,11 @@ function renderDivisions(){
  if(!detail){
   const commandTotals={wa_target:total(rows,'wa_target'),lead_actual:leads,handover_target:total(rows,'handover_target'),handover_actual:handover,closing_target:total(rows,'closing_target'),unit_actual:unit,profit_target:total(rows,'profit_target'),profit_actual:profit};
   html+=managementCommandCenter(rows,commandTotals);
+  const canShareGlobal=typeof window.getActiveRoles==='function'&&window.getActiveRoles().map(x=>String(x||'').toUpperCase().replace(/_/g,' ')).includes('DIVISI');
+  if(canShareGlobal)html+='<div class="hm-kd-share-wrap" style="margin:16px 0;padding:16px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fafc"><button type="button" class="hm-kd-share-btn" style="width:100%;padding:14px 16px;border:0;border-radius:12px;background:linear-gradient(135deg,#15803d,#047857);color:#fff;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(4,120,87,.2)" onclick="window.hmShareGlobalTarget()">📲 Bagikan Pencapaian Target ke WhatsApp</button><p class="hm-kd-note">Ringkasan global seluruh divisi: pencapaian, kekurangan target, sisa hari bulan ini, dan motivasi untuk tim.</p></div>';
  }
  if(detail){
-  const canShareDivision=typeof window.getActiveRoles==='function'&&window.getActiveRoles().map(x=>String(x||'').toUpperCase().replace(/_/g,' ')).includes('DIVISI');
   html+='<button class="secondary hm-kd-back" type="button" onclick="window.hmKinerjaDivision(&quot;&quot;)">← Ringkasan seluruh divisi</button><div class="hm-kd-section-title">'+detail.icon+' '+detail.name+' <span>'+detail.sub+'</span></div><p>'+detail.desc+'</p>';
-  if(canShareDivision)html+='<div class="hm-kd-share-wrap"><button type="button" class="hm-kd-share-btn" style="width:100%;padding:14px 16px;border:0;border-radius:12px;background:linear-gradient(135deg,#15803d,#047857);color:#fff;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(4,120,87,.2)" onclick="window.hmShareDivisionTarget()">📲 Bagikan Pencapaian ke WhatsApp</button><p class="hm-kd-note">Kirim pencapaian, kekurangan target, sisa hari, dan pesan penyemangat untuk tim divisi.</p></div>';
   const specs=detail.id==='hello'?[['Lead baru / WA masuk','lead_actual','wa_target','num']]:detail.id==='majesty'?[['Unit terjual','unit_actual','closing_target','num'],['Laba aktual','profit_actual','profit_target','money']]:[['Handover CS','handover_actual','handover_target','num'],['CS Closing dari lead','lead_closing_actual','closing_target','num']];
   specs.forEach(sp=>{const items=rows.map(r=>({outlet:r.outlet,actual:Number(r[sp[1]]||0),target:Number(r[sp[2]]||0),fmt:sp[3]==='money'?rp:num}));html+='<div class="hm-kd-panel"><h3>'+sp[0]+'</h3>'+outletTable(items)+'</div>';});
   if(detail.id==='refill') html+='<div class="hm-kd-note">CS berada di bawah Divisi Refill. Data handover dan closing lead ditampilkan dari catatan lead; kontrol finance, Accurate, dan stabilitas aplikasi perlu dievaluasi dari laporan operasional masing-masing.</div>';
@@ -212,22 +212,26 @@ function renderDivisions(){
  const host=$('hmKinerjaDivisiPanel');
  if(host){host.innerHTML=html;if(!detail&&decisionBookAllowed()){const rows=latestData?.outlets||[];const totals={lead_actual:total(rows,'lead_actual'),wa_target:total(rows,'wa_target'),handover_actual:total(rows,'handover_actual'),handover_target:total(rows,'handover_target'),unit_actual:total(rows,'unit_actual'),closing_target:total(rows,'closing_target'),profit_actual:total(rows,'profit_actual'),profit_target:total(rows,'profit_target')};enrichManagementInstructions(rows,totals);}}
 }
-window.hmShareDivisionTarget=()=>{
+window.hmShareGlobalTarget=()=>{
  const roles=typeof window.getActiveRoles==='function'?window.getActiveRoles().map(x=>String(x||'').toUpperCase().replace(/_/g,' ')):[];
  if(!roles.includes('DIVISI')){alert('Fitur berbagi target hanya tersedia untuk akun Divisi.');return;}
- const id=String(activeDivision||'');
- if(!['hello','majesty','refill'].includes(id)||!latestData){alert('Buka salah satu menu Divisi terlebih dahulu.');return;}
- const rows=latestData.outlets||[], sum=k=>rows.reduce((n,r)=>n+Number(r[k]||0),0);
- const defs={
-  hello:{name:'DIVISI HELLO',metric:'Lead / WA',actual:sum('lead_actual'),target:sum('wa_target'),unit:'lead'},
-  refill:{name:'DIVISI REFILL',metric:'Handover CS',actual:sum('handover_actual'),target:sum('handover_target'),unit:'handover'},
-  majesty:{name:'DIVISI MAJESTY',metric:'Sales Closing',actual:sum('unit_actual'),target:sum('closing_target'),unit:'unit'}
- };
- const d=defs[id], gap=Math.max(0,d.target-d.actual), percent=d.target>0?Math.round(d.actual/d.target*100):0;
+ if(!latestData){alert('Data kinerja belum tersedia. Refresh lalu coba lagi.');return;}
+ const rows=latestData.outlets||[];
+ const sum=k=>rows.reduce((n,r)=>n+Number(r[k]||0),0);
+ const items=[
+  {label:'Lead / WA (Divisi Hello)',actual:sum('lead_actual'),target:sum('wa_target'),unit:'lead'},
+  {label:'Handover CS (Divisi Refill)',actual:sum('handover_actual'),target:sum('handover_target'),unit:'handover'},
+  {label:'Sales Closing (Divisi Majesty)',actual:sum('unit_actual'),target:sum('closing_target'),unit:'unit'},
+  {label:'Laba seluruh outlet',actual:sum('profit_actual'),target:sum('profit_target'),unit:'rupiah',money:true}
+ ];
  const now=new Date(), days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), remaining=Math.max(0,days-now.getDate());
- const period=now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
- const motivation=gap===0?'Target sudah tercapai. Pertahankan kualitas, konsistensi, dan kerja sama tim!':'Kita masih punya waktu '+remaining+' hari untuk mengejar target. Fokus pada langkah yang bisa dilakukan hari ini, saling bantu, dan tuntaskan follow-up dengan disiplin. Setiap progres berarti — kita kejar bersama!';
- const message='📊 *UPDATE TARGET '+d.name+'*\nHello Majesty · '+period+'\n\n🎯 '+d.metric+': *'+num(d.actual)+' / '+num(d.target)+'* ('+percent+'%)\n📌 Kekurangan: *'+num(gap)+' '+d.unit+'*\n🗓️ Sisa waktu bulan ini: *'+remaining+' hari*\n\n💪 '+motivation+'\n\n— HELLO MAJESTY / Built on Trust';
+ const period=new Date(latestData.month_start+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+ const lines=items.map(x=>{
+  const gap=Math.max(0,x.target-x.actual), pct=x.target>0?Math.round(x.actual/x.target*100):0;
+  const fmt=v=>x.money?'Rp'+Number(v).toLocaleString('id-ID'):Number(v).toLocaleString('id-ID');
+  return '• '+x.label+': *'+fmt(x.actual)+' / '+fmt(x.target)+'* ('+pct+'%)\n  Kekurangan: *'+fmt(gap)+'*';
+ });
+ const message='📊 *UPDATE PENCAPAIAN TARGET HELLO MAJESTY*\nPeriode: '+period+'\n\n'+lines.join('\n')+'\n\n🗓️ Sisa waktu bulan ini: *'+remaining+' hari*\n\n💪 *Kita kejar bersama!* Fokus pada target yang masih tertinggal, follow-up yang terjadwal, handover yang valid, dan closing dengan transaksi yang sah. Tetapkan prioritas hari ini, saling dukung, dan evaluasi progres setiap hari. Setiap langkah konsisten membawa kita lebih dekat ke target.\n\n— HELLO MAJESTY / Built on Trust';
  window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank','noopener');
 };
 window.hmKinerjaDivision=id=>{activeDivision=String(id||'');renderDivisions();};

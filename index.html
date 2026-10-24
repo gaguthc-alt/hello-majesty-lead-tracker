@@ -3650,13 +3650,15 @@ async function hmRenderHomePerformance(){
    let outletSections='';
    if(isManagement){
      /* Divisi/Management needs a breakdown for every outlet, even when an outlet has no active target row this month. */
-     const outletSet=new Set((targetRows||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean));
+     // Outlet breakdown Lead/Sales hanya untuk unit yang memang berfungsi sebagai kanal penjualan digital. Stockist murni tetap muncul di Inventory/Stockist, bukan sebagai outlet funnel.
+     const isStockistOnlyLeadOutlet=name=>/^(majesty cell|majesty gadget|majesty store)$/i.test(String(name||'').trim());
+     const outletSet=new Set((targetRows||[]).map(x=>String(x.outlet||'').trim()).filter(name=>name&&!isStockistOnlyLeadOutlet(name)));
      try{
        const {data:profileOutlets,error:profileOutletError}=await db.from('team_profiles').select('outlet,active');
        if(profileOutletError)console.warn('[HM] Tidak dapat membaca outlet dari team_profiles:',profileOutletError);
-       (profileOutlets||[]).forEach(x=>{const name=String(x.outlet||'').trim();if(name&&!/^majesty cell$/i.test(name))outletSet.add(name);});
+       (profileOutlets||[]).forEach(x=>{const name=String(x.outlet||'').trim();if(name&&!isStockistOnlyLeadOutlet(name))outletSet.add(name);});
      }catch(outletLookupError){console.warn('[HM] Fallback daftar outlet tidak tersedia:',outletLookupError);}
-     const outlets=Array.from(outletSet).filter(name=>!/^majesty cell$/i.test(name)).sort((a,b)=>a.localeCompare(b,'id'));
+     const outlets=Array.from(outletSet).filter(name=>!isStockistOnlyLeadOutlet(name)).sort((a,b)=>a.localeCompare(b,'id'));
      const targetByOutlet={};(targetRows||[]).forEach(x=>{targetByOutlet[String(x.outlet||'').trim()]=x;});
      const rowsByOutlet=await Promise.all(outlets.map(async outlet=>{
        const {data:od,error:oe}=await db.rpc('home_performance_summary',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),p_employee_name:'',p_outlet:outlet,p_all_outlets:false});

@@ -3877,11 +3877,11 @@ window.hmOpenStockistCooperationGuide=function(){return window.hmOpenStockistWor
 window.hmOpenStockistSummary=async function(){
  const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' '),outlet=String(p.outlet||'').trim().toUpperCase();
  const allowed=!!p.is_management||(role.includes('STOCKIST')&&(!outlet||outlet==='MAJESTY CELL'))||role==='ADMIN FINANCE MAJESTY CELL'||role==='FASILITATOR';
- if(!allowed){alert('Akses Ringkasan Stok Majesty Cell tidak diizinkan.');return;}
+ if(!allowed){alert('Akses Ringkasan Stock Mitra Stockist tidak diizinkan.');return;}
  const modal=document.getElementById('modal');if(modal){modal.classList.add('hidden');modal.style.display='none';}
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
  if(!panel||!body||!window.sb){alert('Panel atau koneksi database belum siap. Refresh aplikasi lalu coba lagi.');return;}
- if(title)title.textContent='📦 Ringkasan Stok Majesty Cell';panel.classList.remove('hidden');
+ if(title)title.textContent='📦 Ringkasan Stock Mitra Stockist';panel.classList.remove('hidden');
  body.innerHTML='<div class="box">Memuat posisi stok Majesty Cell...</div>';
  try{
   const end=new Date(),start=new Date(end.getFullYear(),end.getMonth(),1),iso=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
@@ -4255,7 +4255,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
     '<div class="hm-stockist-stat"><div class="small">KODE MITRA</div><b style="font-size:18px">'+safe(sup?.supplier_code||'Belum diatur')+'</b></div>'+
     '<div class="hm-stockist-stat"><div class="small">STATUS KERJA SAMA</div><b style="font-size:18px">'+(sup?.active?'Aktif':'Perlu verifikasi')+'</b></div></div>'+
     '<p><b>Catatan kerja sama</b><br>'+safe(sup?.notes||'Belum ada catatan kerja sama pada master mitra.')+'</p>'+
-    '<p class="small">Halaman ini khusus untuk identitas dan ketentuan mitra. Untuk jumlah unit dan nilai modal, gunakan Ringkasan Stok Majesty Cell atau Laporan Stok & Modal Majesty Cell.</p></div>'+
+    '<p class="small">Halaman ini khusus untuk identitas dan ketentuan mitra. Untuk jumlah unit dan nilai modal, gunakan Ringkasan Stock Mitra Stockist atau Laporan Stock & Modal Mitra Stockist.</p></div>'+
     '<div class="box"><h3>💸 Riwayat Settlement</h3>'+profileSettlements+'</div>'+
     '<div class="box"><h3>📌 Alur kerja</h3><ol><li>Barang masuk diperiksa melalui Persetujuan Barang Masuk.</li><li>Posisi unit dan modal dipantau pada Ringkasan Stok.</li><li>Rincian penjualan dan modal yang belum disetor dicek di Laporan Stok & Modal.</li><li>Pengajuan dan verifikasi pembayaran dilakukan melalui Pembayaran Settlement.</li></ol></div>';
    return;
@@ -4362,8 +4362,8 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    ]],
    ['🏬','STOCKIST CENTER',[
      ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
-     ['📦','Ringkasan Stok Majesty Cell','Lihat jumlah unit, status, lokasi, dan nilai stok milik Majesty Cell',"hmOpenStockistInfo('Majesty Cell','summary')"],
-     ['📊','Laporan Stok & Modal Majesty Cell','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement','window.openCellFinanceReport()']
+     ['📦','Ringkasan Stock Mitra Stockist','Lihat jumlah unit, status, lokasi, dan nilai stok milik mitra stockist',"hmOpenStockistInfo('Majesty Cell','summary')"],
+     ['📊','Laporan Stock & Modal Mitra Stockist','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement semua mitra stockist','window.openCellFinanceReport()']
    ]],
    ['🤝','KERJA SAMA STOCKIST',[
      ['📋','Panduan Kerja Sama','Panduan alur stok jaringan, stok titip outlet, retur, pembagian hasil, dan settlement','hmOpenStockistCooperationGuide()'],
@@ -4432,7 +4432,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
    if(isAtmaditaAccount && g[1]==='STOCKIST CENTER'){
-     allowed=g[2].filter(item=>['Persetujuan Barang Masuk','Ringkasan Stok Majesty Cell','Laporan Stok & Modal Majesty Cell'].includes(item[1]));
+     allowed=g[2].filter(item=>['Persetujuan Barang Masuk','Ringkasan Stock Mitra Stockist','Laporan Stock & Modal Mitra Stockist'].includes(item[1]));
    }
    if(isAtmaditaAccount && g[1]==='KERJA SAMA STOCKIST'){
      allowed=g[2].filter(item=>['Panduan Kerja Sama','Daftar & Profil Stockist','Pembayaran Settlement'].includes(item[1]));

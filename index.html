@@ -6091,13 +6091,13 @@ async function salesResult(id){
  const financeBox=document.getElementById('financeSaleBox');
  $('salePayment').onchange=()=>{updatePaymentAccount();updateFinanceBox();};
  $('payLaterProvider').addEventListener('change',()=>{updateFinanceBox();});
- // Delegate at document level: closing form is injected dynamically and has no #saleForm wrapper.
+ // Delegate at document level because this closing form is injected dynamically.
+ window.hmRecalculateStockFinance=()=>{try{updatePaymentAccount();updateFinanceBox();}catch(err){console.error('Finance auto calculation failed',err);}};
  if(!window.hmFinanceDelegatedListeners){
    window.hmFinanceDelegatedListeners=true;
-   document.addEventListener('input',e=>{if(['sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id)){const box=document.getElementById('financeSaleBox');if(box)box.dataset.financeDirty='1';document.dispatchEvent(new CustomEvent('hm-finance-recalc'));}});
-   document.addEventListener('change',e=>{if(['salePayment','payLaterProvider','sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id))document.dispatchEvent(new CustomEvent('hm-finance-recalc'));});
+   document.addEventListener('input',e=>{if(['sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id))window.hmRecalculateStockFinance?.();});
+   document.addEventListener('change',e=>{if(['salePayment','payLaterProvider','sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id))window.hmRecalculateStockFinance?.();});
  }
- document.addEventListener('hm-finance-recalc',()=>{try{updatePaymentAccount();updateFinanceBox();}catch(err){console.error('Finance auto calculation failed',err);}});
  ['financeCashPayment','financeCashoutAmount','sap','tiValue'].forEach(id=>{const el=$(id);el?.addEventListener('input',updateFinanceBox);el?.addEventListener('change',updateFinanceBox);});
  $('salePayment').addEventListener('change',()=>{updatePaymentAccount();updateFinanceBox();});
  updatePaymentAccount();

@@ -963,7 +963,8 @@ function openEditProduct(id){
 }
 function toggleEditProductFields(){
  const cat=$('epmcat')?.value||'',color=$('epmcolor'),grade=$('epmgrade');
- const showColor=cat==='IPHONE_NEW'||isSecondMasterCategory(cat);
+ // Warna merupakan identitas varian produk; Grade hanya berlaku untuk kategori second.
+ const showColor=true;
  const showGrade=isSecondMasterCategory(cat);
  $('epmcolorBox')?.classList.toggle('hidden',!showColor);$('epmgradeBox')?.classList.toggle('hidden',!showGrade);
  if(color)color.required=showColor;if(grade)grade.required=showGrade;
@@ -971,11 +972,9 @@ function toggleEditProductFields(){
 async function saveEditProduct(id){
  if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
  const cat=$('epmcat').value,rawProduct=$('epmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('epmvar').value.trim();
- const showColor=cat==='IPHONE_NEW'||isSecondMasterCategory(cat),showGrade=isSecondMasterCategory(cat);
- const color=showColor?String($('epmcolor')?.value||'').trim():null,grade=showGrade?String($('epmgrade')?.value||'').trim():null;
- if(!cat||!rawProduct||!variant)return alert('Kategori, Produk, dan Varian / Storage wajib diisi.');
- if(showColor&&!color)return alert('Warna wajib diisi untuk kategori ini.');
- if(showGrade&&!grade)return alert('Grade wajib dipilih untuk kategori iPhone Second / Stock Second Pusat.');
+ const color=String($('epmcolor')?.value||'').trim(),showGrade=isSecondMasterCategory(cat),grade=showGrade?String($('epmgrade')?.value||'').trim():null;
+ if(!cat||!rawProduct||!color||!variant)return alert('Kategori, Produk, Warna, dan Varian / Storage wajib diisi.');
+ if(showGrade&&!grade)return alert('Grade wajib dipilih untuk kategori Second.');
  const x=await sb.from('product_master').update({category:cat,product,variant,color,grade,updated_at:new Date().toISOString()}).eq('id',id);
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
@@ -992,8 +991,8 @@ async function deactivateProduct(id){
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
 function openAddProduct(){$('mt').textContent='＋ Master Produk';$('mb').innerHTML='<label>Kategori</label><select id="pmcat" required onchange="toggleProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option><option value="STOCK_NEW_MAJESTY_CELL">Stock New Pusat</option><option value="STOCK_SECOND_MAJESTY_CELL">Stock Second Pusat</option></select><label>Produk</label><input id="pmprod" required placeholder="Contoh: iPhone 17 Pro Max"><div id="pmcolorBox"><label>Warna</label><input id="pmcolor" placeholder="Contoh: Black, Natural Titanium, Lavender"></div><label>Varian / Storage</label><input id="pmvar" required placeholder="Contoh: 128GB, 256GB"><div id="pmgradeBox"><label>Grade</label><select id="pmgrade"><option value="">Pilih Grade</option><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option></select></div><button class="success" onclick="saveProduct()">Simpan Produk</button>';$('modal').classList.remove('hidden');toggleProductFields()}
-function toggleProductFields(){const cat=$('pmcat')?.value||'',color=$('pmcolor'),grade=$('pmgrade');const showColor=cat==='IPHONE_NEW'||isSecondMasterCategory(cat),showGrade=isSecondMasterCategory(cat);$('pmcolorBox')?.classList.toggle('hidden',!showColor);$('pmgradeBox')?.classList.toggle('hidden',!showGrade);if(color)color.required=showColor;if(grade)grade.required=showGrade}
-async function saveProduct(){const cat=$('pmcat').value,rawProduct=$('pmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('pmvar').value.trim(),showColor=cat==='IPHONE_NEW'||isSecondMasterCategory(cat),showGrade=isSecondMasterCategory(cat),color=showColor?String($('pmcolor')?.value||'').trim():null,grade=showGrade?String($('pmgrade')?.value||'').trim():null;if(!cat||!rawProduct||!variant)return alert('Kategori, Produk, dan Varian / Storage wajib diisi.');if(showColor&&!color)return alert('Warna wajib diisi untuk kategori ini.');if(showGrade&&!grade)return alert('Grade wajib dipilih untuk kategori iPhone Second / Stock Second Pusat.');const x=await sb.from('product_master').insert({category:cat,product,variant,color,grade});if(x.error)return alert(x.error.message);closeModal();await renderInventory();openProductMaster()}
+function toggleProductFields(){const cat=$('pmcat')?.value||'',color=$('pmcolor'),grade=$('pmgrade');const showColor=true,showGrade=isSecondMasterCategory(cat);$('pmcolorBox')?.classList.toggle('hidden',!showColor);$('pmgradeBox')?.classList.toggle('hidden',!showGrade);if(color)color.required=showColor;if(grade)grade.required=showGrade}
+async function saveProduct(){const cat=$('pmcat').value,rawProduct=$('pmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('pmvar').value.trim(),color=String($('pmcolor')?.value||'').trim(),showGrade=isSecondMasterCategory(cat),grade=showGrade?String($('pmgrade')?.value||'').trim():null;if(!cat||!rawProduct||!color||!variant)return alert('Kategori, Produk, Warna, dan Varian / Storage wajib diisi.');if(showGrade&&!grade)return alert('Grade wajib dipilih untuk kategori Second.');const x=await sb.from('product_master').insert({category:cat,product,variant,color,grade});if(x.error)return alert(x.error.message);closeModal();await renderInventory();openProductMaster()}
 function filterReceiveCategory(){
  const cat=$('stcategory')?.value||'',sel=$('stprod'),search=$('stprodsearch');
  if(!sel)return;

@@ -3875,24 +3875,43 @@ function renderRoleHome(){
 };
 window.hmOpenStockistCooperationGuide=function(){return window.hmOpenStockistWorkspace('guide');};
 window.hmOpenStockistSummary=async function(){
- const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' '),outlet=String(p.outlet||'').trim().toUpperCase();
- const allowed=!!p.is_management||(role.includes('STOCKIST')&&(!outlet||outlet==='MAJESTY CELL'))||role==='ADMIN FINANCE MAJESTY CELL'||role==='FASILITATOR';
- if(!allowed){alert('Akses Ringkasan Stock Mitra Stockist tidak diizinkan.');return;}
- const modal=document.getElementById('modal');if(modal){modal.classList.add('hidden');modal.style.display='none';}
- const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
- if(!panel||!body||!window.sb){alert('Panel atau koneksi database belum siap. Refresh aplikasi lalu coba lagi.');return;}
- if(title)title.textContent='📦 Ringkasan Stock Mitra Stockist';panel.classList.remove('hidden');
- body.innerHTML='<div class="box">Memuat posisi stok Majesty Cell...</div>';
- try{
-  const end=new Date(),start=new Date(end.getFullYear(),end.getMonth(),1),iso=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
-  const [rep,stock]=await Promise.all([window.sb.rpc('majesty_cell_finance_report',{p_start_date:'2000-01-01',p_end_date:iso(end),p_outlet:'ALL'}),window.sb.rpc('majesty_cell_stock_detail_report',{p_outlet:'ALL'})]);
-  if(rep.error)throw rep.error;if(stock.error)throw stock.error;
-  const d=rep.data||{},tot=d.stock_totals||{},sum=d.stock_summary||[],rows=stock.data||[],money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
-  const cards=[['READY','Siap dijual'],['SOLD','Terjual'],['RETURN','Retur']].map(([status,label])=>{const x=sum.find(v=>String(v.status||'').toUpperCase()===status)||{};return '<div class="fin-card"><div class="small">'+label+'</div><div class="fin-big">'+Number(x.units||0)+' unit</div><div class="small">Nilai modal '+money(x.cost)+'</div></div>';}).join('');
-  const loc={};rows.forEach(x=>{const k=x.outlet||'Belum ditentukan';if(!loc[k])loc[k]={READY:0,SOLD:0,RETURN:0,cost:0};const s=String(x.status||'').toUpperCase();if(loc[k][s]!==undefined)loc[k][s]++;loc[k].cost+=Number(x.cost||0);});
-  const outletHtml=Object.entries(loc).map(([k,v])=>'<div class="lead"><b>'+String(k).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))+'</b><div class="small">READY '+v.READY+' • SOLD '+v.SOLD+' • RETURN '+v.RETURN+' unit</div><div>Nilai modal stok tercatat: '+money(v.cost)+'</div></div>').join('')||'<div class="small">Belum ada rincian unit stok yang tersedia.</div>';
-  body.innerHTML='<div class="box"><div class="small">KONDISI SAAT INI • TANPA FILTER PERIODE</div><h3>Posisi Stok Majesty Cell</h3><div class="hmStockistGrid">'+cards+'</div><p class="small">Ini adalah snapshot posisi stok dan nilai modal. Tidak memuat daftar transaksi, modal yang harus disetor, pembayaran, atau rekonsiliasi settlement.</p></div><div class="box"><h3>Distribusi per Outlet</h3>'+outletHtml+'</div><div class="box"><button type="button" class="primary" onclick="window.openCellFinanceReport()">Buka Laporan Stok &amp; Modal Majesty Cell →</button></div>';
- }catch(e){console.error('[HM] Ringkasan Stok Cell',e);body.innerHTML='<div class="danger box">Ringkasan stok gagal dimuat: '+String(e?.message||e)+'</div><button type="button" class="secondary" onclick="window.hmOpenStockistSummary()">Coba Lagi</button>';}
+  const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' '),outlet=String(p.outlet||'').trim();
+  const mgmt=!!p.is_management||['MANAGEMENT','BUSINESS LEADER','DEVELOPER'].includes(role)||role.includes('DEVELOPER');
+  const stockistUser=role.includes('STOCKIST')||role.startsWith('ADMIN FINANCE MAJESTY CELL')||outlet.toUpperCase()==='MAJESTY CELL';
+  if(!mgmt&&!stockistUser&&role!=='FASILITATOR'){alert('Akses Ringkasan Stock Mitra Stockist tidak diizinkan.');return;}
+  const modal=document.getElementById('modal');if(modal){modal.classList.add('hidden');modal.style.display='none';}
+  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+  if(!panel||!body||!window.sb){alert('Panel atau koneksi database belum siap. Refresh aplikasi lalu coba lagi.');return;}
+  if(title)title.textContent='📦 Ringkasan Stock Mitra Stockist';panel.classList.remove('hidden');
+  body.innerHTML='<div class="box">Memuat ringkasan seluruh mitra stockist...</div>';
+  try{
+    const {data,error}=await window.sb.from('stock_units').select('id,outlet,status,cost,partner_name,source_type,received_at,sold_at').order('created_at',{ascending:false}).limit(10000);
+    if(error)throw error;
+    let rows=data||[];
+    const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
+    const ownPartner=String(outlet||'').trim();
+    if(!mgmt&&role!=='FASILITATOR'){
+      const partner=ownPartner||'Majesty Cell';
+      rows=rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()===partner.toUpperCase());
+    }
+    const partners=[...new Set(rows.map(x=>String(x.partner_name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+    let selected=mgmt||role==='FASILITATOR'?'ALL':(ownPartner||'Majesty Cell');
+    const render=()=>{
+      const filtered=selected==='ALL'?rows:rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()===selected.toUpperCase());
+      const sum={READY:{units:0,cost:0},SOLD:{units:0,cost:0},RETURN:{units:0,cost:0},PENDING_APPROVAL:{units:0,cost:0}};
+      filtered.forEach(x=>{const st=String(x.status||'').toUpperCase();if(sum[st]){sum[st].units++;sum[st].cost+=Number(x.cost||0);}});
+      const cards=[['READY','Siap dijual'],['SOLD','Terjual'],['RETURN','Retur'],['PENDING_APPROVAL','Menunggu persetujuan']].map(([st,label])=>'<div class="fin-card"><div class="small">'+label+'</div><div class="fin-big">'+sum[st].units+' unit</div><div class="small">Nilai modal '+money(sum[st].cost)+'</div></div>').join('');
+      const loc={};filtered.forEach(x=>{const k=x.outlet||'Belum ditentukan';if(!loc[k])loc[k]={READY:0,SOLD:0,RETURN:0,PENDING_APPROVAL:0,cost:0};const st=String(x.status||'').toUpperCase();if(loc[k][st]!==undefined)loc[k][st]++;loc[k].cost+=Number(x.cost||0);});
+      const outletHtml=Object.entries(loc).sort((a,b)=>a[0].localeCompare(b[0],'id')).map(([k,v])=>'<div class="lead"><b>'+esc(k)+'</b><div class="small">READY '+v.READY+' • SOLD '+v.SOLD+' • RETURN '+v.RETURN+' • PENDING '+v.PENDING_APPROVAL+' unit</div><div>Nilai modal stok tercatat: '+money(v.cost)+'</div></div>').join('')||'<div class="small">Belum ada rincian stok untuk filter ini.</div>';
+      const selectOptions=(mgmt||role==='FASILITATOR'?'<option value="ALL">Semua Mitra Stockist</option>':'')+partners.map(n=>'<option value="'+esc(n)+'" '+(n.toUpperCase()===selected.toUpperCase()?'selected':'')+'>'+esc(n)+'</option>').join('');
+      body.innerHTML='<div class="box"><label for="hmStockistSummaryPartner">Filter Mitra Stockist</label><select id="hmStockistSummaryPartner" class="input" style="width:100%;max-width:420px;padding:10px;border-radius:8px">'+selectOptions+'</select><div class="small" style="margin-top:12px">KONDISI SAAT INI • SNAPSHOT STOK • MITRA: <b>'+esc(selected==='ALL'?'SEMUA MITRA':selected)+'</b></div><h3>Posisi Stok '+esc(selected==='ALL'?'Semua Mitra Stockist':selected)+'</h3><div class="hmStockistGrid">'+cards+'</div><p class="small">Nilai modal dihitung dari stok yang tercatat pada setiap unit. Data mengikuti mitra yang dipilih dan tidak mencampur kepemilikan antar-mitra.</p></div><div class="box"><h3>Distribusi per Outlet</h3>'+outletHtml+'</div>';
+      document.getElementById('hmStockistSummaryPartner')?.addEventListener('change',e=>{selected=e.target.value;render();});
+    };
+    if(!partners.length){body.innerHTML='<div class="box">Belum ada data stockist yang dapat ditampilkan.</div>';return;}
+    if(!partners.some(n=>n.toUpperCase()===String(selected).toUpperCase())&&selected!=='ALL')selected=partners[0];
+    render();
+  }catch(e){console.error('[HM] Ringkasan Stock Mitra Stockist',e);body.innerHTML='<div class="danger box">Ringkasan stock mitra gagal dimuat: '+String(e?.message||e)+'</div><button type="button" class="secondary" onclick="window.hmOpenStockistSummary()">Coba Lagi</button>';}
 };
 window.hmOpenStockistInfo=function(partner){return window.hmOpenStockistWorkspace('profile',partner);};
 window.hmOpenStockistReceiving=function(){return window.hmOpenStockistWorkspace('receiving');};

@@ -6056,7 +6056,11 @@ async function salesResult(id){
  $('sap')?.addEventListener('input',updateTradeInNet); $('tiValue')?.addEventListener('input',updateTradeInNet);
  const updateFinanceBox=()=>{
    const provider=$('payLaterProvider');
-   const code=String(provider?.selectedOptions?.[0]?.dataset?.code||'').toUpperCase();
+   const providerOption=provider?.selectedOptions?.[0];
+   const providerText=String(providerOption?.textContent||'').toUpperCase();
+   const rawProviderCode=String(providerOption?.dataset?.code||'').toUpperCase();
+   const code=['SPAYLATER','KREDIVO','AKULAKU'].includes(rawProviderCode)?rawProviderCode:
+     (providerText.includes('AKULAKU')?'AKULAKU':providerText.includes('KREDIVO')?'KREDIVO':providerText.includes('SPAY')?'SPAYLATER':rawProviderCode);
    const isFinance=$('salePayment')?.value==='PAY_LATER' && ['SPAYLATER','KREDIVO','AKULAKU'].includes(code);
    financeBox?.classList.toggle('hidden',!isFinance);
    if(!isFinance)return;
@@ -6079,8 +6083,9 @@ async function salesResult(id){
  };
  const financeBox=$('financeSaleBox');
  $('salePayment').onchange=()=>{updatePaymentAccount();updateFinanceBox();};
- $('payLaterProvider').onchange=updateFinanceBox;
- ['financeCashPayment','financeCashoutAmount','sap','tiValue'].forEach(id=>$(id)?.addEventListener('input',updateFinanceBox));
+ $('payLaterProvider').addEventListener('change',()=>{updateFinanceBox();});
+ ['financeCashPayment','financeCashoutAmount','sap','tiValue'].forEach(id=>{const el=$(id);el?.addEventListener('input',updateFinanceBox);el?.addEventListener('change',updateFinanceBox);});
+ $('salePayment').addEventListener('change',()=>{updatePaymentAccount();updateFinanceBox();});
  updatePaymentAccount();
  updateFinanceBox();
  $('closingSalesNo').onclick=()=>{document.querySelectorAll('.closingSalesMember').forEach(x=>x.checked=false);$('closingSalesPicker').classList.add('hidden');$('closingSalesNo').classList.remove('secondary');$('closingSalesYes').classList.add('secondary')};
@@ -6199,7 +6204,11 @@ async function submitStockClosingApproval(id){
  const financeRequestedAmount=Math.max(Number(document.getElementById('financeRequestedAmount')?.value||0),0);
  const cashPayment=Math.max(Number(document.getElementById('financeCashPayment')?.value||0),0);
  const cashoutAmount=Math.max(Number(document.getElementById('financeCashoutAmount')?.value||0),0);
- const providerCode=String(document.getElementById('payLaterProvider')?.selectedOptions?.[0]?.dataset?.code||'').toUpperCase();
+ const providerOption=document.getElementById('payLaterProvider')?.selectedOptions?.[0];
+ const providerText=String(providerOption?.textContent||'').toUpperCase();
+ const rawProviderCode=String(providerOption?.dataset?.code||'').toUpperCase();
+ const providerCode=['SPAYLATER','KREDIVO','AKULAKU'].includes(rawProviderCode)?rawProviderCode:
+   (providerText.includes('AKULAKU')?'AKULAKU':providerText.includes('KREDIVO')?'KREDIVO':providerText.includes('SPAY')?'SPAYLATER':rawProviderCode);
  const isFinance=paymentMode==='PAY_LATER' && ['SPAYLATER','KREDIVO','AKULAKU'].includes(providerCode);
  const notes=document.getElementById('financeNotes')?.value?.trim()||null;
  if(isFinance){

@@ -3906,7 +3906,7 @@ window.hmOpenStockistSummary=async function(){
       rows=rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()===partner.toUpperCase());
     }
     const partners=[...new Set(rows.map(x=>String(x.partner_name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
-    let selected=mgmt||role==='FASILITATOR'?'ALL':(ownPartner||'Majesty Cell');
+    let selected=mgmt||role==='FASILITATOR'?(partners.find(n=>n.toUpperCase()==='MAJESTY CELL')||'ALL'):(ownPartner||'Majesty Cell');
     const render=async()=>{
       const filtered=selected==='ALL'?rows:rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()===selected.toUpperCase());
       const soldRows=filtered.filter(x=>String(x.status||'').toUpperCase()==='SOLD');

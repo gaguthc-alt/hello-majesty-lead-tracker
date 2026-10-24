@@ -65,12 +65,13 @@
 
   // Tombol share target hanya untuk pengguna operasional/divisi, bukan Management.
   function canShareTargets(){
-    const p=window.profile||{};
-    const role=String(p.role||'').toUpperCase();
-    if(p.is_management===true || /MANAGEMENT|BUSINESS LEADER|DEVELOPER/.test(role))return false;
+    const p=window.profile||window.hmProfile||window.currentProfile||{};
+    const role=String(p.role||'').toUpperCase().replace(/[_-]+/g,' ');
+    const roles=Array.isArray(p.roles)?p.roles.map(x=>String(x).toUpperCase()).join(' '):'';
+    if(p.is_management===true || /MANAGEMENT|BUSINESS LEADER|DEVELOPER/.test(role+' '+roles))return false;
     const divisi=String(p.division||p.divisi||'').toUpperCase();
     const outlet=String(p.outlet||'').toUpperCase();
-    return /HELLO|REFILL|MAJESTY/.test(divisi+' '+role+' '+outlet);
+    return !!(p.name||p.user_id||p.id) && /HELLO|REFILL|MAJESTY|DIVISI/.test(divisi+' '+role+' '+outlet+' '+roles);
   }
   function parseMetric(text,label){
     const safe=label;
@@ -116,20 +117,23 @@
   }
   function addTargetShareButtons(){
     if(!canShareTargets())return;
-    document.querySelectorAll('div,section,article').forEach(card=>{
+    const headings=[...document.querySelectorAll('h1,h2,h3,h4,h5,strong,b')];
+    headings.forEach(heading=>{
+      const headingText=String(heading.innerText||heading.textContent||'').replace(/\\s+/g,' ').trim();
+      if(!/^TARGET\\s+(Majesty Plaza iPhone|Majesty Refill Phone)$/i.test(headingText))return;
+      let card=heading.parentElement;
+      for(let i=0;i<7&&card;i++,card=card.parentElement){
+        const text=card.innerText||card.textContent||'';
+        if(/WA/i.test(text)&&/Handover/i.test(text)&&/Closing/i.test(text)&&/Target Laba/i.test(text))break;
+      }
+      if(!card||card===document.body)return;
       if(card.dataset.hmTargetShareAdded==='1')return;
-      const heading=card.querySelector('h1,h2,h3,h4,b,strong');
-      const headingText=String(heading?.innerText||heading?.textContent||'').trim();
-      if(!/TARGET\s+(Majesty Plaza iPhone|Majesty Refill Phone)/i.test(headingText))return;
-      if(!card.innerText||!/Closing/i.test(card.innerText)||!/WA/i.test(card.innerText))return;
-      // Hindari memilih pembungkus besar yang berisi beberapa kartu target.
-      if(card.querySelectorAll('div,section,article').length>25)return;
       card.dataset.hmTargetShareAdded='1';
       const btn=document.createElement('button');
-      btn.type='button';btn.className='success';btn.style.cssText='width:100%;margin-top:10px;min-height:44px;font-weight:700';
+      btn.type='button';btn.className='success';btn.style.cssText='display:block;width:100%;margin:12px 0;min-height:46px;font-weight:700;position:relative;z-index:5';
       btn.textContent='📲 Share Pencapaian Target ke WhatsApp';
       btn.addEventListener('click',()=>shareTargetCard(card));
-      card.appendChild(btn);
+      heading.insertAdjacentElement('afterend',btn);
     });
   }
   document.addEventListener('DOMContentLoaded',()=>{enforceVisibility();addTargetShareButtons();});

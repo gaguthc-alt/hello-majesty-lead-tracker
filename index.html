@@ -4523,7 +4523,11 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    if(isAtmaditaAccount && g[1]==='KERJA SAMA STOCKIST'){
      allowed=g[2].filter(item=>['Panduan Kerja Sama','Daftar & Profil Stockist','Pembayaran Settlement'].includes(item[1]));
    }
-   if(isAtmaditaAccount && ['STOCKIST CENTER','KERJA SAMA STOCKIST'].includes(g[1]) && !allowed.length)return '';
+   // Direktori seluruh mitra adalah menu internal Management/Developer, bukan akun stockist.
+   if(!mg && !developer && g[1]==='KERJA SAMA STOCKIST'){
+     allowed=allowed.filter(item=>item[1]!=='Daftar & Profil Stockist');
+   }
+   if((isAtmaditaAccount && ['STOCKIST CENTER','KERJA SAMA STOCKIST'].includes(g[1]) || (!mg && !developer && g[1]==='KERJA SAMA STOCKIST')) && !allowed.length)return '';
    // KINERJA & TARGET: tim biasa hanya melihat item yang benar-benar diizinkan lewat cards.
    // Jangan tampilkan seluruh grup hanya karena Target Outlet tersedia; Laporan Performa Tim
    // tetap khusus Management, Developer, dan Divisi/Fasilitator yang punya izin eksplisit.

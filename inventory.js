@@ -847,7 +847,7 @@ function receiveProductCategory(p){
  }
  return c;
 }
-function masterProductLabel(p){const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();return [product,variant,p.color,suffix].filter(Boolean).join(' — ')}
+function masterProductLabel(p){let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();let grade=String(p.grade||'').trim();product=product.replace(/\s+\d{1,4}\s*GB\b/ig,'').replace(/\s+Grade\s*([A-Z][+-]?)\b/ig,(_,g)=>{if(!grade)grade=g.toUpperCase();return '';}).replace(/\s+/g,' ').trim();const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();return [product,variant,p.color,grade?( /^grade\s/i.test(grade)?grade:'Grade '+grade):'',suffix].filter(Boolean).join(' — ')}
 function stockCard(s){
  const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',canViewCost=management||facilitator,ready=s.status==='READY',roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),sales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')),c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
  const rawTitle=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';

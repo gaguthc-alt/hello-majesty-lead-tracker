@@ -35,7 +35,7 @@
       '<div><label>Target laba (Rp)</label><input type="number" min="0" step="1000" id="hmTprofit'+i+'" value="'+Number(x.nominal_target||0)+'"></div>'+
       '<div><label>Nama reward</label><input id="hmTbonuslabel'+i+'" value="'+esc(x.bonus_label||'')+'"></div>'+
       '<div><label>Nominal reward (Rp)</label><input type="number" min="0" step="1000" id="hmTbonus'+i+'" value="'+Number(x.bonus_amount||0)+'"></div>'+
-      '</div><button class="success" style="margin-top:10px;width:100%" onclick="hmSaveTarget('+i+',\''+esc(name).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">💾 Simpan Target '+esc(name)+'</button></div>';
+      '</div><button class="success" style="margin-top:10px;width:100%" onclick="hmSaveTarget('+i+',\\''+esc(name).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,"\\\\'")+'\\')">💾 Simpan Target '+esc(name)+'</button></div>';
     }).join('');
     window._hmTargetRows=names;
   };
@@ -55,16 +55,87 @@
   function enforceVisibility(){
     const canSee=allowed();
     document.querySelectorAll('button,a,[role="button"],.role-home-submenu-item').forEach(el=>{
-      const label=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+      const label=(el.innerText||el.textContent||'').replace(/\\s+/g,' ').trim();
       if(label.includes('Pengaturan Target Outlet')){
         el.style.display=canSee?'':'none';
         el.setAttribute('aria-hidden',canSee?'false':'true');
       }
     });
   }
-  document.addEventListener('DOMContentLoaded',enforceVisibility);
+
+  // Tombol share target hanya untuk pengguna operasional/divisi, bukan Management.
+  function canShareTargets(){
+    const p=window.profile||{};
+    if(p.is_management===true)return false;
+    const role=String(p.role||'').toUpperCase();
+    const divisi=String(p.division||p.divisi||'').toUpperCase();
+    const outlet=String(p.outlet||'').toUpperCase();
+    return /HELLO|REFILL|MAJESTY/.test(divisi+' '+role+' '+outlet);
+  }
+  function parseMetric(text,label){
+    const safe=label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=new RegExp(safe+'[\\s\\S]{0,90}?(\\d[\\d,.]*)\\s*\\/\\s*(\\d[\\d,.]*)','i');
+    const m=text.match(re);
+    if(!m)return null;
+    const n=v=>Number(String(v).replace(/[.,](?=\\d{3}(?:\\D|$))/g,'').replace(',','.'))||0;
+    return {actual:n(m[1]),target:n(m[2])};
+  }
+  function parseProfit(text){
+    const m=text.match(/Realisasi\\s*([\\d.,]+)\\s*(jt|juta|m|rb|ribu)?/i);
+    if(!m)return null;
+    let n=Number(String(m[1]).replace(/\\./g,'').replace(',','.'))||0;
+    const unit=String(m[2]||'').toLowerCase();
+    if(unit==='jt'||unit==='juta'||unit==='m')n*=1000000;
+    else if(unit==='rb'||unit==='ribu')n*=1000;
+    return n;
+  }
+  function daysLeft(){
+    const now=new Date(),end=new Date(now.getFullYear(),now.getMonth()+1,0);
+    return Math.max(0,end.getDate()-now.getDate());
+  }
+  function shareTargetCard(card){
+    const text=card.innerText||card.textContent||'';
+    const outlet=(text.match(/TARGET\\s+([^\\n]+)/i)||[])[1]||'Outlet';
+    const wa=parseMetric(text,'WA'),handover=parseMetric(text,'Handover'),closing=parseMetric(text,'Closing');
+    const profitTargetMatch=text.match(/Target Laba\\s*([\\d.,]+)\\s*(jt|juta|m|rb|ribu)?/i);
+    let profitTarget=0;
+    if(profitTargetMatch){
+      profitTarget=Number(String(profitTargetMatch[1]).replace(/\\./g,'').replace(',','.'))||0;
+      const u=String(profitTargetMatch[2]||'').toLowerCase();
+      if(u==='jt'||u==='juta'||u==='m')profitTarget*=1000000;else if(u==='rb'||u==='ribu')profitTarget*=1000;
+    }
+    const profitActual=parseProfit(text);
+    const remaining=daysLeft();
+    const date=new Date();
+    const month=date.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+    const line=(label,m)=>m?label+': '+m.actual.toLocaleString('id-ID')+'/'+m.target.toLocaleString('id-ID')+' ('+(m.target?Math.round(m.actual/m.target*100):0)+'%) • kurang '+Math.max(0,m.target-m.actual).toLocaleString('id-ID'):null;
+    const parts=[line('📲 WA',wa),line('🤝 Handover',handover),line('🏆 Closing',closing)].filter(Boolean);
+    if(profitTarget>0&&profitActual!==null)parts.push('📈 Laba: Rp'+Math.round(profitActual).toLocaleString('id-ID')+'/Rp'+Math.round(profitTarget).toLocaleString('id-ID')+' ('+Math.round(profitActual/profitTarget*100)+'%) • kurang Rp'+Math.max(0,profitTarget-profitActual).toLocaleString('id-ID'));
+    const message='🎯 *UPDATE TARGET OUTLET — HELLO MAJESTY*\\n🏪 *'+outlet.trim()+'*\\n📅 '+month+' • sisa waktu '+remaining+' hari\\n\\n'+parts.join('\\n')+'\\n\\n💪 *Kita masih punya kesempatan untuk mengejar target!* Fokus pada aktivitas yang menghasilkan: follow-up tepat waktu, handover berkualitas, dan closing yang sah. Setiap lead ditangani dengan serius, setiap hari ada kemajuan.\\n\\nAyo saling bantu dan jaga semangat sampai akhir bulan. Target ini kita kejar bersama!\\n\\n*Hello Majesty — Built on Trust.*';
+    window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank','noopener');
+  }
+  function addTargetShareButtons(){
+    if(!canShareTargets())return;
+    document.querySelectorAll('div,section,article').forEach(card=>{
+      if(card.dataset.hmTargetShareAdded==='1')return;
+      const heading=card.querySelector('h1,h2,h3,h4,b,strong');
+      const headingText=String(heading?.innerText||heading?.textContent||'').trim();
+      if(!/^TARGET\\s+(Majesty Plaza iPhone|Majesty Refill Phone)/i.test(headingText))return;
+      if(!card.innerText||!/Closing/i.test(card.innerText)||!/WA/i.test(card.innerText))return;
+      // Hindari memilih pembungkus besar yang berisi beberapa kartu target.
+      const parent=card.parentElement;
+      if(parent&&parent.querySelectorAll('div,section,article').length>25)return;
+      card.dataset.hmTargetShareAdded='1';
+      const btn=document.createElement('button');
+      btn.type='button';btn.className='success';btn.style.cssText='width:100%;margin-top:10px;min-height:44px;font-weight:700';
+      btn.textContent='📲 Share Pencapaian Target ke WhatsApp';
+      btn.addEventListener('click',()=>shareTargetCard(card));
+      card.appendChild(btn);
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>{enforceVisibility();addTargetShareButtons();});
   setTimeout(enforceVisibility,500);
   setTimeout(enforceVisibility,1500);
-  const visibilityObserver=new MutationObserver(enforceVisibility);
+  const visibilityObserver=new MutationObserver(()=>{enforceVisibility();addTargetShareButtons();});
   visibilityObserver.observe(document.documentElement,{childList:true,subtree:true});
 })();

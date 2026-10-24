@@ -10,6 +10,9 @@ window.openCellFinanceReport=async function(){window.hmEnsureCellReportStyles();
   const role=String(wp.role||gp.role||p.team_role||p.position||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
   const outlet=String(wp.outlet||gp.outlet||'').trim().toUpperCase();
   const isManagement=!!(wp.is_management||gp.is_management);
+  const userName=String(wp.name||gp.name||p.full_name||'').trim().toLowerCase();
+  // Pembatasan outlet khusus: Ifa hanya Plaza, Saka hanya Refill.
+  const forcedFinanceOutlet=userName==='ifa'?'Majesty Plaza iPhone':userName==='saka'?'Majesty Refill Phone':null;
   const isCellStockist=role.includes('STOCKIST') && (!outlet || outlet==='MAJESTY CELL');
   const isCellFinance=role==='ADMIN FINANCE MAJESTY CELL';
   const isFacilitator=role==='FASILITATOR';
@@ -30,7 +33,7 @@ window.openCellFinanceReport=async function(){window.hmEnsureCellReportStyles();
     '<div class="cell-report-filters" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;padding:14px;border:1px solid #dbe3ef;border-radius:16px;background:#f8fafc;margin:10px 0">'+
     '<label>Periode Dari<input id="cellReportStart" type="date" value="'+displayDate(start)+'" autocomplete="off" style="width:100%;box-sizing:border-box"></label>'+
     '<label>Periode Sampai<input id="cellReportEnd" type="date" value="'+displayDate(end)+'" autocomplete="off" style="width:100%;box-sizing:border-box"></label>'+
-    '<label>Outlet<select id="cellReportOutlet" style="width:100%;box-sizing:border-box"><option value="ALL">Semua Outlet Cell</option><option value="Majesty Refill Phone">Majesty Refill Phone</option><option value="Majesty Plaza iPhone">Majesty Plaza iPhone</option></select></label>'+
+    '<label>Outlet<select id="cellReportOutlet" '+(forcedFinanceOutlet?'disabled aria-label="Outlet sesuai akun"':'')+' style="width:100%;box-sizing:border-box">'+(forcedFinanceOutlet?'<option value="'+forcedFinanceOutlet+'" selected>'+forcedFinanceOutlet+'</option>':'<option value="ALL">Semua Outlet Cell</option><option value="Majesty Refill Phone">Majesty Refill Phone</option><option value="Majesty Plaza iPhone">Majesty Plaza iPhone</option>')+'</select></label>'+
     '<label>Kategori<select id="cellReportCategory" style="width:100%;box-sizing:border-box"><option value="ALL">Semua Kategori</option><option>iPhone New</option><option>iPhone Second</option><option>Android New</option><option>Android Second</option></select></label>'+
     '<label>Produk<input id="cellReportProduct" type="search" placeholder="Cari nama produk..." style="width:100%;box-sizing:border-box"></label>'+
     '<label>IMEI<input id="cellReportImei" type="search" inputmode="numeric" placeholder="Cari IMEI..." style="width:100%;box-sizing:border-box"></label>'+
@@ -42,14 +45,19 @@ window.openCellFinanceReport=async function(){window.hmEnsureCellReportStyles();
 window.resetCellFinanceFilters=function(){
   const d=new Date(),start=new Date(d.getFullYear(),d.getMonth(),1);
   const fmt=x=>String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();
+  const cp=window.profile||{},un=String(cp.name||'').trim().toLowerCase(),forced=un==='ifa'?'Majesty Plaza iPhone':un==='saka'?'Majesty Refill Phone':null;
   const a=document.getElementById('cellReportStart'),b=document.getElementById('cellReportEnd'),o=document.getElementById('cellReportOutlet'),c=document.getElementById('cellReportCategory'),p=document.getElementById('cellReportProduct'),i=document.getElementById('cellReportImei'),s=document.getElementById('cellReportStatus');
-  if(a)a.value=fmt(start);if(b)b.value=fmt(d);if(o)o.value='ALL';if(c)c.value='ALL';if(p)p.value='';if(i)i.value='';if(s)s.value='ALL';
+  if(a)a.value=fmt(start);if(b)b.value=fmt(d);if(o)o.value=forced||'ALL';if(c)c.value='ALL';if(p)p.value='';if(i)i.value='';if(s)s.value='ALL';
   window.loadCellFinanceReport();
 };
 window.loadCellFinanceReport=async function(){
   const box=document.getElementById('cellFinanceReportBody'),sb=window.sb;if(!box||!sb)return;
   const parseDate=value=>{const v=String(value||'').trim();let m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(year,month-1,day);if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)return null;return year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');}m=v.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?v:null;};
-  const startInput=document.getElementById('cellReportStart')?.value,endInput=document.getElementById('cellReportEnd')?.value,outlet=document.getElementById('cellReportOutlet')?.value||'ALL';
+  const startInput=document.getElementById('cellReportStart')?.value,endInput=document.getElementById('cellReportEnd')?.value;
+  const currentFinanceProfile=window.profile||{},currentFinanceName=String(currentFinanceProfile.name||'').trim().toLowerCase();
+  const forcedFinanceOutlet=currentFinanceName==='ifa'?'Majesty Plaza iPhone':currentFinanceName==='saka'?'Majesty Refill Phone':null;
+  // Terapkan pembatasan saat membaca data, bukan hanya menyembunyikan pilihan UI.
+  const outlet=forcedFinanceOutlet||(document.getElementById('cellReportOutlet')?.value||'ALL');
   const categoryFilter=document.getElementById('cellReportCategory')?.value||'ALL',productFilter=String(document.getElementById('cellReportProduct')?.value||'').trim().toLowerCase(),imeiFilter=String(document.getElementById('cellReportImei')?.value||'').trim().toLowerCase(),statusFilter=document.getElementById('cellReportStatus')?.value||'ALL';
   const start=parseDate(startInput),end=parseDate(endInput);
   if(!start||!end){box.innerHTML='<div class="danger box">Format tanggal harus DD/MM/YYYY, contoh 01/10/2026.</div>';return;}

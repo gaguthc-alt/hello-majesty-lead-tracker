@@ -653,7 +653,7 @@ function toggleHunterField(){
  }
  if(source==='HUNTER'||source==='CHECKER')refreshCheckerOptions();
 }
-function togglePartnerFields(){const box=$('partnerBox'),source=$('stsource')?.value||'MANAGEMENT';if(box)box.classList.toggle('hidden',source!=='STOCKIST');const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const sel=$('stpartner');if(sel&&role==='ADMIN FINANCE MAJESTY CELL'){sel.value='Majesty Cell';sel.disabled=true;}else if(sel)sel.disabled=false;}
+function togglePartnerFields(){const box=$('partnerBox'),source=$('stsource')?.value||'MANAGEMENT';const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const ownStockist=role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL';const show=source==='STOCKIST'&&!ownStockist;if(box){box.classList.toggle('hidden',!show);box.style.display=show?'block':'none';}const sel=$('stpartner');if(sel&&role==='ADMIN FINANCE MAJESTY CELL'){sel.value='Majesty Cell';sel.disabled=true;}else if(sel)sel.disabled=false;}
 function inventoryReceiveOutlet(){
  const sel=$('stoutlet');
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
@@ -1119,7 +1119,7 @@ async function saveStock(){
  const receiveOutlet=inventoryReceiveOutlet();
  const hunters=source==='HUNTER'?selectedReceivePeople('sthunter'):[],checkers=(source==='CHECKER'||source==='HUNTER')?selectedReceivePeople('stchecker'):[];
  const hunter=hunters[0]||null,checker=checkers[0]||null;
- const partnerName=$('stpartner')?.value||null;
+ const currentRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const partnerName=$('stpartner')?.value||(currentRole==='ADMIN FINANCE MAJESTY CELL'?'Majesty Cell':currentRole==='MITRA STOCKIST'?String(profile?.outlet||'').trim():null);
  if(source==='HUNTER'&&!hunters.length&&!checkers.length)return alert('Pilih minimal satu Hunter atau Checker untuk sumber barang ini.');
  if(source==='CHECKER'&&!checkers.length)return alert('Pilih minimal satu Checker.');
  if(source==='STOCKIST'&&!partnerName)return alert('Stockist asal barang wajib dipilih.');

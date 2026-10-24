@@ -66,8 +66,8 @@
   // Tombol share target hanya untuk pengguna operasional/divisi, bukan Management.
   function canShareTargets(){
     const p=window.profile||{};
-    if(p.is_management===true)return false;
     const role=String(p.role||'').toUpperCase();
+    if(p.is_management===true || /MANAGEMENT|BUSINESS LEADER|DEVELOPER/.test(role))return false;
     const divisi=String(p.division||p.divisi||'').toUpperCase();
     const outlet=String(p.outlet||'').toUpperCase();
     return /HELLO|REFILL|MAJESTY/.test(divisi+' '+role+' '+outlet);
@@ -123,8 +123,7 @@
       if(!/TARGET\s+(Majesty Plaza iPhone|Majesty Refill Phone)/i.test(headingText))return;
       if(!card.innerText||!/Closing/i.test(card.innerText)||!/WA/i.test(card.innerText))return;
       // Hindari memilih pembungkus besar yang berisi beberapa kartu target.
-      const parent=card.parentElement;
-      if(parent&&parent.querySelectorAll('div,section,article').length>25)return;
+      if(card.querySelectorAll('div,section,article').length>25)return;
       card.dataset.hmTargetShareAdded='1';
       const btn=document.createElement('button');
       btn.type='button';btn.className='success';btn.style.cssText='width:100%;margin-top:10px;min-height:44px;font-weight:700';

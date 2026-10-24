@@ -4407,6 +4407,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
      ['📦','Cek Barang Accurate','Baca daftar barang Accurate tanpa mengubah transaksi','hmCheckAccurateItems()']
    ]],
    ['🏬','STOCKIST CENTER',[
+     ['📥','Ajukan Barang Masuk Stockist','Input stok milik stockist, pilih outlet sendiri atau outlet titipan, lalu kirim untuk persetujuan','window.openReceiveStock()'],
      ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
      ['📦','Ringkasan Stock Mitra Stockist','Lihat jumlah unit, status, lokasi, dan nilai stok milik mitra stockist',"hmOpenStockistInfo('Majesty Cell','summary')"],
      ['📊','Laporan Stock & Modal Mitra Stockist','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement semua mitra stockist','window.openCellFinanceReport()']
@@ -4444,7 +4445,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    const isAtmaditaAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita';
    const isDivisiAccount = roles.includes('DIVISI') || rawRole==='DIVISI';
    const isSakaAccount = String(profile?.name||'').trim().toLowerCase()==='saka';
-   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='ACCURATE' && (developer || mg)) || (g[1]==='STOCKIST CENTER' && (developer || mg || facilitator || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL'))) || (g[1]==='KERJA SAMA STOCKIST' && (developer || mg || facilitator || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL'))) || (g[1]==='SALES & PENJUALAN' && sales) || (g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))));
+   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='ACCURATE' && (developer || mg)) || (g[1]==='STOCKIST CENTER' && (developer || mg || facilitator || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL') || rawRole.includes('MITRA STOCKIST') || rawRole.includes('STOCKIST'))) || (g[1]==='KERJA SAMA STOCKIST' && (developer || mg || facilitator || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL'))) || (g[1]==='SALES & PENJUALAN' && sales) || (g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))));
    if(g[1]==='ACCURATE' && !developer && !mg)return '';
    const isAccountingGroup = g[1]==='ACCOUNTING' && developer;
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
@@ -4478,7 +4479,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
    if(isAtmaditaAccount && g[1]==='STOCKIST CENTER'){
-     allowed=g[2].filter(item=>['Persetujuan Barang Masuk','Ringkasan Stock Mitra Stockist','Laporan Stock & Modal Mitra Stockist'].includes(item[1]));
+     allowed=g[2].filter(item=>['Ajukan Barang Masuk Stockist','Persetujuan Barang Masuk','Ringkasan Stock Mitra Stockist','Laporan Stock & Modal Mitra Stockist'].includes(item[1]));
    }
    if(isAtmaditaAccount && g[1]==='KERJA SAMA STOCKIST'){
      allowed=g[2].filter(item=>['Panduan Kerja Sama','Daftar & Profil Stockist','Pembayaran Settlement'].includes(item[1]));

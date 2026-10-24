@@ -6062,10 +6062,12 @@ async function salesResult(id){
    const code=['SPAYLATER','KREDIVO','AKULAKU'].includes(rawProviderCode)?rawProviderCode:
      (providerText.includes('AKULAKU')?'AKULAKU':providerText.includes('KREDIVO')?'KREDIVO':providerText.includes('SPAY')?'SPAYLATER':rawProviderCode);
    const paymentSelect=document.getElementById('salePayment');
-   const isPayLater=paymentSelect?.value==='PAY_LATER' || String(paymentSelect?.selectedOptions?.[0]?.textContent||'').toUpperCase().includes('PAY LATER');
-   const isFinance=isPayLater && (['SPAYLATER','KREDIVO','AKULAKU'].includes(code) || /AKULAKU|KREDIVO|SPAY\s?LATER/.test(providerText));
+   const paymentText=String(paymentSelect?.selectedOptions?.[0]?.textContent||'').toUpperCase();
+   const isPayLater=paymentSelect?.value==='PAY_LATER' || /PAY\s?LATER/.test(paymentText);
+   const providerKnown=['SPAYLATER','KREDIVO','AKULAKU'].includes(code) || /AKULAKU|KREDIVO|SPAY\s?LATER/.test(providerText);
+   const isFinance=isPayLater && providerKnown;
    financeBox?.classList.toggle('hidden',!isFinance);
-   if(!isFinance)return;
+   if(!isFinance){if(financeBox){const f=document.getElementById('financeRequestedAmount'), fee=document.getElementById('financeEstimatedFee');if(f)f.value='0';if(fee)fee.value='0';}return;}
    const priceInput=document.getElementById('sap');
    const cashInput=document.getElementById('financeCashPayment');
    const cashoutInput=document.getElementById('financeCashoutAmount');
@@ -6089,9 +6091,13 @@ async function salesResult(id){
  const financeBox=document.getElementById('financeSaleBox');
  $('salePayment').onchange=()=>{updatePaymentAccount();updateFinanceBox();};
  $('payLaterProvider').addEventListener('change',()=>{updateFinanceBox();});
- // Delegated listeners survive dynamic form redraws and mobile input controls.
- document.getElementById('saleForm')?.addEventListener('input',e=>{if(['sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id))updateFinanceBox();});
- document.getElementById('saleForm')?.addEventListener('change',e=>{if(['salePayment','payLaterProvider','sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id)){updatePaymentAccount();updateFinanceBox();}});
+ // Delegate at document level: closing form is injected dynamically and has no #saleForm wrapper.
+ if(!window.hmFinanceDelegatedListeners){
+   window.hmFinanceDelegatedListeners=true;
+   document.addEventListener('input',e=>{if(['sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id)){const box=document.getElementById('financeSaleBox');if(box)box.dataset.financeDirty='1';document.dispatchEvent(new CustomEvent('hm-finance-recalc'));}});
+   document.addEventListener('change',e=>{if(['salePayment','payLaterProvider','sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id))document.dispatchEvent(new CustomEvent('hm-finance-recalc'));});
+ }
+ document.addEventListener('hm-finance-recalc',()=>{try{updatePaymentAccount();updateFinanceBox();}catch(err){console.error('Finance auto calculation failed',err);}});
  ['financeCashPayment','financeCashoutAmount','sap','tiValue'].forEach(id=>{const el=$(id);el?.addEventListener('input',updateFinanceBox);el?.addEventListener('change',updateFinanceBox);});
  $('salePayment').addEventListener('change',()=>{updatePaymentAccount();updateFinanceBox();});
  updatePaymentAccount();

@@ -3290,6 +3290,7 @@ function hmRunMainMenuAction(action){
   case 'openTeamCommission()': return openTeamCommission();
   case 'hmOpenLeadHandover()': return hmOpenLeadHandover();
   case 'hmOpenStockistCooperationGuide()': return window.hmOpenStockistCooperationGuide();
+  case 'hmOpenStockistDirectory()': return (typeof window.hmOpenStockistDirectory==='function' ? window.hmOpenStockistDirectory() : Promise.resolve().then(()=>{throw new Error('Modul Daftar Stockist belum siap. Muat ulang aplikasi lalu coba lagi.');}));
   case "hmOpenStockistInfo('Majesty Cell')": return window.hmOpenStockistInfo('Majesty Cell');
   case "hmOpenStockistInfo('Majesty Gadget')": return window.hmOpenStockistInfo('Majesty Gadget');
   case "hmOpenStockistInfo('Majesty Store')": return window.hmOpenStockistInfo('Majesty Store');

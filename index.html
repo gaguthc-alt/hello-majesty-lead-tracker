@@ -6019,9 +6019,9 @@ async function salesResult(id){
    const code=sel.selectedOptions?.[0]?.dataset?.code||'';
    const isPiutang=sel.value==='PIUTANG', isPayLater=sel.value==='PAY_LATER';
    plBox?.classList.toggle('hidden',!isPayLater);
-   // Pay Later/finance tetap memerlukan rekening Bank penerima untuk pencatatan settlement.
-   box.classList.toggle('hidden',isPiutang);
-   if(isPiutang){acc.value='';return;}
+   // Pay Later/Finance tidak perlu memilih rekening Kas/Bank saat closing.
+   box.classList.toggle('hidden',isPiutang||isPayLater);
+   if(isPiutang||isPayLater){acc.value='';return;}
    const wanted=code==='CASH'?'CASH':'BANK';
    // Untuk pembayaran TUNAI, Kas mengikuti outlet/PIC yang sedang login.
    // Tim Refill -> Kas MNG Majesty Refill; Tim Plaza -> Kas MNG Majesty Plaza.
@@ -6182,7 +6182,7 @@ async function submitStockClosingApproval(id){
  if(paymentMode==='PAY_LATER'&&!$('payLaterProvider')?.value)return alert('Untuk Pay Later, wajib pilih provider.');
  const paymentMethod=payNow?(paymentMode==='PAY_LATER'?$('payLaterProvider').value:paymentMode):null;
  if(payNow&&!paymentMethod)return alert('Metode pembayaran wajib dipilih.');
- if(payNow&&!paymentAccount)return alert(paymentMode==='PAY_LATER'?'Untuk Pay Later/Finance, wajib pilih rekening Bank penerima dana.':'Untuk pembayaran ini, wajib pilih Kas/Bank penerima.');
+ if(payNow&&paymentMode!=='PAY_LATER'&&!paymentAccount)return alert('Untuk pembayaran ini, wajib pilih Kas/Bank penerima.');
  const fee=Math.max(Number(document.getElementById('financeEstimatedFee')?.value||0),0);
  const financeRequestedAmount=Math.max(Number(document.getElementById('financeRequestedAmount')?.value||0),0);
  const cashPayment=Math.max(Number(document.getElementById('financeCashPayment')?.value||0),0);

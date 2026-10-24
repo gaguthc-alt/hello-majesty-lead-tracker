@@ -35,7 +35,7 @@
       '<div><label>Target laba (Rp)</label><input type="number" min="0" step="1000" id="hmTprofit'+i+'" value="'+Number(x.nominal_target||0)+'"></div>'+
       '<div><label>Nama reward</label><input id="hmTbonuslabel'+i+'" value="'+esc(x.bonus_label||'')+'"></div>'+
       '<div><label>Nominal reward (Rp)</label><input type="number" min="0" step="1000" id="hmTbonus'+i+'" value="'+Number(x.bonus_amount||0)+'"></div>'+
-      '</div><button class="success" style="margin-top:10px;width:100%" onclick="hmSaveTarget('+i+',\\''+esc(name).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,"\\\\'")+'\\')">💾 Simpan Target '+esc(name)+'</button></div>';
+       '</div><button class="success" style="margin-top:10px;width:100%" data-outlet="'+esc(name)+'" onclick="hmSaveTarget('+i+', this.dataset.outlet)">💾 Simpan Target '+esc(name)+'</button></div>';
     }).join('');
     window._hmTargetRows=names;
   };

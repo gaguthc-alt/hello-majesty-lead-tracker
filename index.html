@@ -6060,10 +6060,15 @@ async function salesResult(id){
    const isFinance=$('salePayment')?.value==='PAY_LATER' && ['SPAYLATER','KREDIVO','AKULAKU'].includes(code);
    financeBox?.classList.toggle('hidden',!isFinance);
    if(!isFinance)return;
-   const price=Math.max(Number($('sap')?.value||0)-(isTradeIn?Number($('tiValue')?.value||0):0),0), fin=Number($('financeRequestedAmount')?.value||0), cash=Number($('financeCashPayment')?.value||0), cashout=Number($('financeCashoutAmount')?.value||0);
-   // Tarif biaya yang dibebankan ke customer: Akulaku 1,5%, Kredivo 3%, SPayLater 0%.
+   const price=Math.max(Number($('sap')?.value||0)-(isTradeIn?Number($('tiValue')?.value||0):0),0), cash=Number($('financeCashPayment')?.value||0), cashout=Number($('financeCashoutAmount')?.value||0);
+   // Tarif biaya yang dibebankan kepada customer: Akulaku 1,5%, Kredivo 3%, SPayLater 0%.
    const feeRate=code==='AKULAKU'?0.015:code==='KREDIVO'?0.03:0;
+   // Nominal Finance otomatis dihitung agar dana bersih setelah biaya + cash menutup harga HP dan tarik tunai.
+   const base=Math.max(price+cashout-cash,0);
+   const fin=feeRate>0?Math.round(base/(1-feeRate)):base;
    const fee=Math.round(fin*feeRate);
+   const finInput=$('financeRequestedAmount');
+   if(finInput){finInput.value=String(fin);finInput.readOnly=true;finInput.title='Otomatis berdasarkan harga HP, cash, tarik tunai, dan tarif provider';}
    const feeInput=$('financeEstimatedFee');
    if(feeInput){feeInput.value=String(fee);feeInput.readOnly=true;feeInput.title='Otomatis sesuai tarif provider';}
    const feeLabel=financeBox?.querySelector('label[for="financeEstimatedFee"]')||null;
@@ -6075,7 +6080,7 @@ async function salesResult(id){
  const financeBox=$('financeSaleBox');
  $('salePayment').onchange=()=>{updatePaymentAccount();updateFinanceBox();};
  $('payLaterProvider').onchange=updateFinanceBox;
- ['financeRequestedAmount','financeCashPayment','financeCashoutAmount','financeEstimatedFee','sap'].forEach(id=>$(id)?.addEventListener('input',updateFinanceBox));
+ ['financeCashPayment','financeCashoutAmount','sap','tiValue'].forEach(id=>$(id)?.addEventListener('input',updateFinanceBox));
  updatePaymentAccount();
  updateFinanceBox();
  $('closingSalesNo').onclick=()=>{document.querySelectorAll('.closingSalesMember').forEach(x=>x.checked=false);$('closingSalesPicker').classList.add('hidden');$('closingSalesNo').classList.remove('secondary');$('closingSalesYes').classList.add('secondary')};

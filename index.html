@@ -4814,23 +4814,13 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
        hmCloseMainMenu();
        hmActiveMainMenu='';
        void Promise.resolve().then(async()=>{
-         if(typeof window.openCellFinanceReport!=='function'){
-           await new Promise((resolve,reject)=>{
-             const src='finance.js?v=20261022-stock-report-cachefix-3';
-             const existing=[...document.scripts].find(s=>String(s.src||'').includes('finance.js'));
-             if(existing && existing.dataset.hmReloading==='1'){
-               existing.addEventListener('load',resolve,{once:true});
-               existing.addEventListener('error',()=>reject(new Error('File Finance gagal dimuat.')),{once:true});
-               return;
-             }
-             const s=document.createElement('script');
-             s.src=src;
-             s.dataset.hmReloading='1';
-             s.onload=resolve;
-             s.onerror=()=>reject(new Error('File Finance gagal dimuat.'));
-             document.head.appendChild(s);
-           });
-         }
+         await new Promise((resolve,reject)=>{
+           const s=document.createElement('script');
+           s.src='finance-cell.js?v=20261024-mitra-stockist-report-4';
+           s.onload=resolve;
+           s.onerror=()=>reject(new Error('Modul Laporan Stock & Modal Mitra Stockist gagal dimuat.'));
+           document.head.appendChild(s);
+         });
          if(typeof window.openCellFinanceReport!=='function')throw new Error('Modul Laporan Stock & Modal Mitra Stockist tidak berhasil dimuat.');
          return window.openCellFinanceReport();
        }).catch(ex=>{

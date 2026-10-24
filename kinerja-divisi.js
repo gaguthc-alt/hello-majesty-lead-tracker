@@ -217,21 +217,42 @@ window.hmShareGlobalTarget=()=>{
  if(!roles.includes('DIVISI')){alert('Fitur berbagi target hanya tersedia untuk akun Divisi.');return;}
  if(!latestData){alert('Data kinerja belum tersedia. Refresh lalu coba lagi.');return;}
  const rows=latestData.outlets||[];
- const sum=k=>rows.reduce((n,r)=>n+Number(r[k]||0),0);
- const items=[
-  {label:'Lead / WA (Divisi Hello)',actual:sum('lead_actual'),target:sum('wa_target'),unit:'lead'},
-  {label:'Handover CS (Divisi Refill)',actual:sum('handover_actual'),target:sum('handover_target'),unit:'handover'},
-  {label:'Sales Closing (Divisi Majesty)',actual:sum('unit_actual'),target:sum('closing_target'),unit:'unit'},
-  {label:'Laba seluruh outlet',actual:sum('profit_actual'),target:sum('profit_target'),unit:'rupiah',money:true}
- ];
+ const n=v=>Number(v||0);
+ const fmt=v=>n(v).toLocaleString('id-ID');
+ const rpFmt=v=>'Rp'+n(v).toLocaleString('id-ID');
+ const pct=(a,t)=>n(t)>0?Math.round(n(a)/n(t)*100):0;
+ const gap=(a,t)=>Math.max(0,n(t)-n(a));
  const now=new Date(), days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(), remaining=Math.max(0,days-now.getDate());
  const period=new Date(latestData.month_start+'T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'});
- const lines=items.map(x=>{
-  const gap=Math.max(0,x.target-x.actual), pct=x.target>0?Math.round(x.actual/x.target*100):0;
-  const fmt=v=>x.money?'Rp'+Number(v).toLocaleString('id-ID'):Number(v).toLocaleString('id-ID');
-  return '• '+x.label+': *'+fmt(x.actual)+' / '+fmt(x.target)+'* ('+pct+'%)\n  Kekurangan: *'+fmt(gap)+'*';
+ const sum=k=>rows.reduce((s,r)=>s+n(r[k]),0);
+ const global=[
+  {label:'Lead / WA',a:sum('lead_actual'),t:sum('wa_target'),money:false},
+  {label:'Handover CS',a:sum('handover_actual'),t:sum('handover_target'),money:false},
+  {label:'Sales Closing',a:sum('unit_actual'),t:sum('closing_target'),money:false},
+  {label:'Laba',a:sum('profit_actual'),t:sum('profit_target'),money:true}
+ ];
+ const lines=['📊 *UPDATE PENCAPAIAN TARGET HELLO MAJESTY*','Periode: '+period,'','*RINGKASAN SELURUH OUTLET*'];
+ global.forEach(x=>{const f=x.money?rpFmt:fmt;lines.push('• '+x.label+': *'+f(x.a)+' / '+f(x.t)+'* ('+pct(x.a,x.t)+'%)','  Kekurangan: *'+f(gap(x.a,x.t))+'*');});
+ lines.push('','*RINCIAN PER OUTLET*');
+ rows.forEach(r=>{
+  const name=String(r.outlet||'Outlet').trim();
+  lines.push('','🏪 *'+name+'*',
+   '• Lead / WA: '+fmt(r.lead_actual)+' / '+fmt(r.wa_target)+' ('+pct(r.lead_actual,r.wa_target)+'%) · kurang '+fmt(gap(r.lead_actual,r.wa_target)),
+   '• Handover CS: '+fmt(r.handover_actual)+' / '+fmt(r.handover_target)+' ('+pct(r.handover_actual,r.handover_target)+'%) · kurang '+fmt(gap(r.handover_actual,r.handover_target)),
+   '• Sales Closing: '+fmt(r.unit_actual)+' / '+fmt(r.closing_target)+' ('+pct(r.unit_actual,r.closing_target)+'%) · kurang '+fmt(gap(r.unit_actual,r.closing_target)),
+   '• Laba: '+rpFmt(r.profit_actual)+' / '+rpFmt(r.profit_target)+' ('+pct(r.profit_actual,r.profit_target)+'%) · kurang '+rpFmt(gap(r.profit_actual,r.profit_target))
+  );
  });
- const message='📊 *UPDATE PENCAPAIAN TARGET HELLO MAJESTY*\nPeriode: '+period+'\n\n'+lines.join('\n')+'\n\n🗓️ Sisa waktu bulan ini: *'+remaining+' hari*\n\n💪 *Kita kejar bersama!* Fokus pada target yang masih tertinggal, follow-up yang terjadwal, handover yang valid, dan closing dengan transaksi yang sah. Tetapkan prioritas hari ini, saling dukung, dan evaluasi progres setiap hari. Setiap langkah konsisten membawa kita lebih dekat ke target.\n\n— HELLO MAJESTY / Built on Trust';
+ const motivations=[
+  '💪 *Kita masih punya kesempatan untuk mengejar target!* Pilih prioritas paling berdampak hari ini, lakukan follow-up dengan disiplin, dan saling bantu sampai pekerjaan tuntas. Progres kecil yang konsisten akan membawa hasil besar.',
+  '🔥 *Tujuh hari terakhir, mari maksimalkan bersama!* Fokus pada kekurangan yang paling realistis dikejar, respons pelanggan dengan cepat, dan pastikan setiap handover serta transaksi tercatat dengan benar. Kita bisa membuat penutupan bulan ini lebih baik.',
+  '🌟 *Jangan berhenti di pencapaian hari ini.* Evaluasi apa yang berhasil, perbaiki yang belum efektif, lalu jalankan langkah berikutnya dengan semangat. Setiap anggota tim punya peran penting dalam hasil bersama.',
+  '🚀 *Saatnya bergerak lebih terarah!* Buat daftar prioritas harian, tuntaskan follow-up yang tertunda, dan komunikasikan kendala sejak awal. Kita kejar target dengan kerja cerdas, kerja sama, dan pelayanan terbaik.',
+  '🤝 *Target adalah tanggung jawab bersama.* Dukung rekan yang membutuhkan bantuan, jaga kualitas pelayanan, dan pastikan closing yang dicapai valid. Mari gunakan sisa waktu dengan maksimal tanpa mengorbankan ketelitian.'
+ ];
+ const motivation=motivations[Math.floor(Math.random()*motivations.length)];
+ lines.push('','🗓️ Sisa waktu bulan ini: *'+remaining+' hari*','',motivation,'','— HELLO MAJESTY / Built on Trust');
+ const message=lines.join('\n');
  window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank','noopener');
 };
 window.hmKinerjaDivision=id=>{activeDivision=String(id||'');renderDivisions();};

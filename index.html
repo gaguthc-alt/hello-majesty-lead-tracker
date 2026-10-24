@@ -6061,10 +6061,15 @@ async function salesResult(id){
    const rawProviderCode=String(providerOption?.dataset?.code||'').toUpperCase();
    const code=['SPAYLATER','KREDIVO','AKULAKU'].includes(rawProviderCode)?rawProviderCode:
      (providerText.includes('AKULAKU')?'AKULAKU':providerText.includes('KREDIVO')?'KREDIVO':providerText.includes('SPAY')?'SPAYLATER':rawProviderCode);
-   const isFinance=$('salePayment')?.value==='PAY_LATER' && ['SPAYLATER','KREDIVO','AKULAKU'].includes(code);
+   const paymentSelect=document.getElementById('salePayment');
+   const isPayLater=paymentSelect?.value==='PAY_LATER' || String(paymentSelect?.selectedOptions?.[0]?.textContent||'').toUpperCase().includes('PAY LATER');
+   const isFinance=isPayLater && (['SPAYLATER','KREDIVO','AKULAKU'].includes(code) || /AKULAKU|KREDIVO|SPAY\s?LATER/.test(providerText));
    financeBox?.classList.toggle('hidden',!isFinance);
    if(!isFinance)return;
-   const price=Math.max(Number($('sap')?.value||0)-(isTradeIn?Number($('tiValue')?.value||0):0),0), cash=Number($('financeCashPayment')?.value||0), cashout=Number($('financeCashoutAmount')?.value||0);
+   const priceInput=document.getElementById('sap');
+   const cashInput=document.getElementById('financeCashPayment');
+   const cashoutInput=document.getElementById('financeCashoutAmount');
+   const price=Math.max(Number(priceInput?.value||0)-(isTradeIn?Number(document.getElementById('tiValue')?.value||0):0),0), cash=Math.max(Number(cashInput?.value||0),0), cashout=Math.max(Number(cashoutInput?.value||0),0);
    // Tarif biaya yang dibebankan kepada customer: Akulaku 1,5%, Kredivo 3%, SPayLater 0%.
    const feeRate=code==='AKULAKU'?0.015:code==='KREDIVO'?0.03:0;
    // Nominal Finance otomatis dihitung agar dana bersih setelah biaya + cash menutup harga HP dan tarik tunai.
@@ -6081,9 +6086,12 @@ async function salesResult(id){
    if(st)st.textContent=balance===0?'✅ Pembagian seimbang':(price||fin||cash||cashout?'⚠️ Selisih Rp'+Math.abs(balance).toLocaleString('id-ID'):'');
    const net=$('financeEstimatedNet'); if(net)net.textContent='Estimasi dana bersih Finance: Rp'+Math.max(fin-fee,0).toLocaleString('id-ID')+' • Menunggu Pencairan';
  };
- const financeBox=$('financeSaleBox');
+ const financeBox=document.getElementById('financeSaleBox');
  $('salePayment').onchange=()=>{updatePaymentAccount();updateFinanceBox();};
  $('payLaterProvider').addEventListener('change',()=>{updateFinanceBox();});
+ // Delegated listeners survive dynamic form redraws and mobile input controls.
+ document.getElementById('saleForm')?.addEventListener('input',e=>{if(['sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id))updateFinanceBox();});
+ document.getElementById('saleForm')?.addEventListener('change',e=>{if(['salePayment','payLaterProvider','sap','tiValue','financeCashPayment','financeCashoutAmount'].includes(e.target?.id)){updatePaymentAccount();updateFinanceBox();}});
  ['financeCashPayment','financeCashoutAmount','sap','tiValue'].forEach(id=>{const el=$(id);el?.addEventListener('input',updateFinanceBox);el?.addEventListener('change',updateFinanceBox);});
  $('salePayment').addEventListener('change',()=>{updatePaymentAccount();updateFinanceBox();});
  updatePaymentAccount();

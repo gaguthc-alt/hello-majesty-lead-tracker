@@ -3911,14 +3911,11 @@ window.hmOpenStockistSummary=async function(){
   if(title)title.textContent='📦 Ringkasan Stock Mitra Stockist';panel.classList.remove('hidden');
   body.innerHTML='<div class="box">Memuat ringkasan seluruh mitra stockist...</div>';
   try{
-    const [{data,error},{data:historicalData,error:historicalError}]=await Promise.all([
-      window.sb.from('stock_units').select('id,outlet,status,cost,partner_name,source_type,received_at,sold_at').order('created_at',{ascending:false}).limit(10000),
-      window.sb.from('partner_historical_stock_details').select('*').eq('partner_name','Majesty Cell').eq('sold_status','SOLD').is('settlement_id',null).limit(10000)
-    ]);
+    const {data:summaryRows,error}=await window.sb.rpc('get_stockist_summary_rows');
     if(error)throw error;
-    if(historicalError)throw historicalError;
-    let rows=data||[];
-    const historicalDue=(historicalData||[]).map(x=>({...x,id:'historical:'+x.id,status:'SOLD',cost:Number(x.capital_due??x.cost??0),partner_name:x.partner_name||'Majesty Cell',outlet:x.outlet||'Belum ditentukan',_historical:true}));
+    const allSummaryRows=summaryRows||[];
+    let rows=allSummaryRows.filter(x=>!x.is_historical);
+    const historicalDue=allSummaryRows.filter(x=>x.is_historical).map(x=>({...x,cost:Number(x.cost||0),partner_name:x.partner_name||'Majesty Cell',outlet:x.outlet||'Belum ditentukan',_historical:true}));
     const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
     const ownPartner=String(outlet||'').trim();
@@ -3932,13 +3929,7 @@ window.hmOpenStockistSummary=async function(){
       const filtered=selected==='ALL'?rows:rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()===selected.toUpperCase());
       const filteredHistorical=selected==='ALL'||selected.toUpperCase()==='MAJESTY CELL'?historicalDue:[];
       const soldRows=[...filtered.filter(x=>String(x.status||'').toUpperCase()==='SOLD'),...filteredHistorical];
-      const soldIds=soldRows.filter(x=>!x._historical).map(x=>x.id).filter(Boolean);
-      let settledIds=new Set();
-      if(soldIds.length){
-        const {data:items,error:itemsError}=await window.sb.from('partner_settlement_items').select('stock_unit_id,settlement_id,partner_settlements!inner(settlement_type,status)').in('stock_unit_id',soldIds);
-        if(itemsError)throw itemsError;
-        (items||[]).forEach(it=>{const ps=it.partner_settlements||{};if(String(ps.settlement_type||'').toUpperCase()==='CAPITAL'&&['PAID','RECEIVED'].includes(String(ps.status||'').toUpperCase()))settledIds.add(it.stock_unit_id);});
-      }
+      const settledIds=new Set(filtered.filter(x=>x.capital_settled===true).map(x=>x.id));
       const sum={READY:{units:0,cost:0},SOLD:{units:0,cost:0},RETURN:{units:0,cost:0},PENDING_APPROVAL:{units:0,cost:0}};
       filtered.forEach(x=>{const st=String(x.status||'').toUpperCase();if(sum[st]){sum[st].units++;sum[st].cost+=Number(x.cost||0);}});
       const soldDue=soldRows.filter(x=>!settledIds.has(x.id));

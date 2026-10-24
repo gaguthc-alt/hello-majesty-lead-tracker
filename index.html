@@ -3895,9 +3895,14 @@ window.hmOpenStockistSummary=async function(){
   if(title)title.textContent='📦 Ringkasan Stock Mitra Stockist';panel.classList.remove('hidden');
   body.innerHTML='<div class="box">Memuat ringkasan seluruh mitra stockist...</div>';
   try{
-    const {data,error}=await window.sb.from('stock_units').select('id,outlet,status,cost,partner_name,source_type,received_at,sold_at').order('created_at',{ascending:false}).limit(10000);
+    const [{data,error},{data:historicalData,error:historicalError}]=await Promise.all([
+      window.sb.from('stock_units').select('id,outlet,status,cost,partner_name,source_type,received_at,sold_at').order('created_at',{ascending:false}).limit(10000),
+      window.sb.from('partner_historical_stock_details').select('*').eq('partner_name','Majesty Cell').eq('sold_status','SOLD').is('settlement_id',null).limit(10000)
+    ]);
     if(error)throw error;
+    if(historicalError)throw historicalError;
     let rows=data||[];
+    const historicalDue=(historicalData||[]).map(x=>({...x,id:'historical:'+x.id,status:'SOLD',cost:Number(x.capital_due??x.cost??0),partner_name:x.partner_name||'Majesty Cell',outlet:x.outlet||'Belum ditentukan',_historical:true}));
     const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
     const ownPartner=String(outlet||'').trim();
@@ -3909,7 +3914,8 @@ window.hmOpenStockistSummary=async function(){
     let selected=mgmt||role==='FASILITATOR'?(partners.find(n=>n.toUpperCase()==='MAJESTY CELL')||'ALL'):(ownPartner||'Majesty Cell');
     const render=async()=>{
       const filtered=selected==='ALL'?rows:rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()===selected.toUpperCase());
-      const soldRows=filtered.filter(x=>String(x.status||'').toUpperCase()==='SOLD');
+      const filteredHistorical=selected==='ALL'||selected.toUpperCase()==='MAJESTY CELL'?historicalDue:[];
+      const soldRows=[...filtered.filter(x=>String(x.status||'').toUpperCase()==='SOLD'),...filteredHistorical];
       const soldIds=soldRows.map(x=>x.id).filter(Boolean);
       let settledIds=new Set();
       if(soldIds.length){
@@ -3923,7 +3929,7 @@ window.hmOpenStockistSummary=async function(){
       sum.SOLD={units:soldDue.length,cost:soldDue.reduce((a,x)=>a+Number(x.cost||0),0)};
       const obligation=sum.READY.cost+sum.SOLD.cost;
       const cards=[['READY','READY — Siap dijual'],['SOLD','SOLD belum disetor'],['RETURN','RETURN — Informasi'],['PENDING_APPROVAL','Menunggu persetujuan']].map(([st,label])=>'<div class="fin-card"><div class="small">'+label+'</div><div class="fin-big">'+sum[st].units+' unit</div><div class="small">Nilai modal '+money(sum[st].cost)+'</div></div>').join('');
-      const loc={};filtered.forEach(x=>{const k=x.outlet||'Belum ditentukan';if(!loc[k])loc[k]={READY:0,SOLD:0,RETURN:0,PENDING_APPROVAL:0,readyCost:0,soldDueUnits:0,soldDueCost:0};const st=String(x.status||'').toUpperCase();if(loc[k][st]!==undefined)loc[k][st]++;if(st==='READY')loc[k].readyCost+=Number(x.cost||0);if(st==='SOLD'&&!settledIds.has(x.id)){loc[k].soldDueUnits++;loc[k].soldDueCost+=Number(x.cost||0);}});
+      const loc={};[...filtered,...filteredHistorical].forEach(x=>{const k=x.outlet||'Belum ditentukan';if(!loc[k])loc[k]={READY:0,SOLD:0,RETURN:0,PENDING_APPROVAL:0,readyCost:0,soldDueUnits:0,soldDueCost:0};const st=String(x.status||x.sold_status||'').toUpperCase();if(loc[k][st]!==undefined)loc[k][st]++;if(st==='READY')loc[k].readyCost+=Number(x.cost||0);if(st==='SOLD'&&(x._historical||!settledIds.has(x.id))){loc[k].soldDueUnits++;loc[k].soldDueCost+=Number(x.cost||0);}});
       const outletHtml=Object.entries(loc).sort((a,b)=>a[0].localeCompare(b[0],'id')).map(([k,v])=>'<div class="lead"><b>'+esc(k)+'</b><div class="small">READY '+v.READY+' • SOLD belum disetor '+v.soldDueUnits+' • RETURN '+v.RETURN+' • PENDING '+v.PENDING_APPROVAL+' unit</div><div>READY '+money(v.readyCost)+' + SOLD belum disetor '+money(v.soldDueCost)+'</div><div style="font-weight:800;margin-top:4px">Nilai modal tersisa: '+money(v.readyCost+v.soldDueCost)+'</div></div>').join('')||'<div class="small">Belum ada rincian stok untuk filter ini.</div>';
       const selectOptions=(mgmt||role==='FASILITATOR'?'<option value="ALL">Semua Mitra Stockist</option>':'')+partners.map(n=>'<option value="'+esc(n)+'" '+(n.toUpperCase()===selected.toUpperCase()?'selected':'')+'>'+esc(n)+'</option>').join('');
       body.innerHTML='<div class="box"><label for="hmStockistSummaryPartner">Filter Mitra Stockist</label><select id="hmStockistSummaryPartner" class="input" style="width:100%;max-width:420px;padding:10px;border-radius:8px">'+selectOptions+'</select><div class="small" style="margin-top:12px">KONDISI SAAT INI • SNAPSHOT STOK • MITRA: <b>'+esc(selected==='ALL'?'SEMUA MITRA':selected)+'</b></div><h3>Posisi Stok '+esc(selected==='ALL'?'Semua Mitra Stockist':selected)+'</h3><div class="hmStockistGrid">'+cards+'</div><p class="small">Nilai modal tersisa = READY + SOLD yang belum disetor. SOLD dengan settlement PAID/RECEIVED dikecualikan. RETURN ditampilkan sebagai informasi dan tidak dikurangi lagi karena sudah tidak termasuk READY.</p></div><div class="box"><h3>Distribusi per Outlet</h3>'+outletHtml+'</div>';

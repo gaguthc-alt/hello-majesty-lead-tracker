@@ -1977,7 +1977,7 @@ input:disabled,select:disabled,textarea:disabled{color:#475569!important;-webkit
 </div>
 </section>
 <!-- HM LOGIN: single source of truth is login-v9.js -->
-</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="roleHome"></div><div id="workspace" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Stock & Modal Mitra Stockist</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="contentPerformance" class="hidden"></div><section id="inventoryDashboardSection" class="hidden" aria-hidden="true"><div id="inventoryDashboardPanel" class="box hidden"></div></section><section id="hunterStockSection" class="hidden" aria-hidden="true"><div id="hunterStockPanel" class="box hidden"></div></section><div id="inventorySection" class="hidden" aria-hidden="true"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Kelola stok siap jual, stock hunter, dan master produk.</div></div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button><button class="secondary" type="button" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTodayBoard"></div>
+</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="roleHome"></div><div id="workspace" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Stok & Modal Unit Bisnis</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="contentPerformance" class="hidden"></div><section id="inventoryDashboardSection" class="hidden" aria-hidden="true"><div id="inventoryDashboardPanel" class="box hidden"></div></section><section id="hunterStockSection" class="hidden" aria-hidden="true"><div id="hunterStockPanel" class="box hidden"></div></section><div id="inventorySection" class="hidden" aria-hidden="true"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Kelola stok siap jual, stock hunter, dan master produk.</div></div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button><button class="secondary" type="button" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTodayBoard"></div>
 <div id="leadTrackerBox" class="box"><h3>📋 DATA LEAD</h3><div class="small" style="margin-bottom:10px">Seluruh lead dari AVAILABLE sampai HASIL. Lead yang sudah CLOSING atau GAGAL tetap tersimpan dan ditampilkan sebagai hasil.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
 window.addEventListener('error',function(e){
   try{
@@ -2027,7 +2027,7 @@ async function hmOpenReceivedStockList(){
   const products=new Map((pr.data||[]).map(p=>[p.id,p])),rows=sr.data||[],money=n=>'Rp'+Number(n||0).toLocaleString('id-ID'),safe=v=>typeof esc==='function'?esc(String(v??'—')):String(v??'—');
   window.__hmReceivedRows=rows;
   const outletOptions=[...new Set(rows.map(r=>r.outlet).filter(Boolean))],sourceOptions=[...new Set(rows.map(r=>r.partner_name||r.supplier||r.source_type).filter(Boolean))];window.__hmReceivedFilterOptions={outletOptions,sourceOptions};
-  body.innerHTML='<div class="box" style="padding:clamp(10px,2.5vw,18px)"><div class="small" style="margin-bottom:12px">Maksimal 500 catatan terbaru. Gunakan filter untuk mempersempit daftar, lalu pilih Edit untuk memperbarui data.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:8px;margin-bottom:14px"><input id="hmrf_search" placeholder="Cari produk / IMEI…" oninput="hmFilterReceivedStock()" style="width:100%"><select id="hmrf_outlet" onchange="hmFilterReceivedStock()" style="width:100%"><option value="">Semua outlet</option>'+outletOptions.map(v=>'<option>'+safe(v)+'</option>').join('')+'</select><select id="hmrf_status" onchange="hmFilterReceivedStock()" style="width:100%"><option value="">Semua status</option>'+['READY','SOLD','RESERVED','SERVICE'].map(v=>'<option>'+v+'</option>').join('')+'</select><select id="hmrf_source" onchange="hmFilterReceivedStock()" style="width:100%"><option value="">Semua sumber / stockist</option>'+sourceOptions.map(v=>'<option>'+safe(v)+'</option>').join('')+'</select></div><div id="hmrf_count" class="small" style="margin-bottom:10px"></div><div id="hmrf_cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px">'+(rows.length?rows.map((r,i)=>{const p=products.get(r.product_id)||{};const prod=[p.product,p.variant,r.color].filter(Boolean).join(' · ');const source=r.partner_name||r.supplier||r.source_type||'';return '<article data-search="'+safe([prod,r.imei_1,r.outlet,source,r.status].join(' ').toLowerCase())+'" data-outlet="'+safe(r.outlet||'')+'" data-status="'+safe(r.status||'')+'" data-source="'+safe(source)+'" style="min-width:0;border:1px solid var(--border,#d9e0ea);border-radius:14px;padding:13px;background:var(--card,#fff);box-shadow:0 2px 8px #15233b0a"><div style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between"><div style="font-weight:750;font-size:15px;line-height:1.35;overflow-wrap:anywhere">'+safe(prod||'Produk tidak diketahui')+'</div><span style="flex:none;border-radius:20px;padding:4px 8px;font-size:11px;font-weight:700;background:'+(r.status==='READY'?'#dcfce7':r.status==='SOLD'?'#fee2e2':'#fef3c7')+';color:'+(r.status==='READY'?'#166534':r.status==='SOLD'?'#991b1b':'#92400e')+'">'+safe(r.status)+'</span></div><div style="font-size:12px;color:var(--muted,#64748b);margin-top:5px">'+safe(r.received_at?new Date(r.received_at).toLocaleString('id-ID'):'Tanggal tidak tersedia')+'</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px"><div style="min-width:0"><div style="font-size:11px;color:var(--muted,#64748b)">Outlet</div><div style="font-size:13px;font-weight:600;overflow-wrap:anywhere">'+safe(r.outlet)+'</div></div><div style="min-width:0"><div style="font-size:11px;color:var(--muted,#64748b)">IMEI</div><div style="font-size:13px;overflow-wrap:anywhere">'+safe(r.imei_1)+'</div></div><div style="min-width:0"><div style="font-size:11px;color:var(--muted,#64748b)">Sumber / Stockist</div><div style="font-size:13px;overflow-wrap:anywhere">'+safe(r.partner_name||r.supplier||r.source_type)+'</div></div><div style="min-width:0"><div style="font-size:11px;color:var(--muted,#64748b)">Modal</div><div style="font-size:13px;font-weight:700">'+money(r.cost)+'</div></div></div><button type="button" class="secondary" style="width:100%;margin-top:12px" onclick="hmEditReceivedStock('+i+')">✏️ Edit Data Barang</button></article>'}).join(''):'<div class="small" style="padding:20px;text-align:center">Belum ada data barang masuk.</div>')+'</div></div>';
+  body.innerHTML='<div class="box" style="padding:clamp(10px,2.5vw,18px)"><div class="small" style="margin-bottom:12px">Maksimal 500 catatan terbaru. Gunakan filter untuk mempersempit daftar, lalu pilih Edit untuk memperbarui data.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:8px;margin-bottom:14px"><input id="hmrf_search" placeholder="Cari produk / IMEI…" oninput="hmFilterReceivedStock()" style="width:100%"><select id="hmrf_outlet" onchange="hmFilterReceivedStock()" style="width:100%"><option value="">Semua outlet</option>'+outletOptions.map(v=>'<option>'+safe(v)+'</option>').join('')+'</select><select id="hmrf_status" onchange="hmFilterReceivedStock()" style="width:100%"><option value="">Semua status</option>'+['READY','SOLD','RESERVED','SERVICE'].map(v=>'<option>'+v+'</option>').join('')+'</select><select id="hmrf_source" onchange="hmFilterReceivedStock()" style="width:100%"><option value="">Semua sumber / unit bisnis</option>'+sourceOptions.map(v=>'<option>'+safe(v)+'</option>').join('')+'</select></div><div id="hmrf_count" class="small" style="margin-bottom:10px"></div><div id="hmrf_cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px">'+(rows.length?rows.map((r,i)=>{const p=products.get(r.product_id)||{};const prod=[p.product,p.variant,r.color].filter(Boolean).join(' · ');const source=r.partner_name||r.supplier||r.source_type||'';return '<article data-search="'+safe([prod,r.imei_1,r.outlet,source,r.status].join(' ').toLowerCase())+'" data-outlet="'+safe(r.outlet||'')+'" data-status="'+safe(r.status||'')+'" data-source="'+safe(source)+'" style="min-width:0;border:1px solid var(--border,#d9e0ea);border-radius:14px;padding:13px;background:var(--card,#fff);box-shadow:0 2px 8px #15233b0a"><div style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between"><div style="font-weight:750;font-size:15px;line-height:1.35;overflow-wrap:anywhere">'+safe(prod||'Produk tidak diketahui')+'</div><span style="flex:none;border-radius:20px;padding:4px 8px;font-size:11px;font-weight:700;background:'+(r.status==='READY'?'#dcfce7':r.status==='SOLD'?'#fee2e2':'#fef3c7')+';color:'+(r.status==='READY'?'#166534':r.status==='SOLD'?'#991b1b':'#92400e')+'">'+safe(r.status)+'</span></div><div style="font-size:12px;color:var(--muted,#64748b);margin-top:5px">'+safe(r.received_at?new Date(r.received_at).toLocaleString('id-ID'):'Tanggal tidak tersedia')+'</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px"><div style="min-width:0"><div style="font-size:11px;color:var(--muted,#64748b)">Outlet</div><div style="font-size:13px;font-weight:600;overflow-wrap:anywhere">'+safe(r.outlet)+'</div></div><div style="min-width:0"><div style="font-size:11px;color:var(--muted,#64748b)">IMEI</div><div style="font-size:13px;overflow-wrap:anywhere">'+safe(r.imei_1)+'</div></div><div style="min-width:0"><div style="font-size:11px;color:var(--muted,#64748b)">Sumber / Stockist</div><div style="font-size:13px;overflow-wrap:anywhere">'+safe(r.partner_name||r.supplier||r.source_type)+'</div></div><div style="min-width:0"><div style="font-size:11px;color:var(--muted,#64748b)">Modal</div><div style="font-size:13px;font-weight:700">'+money(r.cost)+'</div></div></div><button type="button" class="secondary" style="width:100%;margin-top:12px" onclick="hmEditReceivedStock('+i+')">✏️ Edit Data Barang</button></article>'}).join(''):'<div class="small" style="padding:20px;text-align:center">Belum ada data barang masuk.</div>')+'</div></div>';
  }catch(e){console.error('[HM] Daftar Barang Masuk:',e);body.innerHTML='<div class="box" style="color:#b42318"><b>Daftar Barang Masuk gagal dimuat</b><div>'+ (typeof esc==='function'?esc(e.message||String(e)):String(e.message||e))+'</div></div>';}
 }
 window.hmOpenReceivedStockList=hmOpenReceivedStockList;
@@ -2039,7 +2039,7 @@ window.hmEditReceivedStock=function(i){
  const currentSource=String(r.source_type||'').toUpperCase();
  const sourceSelect='<label style="display:block;margin:8px 0">Sumber Barang Masuk<select id="hmri_source_type" style="width:100%" onchange="hmToggleReceivedPartner()">'+sourceOptions.map(o=>'<option value="'+o.v+'" '+(currentSource===o.v?'selected':'')+'>'+o.l+'</option>').join('')+'</select></label>';
  const partnerOptions=['','Majesty Cell','Majesty Store','Majesty Gadget'];
- const partnerSelect='<div id="hmri_partner_wrap" style="display:'+(currentSource==='MAJESTY_CELL'?'block':'none')+'"><label style="display:block;margin:8px 0">Stockist<select id="hmri_partner_name" style="width:100%">'+partnerOptions.map(v=>'<option value="'+v+'" '+((r.partner_name||'')===v?'selected':'')+'>'+(v||'Pilih stockist')+'</option>').join('')+'</select></label></div>';
+ const partnerSelect='<div id="hmri_partner_wrap" style="display:'+(currentSource==='MAJESTY_CELL'?'block':'none')+'"><label style="display:block;margin:8px 0">Unit Bisnis<select id="hmri_partner_name" style="width:100%">'+partnerOptions.map(v=>'<option value="'+v+'" '+((r.partner_name||'')===v?'selected':'')+'>'+(v||'Pilih stockist')+'</option>').join('')+'</select></label></div>';
  body.innerHTML='<div class="box"><h3>Edit Barang Masuk</h3><div class="small">ID: '+r.id+'</div>'+field('Outlet','outlet')+field('IMEI','imei_1')+field('Warna','color')+field('Grade','grade')+field('Battery Health','battery_health','number')+field('Modal','cost','number')+field('Harga jual','asking_price','number')+field('Supplier','supplier')+sourceSelect+partnerSelect+'<label style="display:block;margin:8px 0">Alasan koreksi sumber (wajib jika sumber berubah)<textarea id="hmri_source_reason" rows="3" style="width:100%" placeholder="Jelaskan koreksi sumber barang masuk"></textarea></label>'+field('Catatan','received_source_note')+'<label style="display:block;margin:8px 0">Status<select id="hmri_status" style="width:100%">'+['READY','SOLD','RESERVED','SERVICE'].map(v=>'<option '+(r.status===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label><div class="row"><button type="button" onclick="hmSaveReceivedStock('+i+')">Simpan Perubahan</button><button type="button" class="secondary" onclick="hmOpenReceivedStockList()">Batal</button></div></div>';
 };
 window.hmToggleReceivedPartner=function(){const source=document.getElementById('hmri_source_type')?.value;const wrap=document.getElementById('hmri_partner_wrap');if(wrap)wrap.style.display=source==='MAJESTY_CELL'?'block':'none';};
@@ -2637,7 +2637,7 @@ if(!window.__hmStockistClickCapture){
   const btn=e.target&&e.target.closest?e.target.closest('[data-hm-menu-title]'):null;
   if(!btn)return;
   const title=String(btn.getAttribute('data-hm-menu-title')||'').trim();
-  const isReceive=title==='Ajukan Barang Masuk Stockist';
+  const isReceive=title==='Ajukan Barang Masuk Unit Bisnis';
   const isPartnerInfo=title==='Majesty Gadget'||title==='Majesty Store';
   if(!isReceive&&!isPartnerInfo)return;
   e.preventDefault();
@@ -2652,19 +2652,19 @@ if(!window.__hmStockistClickCapture){
     return window.openReceiveStock();
    };
    Promise.resolve().then(()=>typeof window.openReceiveStock==='function'?run():hmLoadModule('inventory').then(run)).catch(ex=>{
-    console.error('[HM] Ajukan Barang Masuk Stockist gagal:',ex);
+    console.error('[HM] Ajukan Barang Masuk Unit Bisnis gagal:',ex);
     const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),pt=document.getElementById('hmMenuPanelTitle');
-    if(panel&&body){if(pt)pt.textContent='⚠️ Ajukan Barang Masuk Stockist';body.innerHTML='<div class="box"><b>Ajukan Barang Masuk Stockist gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:10px" onclick="window.location.reload()">Muat ulang aplikasi</button></div>';panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}
-    else alert('Ajukan Barang Masuk Stockist gagal dibuka: '+(ex?.message||ex));
+    if(panel&&body){if(pt)pt.textContent='⚠️ Ajukan Barang Masuk Unit Bisnis';body.innerHTML='<div class="box"><b>Ajukan Barang Masuk Unit Bisnis gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:10px" onclick="window.location.reload()">Muat ulang aplikasi</button></div>';panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}
+    else alert('Ajukan Barang Masuk Unit Bisnis gagal dibuka: '+(ex?.message||ex));
    });
    return;
   }
   if(typeof window.hmOpenStockistInfo==='function'){
    Promise.resolve(window.hmOpenStockistInfo(title)).catch(ex=>{
-    console.error('[HM] Stockist Center:',ex);
+    console.error('[HM] Pusat Persediaan Unit Bisnis:',ex);
     alert('Stockist gagal dibuka: '+(ex?.message||ex));
    });
-  }else alert('Modul Stockist Center belum siap. Silakan refresh aplikasi.');
+  }else alert('Modul Pusat Persediaan Unit Bisnis belum siap. Silakan refresh aplikasi.');
  },true);
 }
 function hmSetMainMenuButtonOpen(key){
@@ -3732,8 +3732,8 @@ function renderRoleHome(){
    add('🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')");
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
-   add('📊','Laporan Stock & Modal Mitra Stockist','Stock, modal & profit sharing','window.openCellFinanceReport()');
-   add('🤝','Stockist Management','Modal, kewajiban & settlement stockist','window.openPartnerSettlement()');
+   add('📊','Laporan Stok & Modal Unit Bisnis','Stock, modal & profit sharing','window.openCellFinanceReport()');
+   add('🤝','Pengelolaan Unit Bisnis','Modal, kewajiban & settlement antarunit bisnis','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Barang masuk yang menunggu verifikasi','openInventoryApprovals()');
    add('🚶','Persetujuan Walk-In','Semua penjualan tanpa Lead & CS yang menunggu persetujuan','openWalkinApprovals()');
    add('💰','Komisi Tim','Seluruh komisi tim, bukan hanya Sales','openTeamCommission()');
@@ -3748,7 +3748,7 @@ function renderRoleHome(){
    add('📦','Product & Stock','Stock & approval','openInventorySection(\'stock\')');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('📊','Laporan Fasilitator','Penjualan & Stock READY','hmOpenFacilitatorReportsInline()');
-    add('🤝','Stockist Management','Penerimaan stok, verifikasi IMEI, barang terjual & persiapan settlement sesuai outlet','window.openPartnerSettlement()');
+    add('🤝','Pengelolaan Unit Bisnis','Penerimaan stok, verifikasi IMEI, barang terjual & persiapan settlement sesuai outlet','window.openPartnerSettlement()');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
    add('📊','Accounting','Accounting & laporan','openAccounting()');
@@ -3788,8 +3788,8 @@ function renderRoleHome(){
    add('💰','Komisi Saya','Lihat komisi bulan ini','openCommission()');
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
    add('💳','Konfirmasi Pencairan Finance','Catat dana finance/paylater yang benar-benar masuk','window.openFinanceDisbursement()');
-   add('📊','Laporan Stock & Modal Mitra Stockist','Stock, modal & profit sharing','window.openCellFinanceReport()');
-   add('🤝','Stockist Management','Modal, kewajiban & settlement stockist','window.openPartnerSettlement()');
+   add('📊','Laporan Stok & Modal Unit Bisnis','Stock, modal & profit sharing','window.openCellFinanceReport()');
+   add('🤝','Pengelolaan Unit Bisnis','Modal, kewajiban & settlement antarunit bisnis','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari Majesty Cell','window.openInventoryApprovals()');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
  }else if(has('ADMIN FINANCE')){
@@ -3807,9 +3807,9 @@ function renderRoleHome(){
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
-  // Ensure authorized facilitators always receive the Stockist Management card.
+  // Ensure authorized facilitators always receive the Pengelolaan Unit Bisnis card.
   if(facilitator && !mg && !developer){
-    add('🤝','Stockist Management','Penerimaan stok, verifikasi IMEI, barang terjual & persiapan settlement sesuai outlet','window.openPartnerSettlement()');
+    add('🤝','Pengelolaan Unit Bisnis','Penerimaan stok, verifikasi IMEI, barang terjual & persiapan settlement sesuai outlet','window.openPartnerSettlement()');
   }
 
  // SALES & PENJUALAN dibuka untuk seluruh tim kecuali Atmadita.
@@ -4311,7 +4311,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
  const paidStatuses=['PAID','SETTLED','COMPLETED','LUNAS'];
- if(!p||!b||!t){alert('Panel Stockist Center belum siap. Refresh aplikasi lalu coba kembali.');return;}
+ if(!p||!b||!t){alert('Panel Pusat Persediaan Unit Bisnis belum siap. Refresh aplikasi lalu coba kembali.');return;}
  t.textContent='🏬 '+name;p.classList.remove('hidden');
  b.innerHTML='<div class="box"><b>'+safe(name)+'</b><p>Memuat data stockist…</p></div>';
  const renderError=e=>{b.innerHTML='<div class="box"><b>'+safe(name)+'</b><p>Data belum dapat dimuat: '+safe(e?.message||e)+'</p><button type="button" class="secondary" onclick="hmOpenStockistInfo(\''+safe(name)+'\')">↻ Coba Lagi</button></div>';};
@@ -4362,7 +4362,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
     '<div class="hm-stockist-stat"><div class="small">KODE MITRA</div><b style="font-size:18px">'+safe(sup?.supplier_code||'Belum diatur')+'</b></div>'+
     '<div class="hm-stockist-stat"><div class="small">STATUS KERJA SAMA</div><b style="font-size:18px">'+(sup?.active?'Aktif':'Perlu verifikasi')+'</b></div></div>'+
     '<p><b>Catatan kerja sama</b><br>'+safe(sup?.notes||'Belum ada catatan kerja sama pada master mitra.')+'</p>'+
-    '<p class="small">Halaman ini khusus untuk identitas dan ketentuan mitra. Untuk jumlah unit dan nilai modal, gunakan Ringkasan Stock Mitra Stockist atau Laporan Stock & Modal Mitra Stockist.</p></div>'+
+    '<p class="small">Halaman ini khusus untuk identitas dan ketentuan mitra. Untuk jumlah unit dan nilai modal, gunakan Ringkasan Stock Mitra Stockist atau Laporan Stok & Modal Unit Bisnis.</p></div>'+
     '<div class="box"><h3>💸 Riwayat Settlement</h3>'+profileSettlements+'</div>'+
     '<div class="box"><h3>📌 Alur kerja</h3><ol><li>Barang masuk diperiksa melalui Persetujuan Barang Masuk.</li><li>Posisi unit dan modal dipantau pada Ringkasan Stok.</li><li>Rincian penjualan dan modal yang belum disetor dicek di Laporan Stok & Modal.</li><li>Pengajuan dan verifikasi pembayaran dilakukan melalui Pembayaran Settlement.</li></ol></div>';
    return;
@@ -4468,10 +4468,10 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
      ['📦','Cek Barang Accurate','Baca daftar barang Accurate tanpa mengubah transaksi','hmCheckAccurateItems()']
    ]],
    ['🏬','STOCKIST CENTER',[
-     ['📥','Ajukan Barang Masuk Stockist','Input stok milik stockist, pilih outlet sendiri atau outlet titipan, lalu kirim untuk persetujuan','window.openReceiveStock()'],
+     ['📥','Ajukan Barang Masuk Unit Bisnis','Input stok milik stockist, pilih outlet sendiri atau outlet titipan, lalu kirim untuk persetujuan','window.openReceiveStock()'],
      ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
      ['📦','Ringkasan Stock Mitra Stockist','Lihat jumlah unit, status, lokasi, dan nilai stok milik mitra stockist',"hmOpenStockistInfo('Majesty Cell','summary')"],
-     ['📊','Laporan Stock & Modal Mitra Stockist','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement semua mitra stockist','window.openCellFinanceReport()']
+     ['📊','Laporan Stok & Modal Unit Bisnis','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement semua mitra stockist','window.openCellFinanceReport()']
    ]],
    ['🤝','KERJA SAMA STOCKIST',[
      ['📋','Panduan Kerja Sama','Panduan alur stok jaringan, stok titip outlet, retur, pembagian hasil, dan settlement','hmOpenStockistCooperationGuide()'],
@@ -4498,7 +4498,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    if(hideAtmaditaGroups && (g[1]==='CONTENT & PROMOTION' || g[1]==='KOMISI'))return '';
    // Atmadita menangani Admin Finance, jadi tidak perlu menu aktivitas/performa lead.
    if(isAtmaditaMenuAccount && g[1]==='LEAD TRACKER')return '';
-   // Atmadita tidak lagi mengelola Inventory & Stock; gunakan Stockist Center untuk kebutuhan mitra.
+   // Atmadita tidak lagi mengelola Inventory & Stock; gunakan Pusat Persediaan Unit Bisnis untuk kebutuhan mitra.
    if(isAtmaditaMenuAccount && g[1]==='INVENTORY & STOCK')return '';
    // CONTENT & PROMOTION adalah menu standar untuk SEMUA akun.
    // Tetap render sebagai HTML section — jangan return array mentah,
@@ -4540,7 +4540,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
    if(isAtmaditaAccount && g[1]==='STOCKIST CENTER'){
-     allowed=g[2].filter(item=>['Ajukan Barang Masuk Stockist','Persetujuan Barang Masuk','Ringkasan Stock Mitra Stockist','Laporan Stock & Modal Mitra Stockist'].includes(item[1]));
+     allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stock Mitra Stockist','Laporan Stok & Modal Unit Bisnis'].includes(item[1]));
    }
    if(isAtmaditaAccount && g[1]==='KERJA SAMA STOCKIST'){
      allowed=g[2].filter(item=>['Panduan Kerja Sama','Daftar & Profil Stockist','Pembayaran Settlement'].includes(item[1]));
@@ -4911,15 +4911,15 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
            const s=document.createElement('script');
            s.src='finance-cell.js?v=20261024-mitra-stockist-report-4';
            s.onload=resolve;
-           s.onerror=()=>reject(new Error('Modul Laporan Stock & Modal Mitra Stockist gagal dimuat.'));
+           s.onerror=()=>reject(new Error('Modul Laporan Stok & Modal Unit Bisnis gagal dimuat.'));
            document.head.appendChild(s);
          });
-         if(typeof window.openCellFinanceReport!=='function')throw new Error('Modul Laporan Stock & Modal Mitra Stockist tidak berhasil dimuat.');
+         if(typeof window.openCellFinanceReport!=='function')throw new Error('Modul Laporan Stok & Modal Unit Bisnis tidak berhasil dimuat.');
          return window.openCellFinanceReport();
        }).catch(ex=>{
-         console.error('[HM] Laporan Stock & Modal Mitra Stockist gagal dibuka:',ex);
+         console.error('[HM] Laporan Stok & Modal Unit Bisnis gagal dibuka:',ex);
          const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
-         if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Laporan Stock & Modal Mitra Stockist: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
+         if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Laporan Stok & Modal Unit Bisnis: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
        });
        return;
      }
@@ -4977,7 +4977,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
        hmActiveMainMenu='';
        void Promise.resolve()
          .then(()=>{
-           if(typeof window.openPartnerSettlement!=='function')throw new Error('Fungsi Stockist Management belum termuat.');
+           if(typeof window.openPartnerSettlement!=='function')throw new Error('Fungsi Pengelolaan Unit Bisnis belum termuat.');
            return window.openPartnerSettlement();
          })
          .then(()=>{
@@ -4996,11 +4996,11 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
            if(panel){panel.classList.remove('hidden');requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));}
          })
          .catch(ex=>{
-           console.error('[HM] Stockist Management gagal dibuka:',ex);
+           console.error('[HM] Pengelolaan Unit Bisnis gagal dibuka:',ex);
            const panel=document.getElementById('hmMenuPanel');
            const body=document.getElementById('hmMenuPanelBody');
            if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Kewajiban Cell: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
-           else alert('Stockist Management gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
+           else alert('Pengelolaan Unit Bisnis gagal dibuka: '+(ex?.message||'Terjadi kesalahan'));
          });
        return;
      }

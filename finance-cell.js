@@ -74,3 +74,33 @@ window.payPartnerProfitSettlement=async function(period){if(!confirm('Setor prof
   const start=()=>{install();const mo=new MutationObserver(install);mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
+
+/* FIX: settlement details are rendered inside hmMenuPanelBody, not the generic modal. */
+(function(){
+ if(window.__hmSettlementPanelPrintV2)return;window.__hmSettlementPanelPrintV2=true;
+ function addSettlementPrint(){
+  const body=document.getElementById('hmMenuPanelBody');
+  if(!body)return;
+  const txt=String(body.innerText||body.textContent||'');
+  if(!/Penyelesaian Pembayaran Antarunit|Total kewajiban settlement|RINGKASAN TOTAL/i.test(txt))return;
+  if(body.querySelector('[data-hm-settlement-print-v2]'))return;
+  const btn=document.createElement('button');
+  btn.type='button';btn.dataset.hmSettlementPrintV2='1';btn.className='primary';
+  btn.textContent='📄 PDF / Cetak Settlement';
+  btn.style.cssText='display:block!important;margin:10px 0;padding:12px 16px;font-weight:700;';
+  btn.onclick=function(){
+   const source=body.cloneNode(true);
+   source.querySelectorAll('[data-hm-settlement-print-v2],button').forEach(el=>el.remove());
+   source.querySelectorAll('input[type=checkbox]').forEach(el=>el.closest('label')?.remove());
+   const esc=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+   const w=window.open('','_blank');
+   if(!w){alert('Pop-up diblokir. Izinkan pop-up untuk aplikasi Hello Majesty lalu tekan PDF / Cetak lagi.');return;}
+   w.document.open();
+   w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Settlement Hello Majesty</title><style>body{font:12px Arial,sans-serif;color:#172033;margin:20px}h1{font-size:20px}h2,h3{break-after:avoid}table{width:100%;border-collapse:collapse}td,th{border:1px solid #9ca3af;padding:6px;text-align:left}.box,.lead{border:1px solid #cbd5e1;border-radius:6px;padding:10px;margin:8px 0;break-inside:avoid}.small{font-size:10px;color:#475569}.row{display:flex;gap:8px;flex-wrap:wrap}button{display:none!important}*{box-shadow:none!important}@page{size:A4;margin:12mm}</style></head><body><h1>HELLO MAJESTY</h1><p>Dokumen Settlement / Penyelesaian Pembayaran Antarunit</p><hr>'+source.innerHTML+'<script>window.onload=function(){setTimeout(function(){window.print()},300)};<\\/script></body></html>');
+   w.document.close();
+  };
+  body.prepend(btn);
+ }
+ function start(){addSettlementPrint();new MutationObserver(addSettlementPrint).observe(document.body,{childList:true,subtree:true,characterData:true});}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();

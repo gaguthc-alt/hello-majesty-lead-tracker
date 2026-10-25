@@ -140,6 +140,8 @@ function renderDivisionAnalysis(id,rows){
 function managementCommandCenter(rows,totals){
  const leadPct=pct(totals.lead_actual,totals.wa_target), handPct=pct(totals.handover_actual,totals.handover_target), unitPct=pct(totals.unit_actual,totals.closing_target), profitPct=pct(totals.profit_actual,totals.profit_target);
  const pace=monthPace(latestData?.month_start), pacePct=Math.round(pace.ratio*100);
+ const plaza=rows.find(r=>/plaza/i.test(String(r.outlet||'')))||null;
+ const refill=rows.find(r=>/refill/i.test(String(r.outlet||'')))||null;
  const overallMin=Math.min(leadPct,handPct,unitPct,profitPct);
  const status=!pace.valid?'DATA PERLU DICEK':overallMin<pacePct?'PERLU TINDAKAN':overallMin<80?'WASPADA':'TERKENDALI';
  const tone=!pace.valid||overallMin<pacePct?'critical':overallMin<80?'warning':'good';

@@ -635,7 +635,7 @@ async function refreshCheckerOptions(){
  const box=$('stcheckerList');if(!box)return;
  const cached=Array.isArray(window.hmReceiveCheckerOptions)?window.hmReceiveCheckerOptions:[];
  const selected=new Set(window.hmReceiveSelectedCheckers||[]);
- if(cached.length){box.innerHTML=cached.map(x=>'<label style="display:flex;align-items:center;gap:10px;padding:9px;border-radius:8px;background:#1c304b;color:#fff;font-size:16px"><input type="checkbox" value="'+esc(x.user_id)+'" '+(selected.has(x.user_id)?'checked':'')+' onchange="cacheReceiveCheckers()" style="width:20px;height:20px;accent-color:#22c55e;flex-shrink:0"><span>'+esc(x.name)+'</span></label>').join('');updateReceiveCheckerCount();return;}
+ if(cached.length){box.innerHTML=cached.map(x=>'<label style="display:flex;align-items:center;gap:10px;padding:9px;border-radius:8px;background:#243b59;color:#ffffff !important;font-size:16px;font-weight:600;min-height:48px"><input type="checkbox" value="'+esc(x.user_id)+'" '+(selected.has(x.user_id)?'checked':'')+' onchange="cacheReceiveCheckers()" style="width:22px;height:22px;accent-color:#22c55e;flex-shrink:0"><span style="color:#ffffff !important;opacity:1 !important">'+esc(x.name)+'</span></label>').join('');updateReceiveCheckerCount();return;}
  box.innerHTML='<div class="small">Daftar Checker belum tersedia — tutup dan buka Barang Masuk kembali.</div>';
 }
 

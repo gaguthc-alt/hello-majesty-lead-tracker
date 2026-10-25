@@ -1052,6 +1052,7 @@ async function filterReceiveProducts(){
  else toggleReceiveFields();
 }
 window.openReceiveStock=async function openReceiveStock(){
+ window.hmReceiveSelectedCheckers=[];
  if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management, Fasilitator, dan Admin Finance Majesty Cell.');return;}
  $('mt').textContent='📦 Barang Masuk';$('mb').innerHTML='<div class="box" style="text-align:center;padding:24px"><b>⏳ Menyiapkan formulir Barang Masuk…</b><div class="small" style="margin-top:8px">Sedang memuat daftar tim dan hak akses.</div></div>';$('modal').classList.remove('hidden');
  try{

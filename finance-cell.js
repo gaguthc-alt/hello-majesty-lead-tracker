@@ -47,3 +47,30 @@ window.payPartnerCapitalSettlement=async function(){const ids=[...document.query
 window.loadPartnerProfitSettlement=async function(o){const b=document.getElementById('partnerSettlementDetail');if(!b)return;const d=new Date(),period=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01',q=await window.sb.from('partner_profit_share_monthly').select('*').eq('outlet',o).eq('partner_name','Majesty Cell').eq('period_start',period).maybeSingle(),gross=Number(q.data?.partner_profit_share||0),p=await window.sb.from('partner_settlements').select('amount').eq('partner_name','Majesty Cell').eq('outlet',o).eq('settlement_type','PROFIT_SHARING').eq('status','PAID').eq('period_start',period),paid=(p.data||[]).reduce((a,x)=>a+Number(x.amount||0),0),due=Math.max(gross-paid,0);b.innerHTML='<div class="box"><h3>🤝 Profit Sharing '+period+'</h3><div>Hak Cell: '+m(gross)+'</div><div>Sudah disetor: '+m(paid)+'</div><b>Sisa: '+m(due)+'</b>'+(due?'<button class="success" onclick="window.payPartnerProfitSettlement(\''+period+'\')">💸 Setor Sekarang</button>':'')+'</div>';};
 window.payPartnerProfitSettlement=async function(period){if(!confirm('Setor profit sharing periode '+period+'?'))return;const q=await window.sb.rpc('create_partner_profit_settlement',{p_period_start:period,p_settlement_date:new Date().toISOString().slice(0,10),p_note:'Pembayaran profit sharing Majesty Cell'});if(q.error)return alert(q.error.message);alert('Settlement berhasil. '+m(q.data?.amount));window.openPartnerSettlement();};
 })();
+/* HM SETTLEMENT PDF/PRINT — adds a print-to-PDF action to settlement modals without changing transaction values. */
+(function(){
+  if(window.__hmSettlementPrintInstalled)return;window.__hmSettlementPrintInstalled=true;
+  function install(){
+    const title=document.getElementById('mt'),body=document.getElementById('mb'),modal=document.getElementById('modal');
+    if(!title||!body||!modal||modal.classList.contains('hidden'))return;
+    const t=String(title.textContent||'').trim();
+    const bodyText=String(body.innerText||body.textContent||'');
+    const relevant=/settlement|antarunit|kewajiban|pembayaran/i.test(t+' '+bodyText);
+    if(!relevant||body.querySelector('[data-hm-settlement-print]'))return;
+    const btn=document.createElement('button');btn.type='button';btn.dataset.hmSettlementPrint='1';btn.className='success';btn.textContent='📄 PDF / Cetak';btn.style.cssText='margin:8px 8px 8px 0;';
+    btn.addEventListener('click',function(){
+      const heading=String(title.textContent||'Settlement Hello Majesty').trim();
+      const content=body.cloneNode(true);
+      content.querySelectorAll('button,[data-hm-settlement-print],input[type=checkbox]').forEach(el=>el.remove());
+      content.querySelectorAll('input,select,textarea').forEach(el=>{const span=document.createElement('span');span.textContent=el.value||el.getAttribute('value')||'';el.replaceWith(span)});
+      const win=window.open('','_blank');
+      if(!win){alert('Jendela cetak diblokir. Izinkan pop-up untuk aplikasi Hello Majesty lalu coba lagi.');return;}
+      const esc=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+      win.document.open();win.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(heading)+'</title><style>body{font-family:Arial,sans-serif;color:#111827;margin:24px;font-size:12px}h1{font-size:20px;margin:0 0 8px}h2,h3{break-after:avoid}table{width:100%;border-collapse:collapse;margin:10px 0}th,td{border:1px solid #9ca3af;padding:6px;text-align:left;vertical-align:top}button,.no-print{display:none!important}.box,.lead,.stat{border:1px solid #d1d5db;border-radius:6px;padding:10px;margin:8px 0;break-inside:avoid}.small{font-size:10px;color:#4b5563}.row{display:flex;gap:8px;flex-wrap:wrap}input,select,textarea{border:0;background:transparent;color:#111827}*{color:#111827!important;background-color:transparent!important;box-shadow:none!important}@page{size:A4;margin:14mm}</style></head><body><h1>HELLO MAJESTY</h1><div>Dokumen Settlement / Pembayaran Antarunit</div><hr><h2>'+esc(heading)+'</h2>'+content.innerHTML+'<script>window.onload=function(){setTimeout(function(){window.print()},250)};<\\/script></body></html>');
+      win.document.close();
+    });
+    body.prepend(btn);
+  }
+  const start=()=>{install();const mo=new MutationObserver(install);mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();

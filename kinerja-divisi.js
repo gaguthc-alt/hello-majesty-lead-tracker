@@ -245,7 +245,7 @@ window.hmShareGlobalTarget=()=>{
  });
  const motivations=[
   '💪 *Kita masih punya kesempatan untuk mengejar target!* Pilih prioritas paling berdampak hari ini, lakukan follow-up dengan disiplin, dan saling bantu sampai pekerjaan tuntas. Progres kecil yang konsisten akan membawa hasil besar.',
-  '🔥 *Tujuh hari terakhir, mari maksimalkan bersama!* Fokus pada kekurangan yang paling realistis dikejar, respons pelanggan dengan cepat, dan pastikan setiap handover serta transaksi tercatat dengan benar. Kita bisa membuat penutupan bulan ini lebih baik.',
+  '🔥 *Sisa '+remaining+' hari terakhir, mari maksimalkan bersama!* Fokus pada kekurangan target yang paling realistis dikejar, respons pelanggan dengan cepat, dan pastikan setiap handover serta transaksi tercatat dengan benar. Kita bisa membuat penutupan bulan ini lebih baik.',
   '🌟 *Jangan berhenti di pencapaian hari ini.* Evaluasi apa yang berhasil, perbaiki yang belum efektif, lalu jalankan langkah berikutnya dengan semangat. Setiap anggota tim punya peran penting dalam hasil bersama.',
   '🚀 *Saatnya bergerak lebih terarah!* Buat daftar prioritas harian, tuntaskan follow-up yang tertunda, dan komunikasikan kendala sejak awal. Kita kejar target dengan kerja cerdas, kerja sama, dan pelayanan terbaik.',
   '🤝 *Target adalah tanggung jawab bersama.* Dukung rekan yang membutuhkan bantuan, jaga kualitas pelayanan, dan pastikan closing yang dicapai valid. Mari gunakan sisa waktu dengan maksimal tanpa mengorbankan ketelitian.'

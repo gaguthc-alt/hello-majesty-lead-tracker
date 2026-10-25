@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Katalog Plaza — Hello Majesty</title>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var token = params.get('t');
+      var destination = '/katalog-plaza.html';
+      if (token) destination += '?t=' + encodeURIComponent(token);
+      window.location.replace(destination);
+    })();
+  </script>
+</head>
+<body>
+  <p>Membuka katalog Plaza…</p>
+  <noscript>Silakan buka <a href="/katalog-plaza.html">katalog Plaza</a>.</noscript>
+</body>
+</html>

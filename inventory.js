@@ -1120,6 +1120,11 @@ async function saveStock(){
  const source=$('stsource')?.value||'MANAGEMENT';
  if(!canReceiveStock(source)){alert('Admin Finance Majesty Cell hanya dapat input Barang Masuk sumber Majesty Cell.');return;}
  const receiveOutlet=inventoryReceiveOutlet();
+ const receiveRoleCheck=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ if(receiveRoleCheck==='MITRA STOCKIST'){
+  const allowedDestinations=[String(profile?.outlet||'').trim(),'Majesty Plaza iPhone','Majesty Refill Phone'].filter(Boolean).map(x=>x.toLowerCase());
+  if(!allowedDestinations.includes(String(receiveOutlet||'').trim().toLowerCase()))return alert('Unit Bisnis hanya dapat memasukkan barang ke unit sendiri, Majesty Plaza iPhone, atau Majesty Refill Phone.');
+ }
  const hunters=source==='HUNTER'?selectedReceivePeople('sthunter'):[],checkers=(source==='CHECKER'||source==='HUNTER')?selectedReceivePeople('stchecker'):[];
  const hunter=hunters[0]||null,checker=checkers[0]||null;
  const currentRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const partnerName=$('stpartner')?.value||(currentRole==='ADMIN FINANCE MAJESTY CELL'?'Majesty Cell':currentRole==='MITRA STOCKIST'?String(profile?.outlet||'').trim():null);

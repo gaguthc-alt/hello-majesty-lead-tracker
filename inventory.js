@@ -626,14 +626,14 @@ function invStat(label,val){
   : String(val??'');
  return '<div class="stat"><div class="small">'+label+'</div><div class="num">'+display+'</div></div>';
 }
-function selectedReceivePeople(id){const el=$(id);if(!el)return[];if(id==='stchecker'&&Array.isArray(window.hmReceiveSelectedCheckers))return [...window.hmReceiveSelectedCheckers];return [...el.selectedOptions].map(o=>o.value).filter(Boolean);}
-function cacheReceiveCheckers(){const el=$('stchecker');if(!el)return;window.hmReceiveSelectedCheckers=[...el.selectedOptions].map(o=>o.value).filter(Boolean);}
-function finishReceiveCheckerSelection(){const el=$('stchecker');if(!el)return;cacheReceiveCheckers();if(!window.hmReceiveSelectedCheckers.length)return;/* Keep native selected options intact: blur removes the blue highlight, while selectedOptions remains available for saving. */const p=inventoryProducts.find(x=>x.id===$('stprod')?.value);const cat=receiveProductCategory(p);const imeiId=cat==='IPHONE_NEW'?'stimei1new':cat==='IPHONE_SECOND'?'stimei1second':cat==='ANDROID_NEW'?'standroidimei1':cat==='ANDROID_SECOND'?'standroidsecondimei1':'stimei1';const imei=$(imeiId);if(imei)imei.focus({preventScroll:true});}
+function selectedReceivePeople(id){const el=$(id);if(!el)return[];if(id==='stchecker'){const cached=Array.isArray(window.hmReceiveSelectedCheckers)?window.hmReceiveSelectedCheckers:[];const visible=[...el.selectedOptions].map(o=>o.value).filter(Boolean);return [...new Set([...cached,...visible])];}return [...el.selectedOptions].map(o=>o.value).filter(Boolean);}
+function cacheReceiveCheckers(){const el=$('stchecker');if(!el)return;const selected=[...el.selectedOptions].map(o=>o.value).filter(Boolean);if(selected.length){window.hmReceiveSelectedCheckers=[...new Set([...(window.hmReceiveSelectedCheckers||[]),...selected])];}}
+function finishReceiveCheckerSelection(){const el=$('stchecker');if(!el)return;cacheReceiveCheckers();if(!selectedReceivePeople('stchecker').length)return;const p=inventoryProducts.find(x=>x.id===$('stprod')?.value);const cat=receiveProductCategory(p);const imeiId=cat==='IPHONE_NEW'?'stimei1new':cat==='IPHONE_SECOND'?'stimei1second':cat==='ANDROID_NEW'?'standroidimei1':cat==='ANDROID_SECOND'?'standroidsecondimei1':'stimei1';const imei=$(imeiId);if(imei)imei.focus({preventScroll:true});}
 
 function filterHunterOptions(){ const sel=$('sthunter'); if(!sel)return; /* Dropdown Barang Masuk menampilkan semua Hunter aktif yang diizinkan untuk Plaza. Jangan menyembunyikan nama hanya karena variasi label outlet antar tabel. */ for(const o of [...sel.options])if(o.value)o.hidden=false; }
 async function refreshCheckerOptions(){
  const sel=$('stchecker');if(!sel)return;
- const previous=[...sel.selectedOptions].map(o=>o.value);
+ const previous=[...new Set([...(window.hmReceiveSelectedCheckers||[]),...[...sel.selectedOptions].map(o=>o.value)])];
  /* Gunakan daftar yang sudah dimuat oleh openReceiveStock. Query ulang dari sesi fasilitator terkena RLS dan hanya mengembalikan akun sendiri (contoh: Ifa). */
  const cached=Array.isArray(window.hmReceiveCheckerOptions)?window.hmReceiveCheckerOptions:[];
  if(cached.length){

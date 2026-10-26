@@ -3733,6 +3733,16 @@ function hmOpenDeveloperRolePreview(){
   const name=select.value;identity.innerHTML='<div style="font-size:11px;color:#93c5fd;font-weight:800">ROLE SIMULASI</div><div style="font-size:19px;font-weight:800;margin:4px 0">MITRA STOCKIST</div><div style="color:#cbd5e1">Unit: '+name+'</div>';
   grid.replaceChildren();
   partners[name].forEach(([icon,title,desc])=>{const card=document.createElement('div');card.style.cssText='padding:15px;border-radius:12px;background:#f8fafc;color:#0f172a;border:1px solid #cbd5e1';const h=document.createElement('div');h.style.cssText='font-weight:800;font-size:15px;margin-bottom:7px';h.textContent=icon+' '+title;const p=document.createElement('div');p.style.cssText='font-size:13px;line-height:1.45;color:#475569';p.textContent=desc;const tag=document.createElement('div');tag.style.cssText='margin-top:12px;font-size:11px;font-weight:800;color:#92400e';tag.textContent='PRATINJAU • NONAKTIF';card.append(h,p,tag);grid.appendChild(card)});
+  const settlement=document.createElement('div');
+  settlement.style.cssText='margin-top:14px;padding:16px;border-radius:12px;background:#111827;border:1px solid #475569';
+  const sh=document.createElement('div');sh.style.cssText='font-size:16px;font-weight:800;color:#fff';sh.textContent='Simulasi Aksi Settlement';
+  const sm=document.createElement('div');sm.style.cssText='font-size:12px;color:#cbd5e1;margin:5px 0 12px';sm.textContent='Contoh tampilan untuk '+name+' • status TRANSFER_SENT • tidak terhubung ke database';
+  const statusTag=document.createElement('div');statusTag.style.cssText='display:inline-block;padding:5px 9px;border-radius:999px;background:#78350f;color:#fde68a;font-size:12px;font-weight:800;margin-bottom:10px';statusTag.textContent='TRANSFER_SENT';
+  const actionRow=document.createElement('div');actionRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+  const received=document.createElement('button');received.type='button';received.textContent='Konfirmasi uang diterima + WA';received.style.cssText='padding:10px 12px;border-radius:9px;background:#047857;color:#fff;border:0;font-weight:700;cursor:default';
+  const notReceived=document.createElement('button');notReceived.type='button';notReceived.textContent='Belum masuk';notReceived.style.cssText='padding:10px 12px;border-radius:9px;background:#334155;color:#fff;border:1px solid #64748b;font-weight:700;cursor:default';
+  const inactive=document.createElement('div');inactive.style.cssText='font-size:11px;color:#fbbf24;margin-top:10px;font-weight:800';inactive.textContent='PRATINJAU VISUAL SAJA — tombol tidak menjalankan aksi dan tidak mengubah status.';
+  actionRow.append(received,notReceived);settlement.append(sh,sm,statusTag,actionRow,inactive);grid.appendChild(settlement);
  }
  select.addEventListener('change',render);render();
  panel.append(top,label,select,notice,identity,grid);wrap.appendChild(panel);
@@ -4091,9 +4101,12 @@ window.hmPrintSettlementDocument=function(btn){
 };
 window.hmOpenPartnerSettlementManagement=async function(){
  const roleKey=String(profile?.role||'').toUpperCase().replace(/_/g,' ').trim();
- const isAtmaditaFinance=String(profile?.name||'').trim().toLowerCase()==='atmadita';
- const isFinanceUser=!mg&&!developer&&(roleKey.includes('ADMIN FINANCE')||isAtmaditaFinance);
- const isStockistUser=!mg&&!developer&&roleKey==='MITRA STOCKIST'&&String(profile?.outlet||'').trim()!=='';
+ // Hak akses berdasarkan role dan outlet, bukan nama personel.
+ const isFinanceUser=!mg&&!developer&&roleKey.includes('ADMIN FINANCE');
+ const stockistRole=roleKey.includes('STOCKIST');
+ const stockistOutlet=String(profile?.outlet||'').trim();
+ const allowedStockistOutlets=['MAJESTY CELL','MAJESTY GADGET','MAJESTY STORE'];
+ const isStockistUser=!mg&&!developer&&stockistRole&&allowedStockistOutlets.includes(stockistOutlet.toUpperCase());
  if(!(mg||developer||isStockistUser||isFinanceUser)){alert('Menu Pembayaran Settlement tidak tersedia untuk role ini.');return;}
  const stockistName=isStockistUser?String(profile.outlet).trim():null;
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
@@ -4158,8 +4171,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const totalFinanceValue=settlementUnits.reduce((sum,u)=>sum= sum+(Number(u._financeGross||0)>0&&u._financeProvider&&u._financeProvider!=='Tidak ada pencairan finance tercatat'?Number(u._financeGross||0):0),0);
    const productSummary='RINGKASAN TOTAL\nTotal nilai penjualan: '+money(totalSaleValue)+'\nTotal pencairan finance: '+money(totalFinanceValue)+'\nTotal kewajiban settlement: '+money(x.amount||0)+'\n\nRINCIAN PRODUK\n'+productDetails;
    const st=String(x.status||'').toUpperCase();const displayStatus=st==='RECEIVED'?'LUNAS':st;let actions='—';
-   if((isStockistUser||isFinanceUser)&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
-   else if((isFinanceUser||isStockistUser)&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
+   if(isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
+   else if(isStockistUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
    else if(st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
    else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-proof-wa="'+safe(x.id)+'" data-settlement-type="'+safe(x.settlement_type||'PROFIT_SHARING')+'">Konfirmasi transfer + foto WA</button>';
@@ -4267,8 +4280,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const {error}=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:btn.dataset.obligationConfirm,p_confirm:true,p_note:note});
    if(error){alert('Konfirmasi gagal: '+error.message);return;}
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
-   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
-   const msg=['*PERSETUJUAN SETTLEMENT*','*MAJESTY CELL*','','Yth. tim Hello Majesty, kami mengonfirmasi bahwa nominal settlement berikut telah kami periksa dan setujui:','','• Stockist: '+partner,'• Outlet: '+outlet,'• Tanggal: '+date,'• Nominal disetujui: '+amount,'',item,'• Status aplikasi: PARTNER_CONFIRMED','',note.trim()?'• Catatan: '+note.trim():'','Silakan lanjutkan proses transfer. Setelah transfer dilakukan, kirim bukti transfer melalui WhatsApp dan catat prosesnya di aplikasi. Persetujuan nominal ini bukan konfirmasi pembayaran.','','Majesty Cell — Unit Bisnis'].filter(Boolean).join(String.fromCharCode(10));
+   const partner=cells[0]?.textContent?.trim()||stockistName||'Stockist',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const msg=['*PERSETUJUAN SETTLEMENT*','*'+partner.toUpperCase()+'*','','Yth. tim Hello Majesty, kami mengonfirmasi bahwa nominal settlement berikut telah kami periksa dan setujui:','','• Stockist: '+partner,'• Outlet: '+outlet,'• Tanggal: '+date,'• Nominal disetujui: '+amount,'',item,'• Status aplikasi: PARTNER_CONFIRMED','',note.trim()?'• Catatan: '+note.trim():'','Silakan lanjutkan proses transfer. Setelah transfer dilakukan, kirim bukti transfer melalui WhatsApp dan catat prosesnya di aplikasi. Persetujuan nominal ini bukan konfirmasi pembayaran.','',partner+' — Mitra Stockist'].filter(Boolean).join(String.fromCharCode(10));
    alert('Nominal disetujui. WhatsApp akan dibuka untuk memberi kabar kepada Hello Majesty.');
    window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
   }));
@@ -4279,7 +4292,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
   }));
   b.querySelectorAll('[data-transfer-proof-wa]').forEach(btn=>btn.addEventListener('click',async()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
-   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const partner=cells[0]?.textContent?.trim()||stockistName||'Stockist',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
    const isCapital=String(btn.dataset.settlementType||'').toUpperCase()==='CAPITAL';
    let cashAccounts=[];
    if(isCapital){const ar=await window.sb.from('accounting_accounts').select('id,code,name').eq('active',true).eq('account_type','ASSET').order('name');if(ar.error){alert('Tidak bisa memuat akun kas/bank: '+ar.error.message);return;}cashAccounts=ar.data||[];if(!cashAccounts.length){alert('Belum ada akun kas/bank aktif untuk mencatat transfer modal.');return;}}
@@ -4307,6 +4320,9 @@ window.hmOpenPartnerSettlementManagement=async function(){
     if(!file.type.startsWith('image/')){alert('Pilih file foto/gambar.');return;}
     const ref=overlay.querySelector('#hmTransferProofRef').value.trim();
     const note=overlay.querySelector('#hmTransferProofNote').value.trim();
+    const cashAccountId=overlay.querySelector('#hmTransferCashAccount')?.value||'';
+    if(!ref){alert('Masukkan nomor referensi transfer terlebih dahulu.');overlay.querySelector('#hmTransferProofRef').focus();return;}
+    if(isCapital&&!cashAccountId){alert('Pilih akun kas/bank sumber dana terlebih dahulu.');overlay.querySelector('#hmTransferCashAccount')?.focus();return;}
     const msg='*KONFIRMASI TRANSFER SETTLEMENT — HELLO MAJESTY*\n\nYth. '+partner+', kami menginformasikan bahwa transfer settlement telah dilakukan. Mohon konfirmasi setelah dana benar-benar terlihat di rekening Anda.\n\n• Outlet: '+outlet+'\n• Tanggal: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n• Referensi transfer: '+(ref||'Tidak dicantumkan')+'\n'+(note?'• Catatan: '+note+'\n':'')+'\nBukti foto terlampir pada pesan ini. Mohon balas untuk mengonfirmasi penerimaan dana. Pesan ini bukan pengganti pengecekan saldo rekening.\n\nHello Majesty — Built on Trust';
     sendBtn.disabled=true;sendBtn.textContent='Memproses…';
     let shared=false;
@@ -4325,14 +4341,14 @@ window.hmOpenPartnerSettlementManagement=async function(){
     }else{
      closeDialog();
     }
-    if(!ref){alert('Masukkan nomor referensi transfer terlebih dahulu.');return;}const proofNote=note||'Bukti foto dibagikan langsung via WhatsApp; file tidak disimpan di database.';let rpcResult;if(isCapital){const cashAccountId=overlay.querySelector('#hmTransferCashAccount')?.value;if(!cashAccountId){alert('Pilih akun kas/bank sumber dana terlebih dahulu.');return;}rpcResult=await window.sb.rpc('record_partner_settlement_transfer_with_account',{p_settlement_id:btn.dataset.transferProofWa,p_cash_account_id:cashAccountId,p_reference:ref,p_proof_note:proofNote});}else{rpcResult=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferProofWa,p_reference:ref,p_proof_note:proofNote});}const {error}=rpcResult;
+    const proofNote=note||'Bukti foto dibagikan langsung via WhatsApp; file tidak disimpan di database.';let rpcResult;if(isCapital){rpcResult=await window.sb.rpc('record_partner_settlement_transfer_with_account',{p_settlement_id:btn.dataset.transferProofWa,p_cash_account_id:cashAccountId,p_reference:ref,p_proof_note:proofNote});}else{rpcResult=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferProofWa,p_reference:ref,p_proof_note:proofNote});}const {error}=rpcResult;
     if(error){alert('Foto/pesan sudah dibagikan atau dibuka, tetapi pencatatan transfer gagal: '+error.message+'. Jangan klik ulang sebelum memeriksa status settlement.');return;}
     alert('Transfer dicatat. Menunggu mitra stockist terkait memverifikasi uang masuk.');window.hmOpenPartnerSettlementManagement();
    });
   }));
   b.querySelectorAll('[data-proof-wa]').forEach(btn=>btn.addEventListener('click',()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
-   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',status=cells[4]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const partner=cells[0]?.textContent?.trim()||stockistName||'Stockist',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',status=cells[4]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
    const msg='*BUKTI TRANSFER SETTLEMENT — HELLO MAJESTY*\n\nYth. '+partner+', berikut bukti transfer untuk settlement ini.\n\n• Outlet: '+outlet+'\n• Tanggal: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n• Status aplikasi: '+status+'\n\nMohon konfirmasi setelah dana benar-benar terlihat di rekening. Foto ini dikirim langsung melalui WhatsApp dan tidak disimpan di database Hello Majesty.\n\nHello Majesty — Built on Trust';
    const input=document.createElement('input');input.type='file';input.accept='image/*';input.style.display='none';document.body.appendChild(input);
    input.addEventListener('change',async()=>{
@@ -4358,20 +4374,22 @@ window.hmOpenPartnerSettlementManagement=async function(){
   }));
   b.querySelectorAll('[data-received-confirm-wa]').forEach(btn=>btn.addEventListener('click',async()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
-   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
-   if(!confirm('Pastikan dana benar-benar terlihat di rekening Majesty Cell sebelum menyatakan diterima. Lanjutkan?'))return;
+   const partner=cells[0]?.textContent?.trim()||stockistName||'Stockist',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   if(!confirm('Pastikan dana benar-benar terlihat di rekening '+partner+' sebelum menyatakan diterima. Lanjutkan?'))return;
    const note=prompt('Catatan penerimaan (opsional):');if(note===null)return;
    const {error}=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:btn.dataset.receivedConfirmWa,p_received:true,p_note:note});
    if(error){alert('Konfirmasi penerimaan gagal: '+error.message);return;}
-   const msg='*KONFIRMASI PENERIMAAN TRANSFER SETTLEMENT*\n*HELLO MAJESTY*\n\nYth. tim Hello Majesty, kami dari '+partner+' mengonfirmasi bahwa transfer settlement telah kami terima dan dana sudah terlihat di rekening.\n\n• Outlet: '+outlet+'\n• Tanggal settlement: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n'+(note.trim()?'• Catatan: '+note.trim()+'\n':'')+'\nPenerimaan juga telah dikonfirmasi di aplikasi Hello Majesty.\n\nMajesty Cell';
+   const msg='*KONFIRMASI PENERIMAAN TRANSFER SETTLEMENT*\n*HELLO MAJESTY*\n\nYth. tim Hello Majesty, kami dari '+partner+' mengonfirmasi bahwa transfer settlement telah kami terima dan dana sudah terlihat di rekening.\n\n• Outlet: '+outlet+'\n• Tanggal settlement: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n'+(note.trim()?'• Catatan: '+note.trim()+'\n':'')+'\nPenerimaan juga telah dikonfirmasi di aplikasi Hello Majesty.\n\n'+partner;
    alert('Penerimaan tercatat. WhatsApp akan dibuka untuk mengirim pemberitahuan ke tim Hello Majesty.');
    window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
   }));
   b.querySelectorAll('[data-received-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
+   const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
+   const partner=cells[0]?.textContent?.trim()||stockistName||'Stockist';
    const note=prompt('Catatan verifikasi uang masuk (opsional):');if(note===null)return;
-   if(!confirm('Pastikan dana benar-benar terlihat pada rekening Majesty Cell. Konfirmasi penerimaan?'))return;
+   if(!confirm('Pastikan dana benar-benar terlihat pada rekening '+partner+'. Konfirmasi penerimaan?'))return;
    const {error}=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:btn.dataset.receivedConfirm,p_received:true,p_note:note});
-   if(error){alert('Konfirmasi penerimaan gagal: '+error.message);return;}alert('Penerimaan dikonfirmasi.');window.hmOpenPartnerSettlementManagement();
+   if(error){alert('Konfirmasi penerimaan gagal: '+error.message);return;}alert('Penerimaan dikonfirmasi untuk '+partner+'.');window.hmOpenPartnerSettlementManagement();
   }));
   b.querySelectorAll('[data-received-reject]').forEach(btn=>btn.addEventListener('click',async()=>{
    const note=prompt('Jelaskan mengapa dana belum diterima:');if(note===null||!note.trim())return;

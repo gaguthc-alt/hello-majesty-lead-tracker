@@ -3625,6 +3625,9 @@ async function hmRenderHomePerformance(){
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
  const isManagement=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI';
+ // Mitra Stockist bukan kanal lead/closing. Samakan beranda Majesty Cell, Gadget, dan Store dengan workspace stockist Atmadita.
+ const isStockistHome=!isManagement&&(roles.includes('MITRA STOCKIST')||rawRole==='MITRA STOCKIST'||rawRole.includes('STOCKIST'));
+ if(isStockistHome){block.classList.add('hidden');block.replaceChildren();return;}
  const monthStart=new Date(new Date().getFullYear(),new Date().getMonth(),1);
  const monthEnd=new Date(new Date().getFullYear(),new Date().getMonth()+1,1);
  const fmt=n=>Number(n||0).toLocaleString('id-ID');

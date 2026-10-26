@@ -4384,10 +4384,12 @@ window.hmOpenPartnerSettlementManagement=async function(){
    window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
   }));
   b.querySelectorAll('[data-received-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
+   const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
+   const partner=cells[0]?.textContent?.trim()||stockistName||'Stockist';
    const note=prompt('Catatan verifikasi uang masuk (opsional):');if(note===null)return;
-   if(!confirm('Pastikan dana benar-benar terlihat pada rekening Majesty Cell. Konfirmasi penerimaan?'))return;
+   if(!confirm('Pastikan dana benar-benar terlihat pada rekening '+partner+'. Konfirmasi penerimaan?'))return;
    const {error}=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:btn.dataset.receivedConfirm,p_received:true,p_note:note});
-   if(error){alert('Konfirmasi penerimaan gagal: '+error.message);return;}alert('Penerimaan dikonfirmasi.');window.hmOpenPartnerSettlementManagement();
+   if(error){alert('Konfirmasi penerimaan gagal: '+error.message);return;}alert('Penerimaan dikonfirmasi untuk '+partner+'.');window.hmOpenPartnerSettlementManagement();
   }));
   b.querySelectorAll('[data-received-reject]').forEach(btn=>btn.addEventListener('click',async()=>{
    const note=prompt('Jelaskan mengapa dana belum diterima:');if(note===null||!note.trim())return;

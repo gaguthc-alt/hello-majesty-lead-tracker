@@ -4307,6 +4307,9 @@ window.hmOpenPartnerSettlementManagement=async function(){
     if(!file.type.startsWith('image/')){alert('Pilih file foto/gambar.');return;}
     const ref=overlay.querySelector('#hmTransferProofRef').value.trim();
     const note=overlay.querySelector('#hmTransferProofNote').value.trim();
+    const cashAccountId=isCapital?String(overlay.querySelector('#hmTransferCashAccount')?.value||'').trim():'';
+    if(!ref){alert('Masukkan nomor referensi transfer terlebih dahulu.');overlay.querySelector('#hmTransferProofRef').focus();return;}
+    if(isCapital&&!cashAccountId){alert('Pilih akun kas/bank sumber dana terlebih dahulu.');overlay.querySelector('#hmTransferCashAccount')?.focus();return;}
     const msg='*KONFIRMASI TRANSFER SETTLEMENT — HELLO MAJESTY*\n\nYth. '+partner+', kami menginformasikan bahwa transfer settlement telah dilakukan. Mohon konfirmasi setelah dana benar-benar terlihat di rekening Anda.\n\n• Outlet: '+outlet+'\n• Tanggal: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n• Referensi transfer: '+(ref||'Tidak dicantumkan')+'\n'+(note?'• Catatan: '+note+'\n':'')+'\nBukti foto terlampir pada pesan ini. Mohon balas untuk mengonfirmasi penerimaan dana. Pesan ini bukan pengganti pengecekan saldo rekening.\n\nHello Majesty — Built on Trust';
     sendBtn.disabled=true;sendBtn.textContent='Memproses…';
     let shared=false;
@@ -4325,7 +4328,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
     }else{
      closeDialog();
     }
-    if(!ref){alert('Masukkan nomor referensi transfer terlebih dahulu.');return;}const proofNote=note||'Bukti foto dibagikan langsung via WhatsApp; file tidak disimpan di database.';let rpcResult;if(isCapital){const cashAccountId=overlay.querySelector('#hmTransferCashAccount')?.value;if(!cashAccountId){alert('Pilih akun kas/bank sumber dana terlebih dahulu.');return;}rpcResult=await window.sb.rpc('record_partner_settlement_transfer_with_account',{p_settlement_id:btn.dataset.transferProofWa,p_cash_account_id:cashAccountId,p_reference:ref,p_proof_note:proofNote});}else{rpcResult=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferProofWa,p_reference:ref,p_proof_note:proofNote});}const {error}=rpcResult;
+    const proofNote=note||'Bukti foto dibagikan langsung via WhatsApp; file tidak disimpan di database.';let rpcResult;if(isCapital){rpcResult=await window.sb.rpc('record_partner_settlement_transfer_with_account',{p_settlement_id:btn.dataset.transferProofWa,p_cash_account_id:cashAccountId,p_reference:ref,p_proof_note:proofNote});}else{rpcResult=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferProofWa,p_reference:ref,p_proof_note:proofNote});}const {error}=rpcResult;
     if(error){alert('Foto/pesan sudah dibagikan atau dibuka, tetapi pencatatan transfer gagal: '+error.message+'. Jangan klik ulang sebelum memeriksa status settlement.');return;}
     alert('Transfer dicatat. Menunggu mitra stockist terkait memverifikasi uang masuk.');window.hmOpenPartnerSettlementManagement();
    });

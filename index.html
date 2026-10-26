@@ -22,7 +22,7 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
   },true);
 })();
-</script><meta name="hm-build" content="20261026-settlement-capital-scope-fix-1"><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+</script><meta name="hm-build" content="20261026-settlement-type-detection-fix-1"><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -4162,7 +4162,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    else if((isFinanceUser||isStockistUser)&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
    else if(st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
-   else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-proof-wa="'+safe(x.id)+'">Konfirmasi transfer + foto WA</button>';
+   else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-proof-wa="'+safe(x.id)+'" data-settlement-type="'+safe(x.settlement_type||'PROFIT_SHARING')+'">Konfirmasi transfer + foto WA</button>';
    else if(st==='TRANSFER_SENT') actions='<button type="button" data-proof-wa="'+safe(x.id)+'">Kirim ulang bukti foto WA</button>';
    const details=[x.transfer_reference?'Ref transfer: '+x.transfer_reference:'',x.transfer_proof_note||'',x.received_note||''].filter(Boolean).join(' • ');
    actions+='<button type="button" class="secondary" style="margin-top:5px" data-hm-settlement-pdf="1" data-settlement-type="'+safe(x.settlement_type||'')+'" data-partner="'+safe(x.partner_name||'')+'" data-outlet="'+safe(x.outlet||'')+'" data-date="'+safe(x.settlement_date||'')+'" data-amount="'+Number(x.amount||0)+'" data-status="'+safe(displayStatus)+'" data-detail="'+safe(productSummary+(details?'\n\n'+details:''))+'" onclick="window.hmPrintSettlementDocument(this)">📄 PDF / Cetak</button>';

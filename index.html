@@ -4345,7 +4345,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
   }));
   b.querySelectorAll('[data-proof-wa]').forEach(btn=>btn.addEventListener('click',()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
-   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',status=cells[4]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const partner=cells[0]?.textContent?.trim()||stockistName||'Stockist',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',status=cells[4]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
    const msg='*BUKTI TRANSFER SETTLEMENT — HELLO MAJESTY*\n\nYth. '+partner+', berikut bukti transfer untuk settlement ini.\n\n• Outlet: '+outlet+'\n• Tanggal: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n• Status aplikasi: '+status+'\n\nMohon konfirmasi setelah dana benar-benar terlihat di rekening. Foto ini dikirim langsung melalui WhatsApp dan tidak disimpan di database Hello Majesty.\n\nHello Majesty — Built on Trust';
    const input=document.createElement('input');input.type='file';input.accept='image/*';input.style.display='none';document.body.appendChild(input);
    input.addEventListener('change',async()=>{

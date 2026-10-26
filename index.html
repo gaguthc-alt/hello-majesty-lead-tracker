@@ -22,7 +22,7 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
   },true);
 })();
-</script><meta name="hm-build" content="20261026-settlement-table-layout-fix-1"><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+</script><meta name="hm-build" content="20261026-settlement-capital-scope-fix-1"><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -4254,9 +4254,6 @@ window.hmOpenPartnerSettlementManagement=async function(){
    if(!confirm('Kirim permintaan konfirmasi kewajiban ini kepada mitra?'))return;
    const {error}=await window.sb.rpc('request_partner_settlement_confirmation',{p_settlement_id:btn.dataset.requestConfirm});
    if(error){alert('Gagal meminta konfirmasi: '+error.message);return;} const row=btn.closest('tr'); const cells=row?row.querySelectorAll('td'):[]; const partner=cells[0]?.textContent?.trim()||'Mitra Stockist'; const outlet=cells[1]?.textContent?.trim()||'Majesty Plaza'; const date=cells[2]?.textContent?.trim()||''; const amount=cells[3]?.textContent?.trim()||''; const item=cells[5]?.textContent?.trim()||''; const msg=['*PERMINTAAN KONFIRMASI SETTLEMENT*','*HELLO MAJESTY*','','Yth. '+partner+', mohon konfirmasi nominal settlement berikut:','','• Outlet: '+outlet,'• Tanggal: '+date,'• Nominal: '+amount,'',''+item,'• Status saat ini: MENUNGGU KONFIRMASI','','Mohon periksa nominal tersebut dan lakukan konfirmasi melalui aplikasi Hello Majesty. Pesan ini hanya permintaan konfirmasi, bukan bukti transfer atau pemberitahuan bahwa pembayaran sudah dilakukan.','','Hello Majesty — Built on Trust'].join('\n'); window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
-   const isCapital=String(btn.dataset.settlementType||'').toUpperCase()==='CAPITAL';
-   let cashAccounts=[];
-   if(isCapital){const ar=await window.sb.from('accounting_accounts').select('id,code,name').eq('active',true).eq('account_type','ASSET').order('name');if(ar.error){alert('Tidak bisa memuat akun kas/bank: '+ar.error.message);return;}cashAccounts=ar.data||[];if(!cashAccounts.length){alert('Belum ada akun kas/bank aktif untuk mencatat transfer modal.');return;}}
   }));
   b.querySelectorAll('[data-send-confirm-wa]').forEach(btn=>btn.addEventListener('click',()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
@@ -4283,6 +4280,9 @@ window.hmOpenPartnerSettlementManagement=async function(){
   b.querySelectorAll('[data-transfer-proof-wa]').forEach(btn=>btn.addEventListener('click',async()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
    const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const isCapital=String(btn.dataset.settlementType||'').toUpperCase()==='CAPITAL';
+   let cashAccounts=[];
+   if(isCapital){const ar=await window.sb.from('accounting_accounts').select('id,code,name').eq('active',true).eq('account_type','ASSET').order('name');if(ar.error){alert('Tidak bisa memuat akun kas/bank: '+ar.error.message);return;}cashAccounts=ar.data||[];if(!cashAccounts.length){alert('Belum ada akun kas/bank aktif untuk mencatat transfer modal.');return;}}
    // Use a visible dialog: prompt() can lose browser activation before the file chooser opens.
    document.getElementById('hmTransferProofDialog')?.remove();
    const overlay=document.createElement('div');overlay.id='hmTransferProofDialog';

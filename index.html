@@ -4927,7 +4927,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
        void Promise.resolve().then(async()=>{
          await new Promise((resolve,reject)=>{
            const s=document.createElement('script');
-           s.src='finance-cell.js?v=20261024-mitra-stockist-report-4';
+           s.src='finance-cell.js?v=20261026-stockist-scope-5';
            s.onload=resolve;
            s.onerror=()=>reject(new Error('Modul Laporan Stok & Modal Unit Bisnis gagal dimuat.'));
            document.head.appendChild(s);

@@ -4091,9 +4091,13 @@ window.hmPrintSettlementDocument=function(btn){
 };
 window.hmOpenPartnerSettlementManagement=async function(){
  const roleKey=String(profile?.role||'').toUpperCase().replace(/_/g,' ').trim();
- const isAtmaditaFinance=String(profile?.name||'').trim().toLowerCase()==='atmadita';
- const isFinanceUser=!mg&&!developer&&(roleKey.includes('ADMIN FINANCE')||isAtmaditaFinance);
- const isStockistUser=!mg&&!developer&&roleKey==='MITRA STOCKIST'&&String(profile?.outlet||'').trim()!=='';
+ // Hak akses settlement ditentukan oleh role dan outlet akun, bukan nama orang.
+ // Atmadita adalah akun/personel stockist Majesty Cell; nama tidak boleh membuat akun lain dianggap Finance.
+ const isFinanceUser=!mg&&!developer&&roleKey.includes('ADMIN FINANCE');
+ const stockistRole=roleKey.includes('STOCKIST');
+ const stockistOutlet=String(profile?.outlet||'').trim();
+ const allowedStockistOutlets=['MAJESTY CELL','MAJESTY GADGET','MAJESTY STORE'];
+ const isStockistUser=!mg&&!developer&&stockistRole&&allowedStockistOutlets.includes(stockistOutlet.toUpperCase());
  if(!(mg||developer||isStockistUser||isFinanceUser)){alert('Menu Pembayaran Settlement tidak tersedia untuk role ini.');return;}
  const stockistName=isStockistUser?String(profile.outlet).trim():null;
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');

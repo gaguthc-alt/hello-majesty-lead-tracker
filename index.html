@@ -3773,13 +3773,13 @@ function renderRoleHome(){
    add('📱','Form Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()');
    add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
    add('👤','Database Customer','Database customer','hmOpenCustomerDatabase()');
-   add('💰','Finance','Kas, laba & kontrol keuangan','openFinance()');
-   add('📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()');
+   add('💰','Finance','Operasional pembayaran & kontrol transaksi','openFinance()');
+   add('📋','Laporan Finance','Ringkasan kas dan kewajiban operasional','hmOpenFinanceReport()');
    add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
    add('🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")');
    add('💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")');
    add('💼','Payroll','Pusat pengelolaan gaji Hello Majesty','hmOpenPayroll()');
-   add('📊','Accounting','Accounting & laporan','openAccounting()');
+   add('📊','Accounting','Akuntansi resmi dikelola di Accurate','openAccounting()');
    add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')");
    add('📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()');
@@ -3858,7 +3858,7 @@ function renderRoleHome(){
  }else if(has('ADMIN FINANCE')){
    add('💳','Konfirmasi Pencairan Finance','Catat dana finance/paylater yang benar-benar masuk','window.openFinanceDisbursement()');
    add('💰','Finance','Finance outlet','openFinance()');
-   add('📊','Laporan Finance','Laporan keuangan','hmOpenFinanceReport()');
+   add('📊','Laporan Finance','Ringkasan kas dan kewajiban operasional','hmOpenFinanceReport()');
    add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
    add('🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")');
    add('💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")');
@@ -7094,9 +7094,10 @@ async function saveServiceClosing(id){
 function closeModal(ev){if(ev){ev.preventDefault();ev.stopPropagation();}const m=document.getElementById('modal');if(m){m.classList.add('hidden');m.style.removeProperty('display');}return false}window.closeModal=closeModal;
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 async function openAccounting(){
-  // Internal accounting reports are retired: Accurate is the official accounting system.
+  // Internal accounting reports are retired. Load the Accurate monitor through its safe lazy loader.
+  if(typeof window.hmAccurateLaunch==='function') return window.hmAccurateLaunch('sync');
   if(typeof window.hmOpenAccurateSyncMonitor==='function') return window.hmOpenAccurateSyncMonitor();
-  return alert('Accounting resmi dikelola di Accurate. Modul status sinkronisasi Accurate belum tersedia.');
+  return alert('Accounting resmi dikelola di Accurate. Silakan buka menu Accurate Sync.');
   const accountingAllowed=!!profile?.is_management||getActiveRoles().includes('FASILITATOR');
   if(!accountingAllowed){return alert('Accounting hanya dapat diakses Management atau Fasilitator.');}
   $('mt').textContent='📊 Accounting';
@@ -7182,9 +7183,10 @@ function hmEnsureAccountingDetailPanel(){
   return host;
 }
 async function openAccountingModule(module){
-  // Prevent access to the retired in-app journal, ledger, balance sheet, and P&L screens.
+  // Prevent access to retired in-app accounting screens; use the Accurate monitor lazy loader.
+  if(typeof window.hmAccurateLaunch==='function') return window.hmAccurateLaunch('sync');
   if(typeof window.hmOpenAccurateSyncMonitor==='function') return window.hmOpenAccurateSyncMonitor();
-  return alert('Jurnal, buku besar, neraca, dan laba rugi resmi dikelola di Accurate.');
+  return alert('Jurnal, buku besar, neraca, dan laba rugi resmi dikelola di Accurate. Silakan buka menu Accurate Sync.');
   const host=hmEnsureAccountingDetailPanel();
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
   const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

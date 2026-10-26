@@ -3402,8 +3402,8 @@ function hmRenderLeadTodayMain(){
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const isMgmt=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT');
  const isDeveloper=rawRole==='DEVELOPER APLIKASI';
- const isAtmadita=String(profile?.name||'').trim().toLowerCase()==='atmadita';
- if(isAtmadita){host.innerHTML='';return;}
+ const isStockistRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ').includes('STOCKIST');
+ if(isStockistRole){host.innerHTML='';return;}
  const isDivisi=roles.includes('DIVISI')||rawRole==='DIVISI';
  const isFacilitator=roles.includes('FASILITATOR')||rawRole==='FASILITATOR';
  const isTeam=!isMgmt&&!isDeveloper&&!isDivisi&&!isFacilitator;
@@ -3750,9 +3750,9 @@ function renderRoleHome(){
 
  // MENU UTAMA = hanya fungsi yang memang diberikan kepada akun/role.
  // Management melihat seluruh modul utama.
- const isAtmadita=String(profile?.name||'').trim().toLowerCase()==='atmadita';
+ const isAtmadita=stockistUser;
  const cards=[],add=(icon,title,desc,fn)=>{
-  if(isAtmadita||stockistUser)return;
+  if(stockistUser)return;
   if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
  };
 
@@ -3875,9 +3875,9 @@ function renderRoleHome(){
     add('🤝','Pengelolaan Unit Bisnis','Penerimaan stok, verifikasi IMEI, barang terjual & persiapan settlement sesuai outlet','window.openPartnerSettlement()');
   }
 
- // SALES & PENJUALAN dibuka untuk seluruh tim kecuali Atmadita.
- // Management/Developer tetap memakai akses penuh; Atmadita tetap tanpa menu.
- if(!mg && !isAtmadita && !stockistUser){
+ // SALES & PENJUALAN dibuka untuk tim operasional, bukan akun Mitra Stockist.
+ // Semua akun Mitra Stockist mengikuti aturan yang sama tanpa pengecualian nama.
+ if(!mg && !stockistUser){
    add('🏪','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
    add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
    add('🔄','Form Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
@@ -4710,7 +4710,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
  }
  const roleCards='';
  const kpis='';
- const isAtmaditaStockistHome=String(profile?.name||'').trim().toLowerCase()==='atmadita' && String(profile?.role||'').toUpperCase().replace(/_/g,' ').includes('MITRA STOCKIST');
+ const isAtmaditaStockistHome=stockistUser;
  const homeStatus=isAtmaditaStockistHome?'':'<div class="role-home-status"><i></i> Workspace aktif</div>';
  const homePerformance=isAtmaditaStockistHome?'':'<section id="hmHomePerformance" class="hm-home-performance"><div class="hm-home-perf-title">📊 PERFORMA</div><div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>PERFORMA SAYA</b><span>Aktivitas akun ini</span></div></div><div class="hm-home-perf-grid"><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing</div><div class="hm-home-perf-value">0</div></div></div></div><div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>TOTAL</b><span>Memuat...</span></div></div><div class="hm-home-perf-grid"><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing</div><div class="hm-home-perf-value">0</div></div></div></div></section>';
 

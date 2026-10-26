@@ -4280,7 +4280,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const {error}=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:btn.dataset.obligationConfirm,p_confirm:true,p_note:note});
    if(error){alert('Konfirmasi gagal: '+error.message);return;}
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
-   const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
+   const partner=cells[0]?.textContent?.trim()||stockistName||'Stockist',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
    const msg=['*PERSETUJUAN SETTLEMENT*','*MAJESTY CELL*','','Yth. tim Hello Majesty, kami mengonfirmasi bahwa nominal settlement berikut telah kami periksa dan setujui:','','• Stockist: '+partner,'• Outlet: '+outlet,'• Tanggal: '+date,'• Nominal disetujui: '+amount,'',item,'• Status aplikasi: PARTNER_CONFIRMED','',note.trim()?'• Catatan: '+note.trim():'','Silakan lanjutkan proses transfer. Setelah transfer dilakukan, kirim bukti transfer melalui WhatsApp dan catat prosesnya di aplikasi. Persetujuan nominal ini bukan konfirmasi pembayaran.','','Majesty Cell — Unit Bisnis'].filter(Boolean).join(String.fromCharCode(10));
    alert('Nominal disetujui. WhatsApp akan dibuka untuk memberi kabar kepada Hello Majesty.');
    window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
@@ -4376,7 +4376,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const note=prompt('Catatan penerimaan (opsional):');if(note===null)return;
    const {error}=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:btn.dataset.receivedConfirmWa,p_received:true,p_note:note});
    if(error){alert('Konfirmasi penerimaan gagal: '+error.message);return;}
-   const msg='*KONFIRMASI PENERIMAAN TRANSFER SETTLEMENT*\n*HELLO MAJESTY*\n\nYth. tim Hello Majesty, kami dari '+partner+' mengonfirmasi bahwa transfer settlement telah kami terima dan dana sudah terlihat di rekening.\n\n• Outlet: '+outlet+'\n• Tanggal settlement: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n'+(note.trim()?'• Catatan: '+note.trim()+'\n':'')+'\nPenerimaan juga telah dikonfirmasi di aplikasi Hello Majesty.\n\nMajesty Cell';
+   const msg='*KONFIRMASI PENERIMAAN TRANSFER SETTLEMENT*\n*HELLO MAJESTY*\n\nYth. tim Hello Majesty, kami dari '+partner+' mengonfirmasi bahwa transfer settlement telah kami terima dan dana sudah terlihat di rekening.\n\n• Outlet: '+outlet+'\n• Tanggal settlement: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n'+(note.trim()?'• Catatan: '+note.trim()+'\n':'')+'\nPenerimaan juga telah dikonfirmasi di aplikasi Hello Majesty.\n\n'+partner;
    alert('Penerimaan tercatat. WhatsApp akan dibuka untuk mengirim pemberitahuan ke tim Hello Majesty.');
    window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
   }));

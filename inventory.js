@@ -195,8 +195,8 @@ async function reviewUnifiedWalkin(id,kind,action){
        if(saleId){
          const stockSource=String(saleRow.data?.stock_units?.source_type||'').toUpperCase();
          const partner=String(saleRow.data?.stock_units?.partner_name||'');
-         const isMajestyCellConsignment=stockSource==='MAJESTY_CELL' && /majesty cell/i.test(partner);
-         const sync=await sb.functions.invoke('accurate-sync',{body:{action:isMajestyCellConsignment?'sync_consign_journal':'sync_sale',sale_id:saleId}});
+         const isStockistConsignment=stockSource==='MAJESTY_CELL' && /^(majesty cell|majesty gadget|majesty store)$/i.test(partner.trim());
+         const sync=await sb.functions.invoke('accurate-sync',{body:{action:isStockistConsignment?'sync_consign_journal':'sync_sale',sale_id:saleId}});
          if(sync.error||!sync.data?.ok){
            console.warn('[HM Accurate] Approved Walk-In sync not confirmed:',sync.error||sync.data);
            alert('Transaksi sudah disetujui, tetapi sinkronisasi Accurate belum terkonfirmasi. Periksa Accurate Sync Monitor sebelum mencoba ulang.');

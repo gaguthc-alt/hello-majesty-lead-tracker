@@ -133,3 +133,32 @@ window.payPartnerProfitSettlement=async function(period){if(!confirm('Setor prof
  function start(){addSettlementPrint();new MutationObserver(addSettlementPrint).observe(document.body,{childList:true,subtree:true,characterData:true});}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
+
+/* HM_STAGED_SETTLEMENT_UI_20261026 */
+window.openPartnerSettlementWorkflow=async function(){
+ const p=window.profile||{},role=String(p.role||'').toUpperCase().replace(/[_-]+/g,' ').trim(),outlet=String(p.outlet||'').trim();
+ const mg=!!p.is_management||role==='MANAGEMENT'||role==='BUSINESS LEADER',si=role==='MITRA STOCKIST'||role.startsWith('ADMIN FINANCE MAJESTY CELL');
+ if(!mg&&!si){alert('Akses tidak diizinkan.');return;}
+ const x=panel('Konfirmasi Settlement Mitra');x.b.innerHTML='<div class="small">Memuat...</div>';
+ const esc=v=>e(String(v??'')),money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
+ try{
+  let q=window.sb.from('partner_settlements').select('id,partner_name,outlet,settlement_type,settlement_date,amount,status,transfer_reference,note').order('created_at',{ascending:false}).limit(100);
+  const r=await q;if(r.error)throw r.error;let rows=r.data||[];
+  if(si)rows=rows.filter(v=>String(v.partner_name||'').trim().toLowerCase()===outlet.toLowerCase());
+  const cards=rows.map(v=>{let a='';
+   if(mg&&['DRAFT','AWAITING_PARTNER_CONFIRMATION'].includes(v.status))a+='<button data-hms-req="'+v.id+'">Minta konfirmasi mitra</button>';
+   if(si&&v.status==='AWAITING_PARTNER_CONFIRMATION')a+='<button data-hms-ok="'+v.id+'">Konfirmasi nominal</button><button data-hms-no="'+v.id+'">Minta koreksi</button>';
+   if(mg&&v.status==='PARTNER_CONFIRMED')a+='<input data-hms-ref="'+v.id+'" placeholder="Referensi transfer wajib"><input data-hms-proof="'+v.id+'" placeholder="Catatan bukti transfer"><button data-hms-send="'+v.id+'">Catat transfer dikirim</button>';
+   if(si&&v.status==='TRANSFER_SENT')a+='<input data-hms-note="'+v.id+'" placeholder="Catatan penerimaan"><button data-hms-recv="'+v.id+'">Konfirmasi dana diterima</button><button data-hms-miss="'+v.id+'">Dana belum diterima</button>';
+   return '<div class="box" style="margin:10px 0"><b>'+esc(v.partner_name)+' • '+esc(v.outlet)+'</b><div>'+money(v.amount)+' • '+esc(v.settlement_type)+'</div><div class="small">Status: '+esc(v.status)+' • '+esc(v.settlement_date||'-')+'</div>'+(v.transfer_reference?'<div class="small">Referensi: '+esc(v.transfer_reference)+'</div>':'')+(a?'<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">'+a+'</div>':'')+'</div>';
+  }).join('');
+  x.b.innerHTML='<p>Alur konfirmasi terpisah: mitra menyetujui nominal → Management mencatat transfer → mitra memastikan dana masuk. Ini hanya memperbarui status; tidak membuat jurnal akuntansi.</p>'+(cards||'<div class="box">Belum ada settlement.</div>');
+  const reload=()=>window.openPartnerSettlementWorkflow();
+  x.b.querySelectorAll('[data-hms-req]').forEach(b=>b.onclick=async()=>{const z=await window.sb.rpc('request_partner_settlement_confirmation',{p_settlement_id:b.dataset.hmsReq});if(z.error)return alert(z.error.message);reload();});
+  x.b.querySelectorAll('[data-hms-ok]').forEach(b=>b.onclick=async()=>{if(!confirm('Nominal settlement sudah sesuai?'))return;const z=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:b.dataset.hmsOk,p_confirm:true,p_note:'Nominal dikonfirmasi melalui aplikasi'});if(z.error)return alert(z.error.message);reload();});
+  x.b.querySelectorAll('[data-hms-no]').forEach(b=>b.onclick=async()=>{const n=prompt('Alasan koreksi wajib diisi:');if(!n||!n.trim())return;const z=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:b.dataset.hmsNo,p_confirm:false,p_note:n.trim()});if(z.error)return alert(z.error.message);reload();});
+  x.b.querySelectorAll('[data-hms-send]').forEach(b=>b.onclick=async()=>{const id=b.dataset.hmsSend,ref=x.b.querySelector('[data-hms-ref="'+id+'"]').value.trim(),proof=x.b.querySelector('[data-hms-proof="'+id+'"]').value.trim();if(!ref)return alert('Referensi transfer wajib diisi.');if(!confirm('Transfer benar-benar sudah dikirim?'))return;const z=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:id,p_reference:ref,p_proof_note:proof||null});if(z.error)return alert(z.error.message);reload();});
+  x.b.querySelectorAll('[data-hms-recv]').forEach(b=>b.onclick=async()=>{if(!confirm('Dana benar-benar sudah masuk?'))return;const id=b.dataset.hmsRecv,n=x.b.querySelector('[data-hms-note="'+id+'"]').value.trim(),z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:id,p_received:true,p_note:n||null});if(z.error)return alert(z.error.message);reload();});
+  x.b.querySelectorAll('[data-hms-miss]').forEach(b=>b.onclick=async()=>{const n=prompt('Alasan dana belum diterima:');if(!n||!n.trim())return;const z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:b.dataset.hmsMiss,p_received:false,p_note:n.trim()});if(z.error)return alert(z.error.message);reload();});
+ }catch(err){x.b.innerHTML='<div class="box">Gagal memuat settlement: '+esc(err?.message||err)+'</div>';}
+};

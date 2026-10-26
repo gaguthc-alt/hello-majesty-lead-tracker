@@ -4100,7 +4100,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
  const partners=isStockistUser?[stockistName]:['Majesty Cell','Majesty Gadget','Majesty Store'];
- const outlets=['Majesty Plaza','Majesty Refill Phone'];
+ const outlets=['Majesty Plaza iPhone','Majesty Refill Phone'];
  if(!window.sb||!p||!b||!t){alert('Panel atau koneksi database belum siap. Refresh lalu coba lagi.');return;}
  t.textContent='🤝 Penyelesaian Pembayaran Antarunit';p.classList.remove('hidden');
  b.innerHTML='<div class="box">Memuat unit SOLD dan riwayat settlement…</div>';
@@ -4112,8 +4112,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    window.sb.from('partner_settlement_items').select('id,settlement_id,stock_unit_id,historical_stock_detail_id,capital_amount,profit_amount,partner_profit_share').limit(3000)
   ]);
   if(uRes.error)throw uRes.error;if(hRes.error)throw hRes.error;if(sRes.error)throw sRes.error;if(iRes.error)throw iRes.error;
-  const liveUnits=(uRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||'').toLowerCase()===n.toLowerCase())&&outlets.some(o=>{const v=String(x.outlet||'').toLowerCase();return v===o.toLowerCase()||(o==='Majesty Plaza'&&v==='majesty plaza iphone');})).map(x=>({...x,_source:'LIVE',_key:'live:'+x.id,_partner:x.partner_name||x.supplier||'',_outlet:(String(x.outlet||'').toLowerCase()==='majesty plaza iphone'?'Majesty Plaza':x.outlet),_product:x.product_master?.product||'Produk',_variant:x.product_master?.variant||''}));
-  const historicalUnits=(hRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||'').toLowerCase()===n.toLowerCase())&&outlets.some(o=>{const v=String(x.outlet||'').toLowerCase();return v===o.toLowerCase()||(o==='Majesty Plaza'&&v==='majesty plaza iphone');})).map(x=>({...x,_source:'HISTORICAL',_key:'hist:'+x.id,_partner:x.partner_name||'',_outlet:(String(x.outlet||'').toLowerCase()==='majesty plaza iphone'?'Majesty Plaza':x.outlet),_product:x.product_name||'Produk',_variant:[x.color,x.storage_gb?x.storage_gb+'GB':null,x.condition,x.grade?'Grade '+x.grade:null].filter(Boolean).join(' · ')}));
+  const liveUnits=(uRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||'').toLowerCase()===n.toLowerCase())&&outlets.some(o=>{const v=String(x.outlet||'').toLowerCase();return v===o.toLowerCase()||(o==='Majesty Plaza iPhone'&&['majesty plaza','plaza','plaza iphone'].includes(v));})).map(x=>({...x,_source:'LIVE',_key:'live:'+x.id,_partner:x.partner_name||x.supplier||'',_outlet:(['majesty plaza','plaza','plaza iphone','majesty plaza iphone'].includes(String(x.outlet||'').toLowerCase())?'Majesty Plaza iPhone':x.outlet),_product:x.product_master?.product||'Produk',_variant:x.product_master?.variant||''}));
+  const historicalUnits=(hRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||'').toLowerCase()===n.toLowerCase())&&outlets.some(o=>{const v=String(x.outlet||'').toLowerCase();return v===o.toLowerCase()||(o==='Majesty Plaza iPhone'&&['majesty plaza','plaza','plaza iphone'].includes(v));})).map(x=>({...x,_source:'HISTORICAL',_key:'hist:'+x.id,_partner:x.partner_name||'',_outlet:(['majesty plaza','plaza','plaza iphone','majesty plaza iphone'].includes(String(x.outlet||'').toLowerCase())?'Majesty Plaza iPhone':x.outlet),_product:x.product_name||'Produk',_variant:[x.color,x.storage_gb?x.storage_gb+'GB':null,x.condition,x.grade?'Grade '+x.grade:null].filter(Boolean).join(' · ')}));
   const settles=sRes.data||[],items=iRes.data||[];
   // Kurangi kewajiban stockist hanya dengan pencairan finance/paylater COMPLETED untuk unit SOLD yang sama.
   const liveIds=liveUnits.map(x=>x.id).filter(Boolean);

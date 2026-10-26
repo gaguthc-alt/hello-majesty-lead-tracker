@@ -162,3 +162,6 @@ window.openPartnerSettlementWorkflow=async function(){
   x.b.querySelectorAll('[data-hms-miss]').forEach(b=>b.onclick=async()=>{const n=prompt('Alasan dana belum diterima:');if(!n||!n.trim())return;const z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:b.dataset.hmsMiss,p_received:false,p_note:n.trim()});if(z.error)return alert(z.error.message);reload();});
  }catch(err){x.b.innerHTML='<div class="box">Gagal memuat settlement: '+esc(err?.message||err)+'</div>';}
 };
+
+/* HM_STAGED_SETTLEMENT_ENTRYPOINT */
+window.openPartnerSettlement=window.openPartnerSettlementWorkflow;

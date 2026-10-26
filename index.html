@@ -4122,12 +4122,26 @@ window.hmOpenPartnerSettlementManagement=async function(){
    window.sb.from('stock_units').select('id,partner_name,supplier,outlet,imei_1,cost,status,sold_at,product_master(product,variant,category)').eq('status','SOLD').order('sold_at',{ascending:false}).limit(1500),
    window.sb.from('partner_historical_stock_details').select('id,partner_name,outlet,product_name,condition,grade,color,storage_gb,cost,sold_status,imei_1,settlement_id,settled_at,created_at').in('partner_name',partners).eq('sold_status','SOLD').order('created_at',{ascending:false}).limit(3000),
    window.sb.from('partner_settlements').select('id,partner_name,outlet,settlement_type,settlement_date,amount,note,status,created_at,requested_confirmation_at,partner_confirmed_by,partner_confirmed_at,transfer_sent_by,transfer_sent_at,transfer_reference,transfer_proof_note,received_confirmed_by,received_confirmed_at,received_note').in('partner_name',partners).order('created_at',{ascending:false}).limit(300),
-   window.sb.from('partner_settlement_items').select('id,settlement_id,stock_unit_id,historical_stock_detail_id,capital_amount,profit_amount,partner_profit_share').limit(3000)
+   window.sb.from('partner_settlement_items').select('id,settlement_id,stock_unit_id,historical_stock_detail_id,sales_transaction_id,capital_amount,profit_amount,partner_profit_share').limit(3000)
   ]);
   if(uRes.error)throw uRes.error;if(hRes.error)throw hRes.error;if(sRes.error)throw sRes.error;if(iRes.error)throw iRes.error;
   const liveUnits=(uRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||'').toLowerCase()===n.toLowerCase())&&outlets.some(o=>{const v=String(x.outlet||'').toLowerCase();return v===o.toLowerCase()||(o==='Majesty Plaza iPhone'&&['majesty plaza','plaza','plaza iphone'].includes(v));})).map(x=>({...x,_source:'LIVE',_key:'live:'+x.id,_partner:x.partner_name||x.supplier||'',_outlet:(['majesty plaza','plaza','plaza iphone','majesty plaza iphone'].includes(String(x.outlet||'').toLowerCase())?'Majesty Plaza iPhone':x.outlet),_product:x.product_master?.product||'Produk',_variant:x.product_master?.variant||''}));
   const historicalUnits=(hRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||'').toLowerCase()===n.toLowerCase())&&outlets.some(o=>{const v=String(x.outlet||'').toLowerCase();return v===o.toLowerCase()||(o==='Majesty Plaza iPhone'&&['majesty plaza','plaza','plaza iphone'].includes(v));})).map(x=>({...x,_source:'HISTORICAL',_key:'hist:'+x.id,_partner:x.partner_name||'',_outlet:(['majesty plaza','plaza','plaza iphone','majesty plaza iphone'].includes(String(x.outlet||'').toLowerCase())?'Majesty Plaza iPhone':x.outlet),_product:x.product_name||'Produk',_variant:[x.color,x.storage_gb?x.storage_gb+'GB':null,x.condition,x.grade?'Grade '+x.grade:null].filter(Boolean).join(' · ')}));
   const settles=sRes.data||[],items=iRes.data||[];
+  // Link each live stock unit to its canonical sales transaction when creating settlement items.
+  // Stock-unit.sale_id may be empty on legacy records; partner_capital_due is the canonical mapping.
+  let capitalDueByUnit=new Map();
+  if(!isStockistUser){
+   const cdRes=await window.sb.from('partner_capital_due').select('stock_unit_id,sales_transaction_id,partner_name,outlet').in('partner_name',partners).limit(3000);
+   if(cdRes.error)throw cdRes.error;
+   (cdRes.data||[]).forEach(d=>{
+    if(d.stock_unit_id&&d.sales_transaction_id&&!capitalDueByUnit.has(String(d.stock_unit_id)))capitalDueByUnit.set(String(d.stock_unit_id),d);
+   });
+   liveUnits.forEach(x=>{
+    const d=capitalDueByUnit.get(String(x.id));
+    if(d&&String(d.partner_name||'').toLowerCase()===String(x.partner_name||'').toLowerCase()&&String(d.outlet||'').toLowerCase()===String(x.outlet||'').toLowerCase())x._salesTransactionId=d.sales_transaction_id;
+   });
+  }
   // Kurangi kewajiban stockist hanya dengan pencairan finance/paylater COMPLETED untuk unit SOLD yang sama.
   const liveIds=liveUnits.map(x=>x.id).filter(Boolean);
   let financeRows=[];
@@ -4249,7 +4263,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
     const {data:settlement,error:settleError}=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet,settlement_type:'CAPITAL',settlement_date:date,amount:total,note:[note||'Dipilih berdasarkan unit SOLD','Modal awal '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0)),'Finance/paylater neto diterima setelah cashout '+money(financeNetTotal),'Finance/paylater yang mengurangi modal '+money(financeAppliedTotal)].join(' | '),status:'DRAFT',created_by:userId}).select('id').single();
     if(settleError)throw new Error('Gagal menyimpan draft settlement: '+settleError.message);
     if(!settlement?.id)throw new Error('Database tidak mengembalikan ID draft settlement.');
-    const itemRows=selectedUnits.map(x=>({settlement_id:settlement.id,stock_unit_id:x._source==='LIVE'?x.id:null,historical_stock_detail_id:x._source==='HISTORICAL'?x.id:null,capital_amount:Number(x._settlementCost??x.cost??0),profit_amount:0,partner_profit_share:0}));
+    const itemRows=selectedUnits.map(x=>({settlement_id:settlement.id,stock_unit_id:x._source==='LIVE'?x.id:null,historical_stock_detail_id:x._source==='HISTORICAL'?x.id:null,sales_transaction_id:x._source==='LIVE'?(x._salesTransactionId||null):null,capital_amount:Number(x._settlementCost??x.cost??0),profit_amount:0,partner_profit_share:0}));
     const {error:itemError}=await window.sb.from('partner_settlement_items').insert(itemRows);
     if(itemError){
      alert('Draft tersimpan dengan ID '+settlement.id+', tetapi rincian unit gagal disimpan: '+itemError.message+'. Jangan klik simpan lagi agar tidak ganda. Draft perlu direkonsiliasi.');

@@ -64,7 +64,7 @@ window.loadCellFinanceReport=async function(){const b=document.getElementById('c
     actions='<button class="primary" type="button" onclick="window.loadPartnerSettlementDetail(&#39;'+safe(out)+'&#39;)">📋 Rincian Modal</button>';
     if(management&&out==='Majesty Refill Phone')actions+='<button class="secondary" type="button" onclick="window.loadPartnerProfitSettlement(&#39;'+safe(out)+'&#39;)">🤝 Profit Sharing</button>';
    }else if(stockist){
-    actions='<div class="small">Rincian pembayaran untuk unit ini akan ditampilkan setelah alur settlement khusus mitra diaktifkan.</div>';
+    actions='<button class="secondary" type="button" onclick="window.openCellFinanceReport()">📊 Lihat Rincian Stok & Modal</button><div class="small">Fitur ini hanya membuka laporan milik stockist yang sedang login. Tombol pembayaran belum diaktifkan sampai akun kas dan kewajiban mitra dipetakan dengan benar.</div>';
    }
    return '<div class="box" style="margin-top:12px"><h3>'+safe(out)+'</h3><div class="small">Pemilik stok: <b>'+safe(partner)+'</b></div><div class="fin-grid" style="margin-top:8px"><div class="fin-card"><div class="small">Modal Belum Disetor</div><div class="fin-big">'+money(capital)+'</div></div>'+(showProfit?'<div class="fin-card"><div class="small">Profit Sharing</div><div class="fin-big">'+money(profit)+'</div></div>':'')+'</div><div style="margin-top:10px"><b>Total kewajiban: '+money(showProfit?capital+profit:capital)+'</b></div><div class="row" style="margin-top:10px">'+actions+'</div></div>';
   }).join('');

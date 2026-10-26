@@ -30,7 +30,7 @@
     const saleIds=[...new Set(queue.filter(x=>x.status!=='SYNCED'&&x.sale_id).map(x=>x.sale_id))];
     const saleInfo={};
     if(saleIds.length){
-      const sr=await sb.from('sales_transactions').select('id,stock_unit_id,finance_status,finance_payment_method_id,finance_disbursement_account_id,finance_notes,notes').in('id',saleIds);
+      const sr=await sb.from('sales_transactions').select('id,stock_unit_id,outlet,finance_status,finance_payment_method_id,finance_disbursement_account_id,finance_notes,notes').in('id',saleIds);
       if(sr.error)throw sr.error;
       const sales=sr.data||[],stockIds=[...new Set(sales.map(x=>x.stock_unit_id).filter(Boolean))],stockInfo={};
       if(stockIds.length){const ur=await sb.from('stock_units').select('id,product_id,grade,color,battery_health,source_type,partner_name').in('id',stockIds);if(ur.error)throw ur.error;const units=ur.data||[],productIds=[...new Set(units.map(x=>x.product_id).filter(Boolean))],products={};if(productIds.length){const pr=await sb.from('product_master').select('id,product,variant,category').in('id',productIds);if(pr.error)throw pr.error;(pr.data||[]).forEach(p=>products[p.id]=p);}units.forEach(u=>{const p=products[u.product_id]||{};stockInfo[u.id]={product:[p.product,p.variant,u.color,u.grade?'Grade '+u.grade:null,u.battery_health!=null?'BH '+u.battery_health+'%':null].filter(Boolean).join(' • ')||'Produk tidak diketahui',source_type:u.source_type,partner_name:u.partner_name};});}

@@ -3773,13 +3773,13 @@ function renderRoleHome(){
    add('📱','Form Jual HP','Kirim form jual HP ke customer','hmOpenSellPhoneInline()');
    add('💬','Template Follow-up','Template follow-up customer','hmOpenFollowupTemplateInline()');
    add('👤','Database Customer','Database customer','hmOpenCustomerDatabase()');
-   add('💰','Finance','Kas, laba & kontrol keuangan','openFinance()');
-   add('📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()');
+   add('💰','Finance','Operasional pembayaran & kontrol transaksi','openFinance()');
+   add('📋','Laporan Finance','Ringkasan kas dan kewajiban operasional','hmOpenFinanceReport()');
    add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
    add('🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")');
    add('💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")');
    add('💼','Payroll','Pusat pengelolaan gaji Hello Majesty','hmOpenPayroll()');
-   add('📊','Accounting','Accounting & laporan','openAccounting()');
+   add('📊','Accounting','Akuntansi resmi dikelola di Accurate','openAccounting()');
    add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')");
    add('📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()');
@@ -3858,7 +3858,7 @@ function renderRoleHome(){
  }else if(has('ADMIN FINANCE')){
    add('💳','Konfirmasi Pencairan Finance','Catat dana finance/paylater yang benar-benar masuk','window.openFinanceDisbursement()');
    add('💰','Finance','Finance outlet','openFinance()');
-   add('📊','Laporan Finance','Laporan keuangan','hmOpenFinanceReport()');
+   add('📊','Laporan Finance','Ringkasan kas dan kewajiban operasional','hmOpenFinanceReport()');
    add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
    add('🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")');
    add('💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")');
@@ -4091,9 +4091,13 @@ window.hmPrintSettlementDocument=function(btn){
 };
 window.hmOpenPartnerSettlementManagement=async function(){
  const roleKey=String(profile?.role||'').toUpperCase().replace(/_/g,' ').trim();
- const isAtmaditaFinance=String(profile?.name||'').trim().toLowerCase()==='atmadita';
- const isFinanceUser=!mg&&!developer&&(roleKey.includes('ADMIN FINANCE')||isAtmaditaFinance);
- const isStockistUser=!mg&&!developer&&roleKey==='MITRA STOCKIST'&&String(profile?.outlet||'').trim()!=='';
+ // Hak akses settlement ditentukan oleh role dan outlet akun, bukan nama orang.
+ // Atmadita adalah akun/personel stockist Majesty Cell; nama tidak boleh membuat akun lain dianggap Finance.
+ const isFinanceUser=!mg&&!developer&&roleKey.includes('ADMIN FINANCE');
+ const stockistRole=roleKey.includes('STOCKIST');
+ const stockistOutlet=String(profile?.outlet||'').trim();
+ const allowedStockistOutlets=['MAJESTY CELL','MAJESTY GADGET','MAJESTY STORE'];
+ const isStockistUser=!mg&&!developer&&stockistRole&&allowedStockistOutlets.includes(stockistOutlet.toUpperCase());
  if(!(mg||developer||isStockistUser||isFinanceUser)){alert('Menu Pembayaran Settlement tidak tersedia untuk role ini.');return;}
  const stockistName=isStockistUser?String(profile.outlet).trim():null;
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
@@ -4158,8 +4162,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const totalFinanceValue=settlementUnits.reduce((sum,u)=>sum= sum+(Number(u._financeGross||0)>0&&u._financeProvider&&u._financeProvider!=='Tidak ada pencairan finance tercatat'?Number(u._financeGross||0):0),0);
    const productSummary='RINGKASAN TOTAL\nTotal nilai penjualan: '+money(totalSaleValue)+'\nTotal pencairan finance: '+money(totalFinanceValue)+'\nTotal kewajiban settlement: '+money(x.amount||0)+'\n\nRINCIAN PRODUK\n'+productDetails;
    const st=String(x.status||'').toUpperCase();const displayStatus=st==='RECEIVED'?'LUNAS':st;let actions='—';
-   if((isStockistUser||isFinanceUser)&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
-   else if((isFinanceUser||isStockistUser)&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
+   if(isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
+   else if(isStockistUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
    else if(st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
    else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-proof-wa="'+safe(x.id)+'" data-settlement-type="'+safe(x.settlement_type||'PROFIT_SHARING')+'">Konfirmasi transfer + foto WA</button>';
@@ -4307,6 +4311,9 @@ window.hmOpenPartnerSettlementManagement=async function(){
     if(!file.type.startsWith('image/')){alert('Pilih file foto/gambar.');return;}
     const ref=overlay.querySelector('#hmTransferProofRef').value.trim();
     const note=overlay.querySelector('#hmTransferProofNote').value.trim();
+    const cashAccountId=isCapital?String(overlay.querySelector('#hmTransferCashAccount')?.value||'').trim():'';
+    if(!ref){alert('Masukkan nomor referensi transfer terlebih dahulu.');overlay.querySelector('#hmTransferProofRef').focus();return;}
+    if(isCapital&&!cashAccountId){alert('Pilih akun kas/bank sumber dana terlebih dahulu.');overlay.querySelector('#hmTransferCashAccount')?.focus();return;}
     const msg='*KONFIRMASI TRANSFER SETTLEMENT — HELLO MAJESTY*\n\nYth. '+partner+', kami menginformasikan bahwa transfer settlement telah dilakukan. Mohon konfirmasi setelah dana benar-benar terlihat di rekening Anda.\n\n• Outlet: '+outlet+'\n• Tanggal: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n• Referensi transfer: '+(ref||'Tidak dicantumkan')+'\n'+(note?'• Catatan: '+note+'\n':'')+'\nBukti foto terlampir pada pesan ini. Mohon balas untuk mengonfirmasi penerimaan dana. Pesan ini bukan pengganti pengecekan saldo rekening.\n\nHello Majesty — Built on Trust';
     sendBtn.disabled=true;sendBtn.textContent='Memproses…';
     let shared=false;
@@ -4325,7 +4332,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
     }else{
      closeDialog();
     }
-    if(!ref){alert('Masukkan nomor referensi transfer terlebih dahulu.');return;}const proofNote=note||'Bukti foto dibagikan langsung via WhatsApp; file tidak disimpan di database.';let rpcResult;if(isCapital){const cashAccountId=overlay.querySelector('#hmTransferCashAccount')?.value;if(!cashAccountId){alert('Pilih akun kas/bank sumber dana terlebih dahulu.');return;}rpcResult=await window.sb.rpc('record_partner_settlement_transfer_with_account',{p_settlement_id:btn.dataset.transferProofWa,p_cash_account_id:cashAccountId,p_reference:ref,p_proof_note:proofNote});}else{rpcResult=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferProofWa,p_reference:ref,p_proof_note:proofNote});}const {error}=rpcResult;
+    const proofNote=note||'Bukti foto dibagikan langsung via WhatsApp; file tidak disimpan di database.';let rpcResult;if(isCapital){rpcResult=await window.sb.rpc('record_partner_settlement_transfer_with_account',{p_settlement_id:btn.dataset.transferProofWa,p_cash_account_id:cashAccountId,p_reference:ref,p_proof_note:proofNote});}else{rpcResult=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferProofWa,p_reference:ref,p_proof_note:proofNote});}const {error}=rpcResult;
     if(error){alert('Foto/pesan sudah dibagikan atau dibuka, tetapi pencatatan transfer gagal: '+error.message+'. Jangan klik ulang sebelum memeriksa status settlement.');return;}
     alert('Transfer dicatat. Menunggu mitra stockist terkait memverifikasi uang masuk.');window.hmOpenPartnerSettlementManagement();
    });
@@ -4525,20 +4532,14 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
      ['💰','Komisi Saya','Komisi pribadi sesuai hak akses','openCommission()']
    ]],
    ['💰','FINANCE',[
-     ['💰','Finance','Kas, laba & kontrol keuangan','openFinance()'],
-     ['📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()'],
+     ['💰','Finance','Operasional pembayaran & kontrol transaksi','openFinance()'],
+     ['📋','Laporan Finance','Ringkasan kas dan kewajiban operasional','hmOpenFinanceReport()'],
      ['💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")'],
      ['🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")'],
      ['💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")']
    ]],
-   ['📚','ACCOUNTING',[
-     ['📊','Dashboard Accounting','Ringkasan & kontrol accounting','openAccounting()'],
-     ['📒','Jurnal Umum','Pencatatan jurnal accounting','openAccountingModule("journal")'],
-     ['📖','Buku Besar','Mutasi & saldo akun','openAccountingModule("ledger")'],
-     ['⚖️','Neraca','Posisi aset, kewajiban & modal','openAccountingModule("balance")'],
-     ['📈','Laba Rugi','Pendapatan, biaya & laba','openAccountingModule("profit")'],
-     ['🩺','Health Check','Pemeriksaan kesehatan accounting','openAccountingModule("health")'],
-     ['💸','Transfer Kas ke Pusat','Pencatatan transfer kas','openAccountingModule("transfer")']
+   ['📚','ACCOUNTING DI ACCURATE',[
+     ['🔗','Status Sinkronisasi Accurate','Accounting resmi, jurnal, kas accounting, neraca dan laba rugi dikelola di Accurate. Hello Majesty menyimpan transaksi operasional, komisi, omzet, stok dan status settlement.','hmOpenAccurateSyncMonitor()']
    ]],
    ['🔗','ACCURATE',[
      ['🔗','Accurate Sync','Koneksi Accurate & status sinkronisasi','hmOpenAccurateSyncMonitor()'],
@@ -7100,6 +7101,10 @@ async function saveServiceClosing(id){
 function closeModal(ev){if(ev){ev.preventDefault();ev.stopPropagation();}const m=document.getElementById('modal');if(m){m.classList.add('hidden');m.style.removeProperty('display');}return false}window.closeModal=closeModal;
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 async function openAccounting(){
+  // Internal accounting reports are retired. Load the Accurate monitor through its safe lazy loader.
+  if(typeof window.hmAccurateLaunch==='function') return window.hmAccurateLaunch('sync');
+  if(typeof window.hmOpenAccurateSyncMonitor==='function') return window.hmOpenAccurateSyncMonitor();
+  return alert('Accounting resmi dikelola di Accurate. Silakan buka menu Accurate Sync.');
   const accountingAllowed=!!profile?.is_management||getActiveRoles().includes('FASILITATOR');
   if(!accountingAllowed){return alert('Accounting hanya dapat diakses Management atau Fasilitator.');}
   $('mt').textContent='📊 Accounting';
@@ -7185,6 +7190,10 @@ function hmEnsureAccountingDetailPanel(){
   return host;
 }
 async function openAccountingModule(module){
+  // Prevent access to retired in-app accounting screens; use the Accurate monitor lazy loader.
+  if(typeof window.hmAccurateLaunch==='function') return window.hmAccurateLaunch('sync');
+  if(typeof window.hmOpenAccurateSyncMonitor==='function') return window.hmOpenAccurateSyncMonitor();
+  return alert('Jurnal, buku besar, neraca, dan laba rugi resmi dikelola di Accurate. Silakan buka menu Accurate Sync.');
   const host=hmEnsureAccountingDetailPanel();
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
   const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

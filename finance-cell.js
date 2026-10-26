@@ -145,6 +145,9 @@ window.openPartnerSettlementWorkflow=async function(){
   let q=window.sb.from('partner_settlements').select('id,partner_name,outlet,settlement_type,settlement_date,amount,status,transfer_reference,note').order('created_at',{ascending:false}).limit(100);
   const r=await q;if(r.error)throw r.error;let rows=r.data||[];
   if(si)rows=rows.filter(v=>String(v.partner_name||'').trim().toLowerCase()===outlet.toLowerCase());
+  let summaryRows=[];try{const sr=await window.sb.rpc('partner_obligation_summary');if(!sr.error&&Array.isArray(sr.data))summaryRows=sr.data;}catch(_e){}
+  if(si)summaryRows=summaryRows.filter(v=>String(v.partner_name||'').trim().toLowerCase()===outlet.toLowerCase());
+  const summaryHtml=summaryRows.length?'<h3>Ringkasan kewajiban</h3>'+summaryRows.map(v=>'<div class="box" style="margin:8px 0"><b>'+esc(v.partner_name)+' • '+esc(v.outlet)+'</b><div>Modal belum diselesaikan: '+money(v.capital_due)+'</div><div>Profit sharing belum diselesaikan: '+money(v.profit_share_due)+'</div></div>').join(''):'';
   const cards=rows.map(v=>{let a='';
    if(mg&&['DRAFT','AWAITING_PARTNER_CONFIRMATION'].includes(v.status))a+='<button data-hms-req="'+v.id+'">Minta konfirmasi mitra</button>';
    if(si&&v.status==='AWAITING_PARTNER_CONFIRMATION')a+='<button data-hms-ok="'+v.id+'">Konfirmasi nominal</button><button data-hms-no="'+v.id+'">Minta koreksi</button>';
@@ -152,7 +155,7 @@ window.openPartnerSettlementWorkflow=async function(){
    if(si&&v.status==='TRANSFER_SENT')a+='<input data-hms-note="'+v.id+'" placeholder="Catatan penerimaan"><button data-hms-recv="'+v.id+'">Konfirmasi dana diterima</button><button data-hms-miss="'+v.id+'">Dana belum diterima</button>';
    return '<div class="box" style="margin:10px 0"><b>'+esc(v.partner_name)+' • '+esc(v.outlet)+'</b><div>'+money(v.amount)+' • '+esc(v.settlement_type)+'</div><div class="small">Status: '+esc(v.status)+' • '+esc(v.settlement_date||'-')+'</div>'+(v.transfer_reference?'<div class="small">Referensi: '+esc(v.transfer_reference)+'</div>':'')+(a?'<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">'+a+'</div>':'')+'</div>';
   }).join('');
-  x.b.innerHTML='<p>Alur konfirmasi terpisah: mitra menyetujui nominal → Management mencatat transfer → mitra memastikan dana masuk. Ini hanya memperbarui status; tidak membuat jurnal akuntansi.</p>'+(cards||'<div class="box">Belum ada settlement.</div>');
+  x.b.innerHTML='<p>Alur konfirmasi terpisah: mitra menyetujui nominal → Management mencatat transfer → mitra memastikan dana masuk. Ini hanya memperbarui status; tidak membuat jurnal akuntansi.</p>'+summaryHtml+'<h3>Riwayat settlement</h3>'+(cards||'<div class="box">Belum ada settlement.</div>');
   const reload=()=>window.openPartnerSettlementWorkflow();
   x.b.querySelectorAll('[data-hms-req]').forEach(b=>b.onclick=async()=>{const z=await window.sb.rpc('request_partner_settlement_confirmation',{p_settlement_id:b.dataset.hmsReq});if(z.error)return alert(z.error.message);reload();});
   x.b.querySelectorAll('[data-hms-ok]').forEach(b=>b.onclick=async()=>{if(!confirm('Nominal settlement sudah sesuai?'))return;const z=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:b.dataset.hmsOk,p_confirm:true,p_note:'Nominal dikonfirmasi melalui aplikasi'});if(z.error)return alert(z.error.message);reload();});

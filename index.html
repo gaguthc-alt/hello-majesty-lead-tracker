@@ -4091,9 +4091,12 @@ window.hmPrintSettlementDocument=function(btn){
 };
 window.hmOpenPartnerSettlementManagement=async function(){
  const roleKey=String(profile?.role||'').toUpperCase().replace(/_/g,' ').trim();
- const isAtmaditaFinance=String(profile?.name||'').trim().toLowerCase()==='atmadita';
- const isFinanceUser=!mg&&!developer&&(roleKey.includes('ADMIN FINANCE')||isAtmaditaFinance);
- const isStockistUser=!mg&&!developer&&roleKey==='MITRA STOCKIST'&&String(profile?.outlet||'').trim()!=='';
+ // Hak akses berdasarkan role dan outlet, bukan nama personel.
+ const isFinanceUser=!mg&&!developer&&roleKey.includes('ADMIN FINANCE');
+ const stockistRole=roleKey.includes('STOCKIST');
+ const stockistOutlet=String(profile?.outlet||'').trim();
+ const allowedStockistOutlets=['MAJESTY CELL','MAJESTY GADGET','MAJESTY STORE'];
+ const isStockistUser=!mg&&!developer&&stockistRole&&allowedStockistOutlets.includes(stockistOutlet.toUpperCase());
  if(!(mg||developer||isStockistUser||isFinanceUser)){alert('Menu Pembayaran Settlement tidak tersedia untuk role ini.');return;}
  const stockistName=isStockistUser?String(profile.outlet).trim():null;
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
@@ -4158,8 +4161,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const totalFinanceValue=settlementUnits.reduce((sum,u)=>sum= sum+(Number(u._financeGross||0)>0&&u._financeProvider&&u._financeProvider!=='Tidak ada pencairan finance tercatat'?Number(u._financeGross||0):0),0);
    const productSummary='RINGKASAN TOTAL\nTotal nilai penjualan: '+money(totalSaleValue)+'\nTotal pencairan finance: '+money(totalFinanceValue)+'\nTotal kewajiban settlement: '+money(x.amount||0)+'\n\nRINCIAN PRODUK\n'+productDetails;
    const st=String(x.status||'').toUpperCase();const displayStatus=st==='RECEIVED'?'LUNAS':st;let actions='—';
-   if((isStockistUser||isFinanceUser)&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
-   else if((isFinanceUser||isStockistUser)&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
+   if(isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
+   else if(isStockistUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
    else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
    else if(st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
    else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-proof-wa="'+safe(x.id)+'" data-settlement-type="'+safe(x.settlement_type||'PROFIT_SHARING')+'">Konfirmasi transfer + foto WA</button>';

@@ -7094,6 +7094,9 @@ async function saveServiceClosing(id){
 function closeModal(ev){if(ev){ev.preventDefault();ev.stopPropagation();}const m=document.getElementById('modal');if(m){m.classList.add('hidden');m.style.removeProperty('display');}return false}window.closeModal=closeModal;
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 async function openAccounting(){
+  // Internal accounting reports are retired: Accurate is the official accounting system.
+  if(typeof window.hmOpenAccurateSyncMonitor==='function') return window.hmOpenAccurateSyncMonitor();
+  return alert('Accounting resmi dikelola di Accurate. Modul status sinkronisasi Accurate belum tersedia.');
   const accountingAllowed=!!profile?.is_management||getActiveRoles().includes('FASILITATOR');
   if(!accountingAllowed){return alert('Accounting hanya dapat diakses Management atau Fasilitator.');}
   $('mt').textContent='📊 Accounting';
@@ -7179,6 +7182,9 @@ function hmEnsureAccountingDetailPanel(){
   return host;
 }
 async function openAccountingModule(module){
+  // Prevent access to the retired in-app journal, ledger, balance sheet, and P&L screens.
+  if(typeof window.hmOpenAccurateSyncMonitor==='function') return window.hmOpenAccurateSyncMonitor();
+  return alert('Jurnal, buku besar, neraca, dan laba rugi resmi dikelola di Accurate.');
   const host=hmEnsureAccountingDetailPanel();
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
   const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

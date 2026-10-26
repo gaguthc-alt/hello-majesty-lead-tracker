@@ -160,7 +160,7 @@ window.openPartnerSettlementWorkflow=async function(){
   x.b.querySelectorAll('[data-hms-send]').forEach(b=>b.onclick=async()=>{const id=b.dataset.hmsSend,ref=x.b.querySelector('[data-hms-ref="'+id+'"]').value.trim(),proof=x.b.querySelector('[data-hms-proof="'+id+'"]').value.trim();if(!ref)return alert('Referensi transfer wajib diisi.');if(!confirm('Transfer benar-benar sudah dikirim?'))return;const z=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:id,p_reference:ref,p_proof_note:proof||null});if(z.error)return alert(z.error.message);reload();});
   x.b.querySelectorAll('[data-hms-recv]').forEach(b=>b.onclick=async()=>{if(!confirm('Dana benar-benar sudah masuk?'))return;const id=b.dataset.hmsRecv,n=x.b.querySelector('[data-hms-note="'+id+'"]').value.trim(),z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:id,p_received:true,p_note:n||null});if(z.error)return alert(z.error.message);reload();});
   x.b.querySelectorAll('[data-hms-miss]').forEach(b=>b.onclick=async()=>{const n=prompt('Alasan dana belum diterima:');if(!n||!n.trim())return;const z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:b.dataset.hmsMiss,p_received:false,p_note:n.trim()});if(z.error)return alert(z.error.message);reload();});
- }catch(err){x.b.innerHTML='<div class="box">Gagal memuat settlement: '+esc(err?.message||err)+'</div>';}
+ }catch(err){x.b.textContent='Gagal memuat settlement: '+String(err?.message||err);}
 };
 
 /* HM_STAGED_SETTLEMENT_ENTRYPOINT */

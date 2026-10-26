@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hello Majesty — Pratinjau Majesty Gadget</title>
+<style>
+:root{color-scheme:dark;--bg:#081321;--panel:#122238;--line:#29415e;--muted:#a9bbd0;--text:#f3f7fc;--blue:#2878f0;--green:#12845b;--orange:#a85b10}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#081321,#102640);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);min-height:100vh}
+header{padding:22px max(18px,calc((100% - 980px)/2));border-bottom:1px solid var(--line);background:#0a1728}
+.brand{font-weight:800;letter-spacing:.08em;font-size:13px;color:#91baff}.sub{color:var(--muted);font-size:13px;margin-top:4px}
+main{max-width:980px;margin:28px auto;padding:0 18px}.notice{padding:13px 15px;border:1px solid #8b5c23;background:#3b2a16;border-radius:12px;color:#ffe2b8;margin-bottom:22px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:18px;margin:0 0 14px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
+.tile,.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}.tile strong{display:block;font-size:19px;margin-top:5px}.tile span{font-size:13px;color:var(--muted)}
+.card{margin-top:18px}.row{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}.pill{display:inline-block;padding:5px 10px;border-radius:99px;background:#5c3c14;color:#ffd99a;font-size:12px;font-weight:750;letter-spacing:.03em}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}.meta div{background:#0b1b2e;border:1px solid #223953;padding:12px;border-radius:10px}.meta small{display:block;color:var(--muted);margin-bottom:4px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}button{border:0;border-radius:10px;padding:12px 16px;font-weight:750;color:#fff;cursor:pointer;font-size:14px}.confirm{background:var(--green)}.pending{background:#46566b}.back{display:inline-block;color:#a9caff;margin-top:20px;text-decoration:none}
+footer{max-width:980px;margin:0 auto;padding:0 18px 28px;color:var(--muted);font-size:12px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.meta{grid-template-columns:1fr}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<header><div class="brand">HELLO MAJESTY</div><div class="sub">Built on Trust · Pratinjau Dashboard Stockist</div></header>
+<main>
+<div class="notice"><strong>MODE PRATINJAU — BUKAN AKUN AKTIF.</strong><br>Halaman ini menampilkan contoh dashboard Majesty Gadget. Tidak login sebagai pengguna asli, tidak mengambil data settlement langsung, dan tidak mengubah database.</div>
+<h1>Dashboard Majesty Gadget</h1>
+<div class="muted">Tampilan simulasi untuk memeriksa bagaimana aksi settlement akan terlihat pada akun stockist Gadget.</div>
+<div class="grid">
+ <div class="tile"><span>Unit / Stockist</span><strong>Majesty Gadget</strong></div>
+ <div class="tile"><span>Menu</span><strong>Settlement</strong></div>
+ <div class="tile"><span>Status contoh</span><strong>Menunggu konfirmasi</strong></div>
+</div>
+<section class="card">
+ <div class="row"><div><h2>Settlement Mitra</h2><div class="muted">Contoh transaksi · khusus tampilan pratinjau</div></div><span class="pill">TRANSFER SENT</span></div>
+ <div class="meta">
+  <div><small>Stockist penerima</small><strong>Majesty Gadget</strong></div>
+  <div><small>Jenis settlement</small><strong>Modal / Capital</strong></div>
+  <div><small>Outlet transaksi</small><strong>Majesty Plaza iPhone</strong></div>
+  <div><small>Status pembayaran</small><strong>Menunggu konfirmasi penerimaan</strong></div>
+ </div>
+ <h2>Aksi yang akan terlihat di akun Gadget</h2>
+ <div class="muted">Pada sistem aktif, hanya akun stockist yang outlet-nya cocok dengan Majesty Gadget yang boleh mengonfirmasi penerimaan ini.</div>
+ <div class="actions">
+  <button class="confirm" type="button" onclick="alert('Simulasi saja. Tidak ada konfirmasi yang dikirim dan database tidak berubah.')">✓ Konfirmasi uang diterima + WA</button>
+  <button class="pending" type="button" onclick="alert('Simulasi saja. Tidak ada status yang diubah dan database tidak berubah.')">Belum masuk</button>
+ </div>
+</section>
+<a class="back" href="https://hello-majesty-lead-tracker.pages.dev">← Kembali ke aplikasi utama</a>
+</main>
+<footer>Pratinjau visual statis · Jangan gunakan halaman ini untuk mengonfirmasi pembayaran nyata.</footer>
+</body>
+</html>

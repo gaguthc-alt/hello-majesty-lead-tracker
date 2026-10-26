@@ -3684,6 +3684,58 @@ function hmOpenHelloMajestyChat(){
   const url='hello-majesty-chat.html';
   window.open(url,'_blank','noopener');
 }
+function hmOpenDeveloperRolePreview(){
+ const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ if(rawRole!=='DEVELOPER APLIKASI' && rawRole!=='DEVELOPER'){
+   alert('Fitur pratinjau hanya tersedia untuk akun Developer.');
+   return;
+ }
+ const old=document.getElementById('hmDeveloperRolePreview');if(old)old.remove();
+ const partners={
+  'Majesty Gadget':[
+   ['📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login'],
+   ['📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri'],
+   ['📊','Laporan Stok & Modal Unit Bisnis','Stok, modal, dan kewajiban unit sendiri'],
+   ['🤝','Pembayaran Settlement','Settlement khusus unit stockist ini']
+  ],
+  'Majesty Cell':[
+   ['📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login'],
+   ['📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri'],
+   ['📊','Laporan Stok & Modal Unit Bisnis','Stok, modal, dan kewajiban unit sendiri'],
+   ['🤝','Pembayaran Settlement','Settlement khusus unit stockist ini']
+  ],
+  'Majesty Store':[
+   ['📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login'],
+   ['📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri'],
+   ['📊','Laporan Stok & Modal Unit Bisnis','Stok, modal, dan kewajiban unit sendiri'],
+   ['🤝','Pembayaran Settlement','Settlement khusus unit stockist ini']
+  ]
+ };
+ const wrap=document.createElement('div');wrap.id='hmDeveloperRolePreview';
+ wrap.style.cssText='position:fixed;inset:0;z-index:50000;background:rgba(2,6,23,.78);display:flex;align-items:center;justify-content:center;padding:14px';
+ const panel=document.createElement('div');panel.style.cssText='width:min(760px,100%);max-height:92vh;overflow:auto;background:#0f1d30;color:#f8fafc;border:1px solid #3b82f6;border-radius:18px;padding:18px;box-shadow:0 24px 70px #0009';
+ const top=document.createElement('div');top.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap';
+ const heading=document.createElement('div');heading.innerHTML='<div style="font-size:11px;font-weight:800;letter-spacing:1px;color:#93c5fd">DEVELOPER ACCESS</div><h2 style="margin:5px 0;color:#fff">Pratinjau Dashboard Stockist</h2><div style="color:#cbd5e1;font-size:13px">Akun Developer tetap aktif. Tidak menjalankan transaksi.</div>';
+ const close=document.createElement('button');close.type='button';close.textContent='Tutup ✕';close.style.cssText='padding:10px 14px;border-radius:10px;border:1px solid #64748b;background:#26364b;color:#fff;font-weight:700;cursor:pointer';close.onclick=()=>wrap.remove();
+ top.append(heading,close);
+ const label=document.createElement('label');label.textContent='Pilih unit stockist';label.style.cssText='display:block;margin:18px 0 7px;font-weight:700;color:#e2e8f0';
+ const select=document.createElement('select');select.style.cssText='width:100%;padding:12px;border-radius:10px;background:#1e293b;color:#fff;border:1px solid #64748b;font-size:15px';
+ Object.keys(partners).forEach(name=>{const op=document.createElement('option');op.value=name;op.textContent=name;select.appendChild(op)});
+ select.value='Majesty Gadget';
+ const notice=document.createElement('div');notice.style.cssText='margin:12px 0;padding:11px 13px;border:1px solid #92400e;background:#422006;border-radius:10px;color:#fde68a;font-size:13px;line-height:1.5';notice.textContent='MODE PRATINJAU — hanya contoh susunan menu. Tombol transaksi, stok, dan settlement tidak dijalankan. Ini bukan login sebagai pengguna dan belum memverifikasi data aktual atau izin database.';
+ const identity=document.createElement('div');identity.style.cssText='margin:16px 0 10px;padding:14px;border-radius:12px;background:#172b44;border:1px solid #334155';
+ const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px';
+ function render(){
+  const name=select.value;identity.innerHTML='<div style="font-size:11px;color:#93c5fd;font-weight:800">ROLE SIMULASI</div><div style="font-size:19px;font-weight:800;margin:4px 0">MITRA STOCKIST</div><div style="color:#cbd5e1">Unit: '+name+'</div>';
+  grid.replaceChildren();
+  partners[name].forEach(([icon,title,desc])=>{const card=document.createElement('div');card.style.cssText='padding:15px;border-radius:12px;background:#f8fafc;color:#0f172a;border:1px solid #cbd5e1';const h=document.createElement('div');h.style.cssText='font-weight:800;font-size:15px;margin-bottom:7px';h.textContent=icon+' '+title;const p=document.createElement('div');p.style.cssText='font-size:13px;line-height:1.45;color:#475569';p.textContent=desc;const tag=document.createElement('div');tag.style.cssText='margin-top:12px;font-size:11px;font-weight:800;color:#92400e';tag.textContent='PRATINJAU • NONAKTIF';card.append(h,p,tag);grid.appendChild(card)});
+ }
+ select.addEventListener('change',render);render();
+ panel.append(top,label,select,notice,identity,grid);wrap.appendChild(panel);
+ wrap.addEventListener('click',e=>{if(e.target===wrap)wrap.remove()});
+ document.addEventListener('keydown',function onKey(e){if(e.key==='Escape'&&document.getElementById('hmDeveloperRolePreview')){wrap.remove();document.removeEventListener('keydown',onKey)}});
+ document.body.appendChild(wrap);
+}
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI',developer=rawRole==='DEVELOPER APLIKASI',has=r=>roles.includes(r);
@@ -4613,7 +4665,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
  ['🛍️','Divisi Majesty','Sales · closing, unit terjual, dan laba','hmOpenKinerjaDivision:majesty'],
  ['⚙️','Divisi Refill','Finance & Administration · CS, finance, Accurate, dan sistem','hmOpenKinerjaDivision:refill']
 ].map(item=>{let card=cards.find(x=>x[1]===item[1]);if(!card){card=[item[0],item[1],item[2],item[3]];cards.push(card);}const cardIndex=cards.indexOf(card);return '<button type="button" class="role-home-submenu-item" data-hm-menu-index="'+cardIndex+'" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';}).join('')+'</div></section>':'';
- host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><section id="hmManagementMessage" class="hm-management-message"><div class="hm-message-heading">💬 PESAN MANAGEMENT UNTUK ANDA</div><div class="hm-message-body">Menyusun arahan berdasarkan peran dan data terbaru yang tersedia…</div><div class="hm-message-foot">Pembaruan setiap kali beranda dibuka.</div></section><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div>'+homeStatus+''+homePerformance+''+kpis+'<div class="role-home-tools"><button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><div class="role-home-section">MENU UTAMA</div><div class="role-home-categories">'+visibleGroups+divisionMenu+'</div><div id="hmMenuPanel" class="box hidden hm-menu-panel-bottom" style="margin:12px 0 0;padding:16px"><div class="hm-menu-panel-head"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800"></div><button type="button" class="secondary hm-menu-panel-close" onclick="hmCloseMainMenu()" aria-label="Tutup panel">✕ Tutup</button></div><div id="hmMenuPanelBody"></div></div>';
+ host.innerHTML='<div class="role-home"><h3>👋 '+esc(profile?.name||'')+'</h3><div class="role-sub">'+esc(title)+' • '+esc(sub)+'</div><section id="hmManagementMessage" class="hm-management-message"><div class="hm-message-heading">💬 PESAN MANAGEMENT UNTUK ANDA</div><div class="hm-message-body">Menyusun arahan berdasarkan peran dan data terbaru yang tersedia…</div><div class="hm-message-foot">Pembaruan setiap kali beranda dibuka.</div></section><div class="role-home-role"><div class="role-home-role-title">👤 PERAN SAYA</div><div class="role-home-role-list">'+roleText+'</div></div>'+homeStatus+''+homePerformance+''+kpis+'<div class="role-home-tools">'+(developer?'<button type="button" class="secondary" onclick="hmOpenDeveloperRolePreview()">👁️ Pratinjau Dashboard Role</button>':'')+<button type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button type="button" class="secondary" onclick="logout()">↪ Logout</button></div></div><div class="role-home-section">MENU UTAMA</div><div class="role-home-categories">'+visibleGroups+divisionMenu+'</div><div id="hmMenuPanel" class="box hidden hm-menu-panel-bottom" style="margin:12px 0 0;padding:16px"><div class="hm-menu-panel-head"><div id="hmMenuPanelTitle" style="font-size:18px;font-weight:800"></div><button type="button" class="secondary hm-menu-panel-close" onclick="hmCloseMainMenu()" aria-label="Tutup panel">✕ Tutup</button></div><div id="hmMenuPanelBody"></div></div>';
   // Pastikan panel performa dibangun ulang setelah HTML beranda diganti.
   if(typeof hmEnsureHomePerformanceStyle==='function')hmEnsureHomePerformanceStyle();
   if(typeof hmRenderHomePerformance==='function')setTimeout(()=>{try{void hmRenderHomePerformance();}catch(e){console.warn('[HM] persistent home performance render',e);}},0);

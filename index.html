@@ -3733,6 +3733,16 @@ function hmOpenDeveloperRolePreview(){
   const name=select.value;identity.innerHTML='<div style="font-size:11px;color:#93c5fd;font-weight:800">ROLE SIMULASI</div><div style="font-size:19px;font-weight:800;margin:4px 0">MITRA STOCKIST</div><div style="color:#cbd5e1">Unit: '+name+'</div>';
   grid.replaceChildren();
   partners[name].forEach(([icon,title,desc])=>{const card=document.createElement('div');card.style.cssText='padding:15px;border-radius:12px;background:#f8fafc;color:#0f172a;border:1px solid #cbd5e1';const h=document.createElement('div');h.style.cssText='font-weight:800;font-size:15px;margin-bottom:7px';h.textContent=icon+' '+title;const p=document.createElement('div');p.style.cssText='font-size:13px;line-height:1.45;color:#475569';p.textContent=desc;const tag=document.createElement('div');tag.style.cssText='margin-top:12px;font-size:11px;font-weight:800;color:#92400e';tag.textContent='PRATINJAU • NONAKTIF';card.append(h,p,tag);grid.appendChild(card)});
+  const settlement=document.createElement('div');
+  settlement.style.cssText='margin-top:14px;padding:16px;border-radius:12px;background:#111827;border:1px solid #475569';
+  const sh=document.createElement('div');sh.style.cssText='font-size:16px;font-weight:800;color:#fff';sh.textContent='Simulasi Aksi Settlement';
+  const sm=document.createElement('div');sm.style.cssText='font-size:12px;color:#cbd5e1;margin:5px 0 12px';sm.textContent='Contoh tampilan untuk '+name+' • status TRANSFER_SENT • tidak terhubung ke database';
+  const statusTag=document.createElement('div');statusTag.style.cssText='display:inline-block;padding:5px 9px;border-radius:999px;background:#78350f;color:#fde68a;font-size:12px;font-weight:800;margin-bottom:10px';statusTag.textContent='TRANSFER_SENT';
+  const actionRow=document.createElement('div');actionRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+  const received=document.createElement('button');received.type='button';received.textContent='Konfirmasi uang diterima + WA';received.style.cssText='padding:10px 12px;border-radius:9px;background:#047857;color:#fff;border:0;font-weight:700;cursor:default';
+  const notReceived=document.createElement('button');notReceived.type='button';notReceived.textContent='Belum masuk';notReceived.style.cssText='padding:10px 12px;border-radius:9px;background:#334155;color:#fff;border:1px solid #64748b;font-weight:700;cursor:default';
+  const inactive=document.createElement('div');inactive.style.cssText='font-size:11px;color:#fbbf24;margin-top:10px;font-weight:800';inactive.textContent='PRATINJAU VISUAL SAJA — tombol tidak menjalankan aksi dan tidak mengubah status.';
+  actionRow.append(received,notReceived);settlement.append(sh,sm,statusTag,actionRow,inactive);grid.appendChild(settlement);
  }
  select.addEventListener('change',render);render();
  panel.append(top,label,select,notice,identity,grid);wrap.appendChild(panel);

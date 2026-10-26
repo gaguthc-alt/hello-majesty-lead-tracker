@@ -3313,6 +3313,7 @@ function hmRunMainMenuAction(action){
   case "hmOpenStockistInfo('Majesty Gadget')": return window.hmOpenStockistInfo('Majesty Gadget');
   case "hmOpenStockistInfo('Majesty Store')": return window.hmOpenStockistInfo('Majesty Store');
   case "hmOpenStockistInfo('Majesty Cell','summary')": return window.hmOpenStockistSummary();
+  case 'hmOpenStockistSummary()': return window.hmOpenStockistSummary();
   case "hmOpenStockistInfo('Majesty Cell','profile')": return window.hmOpenStockistInfo('Majesty Cell','profile');
   case 'hmOpenStockistReceiving()': return window.hmOpenStockistReceiving();
   case 'hmOpenPartnerSettlementManagement()': return window.hmOpenPartnerSettlementManagement();
@@ -4013,7 +4014,7 @@ window.hmOpenStockistDirectory=function(){
  const mgmt=!!p.is_management||['MANAGEMENT','BUSINESS LEADER','DEVELOPER'].includes(role)||role.includes('DEVELOPER');
  const cellUser=!mgmt&&(outlet.toUpperCase()==='MAJESTY CELL'||role.includes('STOCKIST')||role==='ADMIN FINANCE MAJESTY CELL');
  if(!mgmt&&!cellUser){alert('Daftar Stockist hanya tersedia untuk Management dan pengguna stockist yang berwenang.');return;}
- const partners=[{name:'Majesty Cell',status:'Aktif',account:'Atmadita',note:'Mitra operasional; data transaksi dan settlement tetap harus tervalidasi'},{name:'Majesty Gadget',status:'Persiapan',account:'Belum dikonfirmasi',note:'Profil belum dikonfigurasi; belum dianggap memiliki akses transaksi'},{name:'Majesty Store',status:'Persiapan',account:'Belum dikonfirmasi',note:'Profil belum dikonfigurasi; belum dianggap memiliki akses transaksi'}].filter(x=>mgmt||x.name==='Majesty Cell');
+ const partners=[{name:'Majesty Cell',status:'Aktif',account:'Akun stockist terdaftar',note:'Akses dibatasi pada stok milik Majesty Cell'},{name:'Majesty Gadget',status:'Aktif',account:'Akun stockist terdaftar',note:'Akses dibatasi pada stok milik Majesty Gadget'},{name:'Majesty Store',status:'Aktif',account:'Akun stockist terdaftar',note:'Akses dibatasi pada stok milik Majesty Store'}].filter(x=>mgmt||x.name===outlet);
  const safe=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
  const existing=document.getElementById('hmStockistCooperationGuide');if(existing)existing.remove();
  const wrap=document.createElement('div');wrap.id='hmStockistCooperationGuide';wrap.style.cssText='position:fixed;inset:0;z-index:40000;background:rgba(15,23,42,.62);display:flex;align-items:center;justify-content:center;padding:16px';
@@ -4483,7 +4484,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    ['🏬','PUSAT PERSEDIAAN',[
      ['📥','Ajukan Barang Masuk Unit Bisnis','Input stok milik stockist, pilih outlet sendiri atau outlet titipan, lalu kirim untuk persetujuan','window.openReceiveStock()'],
      ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
-     ['📦','Ringkasan Stok Unit Bisnis','Lihat jumlah unit, status, lokasi, dan nilai stok milik unit bisnis',"hmOpenStockistInfo('Majesty Cell','summary')"],
+     ['📦','Ringkasan Stok Unit Bisnis','Lihat jumlah unit, status, lokasi, dan nilai stok milik unit bisnis','hmOpenStockistSummary()'],
      ['📊','Laporan Stok & Modal Unit Bisnis','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement semua unit bisnis','window.openCellFinanceReport()']
    ]],
    ['🤝','KOORDINASI ANTARUNIT BISNIS',[

@@ -4564,7 +4564,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
  // Menu utama sekarang berupa kelompok pekerjaan yang langsung terlihat.
  // Permission tetap mengikuti "cards", sehingga Management dapat melihat seluruh
  // fungsi dan role tim hanya melihat tombol yang memang diberikan.
- const visibleGroups=menuGroups.map((g,gi)=>{
+ let visibleGroups=menuGroups.map((g,gi)=>{
    if(['DIVISI HELLO — PROMOTION','DIVISI REFILL — FINANCE & ADMINISTRATION'].includes(g[1]))return '';
    // Atmadita/Admin Finance tidak melihat Content maupun Komisi.
    const isAtmaditaMenuAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita' || stockistUser;
@@ -4655,6 +4655,27 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
      return '<button type="button" class="role-home-submenu-item" data-hm-menu-index="'+cardIndex+'" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
    }).join('')+'</div></section>';
  }).join('');
+ // Stockist workspace: render exactly two authoritative groups. This avoids stale/duplicate
+ // category markup and prevents Pusat Persediaan cards from appearing under Coordination.
+ if(stockistUser){
+   const renderStockistGroup=(groupTitle,allowedTitles,headStyle,panelStyle)=>{
+     const group=menuGroups.find(g=>g[1]===groupTitle);
+     if(!group)return '';
+     const items=group[2].filter(item=>allowedTitles.includes(item[1]));
+     if(!items.length)return '';
+     return '<section class="role-home-menu role-home-category hm-stockist-group" style="background:'+headStyle+'!important">'
+       +'<div class="role-home-category-title" style="background:'+headStyle+'!important"><span>'+group[0]+' '+esc(group[1])+'</span></div>'
+       +'<div class="role-home-submenu" style="background:'+panelStyle+'!important">'+items.map(item=>{
+         let card=cards.find(x=>x[1]===item[1]);
+         if(!card){card=[item[0],item[1],item[2],item[3]];cards.push(card);}
+         const cardIndex=cards.indexOf(card);
+         return '<button type="button" class="role-home-submenu-item" data-hm-menu-index="'+cardIndex+'" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
+       }).join('')+'</div></section>';
+   };
+   visibleGroups=
+     renderStockistGroup('PUSAT PERSEDIAAN',['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Laporan Stok & Modal Unit Bisnis'],'linear-gradient(145deg,#087cf0,#2563eb)','#eff6ff')
+     +renderStockistGroup('KOORDINASI ANTARUNIT BISNIS',['Panduan Kerja Sama','Pembayaran Settlement'],'linear-gradient(145deg,#08b779,#10a981)','#ecfdf5');
+ }
  const roleCards='';
  const kpis='';
  const isAtmaditaStockistHome=String(profile?.name||'').trim().toLowerCase()==='atmadita' && String(profile?.role||'').toUpperCase().replace(/_/g,' ').includes('MITRA STOCKIST');

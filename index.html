@@ -3741,6 +3741,11 @@ function renderRoleHome(){
    // Komisi Saya disembunyikan dari akun Divisi Management; akses payroll/komisi tim tetap tersedia.
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
+ }else if(stockistUser){
+   add('📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login',"window.hmOpenStockistInfo('Ringkasan Stok Unit Bisnis')");
+   add('📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri',"window.hmOpenStockistInfo('Ajukan Barang Masuk Unit Bisnis')");
+   add('📊','Laporan Stok & Modal Unit Bisnis','Stok, modal, dan kewajiban unit sendiri','window.openCellFinanceReport()');
+   add('🤝','Pembayaran Settlement','Settlement khusus unit stockist ini','window.openPartnerSettlement()');
  }else if(facilitator){
    add('🎯','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
    add('📊','Laporan Performa Tim','Claim CS, handover, CS closing & sales closing per anggota tim','openPerformance()');
@@ -3815,7 +3820,7 @@ function renderRoleHome(){
 
  // SALES & PENJUALAN dibuka untuk seluruh tim kecuali Atmadita.
  // Management/Developer tetap memakai akses penuh; Atmadita tetap tanpa menu.
- if(!mg && !isAtmadita){
+ if(!mg && !isAtmadita && !stockistUser){
    add('🏪','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
    add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
    add('🔄','Form Tukar Tambah','Form tukar tambah','hmOpenTradeInline()');
@@ -3827,7 +3832,7 @@ function renderRoleHome(){
  // maupun CS sebagai permission/fungsi tambahan pada akun dengan role lain.
  // Ini sengaja ditempatkan setelah seluruh role utama diproses agar tidak
  // bergantung pada urutan role (mis. SALES + CS).
- if(!mg && cs){
+ if(!mg && !stockistUser && cs){
    add('📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()');
    add('👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()');
    add('🤝','Lead Handover','Qualified/Potensial → handover & share ke Sales','hmOpenLeadHandover()');
@@ -3837,7 +3842,7 @@ function renderRoleHome(){
 
  // CS dan SALES adalah fungsi operasional, bukan harus menjadi role utama.
  // Siapa pun yang memiliki salah satu fungsi ini mendapatkan menu kerja yang sama.
- if(!mg && (cs || sales)){
+ if(!mg && !stockistUser && (cs || sales)){
    if(cs)add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('👥','Lead Tracker','Lead & follow-up customer','hmOpenLeadTracker()');
    add('📱','Lead Baru','Input lead customer','hmOpenLeadNewInline()');

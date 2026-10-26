@@ -22,7 +22,7 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
   },true);
 })();
-</script><meta name="hm-build" content="20261026-stockist-settlement-role-fix-1"><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+</script><meta name="hm-build" content="20261026-stockist-settlement-role-fix-2"><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -4324,7 +4324,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
     }
     const {error}=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferProofWa,p_reference:ref||'Bukti foto dikirim via WhatsApp',p_proof_note:note||'Bukti foto dibagikan langsung via WhatsApp; file tidak disimpan di database.'});
     if(error){alert('Foto/pesan sudah dibagikan atau dibuka, tetapi pencatatan transfer gagal: '+error.message+'. Jangan klik ulang sebelum memeriksa status settlement.');return;}
-    alert('Transfer dicatat. Menunggu Majesty Cell mengonfirmasi uang masuk.');window.hmOpenPartnerSettlementManagement();
+    alert('Transfer dicatat. Menunggu mitra stockist terkait memverifikasi uang masuk.');window.hmOpenPartnerSettlementManagement();
    });
   }));
   b.querySelectorAll('[data-proof-wa]').forEach(btn=>btn.addEventListener('click',()=>{
@@ -4351,7 +4351,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const ref=prompt('Masukkan referensi transfer/bukti pembayaran:');if(ref===null||!ref.trim())return;
    const proof=prompt('Catatan bukti transfer (opsional):');if(proof===null)return;
    const {error}=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:btn.dataset.transferSent,p_reference:ref,p_proof_note:proof});
-   if(error){alert('Pencatatan transfer gagal: '+error.message);return;}alert('Transfer dicatat. Menunggu Atmadita memverifikasi uang masuk.');window.hmOpenPartnerSettlementManagement();
+   if(error){alert('Pencatatan transfer gagal: '+error.message);return;}alert('Transfer dicatat. Menunggu mitra stockist terkait memverifikasi uang masuk.');window.hmOpenPartnerSettlementManagement();
   }));
   b.querySelectorAll('[data-received-confirm-wa]').forEach(btn=>btn.addEventListener('click',async()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];

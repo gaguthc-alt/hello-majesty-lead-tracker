@@ -3978,12 +3978,16 @@ window.hmOpenStockistSummary=async function(){
     const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
     const ownPartner=String(outlet||'').trim();
+    const allowedStockists=['MAJESTY CELL','MAJESTY GADGET','MAJESTY STORE'];
     if(!mgmt&&role!=='FASILITATOR'){
-      const partner=ownPartner||'Majesty Cell';
-      rows=rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()===partner.toUpperCase());
+      if(!ownPartner||!allowedStockists.includes(ownPartner.toUpperCase())){
+        body.innerHTML='<div class="danger box">Outlet akun stockist tidak dikenali. Ringkasan dihentikan agar data unit lain tidak terbuka.</div>';
+        return;
+      }
+      rows=rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()===ownPartner.toUpperCase());
     }
     const partners=[...new Set(rows.map(x=>String(x.partner_name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
-    let selected=mgmt||role==='FASILITATOR'?(partners.find(n=>n.toUpperCase()==='MAJESTY CELL')||'ALL'):(ownPartner||'Majesty Cell');
+    let selected=mgmt||role==='FASILITATOR'?(partners.find(n=>n.toUpperCase()==='MAJESTY CELL')||'ALL'):ownPartner;
     const render=async()=>{
       const filtered=selected==='ALL'?rows:rows.filter(x=>String(x.partner_name||'').trim().toUpperCase()===selected.toUpperCase());
       const filteredHistorical=selected==='ALL'||selected.toUpperCase()==='MAJESTY CELL'?historicalDue:[];

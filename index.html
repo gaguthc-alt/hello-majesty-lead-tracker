@@ -3695,7 +3695,7 @@ function renderRoleHome(){
  // Management melihat seluruh modul utama.
  const isAtmadita=String(profile?.name||'').trim().toLowerCase()==='atmadita';
  const cards=[],add=(icon,title,desc,fn)=>{
-  if(isAtmadita)return;
+  if(isAtmadita||stockistUser)return;
   if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
  };
 
@@ -4506,7 +4506,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
  const visibleGroups=menuGroups.map((g,gi)=>{
    if(['DIVISI HELLO — PROMOTION','DIVISI REFILL — FINANCE & ADMINISTRATION'].includes(g[1]))return '';
    // Atmadita/Admin Finance tidak melihat Content maupun Komisi.
-   const isAtmaditaMenuAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita';
+   const isAtmaditaMenuAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita' || stockistUser;
    const hideAtmaditaGroups = isAtmaditaMenuAccount || String(profile?.role||'').toUpperCase().replace(/_/g,' ').includes('ADMIN FINANCE');
    if(hideAtmaditaGroups && (g[1]==='CONTENT & PROMOTION' || g[1]==='KOMISI'))return '';
    // Atmadita menangani Admin Finance, jadi tidak perlu menu aktivitas/performa lead.
@@ -4519,7 +4519,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    const isAtmaditaAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita';
    const isDivisiAccount = roles.includes('DIVISI') || rawRole==='DIVISI';
    const isSakaAccount = String(profile?.name||'').trim().toLowerCase()==='saka';
-   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='ACCURATE' && (developer || mg)) || (g[1]==='PUSAT PERSEDIAAN' && (developer || mg || facilitator || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL') || rawRole.includes('MITRA STOCKIST') || rawRole.includes('STOCKIST'))) || (g[1]==='KOORDINASI ANTARUNIT BISNIS' && (developer || mg || facilitator || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL'))) || (g[1]==='SALES & PENJUALAN' && sales) || (g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))));
+   const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='ACCURATE' && (developer || mg)) || (g[1]==='PUSAT PERSEDIAAN' && (developer || mg || facilitator || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL') || rawRole.includes('MITRA STOCKIST') || rawRole.includes('STOCKIST'))) || (g[1]==='KOORDINASI ANTARUNIT BISNIS' && (developer || mg || facilitator || isAtmaditaAccount || stockistUser || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL'))) || (g[1]==='SALES & PENJUALAN' && sales) || (g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))));
    if(g[1]==='ACCURATE' && !developer && !mg)return '';
    const isAccountingGroup = g[1]==='ACCOUNTING' && developer;
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
@@ -4552,17 +4552,17 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
    }
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
-   if(isAtmaditaAccount && g[1]==='PUSAT PERSEDIAAN'){
+   if((isAtmaditaAccount || stockistUser) && g[1]==='PUSAT PERSEDIAAN'){
      allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Laporan Stok & Modal Unit Bisnis'].includes(item[1]));
    }
-   if(isAtmaditaAccount && g[1]==='KOORDINASI ANTARUNIT BISNIS'){
+   if((isAtmaditaAccount || stockistUser) && g[1]==='KOORDINASI ANTARUNIT BISNIS'){
      allowed=g[2].filter(item=>['Panduan Kerja Sama','Daftar & Profil Unit Bisnis','Pembayaran Settlement'].includes(item[1]));
    }
    // Direktori seluruh mitra adalah menu internal Management/Developer, bukan akun stockist.
    if(!mg && !developer && g[1]==='KOORDINASI ANTARUNIT BISNIS'){
      allowed=allowed.filter(item=>item[1]!=='Daftar & Profil Unit Bisnis');
    }
-   if((isAtmaditaAccount && ['PUSAT PERSEDIAAN','KOORDINASI ANTARUNIT BISNIS'].includes(g[1]) || (!mg && !developer && g[1]==='KOORDINASI ANTARUNIT BISNIS')) && !allowed.length)return '';
+   if(((isAtmaditaAccount || stockistUser) && ['PUSAT PERSEDIAAN','KOORDINASI ANTARUNIT BISNIS'].includes(g[1]) || (!mg && !developer && g[1]==='KOORDINASI ANTARUNIT BISNIS')) && !allowed.length)return '';
    // KINERJA & TARGET: tim biasa hanya melihat item yang benar-benar diizinkan lewat cards.
    // Jangan tampilkan seluruh grup hanya karena Target Outlet tersedia; Laporan Performa Tim
    // tetap khusus Management, Developer, dan Divisi/Fasilitator yang punya izin eksplisit.

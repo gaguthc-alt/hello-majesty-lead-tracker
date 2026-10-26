@@ -4088,37 +4088,6 @@ window.hmPrintSettlementDocument=function(btn){
  const partner=btn.dataset.partner||'—',outlet=btn.dataset.outlet||'—',date=btn.dataset.date||'—',amount=Number(btn.dataset.amount||0).toLocaleString('id-ID'),status=btn.dataset.status||'—',detail=btn.dataset.detail||'Rincian produk tidak tersedia';
  const w=window.open('','_blank');if(!w){alert('Pop-up diblokir. Izinkan pop-up untuk aplikasi Hello Majesty lalu coba lagi.');return;}
  w.document.open();w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settlement Hello Majesty</title><style>*{box-sizing:border-box}body{font:12px Arial,sans-serif;color:#172033;margin:0 auto;padding:0;max-width:100%;width:100%}h1{font-size:21px;margin-bottom:4px}h2{font-size:16px}table{width:100%;border-collapse:collapse;margin:14px 0}td{border:1px solid #cbd5e1;padding:8px;vertical-align:top}.amount{font-size:19px;font-weight:bold}.detail{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;border:1px solid #cbd5e1;padding:12px;border-radius:6px;width:100%}.note{font-size:10px;color:#475569;margin-top:18px}@media screen{body{max-width:760px;padding:24px;margin:0 auto}}@media print{body{max-width:none;padding:0;margin:0}table{break-inside:avoid} .detail{break-inside:auto;page-break-inside:auto} .note{break-inside:avoid}}@page{size:A4;margin:12mm}</style></head><body><h1>HELLO MAJESTY</h1><div>Dokumen Penyelesaian Pembayaran Antarunit</div><hr><h2>Rincian Settlement</h2><table><tr><td><b>Stockist</b></td><td>'+esc(partner)+'</td></tr><tr><td><b>Outlet</b></td><td>'+esc(outlet)+'</td></tr><tr><td><b>Tanggal settlement</b></td><td>'+esc(date)+'</td></tr><tr><td><b>Status</b></td><td>'+esc(status)+'</td></tr><tr><td><b>Total kewajiban settlement</b></td><td class="amount">Rp '+esc(amount)+'</td></tr></table><h2>Ringkasan dan Rincian Produk</h2><div class="detail">'+esc(detail)+'</div><div class="note">Dokumen dicetak dari data aplikasi Hello Majesty. Bukti transfer bank merupakan lampiran terpisah jika tersedia.</div><script>window.onload=function(){setTimeout(function(){window.print()},300)};<\\/script>
-<script id="hm-stockist-empty-group-cleanup-20261026">
-/* Remove stale empty coordination headings from the stockist dashboard.
-   Keep all populated groups and menu actions untouched. */
-(function(){
-  'use strict';
-  function clean(){
-    try{
-      var identity=document.getElementById('identity');
-      var profileText=String(identity&&identity.textContent||'');
-      var home=document.getElementById('roleHome');
-      if(!home)return;
-      var pageText=String(home.innerText||home.textContent||'');
-      var isStockist=/MITRA STOCKIST/i.test(profileText+' '+pageText);
-      if(!isStockist)return;
-      home.querySelectorAll('.role-home-category').forEach(function(section){
-        var heading=String(section.querySelector('.role-home-category-title')?.innerText||'').replace(/^.*?🤝\s*/,'').trim();
-        if(!/KOORDINASI ANTARUNIT BISNIS/i.test(heading))return;
-        var submenu=section.querySelector('.role-home-submenu');
-        var buttons=submenu?submenu.querySelectorAll('button[data-hm-menu-title]'):[];
-        if(!buttons.length)section.remove();
-      });
-    }catch(e){console.warn('[HM stockist menu cleanup]',e);}
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',clean,{once:true});else clean();
-  var observer=new MutationObserver(clean);
-  observer.observe(document.documentElement,{childList:true,subtree:true});
-  setTimeout(clean,500);
-  setTimeout(clean,1500);
-  setTimeout(clean,3000);
-})();
-</script>
 </body></html>');w.document.close();
 };
 window.hmOpenPartnerSettlementManagement=async function(){

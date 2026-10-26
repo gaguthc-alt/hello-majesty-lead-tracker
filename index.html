@@ -4372,7 +4372,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
   b.querySelectorAll('[data-received-confirm-wa]').forEach(btn=>btn.addEventListener('click',async()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
    const partner=cells[0]?.textContent?.trim()||'Majesty Cell',outlet=cells[1]?.textContent?.trim()||'',date=cells[2]?.textContent?.trim()||'',amount=cells[3]?.textContent?.trim()||'',item=cells[5]?.textContent?.trim()||'';
-   if(!confirm('Pastikan dana benar-benar terlihat di rekening Majesty Cell sebelum menyatakan diterima. Lanjutkan?'))return;
+   if(!confirm('Pastikan dana benar-benar terlihat di rekening '+partner+' sebelum menyatakan diterima. Lanjutkan?'))return;
    const note=prompt('Catatan penerimaan (opsional):');if(note===null)return;
    const {error}=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:btn.dataset.receivedConfirmWa,p_received:true,p_note:note});
    if(error){alert('Konfirmasi penerimaan gagal: '+error.message);return;}

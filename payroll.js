@@ -85,16 +85,16 @@
         const total=budgets.reduce((n,b)=>n+s[b[2]],0);
         const detail=budgets.map(([name,budget,key])=>{
           const amount=s[key],ratio=s.profit>0?amount/s.profit*100:null,over=ratio!==null&&ratio>budget;
-          return '<tr'+(over?' class="hm-budget-over"':'')+'><td data-label="Jenis Komisi">'+esc(name)+(over?' <strong>⚠️ Melebihi budget</strong>':'')+'</td><td data-label="Nominal" class="hm-cs-amount">'+rp(amount)+'</td><td data-label="% terhadap Laba">'+pct(amount,s.profit)+'</td><td data-label="Acuan Budget">'+budget+'%</td></tr>';
+          return '<tr'+(over?' class="hm-budget-over"':'')+'><td data-label="No">'+(budgets.findIndex(b=>b[2]===key)+1)+'</td><td data-label="Jenis Komisi">'+esc(name)+'</td><td data-label="Nominal" class="hm-cs-amount">'+rp(amount)+'</td><td data-label="% terhadap Laba"><span class="hm-budget-pct'+(over?' is-over':'')+'">'+pct(amount,s.profit)+'</span></td><td data-label="Acuan Budget">'+budget+'%</td><td data-label="Status"><span class="hm-budget-status '+(over?'is-over':'is-safe')+'">'+(over?'⚠ Melebihi budget':'✓ Aman')+'</span></td></tr>';
         }).join('');
         const overAny=budgets.some(([,budget,key])=>s.profit>0&&s[key]/s.profit*100>budget);
         return '<div style="margin:12px 0;border:1px solid '+(overAny?'#dc2626':'#dbe2ea')+';border-radius:12px;padding:12px">'+
           '<h4 style="margin:0 0 8px">'+esc(outlet)+'</h4>'+
-          '<div class="hm-budget-metrics"><div><small>Total Laba Outlet</small><strong>'+rp(s.profit)+'</strong></div><div><small>Total Komisi</small><strong>'+rp(total)+'</strong></div><div><small>Komisi terhadap Laba</small><strong>'+pct(total,s.profit)+'</strong></div></div>'+
+          '<div class="hm-budget-metrics"><div class="metric-profit"><small>Total Laba Outlet</small><strong>'+rp(s.profit)+'</strong></div><div class="metric-commission"><small>Total Komisi</small><strong>'+rp(total)+'</strong></div><div class="metric-ratio"><small>Komisi terhadap Laba</small><strong>'+pct(total,s.profit)+'</strong></div></div>'+
           (s.profit<=0?'<p class="hm-budget-note">⚠️ Laba outlet nol atau belum tersedia; rasio budget belum dapat dihitung.</p>':'')+
           (overAny?'<p class="hm-budget-alert">⚠️ Ada jenis komisi yang melewati acuan budget. Perlu ditinjau Management; tidak ada pemotongan otomatis.</p>':'')+
-          '<div class="hm-budget-table-wrap"><table class="hm-budget-table"><thead><tr><th>Jenis Komisi</th><th>Nominal</th><th>% terhadap Laba</th><th>Acuan Budget</th></tr></thead><tbody>'+detail+
-          '<tr class="hm-budget-total"><td data-label="Jenis Komisi">Total</td><td data-label="Nominal">'+rp(total)+'</td><td data-label="% terhadap Laba">'+pct(total,s.profit)+'</td><td data-label="Acuan Budget">—</td></tr></tbody></table></div></div>';
+          '<div class="hm-budget-table-wrap"><table class="hm-budget-table"><thead><tr><th>No</th><th>Jenis Komisi</th><th>Nominal</th><th>% terhadap Laba</th><th>Acuan Budget</th><th>Status</th></tr></thead><tbody>'+detail+
+          '<tr class="hm-budget-total"><td data-label="No"></td><td data-label="Jenis Komisi">Total</td><td data-label="Nominal">'+rp(total)+'</td><td data-label="% terhadap Laba">'+pct(total,s.profit)+'</td><td data-label="Acuan Budget">—</td><td data-label="Status">—</td></tr></tbody></table></div></div>';
       }).join('')+'</section>';
   }
 

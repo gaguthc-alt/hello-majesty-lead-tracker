@@ -4504,8 +4504,8 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
 window.hmRunStockistJournalReclass = async function(){
   const p=window.profile||{};
   const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
-  if(!p.is_management && role!=='FASILITATOR'){
-    alert('Akses ditolak. Koreksi jurnal hanya untuk Management/Fasilitator.');
+  if(!p.is_management && role!=='MANAGEMENT'){
+    alert('Akses ditolak. Koreksi jurnal hanya untuk akun Management.');
     return;
   }
   const sb=window.sb;

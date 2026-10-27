@@ -195,7 +195,7 @@ async function reviewUnifiedWalkin(id,kind,action){
        if(saleId){
          const stockSource=String(saleRow.data?.stock_units?.source_type||'').toUpperCase();
          const partner=String(saleRow.data?.stock_units?.partner_name||'');
-         const isStockistConsignment=stockSource==='MAJESTY_CELL' && /^(majesty cell|majesty gadget|majesty store)$/i.test(partner.trim());
+         const isStockistConsignment=['STOCKIST','MAJESTY_CELL'].includes(stockSource) && /^(majesty cell|majesty gadget|majesty store)$/i.test(partner.trim());
          const sync=await sb.functions.invoke('accurate-sync',{body:{action:isStockistConsignment?'sync_consign_journal':'sync_sale',sale_id:saleId}});
          if(sync.error||!sync.data?.ok){
            console.warn('[HM Accurate] Approved Walk-In sync not confirmed:',sync.error||sync.data);
@@ -1152,19 +1152,16 @@ async function saveStock(){
  }else if(isAndroidNew){
   const color=String(selectedProduct?.color||'').trim(),imei1=fieldValue('standroidimei1').trim(),cost=fieldValue('standroidcost'),price=fieldValue('standroidprice');
   if(!color||!imei1||cost===''||price==='')return alert('Untuk Android New, Warna, IMEI 1, Harga Beli dan Harga Jual wajib diisi.');
-  data={product_id:fieldValue('stprod'),color,imei_1:imei1,imei_2:fieldValue('standroidimei2').trim()||null,grade:null,condition:null,battery_health:null,completeness:null,minus:null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='MAJESTY_CELL'?partnerName:null,cost:Number(cost),asking_price:Number(price),supplier:fieldValue('standroidsupplier').trim()||null,notes:fieldValue('standroidnotes').trim()||null,receipt_ref:null,received_source_note:source==='MAJESTY_CELL'?'Majesty Cell':'Management',outlet:inventoryReceiveOutlet()};
+  data={product_id:fieldValue('stprod'),color,imei_1:imei1,imei_2:fieldValue('standroidimei2').trim()||null,grade:null,condition:null,battery_health:null,completeness:null,minus:null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(cost),asking_price:Number(price),supplier:fieldValue('standroidsupplier').trim()||null,notes:fieldValue('standroidnotes').trim()||null,receipt_ref:null,received_source_note:source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
  }else{
-  data={product_id:fieldValue('stprod'),imei_1:fieldValue('stimei1').trim()||null,imei_2:fieldValue('stimei2').trim()||null,grade:selectedProduct?.grade||null,color:String(selectedProduct?.color||'').trim()||null,condition:fieldValue('stcondition').trim()||null,battery_health:fieldValue('stbh')?Number(fieldValue('stbh')):null,completeness:fieldValue('stcomplete').trim()||null,minus:fieldValue('stminus').trim()||null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='MAJESTY_CELL'?partnerName:null,cost:Number(fieldValue('stcost')||0),asking_price:Number(fieldValue('stprice')||0),notes:fieldValue('stnotes').trim()||null,receipt_ref:$('stref')?.value.trim()||null,received_source_note:source==='HUNTER'?'Hunter':source==='CHECKER'?'Checker':source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
+  data={product_id:fieldValue('stprod'),imei_1:fieldValue('stimei1').trim()||null,imei_2:fieldValue('stimei2').trim()||null,grade:selectedProduct?.grade||null,color:String(selectedProduct?.color||'').trim()||null,condition:fieldValue('stcondition').trim()||null,battery_health:fieldValue('stbh')?Number(fieldValue('stbh')):null,completeness:fieldValue('stcomplete').trim()||null,minus:fieldValue('stminus').trim()||null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(fieldValue('stcost')||0),asking_price:Number(fieldValue('stprice')||0),notes:fieldValue('stnotes').trim()||null,receipt_ref:$('stref')?.value.trim()||null,received_source_note:source==='HUNTER'?'Hunter':source==='CHECKER'?'Checker':source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
  }
- // Semua partner dipilih melalui sumber UI STOCKIST. Untuk kompatibilitas
- // dengan constraint database yang sudah ada, source_type tetap MAJESTY_CELL;
- // identitas pemilik barang yang sebenarnya disimpan terpisah di partner_name.
- // Dengan begitu Majesty Cell, Majesty Gadget, dan Majesty Store tidak tertukar.
+ // Standar sumber stok: STOCKIST. Nama pemilik tetap disimpan terpisah di partner_name.
  if(source==='STOCKIST'){
   const stockistNames=['Majesty Cell','Majesty Gadget','Majesty Store'];
   const selectedStockist=stockistNames.find(name=>name===String(partnerName||'').trim());
   if(!selectedStockist)return alert('Pilih Unit Bisnis yang valid: Majesty Cell, Majesty Gadget, atau Majesty Store.');
-  data.source_type='MAJESTY_CELL';
+  data.source_type='STOCKIST';
   data.partner_name=selectedStockist;
   data.received_source_note=selectedStockist;
   // Stockist harus masuk antrean persetujuan sejak insert, tidak pernah READY langsung.

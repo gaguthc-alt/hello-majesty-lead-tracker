@@ -15,7 +15,7 @@
 
   async function loadCommission(){
     if(!window.sb) throw new Error('Koneksi database belum siap.');
-    const x=await window.sb.rpc('management_team_commission_report_v2',{p_month_start:monthStart()});
+    const x=await window.sb.rpc('management_team_commission_report_v3',{p_month_start:monthStart()});
     if(x.error) throw x.error;
     return Array.isArray(x.data)?x.data:[];
   }
@@ -59,28 +59,43 @@
 
 
   function renderCommissionSummary(rows){
-    const sums={handover:0,closing:0,sales:0,freelance:0,hunter:0,checker:0,content:0,facilitator:0,profit:0};
-    rows.forEach(r=>{
-      sums.handover+=Math.max(Number(r.cs_commission||0)-Number(r.cs_closing_commission||0),0);
-      sums.closing+=Number(r.cs_closing_commission||0);
-      sums.sales+=Number(r.sales_commission||0);
-      sums.freelance+=Number(r.freelance_internal_commission||r.freelance_commission||0);
-      sums.hunter+=Number(r.hunter_commission||0);
-      sums.checker+=Number(r.checker_commission||0);
-      sums.content+=Number(r.content_creator_commission||0);
-      sums.facilitator+=Number(r.facilitator_commission||0);
-      sums.profit+=Number(r.outlet_profit||r.gross_profit||r.profit||0);
-    });
-    const total=sums.handover+sums.closing+sums.sales+sums.freelance+sums.hunter+sums.checker+sums.content+sums.facilitator;
-    const data=[
-      ['CS Handover',sums.handover,10,10],['CS Closing',sums.closing,5,5],['Sales',sums.sales,10,10],
-      ['Freelance Internal',sums.freelance,30,10],['Hunter',sums.hunter,10,10],['Checker',sums.checker,5,5],['Content Creator',sums.content,10,10],['Fasilitator',sums.facilitator,10,10]
+    const budgets=[
+      ['CS Handover',10,'handover'],['CS Closing',5,'closing'],['Sales',10,'sales'],
+      ['Freelance Internal',5,'freelance'],['Hunter',5,'hunter'],['Checker',5,'checker'],
+      ['Content Creator',10,'content'],['Fasilitator',10,'facilitator']
     ];
-    const pct=v=>sums.profit>0?(v/sums.profit*100).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'—';
-    const rowsHtml=data.map(([name,amount,formula,budget])=>
-      '<tr><td>'+esc(name)+'</td><td class="hm-cs-amount">'+rp(amount)+'</td><td>'+pct(amount)+'</td><td>'+formula+'%</td><td>'+budget+'%</td></tr>'
-    ).join('');
-    return '<section class="hm-commission-summary"><h3 style="margin:12px 0">📊 Rekap Komisi per Jenis</h3><div class="hm-cs-desktop"><div style="overflow:auto;border:1px solid #e5e7eb;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8fafc"><th style="text-align:left;padding:10px">Jenis Komisi</th><th style="text-align:right;padding:10px">Nominal</th><th style="text-align:right;padding:10px">% terhadap Laba</th><th style="text-align:right;padding:10px">% Rumus Komisi</th><th style="text-align:right;padding:10px">% Max Budget</th></tr></thead><tbody>'+rowsHtml+'<tr style="font-weight:800;background:#f8fafc"><td style="padding:10px">Total</td><td style="text-align:right;padding:10px">'+rp(total)+'</td><td style="text-align:right;padding:10px">'+pct(total)+'</td><td style="text-align:right;padding:10px">—</td><td style="text-align:right;padding:10px">60%</td></tr></tbody></table></div></div><div class="hm-cs-mobile">'+data.map(([name,amount,formula,budget])=>'<article style="border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin:8px 0"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>'+esc(name)+'</b><b>'+rp(amount)+'</b></div><div class="hm-cs-mobile-grid"><div><small>% terhadap Laba</small><strong>'+pct(amount)+'</strong></div><div><small>% Rumus Komisi</small><strong>'+formula+'%</strong></div><div><small>% Max Budget</small><strong>'+budget+'%</strong></div></div></article>').join('')+'<article style="border:2px solid #cbd5e1;border-radius:12px;padding:12px;margin-top:12px"><div style="display:flex;justify-content:space-between;gap:10px"><b>Total Komisi</b><b>'+rp(total)+'</b></div><div class="hm-cs-mobile-grid"><div><small>% terhadap Laba</small><strong>'+pct(total)+'</strong></div><div><small>% Rumus Komisi</small><strong>—</strong></div><div><small>% Max Budget</small><strong>60%</strong></div></div></article></div></section>';
+    const outlets={};
+    rows.forEach(r=>{
+      const key=r.outlet||'Outlet tidak diketahui';
+      const s=outlets[key]||(outlets[key]={profit:0,handover:0,closing:0,sales:0,freelance:0,hunter:0,checker:0,content:0,facilitator:0});
+      s.profit=Math.max(s.profit,Number(r.outlet_profit||0));
+      s.handover+=Math.max(Number(r.cs_commission||0)-Number(r.cs_closing_commission||0),0);
+      s.closing+=Number(r.cs_closing_commission||0);
+      s.sales+=Number(r.sales_commission||0);
+      s.freelance+=Number(r.freelance_internal_commission||r.freelance_commission||0);
+      s.hunter+=Number(r.hunter_commission||0);
+      s.checker+=Number(r.checker_commission||0);
+      s.content+=Number(r.content_creator_commission||0);
+      s.facilitator+=Number(r.facilitator_commission||0);
+    });
+    const pct=(amount,profit)=>profit>0?(amount/profit*100).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+'%':'—';
+    return '<section class="hm-commission-summary"><h3 style="margin:12px 0">📊 Rekap Komisi & Peringatan Budget</h3>'+
+      '<p class="small" style="margin:0 0 10px">Acuan budget adalah indikator peringatan untuk Management, bukan batas pembayaran. Komisi tidak dipotong otomatis.</p>'+
+      Object.entries(outlets).map(([outlet,s])=>{
+        const total=budgets.reduce((n,b)=>n+s[b[2]],0);
+        const detail=budgets.map(([name,budget,key])=>{
+          const amount=s[key],ratio=s.profit>0?amount/s.profit*100:null,over=ratio!==null&&ratio>budget;
+          return '<tr'+(over?' class="hm-budget-over"':'')+'><td>'+esc(name)+(over?' <strong>⚠️ MELEBIHI BUDGET</strong>':'')+'</td><td class="hm-cs-amount">'+rp(amount)+'</td><td>'+pct(amount,s.profit)+'</td><td>'+budget+'%</td></tr>';
+        }).join('');
+        const overAny=budgets.some(([,budget,key])=>s.profit>0&&s[key]/s.profit*100>budget);
+        return '<div style="margin:12px 0;border:1px solid '+(overAny?'#dc2626':'#dbe2ea')+';border-radius:12px;padding:12px">'+
+          '<h4 style="margin:0 0 8px">'+esc(outlet)+'</h4>'+
+          '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px"><span><small>Total Laba Outlet</small><br><strong>'+rp(s.profit)+'</strong></span><span><small>Total Komisi</small><br><strong>'+rp(total)+'</strong></span><span><small>Total Komisi terhadap Laba</small><br><strong>'+pct(total,s.profit)+'</strong></span></div>'+
+          (s.profit<=0?'<p class="hm-budget-note">⚠️ Laba outlet nol atau belum tersedia; rasio budget belum dapat dihitung.</p>':'')+
+          (overAny?'<p class="hm-budget-alert">⚠️ Ada jenis komisi yang melewati acuan budget. Perlu ditinjau Management; tidak ada pemotongan otomatis.</p>':'')+
+          '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="text-align:left;padding:8px">Jenis Komisi</th><th style="text-align:right;padding:8px">Nominal</th><th style="text-align:right;padding:8px">% terhadap Laba</th><th style="text-align:right;padding:8px">Acuan Budget Merah</th></tr></thead><tbody>'+detail+
+          '<tr style="font-weight:800;background:#f8fafc"><td style="padding:8px">Total</td><td style="text-align:right;padding:8px">'+rp(total)+'</td><td style="text-align:right;padding:8px">'+pct(total,s.profit)+'</td><td style="text-align:right;padding:8px">—</td></tr></tbody></table></div></div>';
+      }).join('')+'</section>';
   }
 
   async function renderCommissionDetail(host){
@@ -120,7 +135,7 @@
   }
 
   const css=document.createElement('style');
-  css.textContent='.hm-cs-mobile{display:none}.hm-cs-mobile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}.hm-cs-mobile-grid small{display:block;color:#64748b;font-size:11px}.hm-cs-mobile-grid strong{display:block;margin-top:3px;font-size:14px}@media(max-width:640px){.hm-cs-desktop{display:none!important}.hm-cs-mobile{display:block!important}.hm-cs-mobile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hm-cs-mobile-grid>div:last-child{grid-column:1/-1}}';
+  css.textContent='.hm-budget-over{background:#fef2f2;color:#991b1b}.hm-budget-over strong{display:block;font-size:11px}.hm-budget-alert{background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px;font-weight:700}.hm-budget-note{background:#fff7ed;color:#9a3412;border-radius:8px;padding:10px}.hm-cs-mobile{display:none}.hm-cs-mobile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}.hm-cs-mobile-grid small{display:block;color:#64748b;font-size:11px}.hm-cs-mobile-grid strong{display:block;margin-top:3px;font-size:14px}@media(max-width:640px){.hm-cs-desktop{display:none!important}.hm-cs-mobile{display:block!important}.hm-cs-mobile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hm-cs-mobile-grid>div:last-child{grid-column:1/-1}}';
   document.head.appendChild(css);
 
   async function enhance(){

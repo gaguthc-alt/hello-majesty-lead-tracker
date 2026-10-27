@@ -7274,8 +7274,13 @@ async function openAccountingModule(module){
     return;
   }
   if(module==='health'){
-    const x=await sb.rpc('accounting_health_check');if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';
-    const z=x.data||{};host.innerHTML='<h3>🩺 Health Check</h3><div class="lead"><b>'+(z.status==='HEALTHY'?'🟢 ACCOUNTING SEHAT':'🔴 PERLU PERHATIAN')+'</b><div class="small" style="margin-top:8px">Diperiksa: '+new Date(z.checked_at||Date.now()).toLocaleString('id-ID')+'</div></div>'+((z.issues||[]).map(i=>'<div class="lead"><b>'+escA(i.code)+'</b><div class="small">'+escA(i.message)+' • '+i.count+'</div></div>').join('')||'<div class="small">Tidak ada masalah ditemukan.</div>');return;
+    const [x,detailRes]=await Promise.all([sb.rpc('accounting_health_check'),sb.rpc('accounting_health_check_details')]);
+    if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';
+    if(detailRes.error)return host.innerHTML='<p>Ringkasan Health Check tersedia, tetapi detail jurnal gagal dimuat: '+escA(detailRes.error.message)+'</p>';
+    const z=x.data||{}, details=Array.isArray(detailRes.data)?detailRes.data:[];
+    const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
+    const rows=details.map(r=>'<div class="lead" style="margin-top:8px"><b>'+escA(r.account_code)+' — '+escA(r.account_name)+'</b><div class="small">Tanggal: '+escA(r.journal_date?new Date(r.journal_date).toLocaleString('id-ID'):'—')+' • Status akun: '+(r.account_active===false?'Tidak aktif':'Tidak ditemukan')+'</div><div class="small">Jurnal: '+escA(r.journal_id)+' • Sumber: '+escA(r.source_type||'—')+' • ID sumber: '+escA(r.source_id||'—')+'</div><div class="small">'+escA(r.description||'Tanpa keterangan')+'</div><div class="small">Debit: '+money(r.debit)+' • Kredit: '+money(r.credit)+'</div></div>').join('');
+    host.innerHTML='<h3>🩺 Health Check</h3><div class="lead"><b>'+(z.status==='HEALTHY'?'🟢 ACCOUNTING SEHAT':'🔴 PERLU PERHATIAN')+'</b><div class="small" style="margin-top:8px">Diperiksa: '+new Date(z.checked_at||Date.now()).toLocaleString('id-ID')+'</div></div>'+((z.issues||[]).map(i=>'<div class="lead"><b>'+escA(i.code)+'</b><div class="small">'+escA(i.message)+' • '+i.count+'</div></div>').join('')||'<div class="small">Tidak ada masalah ditemukan.</div>')+(details.length?'<h4 style="margin-top:14px">Detail jurnal dengan akun tidak aktif/tidak ditemukan ('+details.length+' baris)</h4>'+rows:'<div class="lead">Tidak ada detail jurnal akun bermasalah.</div>');return;
   }
   if(module==='balance'){
     const outletRes=await sb.from('team_profiles').select('outlet').eq('active',true).not('outlet','is',null).order('outlet');

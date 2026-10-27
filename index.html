@@ -4649,7 +4649,7 @@ window.hmRunStockistJournalReclass = async function(){
    const isSakaAccount = String(profile?.name||'').trim().toLowerCase()==='saka';
    const forceVisible = (g[1]==='CONTENT & PROMOTION' || (g[1]==='TOOLS' && !hideAtmaditaGroups) || (g[1]==='ACCURATE' && (developer || mg)) || (g[1]==='PUSAT PERSEDIAAN' && (developer || mg || facilitator || isAtmaditaAccount || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL') || rawRole.includes('MITRA STOCKIST') || rawRole.includes('STOCKIST'))) || (g[1]==='KOORDINASI ANTARUNIT BISNIS' && (developer || mg || facilitator || isAtmaditaAccount || stockistUser || isDivisiAccount || isSakaAccount || rawRole.includes('ADMIN FINANCE MAJESTY CELL'))) || (g[1]==='SALES & PENJUALAN' && sales) || (g[1]==='KINERJA & TARGET' && (mg || developer || isDivisiAccount || cards.some(x=>x[1]==='Target Outlet') || cards.some(x=>x[1]==='Pengaturan Target Outlet') || cards.some(x=>x[1]==='Laporan Performa Tim'))));
    if(g[1]==='ACCURATE' && !developer && !mg)return '';
-   const isAccountingGroup = g[1]==='ACCOUNTING' && developer;
+   const isAccountingGroup = g[1]==='ACCOUNTING' && (developer || mg || facilitator);
    // Finance sementara hanya ditampilkan kepada Developer untuk tahap penataan/pengujian.
    if(g[1]==='FINANCE' && !developer && !mg)return '';
    const isCommissionGroup = g[1]==='KOMISI' || g[1]==='KOMISI & REWARD';

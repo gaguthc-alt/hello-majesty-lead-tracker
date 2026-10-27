@@ -1,4 +1,4 @@
-/* HELLO MAJESTY PAYROLL — commission copy & detail helper */
+/* HELLO MAJESTY PAYROLL — commission copy & detail helper | budget-alert-v3 | 2026-10-28 */
 (function(){
   'use strict';
 

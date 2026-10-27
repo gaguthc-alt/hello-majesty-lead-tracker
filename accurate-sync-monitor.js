@@ -290,7 +290,8 @@
         const p=masters.find(function(x){return String(x.id)===g.product_id;});
         return p?{...p,hm_ready_stock:g.units.length,hm_stock_unit_ids:g.units.map(u=>u.id),hm_grade:g.grade,hm_color:g.color,accurate_item_id:g.accurate_item_id||'',accurate_item_no:g.accurate_item_no||''}:null;
       }).filter(function(p){return p && ['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(String(p.category||'').toUpperCase());}).sort(function(a,b){return String(a.category).localeCompare(String(b.category))||String(a.product).localeCompare(String(b.product))||String(a.variant).localeCompare(String(b.variant))||String(a.hm_grade).localeCompare(String(b.hm_grade))||String(a.hm_color).localeCompare(String(b.hm_color));});
-      window.__hmAccurateMapItems=Array.isArray(data.items)?data.items:[];
+      window.__hmAccurateMapItems=Array.isArray(data.items)?data.items.slice():[];
+      window.__hmAccurateMapItems.sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'id',{numeric:true,sensitivity:'base'})||String(a.no||'').localeCompare(String(b.no||''),'id',{numeric:true,sensitivity:'base'});});
       const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;
       // Show unmapped products first, then mapped products.
       products.sort(function(a,b){

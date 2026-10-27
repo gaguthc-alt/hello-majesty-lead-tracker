@@ -6249,7 +6249,7 @@ async function claimFromLink(id){
  // Database claim_lead remains the authoritative guard against stale UI and concurrent requests.
  if(!isService && profile?.name && profile?.outlet && sb){
    const pending=await sb.from('leads')
-     .select('lead_id,customer,sales_result,hasil,archived_at,sales_claimed_at,updated_at')
+     .select('lead_id,customer,sales_result,hasil,archived_at,sales_claimed_at,updated_at,created_at')
      .eq('outlet',profile.outlet)
      .eq('sales_claimed_by',profile.name)
      .is('archived_at',null)
@@ -6258,9 +6258,12 @@ async function claimFromLink(id){
    if(pending.error){
      console.warn('[HM Sales claim precheck]',pending.error);
    }else{
+     const nowMs=Date.now(),expiryMs=7*24*60*60*1000;
      const unresolved=(pending.data||[]).find(row=>{
        const result=String(row.sales_result||row.hasil||'').trim().toUpperCase();
-       return !['CLOSING','POTENSIAL','GAGAL'].includes(result);
+       const claimedAt=Date.parse(row.sales_claimed_at||row.updated_at||row.created_at||'');
+       const stillWithinSevenDays=Number.isFinite(claimedAt)&&(nowMs-claimedAt)<=expiryMs;
+       return stillWithinSevenDays&&!['CLOSING','POTENSIAL','GAGAL'].includes(result);
      });
      if(unresolved){
        const customer=unresolved.customer?(' ('+unresolved.customer+')'):'';

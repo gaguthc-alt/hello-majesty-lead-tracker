@@ -6264,7 +6264,7 @@ async function claimFromLink(id){
      });
      if(unresolved){
        const customer=unresolved.customer?(' ('+unresolved.customer+')'):'';
-       return alert('⚠️ LAPORKAN LEAD SEBELUMNYA TERLEBIH DAHULU.\\n\\nLead ID: '+unresolved.lead_id+customer+'\\n\\nLead tersebut masih belum memiliki hasil Sales. Laporkan CLOSING, POTENSIAL, atau GAGAL terlebih dahulu sebelum claim lead baru.');
+       return alert('⚠️ LAPORKAN LEAD SEBELUMNYA TERLEBIH DAHULU.\n\nLead ID: '+unresolved.lead_id+customer+'\n\nLead tersebut masih belum memiliki hasil Sales. Laporkan CLOSING, POTENSIAL, atau GAGAL terlebih dahulu sebelum claim lead baru.');
      }
    }
  }

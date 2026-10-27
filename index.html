@@ -4957,6 +4957,21 @@ window.hmRunStockistJournalReclass = async function(){
        });
        return;
      }
+     // KOREKSI JURNAL STOCKIST: jalur langsung agar tombol menjalankan handler yang benar.
+     if(title==='Koreksi Jurnal Stockist' || action==='hmRunStockistJournalReclass()'){
+       e.preventDefault();
+       e.stopPropagation();
+       if(!window.profile?.is_management && String(window.profile?.role||'').trim().toUpperCase().replace(/_/g,' ')!=='MANAGEMENT'){
+         alert('Akses ditolak. Koreksi jurnal hanya untuk akun Management.');
+         return;
+       }
+       if(typeof window.hmRunStockistJournalReclass!=='function'){
+         alert('Fungsi koreksi belum termuat. Muat ulang dashboard lalu coba lagi.');
+         return;
+       }
+       void window.hmRunStockistJournalReclass();
+       return;
+     }
      // ACCOUNTING: jalur langsung agar submenu tidak tertahan oleh router/panel lama.
      if(action.startsWith('openAccountingModule("')){
        hmCloseMainMenu();

@@ -6488,22 +6488,32 @@ async function shareWalkinApprovalWA(stockId,salePrice){
  const sel=document.getElementById('ss');
  const product=sel?.selectedOptions?.[0]?.textContent?.replace(/\s*•\s*List.*$/,'').trim()||'Stock Walk-In';
  const outlet=profile?.outlet||'-';
- let salesNames=[];
+ let salesNames=[], requesterName='', approvalId='';
  try{
-   const a=await sb.from('stock_sale_approvals').select('team_member_ids').eq('stock_unit_id',stockId).eq('status','PENDING').order('requested_at',{ascending:false}).limit(1).maybeSingle();
+   const [a,w] = await Promise.all([
+     sb.from('stock_sale_approvals').select('id,team_member_ids,requested_by,sale_price').eq('stock_unit_id',stockId).eq('status','PENDING').order('requested_at',{ascending:false}).limit(1).maybeSingle(),
+     sb.from('walkin_sale_approvals').select('id').eq('stock_unit_id',stockId).eq('status','PENDING').order('requested_at',{ascending:false}).limit(1).maybeSingle()
+   ]);
+   if(a?.error)throw a.error;
+   if(w?.error)throw w.error;
+   approvalId=w?.data?.id||'';
    const ids=Array.isArray(a?.data?.team_member_ids)?a.data.team_member_ids.filter(Boolean):[];
-   if(ids.length && typeof sb.rpc==='function'){
-     const n=await sb.rpc('get_team_profile_names',{p_user_ids:ids});
+   const requestedBy=a?.data?.requested_by;
+   const lookupIds=[...new Set([...ids,...(requestedBy?[requestedBy]:[])])];
+   if(lookupIds.length && typeof sb.rpc==='function'){
+     const n=await sb.rpc('get_team_profile_names',{p_user_ids:lookupIds});
      if(!n.error && Array.isArray(n.data)){
        const map=new Map(n.data.map(x=>[String(x.user_id),x.name]));
        salesNames=ids.map(id=>map.get(String(id))).filter(Boolean);
+       requesterName=requestedBy?String(map.get(String(requestedBy))||''):'';
      }
    }
- }catch(e){console.warn('[HM] gagal membaca sales Walk-In:',e);}
+ }catch(e){console.warn('[HM] gagal membaca data persetujuan Walk-In:',e);}
  if(!salesNames.length)salesNames=[profile?.name||'Sales'];
  const sales=salesNames.join(', ');
- const approvalLink=window.location.origin+window.location.pathname+'?open=walkin&approval='+encodeURIComponent(stockId||'');
- const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 Sales: '+sales,'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
+ const approvalLink=window.location.origin+window.location.pathname+'?open=walkin&approval='+encodeURIComponent(approvalId||'');
+ const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👥 Tim Sales: '+sales,...(requesterName&&!salesNames.includes(requesterName)?['🧾 Pengaju Closing: '+requesterName]:[]),'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
+ if(!approvalId){alert('ID persetujuan Walk-In belum ditemukan. Pengajuan mungkin belum tersimpan pada daftar persetujuan. Silakan cek menu Persetujuan Walk-In.');return;}
  window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
 }
 window.hmOpenWalkinFromLink=async function(){

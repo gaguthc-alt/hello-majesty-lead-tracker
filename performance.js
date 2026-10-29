@@ -92,14 +92,17 @@
     const start=bounds.start, end=bounds.end;
     const x=await sb.rpc('team_lead_performance_report_by_outlet',{p_start:start,p_end:end});
     if(x.error)throw x.error;
-    let rows=x.data||[];
+    const isStockistOutlet=name=>/^(majesty cell|majesty gadget|majesty store)$/i.test(String(name||'').trim());
+    // Stockist adalah pemilik/sumber stok, bukan outlet operasional funnel lead dan closing.
+    // Jangan tampilkan Majesty Cell, Majesty Gadget, atau Majesty Store pada laporan performa tim.
+    let rows=(x.data||[]).filter(r=>!isStockistOutlet(r.outlet));
     // Non-management users hanya melihat performa outlet/divisinya sendiri; jangan tampilkan tim Refill lintas outlet.
     const canViewAll=!!(profile?.is_management || window.isDeveloper || String(profile?.role||'').toUpperCase().includes('DEVELOPER'));
     const ownOutlet=String(profile?.outlet||'').trim().toLowerCase();
     if(!canViewAll && ownOutlet){ rows=rows.filter(r=>String(r.outlet||'').trim().toLowerCase()===ownOutlet); }
     const h=await sb.from('lead_events').select('employee_name,outlet').eq('event_type','BUYBACK_CLOSING').gte('event_at',start).lt('event_at',end);
     if(h.error)throw h.error;
-    let hunterRows=(h.data||[]).slice();
+    let hunterRows=(h.data||[]).filter(r=>!isStockistOutlet(r.outlet));
     if(!canViewAll && ownOutlet){ hunterRows=hunterRows.filter(r=>String(r.outlet||'').trim().toLowerCase()===ownOutlet); }
     // Pengajuan langsung tanpa Lead: hitung sebagai Hunter Closing dari stok yang diajukan.
     // Jika akses baca stock_units dibatasi oleh RLS, laporan utama tetap berjalan.

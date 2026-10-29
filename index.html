@@ -4669,7 +4669,7 @@ window.hmRunStockistJournalReclass = async function(){
  // Menu utama sekarang berupa kelompok pekerjaan yang langsung terlihat.
  // Permission tetap mengikuti "cards", sehingga Management dapat melihat seluruh
  // fungsi dan role tim hanya melihat tombol yang memang diberikan.
- let visibleGroups=menuGroups.map((g,gi)=>{
+ let visibleGroups=menuGroups.slice().sort((a,b)=>(a[1]==='ACCURATE'?1:0)-(b[1]==='ACCURATE'?1:0)).map((g,gi)=>{
    if(['DIVISI HELLO — PROMOTION','DIVISI REFILL — FINANCE & ADMINISTRATION'].includes(g[1]))return '';
    // Atmadita/Admin Finance tidak melihat Content maupun Komisi.
    const isAtmaditaMenuAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita' || stockistUser;

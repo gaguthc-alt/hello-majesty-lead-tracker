@@ -117,7 +117,7 @@ window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   if(typeof window.openBrochures!=='function'){
     await new Promise((resolve,reject)=>{
       const s=document.createElement('script');
-      s.src='brochures-v3.js?v=20261006-2';
+      s.src='brochures-v3.js?v=20261006-1';
       s.onload=resolve;
       s.onerror=()=>reject(new Error('File brochures.js gagal dimuat.'));
       document.head.appendChild(s);
@@ -3246,7 +3246,7 @@ async function hmOpenBrochuresInline(){
 window.hmOpenBrochuresInline=hmOpenBrochuresInline;
 function hmLoadModule(name){
   const key=String(name||'').trim();
-  const sources=(typeof hmModuleSources!=='undefined'&&hmModuleSources)||window.hmModuleSources||{inventory:'inventory.js?v=20261029-cell-approval-fix-6',performance:'performance.js',brochures:'brochures-v3.js?v=20261006-1'};
+  const sources=(typeof hmModuleSources!=='undefined'&&hmModuleSources)||window.hmModuleSources||{inventory:'inventory.js?v=20261029-wa-submit-fix-1',performance:'performance.js',brochures:'brochures-v3.js?v=20261006-1'};
   const promises=(typeof hmModulePromises!=='undefined'&&hmModulePromises)||window.hmModulePromises||(window.hmModulePromises=Object.create(null));
   const src=sources[key];
   if(!src)return Promise.reject(new Error('Modul '+key+' tidak dikenali.'));
@@ -4818,7 +4818,7 @@ window.hmRunStockistJournalReclass = async function(){
        void Promise.resolve().then(()=>{
          if(typeof window.openInventoryApprovals==='function') return runReceive();
          const s=document.createElement('script');
-         s.src='inventory.js?v=20261029-cell-approval-fix-6';
+         s.src='inventory.js?v=20261029-wa-submit-fix-1';
          return new Promise((resolve,reject)=>{
            s.onload=()=>{try{resolve(runReceive())}catch(e){reject(e)}};
            s.onerror=()=>reject(new Error('Modul Inventory gagal dimuat.'));
@@ -4845,7 +4845,7 @@ window.hmRunStockistJournalReclass = async function(){
              const existing=document.querySelector('script[data-hm-inventory-walkin]');
              if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',()=>reject(new Error('Modul Inventory gagal dimuat.')),{once:true});return;}
              const s=document.createElement('script');
-             s.src='inventory.js?v=20261029-cell-approval-fix-6';
+             s.src='inventory.js?v=20261029-wa-submit-fix-1';
              s.dataset.hmInventoryWalkin='1';
              s.onload=resolve;
              s.onerror=()=>reject(new Error('Modul Inventory gagal dimuat.'));
@@ -5150,7 +5150,7 @@ window.hmRunStockistJournalReclass = async function(){
              return;
            }
            const s=document.createElement('script');
-           s.src='inventory.js?v=20261029-cell-approval-fix-6';
+           s.src='inventory.js?v=20261029-wa-submit-fix-1';
            s.onload=()=>{try{resolve(callApproval())}catch(e){reject(e)}};
            s.onerror=()=>reject(new Error('Modul Finance gagal dimuat.'));
            document.head.appendChild(s);
@@ -6565,7 +6565,7 @@ window.hmOpenWalkinFromLink=async function(){
      else await new Promise((resolve,reject)=>{
        const existing=document.querySelector('script[data-hm-walkin-link]');
        if(existing){existing.addEventListener('load',resolve,{once:true});existing.addEventListener('error',reject,{once:true});return;}
-       const script=document.createElement('script');script.src='inventory.js?v=20261029-cell-approval-fix-6';script.dataset.hmWalkinLink='1';script.onload=resolve;script.onerror=()=>reject(new Error('Modul persetujuan tidak dapat dimuat'));document.head.appendChild(script);
+       const script=document.createElement('script');script.src='inventory.js?v=20261029-wa-submit-fix-1';script.dataset.hmWalkinLink='1';script.onload=resolve;script.onerror=()=>reject(new Error('Modul persetujuan tidak dapat dimuat'));document.head.appendChild(script);
      });
    }
    if(typeof window.openWalkinApprovals!=='function')throw new Error('Fungsi Persetujuan Walk-In belum tersedia.');

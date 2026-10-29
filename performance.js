@@ -287,14 +287,14 @@
     outletNames.forEach(outlet=>{
       const rs=today.filter(r=>r.outlet===outlet);
       if(!rs.some(active))return;
-      message+='🏪 *'+outlet.toUpperCase()+'*'+NL+metrics(sum(rs))+'👥 *RINCIAN PER ORANG*'+NL+personLines(rs)+NL;
+      message+='🏪 *'+outlet.toUpperCase()+'*'+NL+metrics(sum(rs))+NL+'👥 *RINCIAN PER ORANG*'+NL+personLines(rs)+NL;
     });
     if(!today.some(active))message+='Belum ada aktivitas hari ini.'+NL+NL;
     message+='━━━━━━━━━━━━━━'+NL+'📅 *2. AKUMULASI BULAN BERJALAN*'+NL+NL;
     outletNames.forEach(outlet=>{
       const rs=month.filter(r=>r.outlet===outlet);
       if(!rs.some(active))return;
-      message+='🏪 *'+outlet.toUpperCase()+'*'+NL+metrics(sum(rs))+'👥 *RINCIAN PER ORANG*'+NL+personLines(rs)+NL;
+      message+='🏪 *'+outlet.toUpperCase()+'*'+NL+metrics(sum(rs))+NL+'👥 *RINCIAN PER ORANG*'+NL+personLines(rs)+NL;
     });
     message+='📊 *TOTAL SEMUA OUTLET — BULAN INI*'+NL+metrics(sum(month))+NL+
       '━━━━━━━━━━━━━━'+NL+'*Hello Majesty*'+NL+'*Management System*'+NL+'*Built on Trust*';

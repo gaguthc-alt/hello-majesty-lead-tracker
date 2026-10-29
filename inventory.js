@@ -248,7 +248,7 @@ async function reviewInventoryReceive(stockId,action){
  const r=await sb.rpc('review_inventory_receive',{p_stock_unit_id:stockId,p_action:action,p_note:note||null});if(r.error)return alert(r.error.message);
  const nl=String.fromCharCode(10);let waMessage='';
  if(action==='APPROVE'){
-  const q=await sb.from('stock_units').select('product_id,product,variant,color,imei_1,imei_2,cost,outlet,partner_name,source_type').eq('id',stockId).maybeSingle();const s=q.data||{};
+  const q=await sb.from('stock_units').select('product_id,color,imei_1,imei_2,cost,outlet,partner_name,source_type').eq('id',stockId).maybeSingle();const s=q.data||{};
   let productLabel=[s.product,s.variant,s.color].filter(Boolean).join(' — ');
   if(!s.product&&s.product_id){const p=await sb.from('product_master').select('product,variant,color').eq('id',s.product_id).maybeSingle();if(p.data)productLabel=[p.data.product,p.data.variant,p.data.color].filter(Boolean).join(' — ');}
   waMessage=['✅ *BARANG MASUK DISETUJUI*','', 'Produk: '+(productLabel||'-'),'IMEI: '+(s.imei_1||'-'),'IMEI 2/EID: '+(s.imei_2||'-'),'Modal: Rp '+Number(s.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(s.outlet||'-'),'Sumber: '+(s.partner_name||s.source_type||'-'),'Status: *STOCK READY*'].join(nl);
@@ -302,7 +302,7 @@ async function openMyClosings(){
       return true;
     });
     const stockIds=[...new Set([...approvalRows.map(x=>x.stock_unit_id),...soldSales.map(x=>x.stock_unit_id)].filter(Boolean))];
-    const stocks=stockIds.length?(await sb.from('stock_units').select('id,product_id,product,variant,outlet,color,imei_1,status').in('id',stockIds)):{data:[],error:null};
+    const stocks=stockIds.length?(await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,status').in('id',stockIds)):{data:[],error:null};
     if(stocks.error)throw stocks.error;
     const pids=[...new Set((stocks.data||[]).map(x=>x.product_id).filter(Boolean))];
     const products=pids.length?(await sb.from('product_master').select('id,product,variant').in('id',pids)):{data:[],error:null};
@@ -1323,7 +1323,7 @@ async function openSalesReport(){
  // supaya satu query tambahan yang gagal tidak membuat laporan ikut gagal.
  try{
    const [stockRes,peopleRes]=await Promise.all([
-     stockIds.length?sb.from('stock_units').select('id,product_id,product,variant,color,imei_1,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
+     stockIds.length?sb.from('stock_units').select('id,product_id,color,imei_1,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
      rows.length?sb.rpc('get_sales_report_people',{p_transaction_ids:rows.map(r=>r.id).filter(Boolean)}):Promise.resolve({data:[]})
    ]);
    if(!stockRes.error)stocks=stockRes.data||[];

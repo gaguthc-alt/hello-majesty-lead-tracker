@@ -115,7 +115,7 @@
       }catch(parseErr){/* pertahankan pesan error awal */}
       if(result) result.textContent='GAGAL: '+msg;
       alert('Sinkronisasi gagal. Alasan dari backend:\n'+msg+'\n\nJangan kirim ulang sebelum penyebabnya diperiksa.');
-      try{await window.hmOpenAccurateSyncMonitor();}catch(_){}
+      // Jangan render ulang monitor saat gagal; biarkan pesan tetap terlihat di samping tombol.
     }
   };
   window.hmRunConsignJournal=async function(){

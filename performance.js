@@ -90,8 +90,20 @@
   async function getFunnel(mode){
     const bounds=mode==='today'?localDayBounds():{start:monthStart(mode).toISOString(),end:monthEnd(mode).toISOString()};
     const start=bounds.start, end=bounds.end;
-    const x=await sb.rpc('team_lead_performance_report_by_outlet',{p_start:start,p_end:end});
-    if(x.error)throw x.error;
+    let x=null,lastError=null;
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        x=await sb.rpc('team_lead_performance_report_by_outlet',{p_start:start,p_end:end});
+        if(x.error)throw x.error;
+        break;
+      }catch(err){
+        lastError=err;
+        const transient=err instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(String(err?.message||err));
+        if(!transient||attempt===2)throw err;
+        await new Promise(resolve=>setTimeout(resolve,700*(attempt+1)));
+      }
+    }
+    if(!x)throw lastError||new Error('Laporan gagal dimuat.');
     const isStockistOutlet=name=>/^(majesty cell|majesty gadget|majesty store)$/i.test(String(name||'').trim());
     // Stockist adalah pemilik/sumber stok, bukan outlet operasional funnel lead dan closing.
     // Jangan tampilkan Majesty Cell, Majesty Gadget, atau Majesty Store pada laporan performa tim.
@@ -229,6 +241,10 @@
     await render('month');
   };
   window.perfShare=async function(){
+    const shareButton=document.getElementById('perfShare');
+    const originalLabel=shareButton?.textContent||'📲 Share ke WhatsApp';
+    if(shareButton){shareButton.disabled=true;shareButton.textContent='⏳ Menyiapkan laporan...';}
+    try{
     const [monthRows,todayRows]=await Promise.all([getFunnel('month'),getFunnel('today')]);
     const normalize=source=>source.map(r=>({
       name:String(r.employee_name||'-'),outlet:String(r.outlet||r.outlet_name||'-'),
@@ -252,17 +268,17 @@
     };
     const personLines=rs=>{
       const activeRows=rs.filter(active).sort((a,b)=>(b.claim+b.handover+b.claimSales+b.cs+b.sales+b.hunter)-(a.claim+a.handover+a.claimSales+a.cs+a.sales+a.hunter));
-      if(!activeRows.length)return '  Belum ada aktivitas'+NL;
+      if(!activeRows.length)return 'Belum ada aktivitas'+NL;
       return activeRows.map(r=>{
-        const bits=[];
-        if(r.claim)bits.push('Claim CS '+fmt(r.claim));
-        if(r.handover)bits.push('Handover '+fmt(r.handover));
-        if(r.claimSales)bits.push('Claim Sales '+fmt(r.claimSales));
-        if(r.cs)bits.push('CS Closing '+fmt(r.cs));
-        if(r.sales)bits.push('Sales Closing '+fmt(r.sales));
-        if(r.hunter)bits.push('Hunter '+fmt(r.hunter));
-        return '• *'+r.name+'*: '+bits.join(' | ');
-      }).join(NL)+NL;
+        const lines=['👤 *'+r.name+'*'];
+        if(r.claim)lines.push('📲 Claim CS: '+fmt(r.claim));
+        if(r.handover)lines.push('🤝 Handover: '+fmt(r.handover));
+        if(r.claimSales)lines.push('📥 Claim Sales: '+fmt(r.claimSales));
+        if(r.cs)lines.push('🎯 CS Closing: '+fmt(r.cs));
+        if(r.sales)lines.push('🏆 Sales Closing: '+fmt(r.sales));
+        if(r.hunter)lines.push('🏹 Hunter: '+fmt(r.hunter));
+        return lines.join(NL);
+      }).join(NL+NL)+NL;
     };
     let message='📊 *LAPORAN PERFORMA TIM — HELLO MAJESTY*'+NL+
       '📅 Tanggal: *'+new Date().toLocaleDateString('id-ID')+'*'+NL+
@@ -283,6 +299,13 @@
     message+='📊 *TOTAL SEMUA OUTLET — BULAN INI*'+NL+metrics(sum(month))+NL+
       '━━━━━━━━━━━━━━'+NL+'*Hello Majesty*'+NL+'*Management System*'+NL+'*Built on Trust*';
     window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank','noopener');
+    }catch(err){
+      console.error('[HM] Share performance report failed',err);
+      const body=document.getElementById('perfBody');
+      if(body)body.innerHTML='<div class="lead"><b>Gagal menyiapkan laporan WhatsApp</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(err?.message||err||'Koneksi ke database gagal')+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';
+    }finally{
+      if(shareButton){shareButton.disabled=false;shareButton.textContent=originalLabel;}
+    }
   };
   window.perfShow=render;
   window.perfPerson=showPerson;

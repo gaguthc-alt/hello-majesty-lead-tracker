@@ -2474,6 +2474,10 @@ function getActiveRoles(){
 async function hmOpenInventoryApprovalDirect(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
  if(!panel||!body) return;
+ const currentRoles=(typeof getActiveRoles==='function'?getActiveRoles():[String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')]).map(r=>String(r).trim().toUpperCase().replace(/_/g,' '));
+ const currentManagement=!!profile?.is_management||currentRoles.includes('DIVISI')||currentRoles.includes('DEVELOPER')||currentRoles.includes('DEVELOPER APLIKASI');
+ const mayReviewCell=currentManagement||currentRoles.includes('MITRA STOCKIST')||currentRoles.includes('ADMIN FINANCE MAJESTY CELL');
+ if(!mayReviewCell){title.textContent='🔔 Persetujuan Barang Masuk (0)';panel.classList.remove('hidden');body.innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">🔒</div><b>Akun ini tidak memiliki akses persetujuan barang masuk.</b></div>';panel.scrollIntoView({behavior:'smooth',block:'start'});return;}
  title.textContent='🔔 Persetujuan Barang Masuk';
  panel.classList.remove('hidden');
  body.innerHTML='<div class="box"><b>Memuat data Barang Masuk…</b></div>';
@@ -2486,9 +2490,9 @@ async function hmOpenInventoryApprovalDirect(){
   const rows=r.data||[];
   if(!rows.length){body.innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">✅</div><b>Tidak ada Barang Masuk yang menunggu verifikasi.</b></div>';return;}
   const ids=rows.map(x=>x.stock_unit_id).filter(Boolean);
-  const s=ids.length?await db.from('stock_units').select('id,product_id,outlet,color,imei_1,cost,asking_price,status,partner_name').in('id',ids):{data:[],error:null};
+  const s=ids.length?await db.from('stock_units').select('id,product_id,outlet,color,imei_1,cost,asking_price,status,partner_name,source_type').in('id',ids):{data:[],error:null};
   if(s.error)throw s.error;
-  const stocks=s.data||[], pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
+  const stocks=s.data||[];const eligibleRows=rows.filter(a=>{const st=stocks.find(x=>x.id===a.stock_unit_id)||{};const cell=String(st.source_type||'').toUpperCase()==='STOCKIST'&&String(st.partner_name||'').trim().toUpperCase()==='MAJESTY CELL';return !cell||mayReviewCell;});rows.splice(0,rows.length,...eligibleRows);if(!rows.length){title.textContent='🔔 Persetujuan Barang Masuk (0)';body.innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">✅</div><b>Tidak ada pengajuan yang memerlukan persetujuan akun ini.</b></div>';return;}const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
   const pr=pids.length?await db.from('product_master').select('id,product,variant').in('id',pids):{data:[],error:null};
   if(pr.error)throw pr.error;
   const users=[...new Set(rows.map(x=>x.requested_by).filter(Boolean))];
@@ -3966,7 +3970,7 @@ function renderRoleHome(){
  ];
  if(inventoryAccess){
    const allItems=['Stok Siap Jual'];
-   const facDivItems=['Dashboard Inventory','Master Produk','Barang Masuk','Persetujuan Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
+   const facDivItems=['Dashboard Inventory','Master Produk','Barang Masuk','Persetujuan Walk-In','Mutasi Stok','Riwayat Stok','Penyesuaian Stok'];
    coreInventoryCards.forEach(item=>{
      let allowed = false;
      if (item[1] === 'Laporan Fasilitator') {
@@ -3975,6 +3979,9 @@ function renderRoleHome(){
        allowed = true;
      } else if (item[1] === 'Stock Checker' || item[1] === 'Komisi Checker') {
        allowed = inventoryIsManagementLevel;
+     } else if (item[1] === 'Persetujuan Barang Masuk') {
+       const approvalRoles=['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'];
+       allowed = inventoryIsManagementLevel || roles.some(r=>approvalRoles.includes(String(r).trim().toUpperCase().replace(/_/g,' ')));
      } else {
        allowed = inventoryIsManagementLevel || allItems.includes(item[1]) || (inventoryFacDivAccess && facDivItems.includes(item[1]));
      }

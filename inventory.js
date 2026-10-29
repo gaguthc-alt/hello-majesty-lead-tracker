@@ -1302,7 +1302,7 @@ async function openSalesReport(){
  // supaya satu query tambahan yang gagal tidak membuat laporan ikut gagal.
  try{
    const [stockRes,peopleRes]=await Promise.all([
-     stockIds.length?sb.from('stock_units').select('id,product_id,color,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
+     stockIds.length?sb.from('stock_units').select('id,product_id,product,variant,color,imei_1,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
      rows.length?sb.rpc('get_sales_report_people',{p_transaction_ids:rows.map(r=>r.id).filter(Boolean)}):Promise.resolve({data:[]})
    ]);
    if(!stockRes.error)stocks=stockRes.data||[];
@@ -1330,7 +1330,8 @@ async function openSalesReport(){
    const st=stockMap[r.stock_unit_id]||{},pm=productMap[st.product_id]||{},lead=leadMap[hmNormalizePhone(r.customer_phone)]||null;
    return {
      ...r,
-     display_product:[pm.product||r.product_name||'Produk tidak ditemukan',pm.variant].filter(Boolean).join(' — '),
+     display_product:[st.product||pm.product||r.product_name||'Produk tidak ditemukan',st.variant||pm.variant].filter(Boolean).join(' — '),
+     display_product_details:[st.color?'Warna: '+st.color:'',st.grade?'Grade: '+st.grade:'',st.battery_health?'BH: '+st.battery_health:'',st.imei_1?'IMEI akhir: '+String(st.imei_1).replace(/\\D/g,'').slice(-4):''].filter(Boolean).join(' • '),
      display_cs:r.customer_source==='WALK-IN'?'Walk-In':(r.lead_id?(r.cs_closing||r.cs_pic||peopleMap[r.id]?.cs_name||lead?.cs||lead?.cs_claimed_by||'-'):(peopleMap[r.id]?.cs_name||r.cs_closing||lead?.cs||lead?.cs_claimed_by||'-')),
      display_sales:peopleMap[r.id]?.sales_name||r.sales_closing||'-'
    };
@@ -1368,7 +1369,7 @@ function renderInventorySalesReport(){
  '<div class="row" style="margin:12px 0"><button class="'+(period==='TODAY'?'':'secondary')+'" onclick="showSalesReportPeriod(\'TODAY\')">📅 Hari Ini</button><button class="'+(period==='MONTH'?'':'secondary')+'" onclick="showSalesReportPeriod(\'MONTH\')">📆 Bulan Ini</button></div>'+
  '<div class="small">Outlet aktif: <b>'+esc(window.hmSalesReportOutlet==='ALL'?'Semua Outlet':window.hmSalesReportOutlet)+'</b></div>'+
  '<div class="stats" style="margin-top:8px">'+invStat('Omzet',x.total)+invStat('Laba',x.profit)+'</div>'+
- (x.rows.length?x.rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.display_product||'-')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div><div class="small">CS: <b>'+esc(r.display_cs||'-')+'</b> • Sales: <b>'+esc(r.display_sales||'-')+'</b></div><div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
+ (x.rows.length?x.rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.display_product||'-')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div>'+(r.display_product_details?'<div class="small" style="margin-top:4px">🔎 '+esc(r.display_product_details)+'</div>':'')+'<div class="small">Outlet: <b>'+esc(r.outlet||'-')+'</b></div><div class="small">CS: <b>'+esc(r.display_cs||'-')+'</b> • Sales: <b>'+esc(r.display_sales||'-')+'</b></div><div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
 }
 function changeSalesReportOutlet(outlet){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');

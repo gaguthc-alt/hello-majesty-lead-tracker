@@ -663,17 +663,16 @@ async function refreshCheckerOptions(){
 }
 
 function toggleHunterField(){
- const source=$('stsource')?.value||'MANAGEMENT';
  const box=$('hunterBox'),checkerBox=$('checkerBox');
- // Hunter dan Checker adalah penugasan opsional pada Management Stock, bukan sumber modal terpisah.
- const showAssignments=source==='MANAGEMENT';
- if(box){box.classList.toggle('hidden',!showAssignments);box.style.display=showAssignments?'block':'none';}
+ // Hunter dan Checker adalah penugasan opsional untuk semua sumber barang, bukan sumber modal.
+ const showAssignments=true;
+ if(box){box.classList.remove('hidden');box.style.display='block';}
  if(checkerBox){
-  checkerBox.classList.toggle('hidden',!showAssignments);checkerBox.style.display=showAssignments?'block':'none';
-  checkerBox.style.visibility=showAssignments?'visible':'hidden';
+  checkerBox.classList.remove('hidden');checkerBox.style.display='block';
+  checkerBox.style.visibility='visible';
   const label=checkerBox.querySelector('label');if(label)label.innerHTML='Pilih Checker <span class="small">(opsional; centang satu atau beberapa nama)</span>';
  }
- if(showAssignments)refreshCheckerOptions();
+ refreshCheckerOptions();
 }
 function togglePartnerFields(){const box=$('partnerBox'),source=$('stsource')?.value||'MANAGEMENT';const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const ownStockist=role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL';const show=source==='STOCKIST'&&!ownStockist;if(box){box.classList.toggle('hidden',!show);box.style.display=show?'block':'none';}const sel=$('stpartner');if(sel&&role==='ADMIN FINANCE MAJESTY CELL'){sel.value='Majesty Cell';sel.disabled=true;}else if(sel)sel.disabled=false;}
 function inventoryReceiveOutlet(){
@@ -1149,8 +1148,8 @@ async function saveStock(){
   const allowedDestinations=[String(profile?.outlet||'').trim(),'Majesty Plaza iPhone','Majesty Refill Phone'].filter(Boolean).map(x=>x.toLowerCase());
   if(!allowedDestinations.includes(String(receiveOutlet||'').trim().toLowerCase()))return alert('Unit Bisnis hanya dapat memasukkan barang ke unit sendiri, Majesty Plaza iPhone, atau Majesty Refill Phone.');
  }
- const hunters=source==='MANAGEMENT'?selectedReceivePeople('sthunter'):[];
- const checkers=source==='MANAGEMENT'?selectedReceivePeople('stchecker'):[];
+ const hunters=selectedReceivePeople('sthunter');
+ const checkers=selectedReceivePeople('stchecker');
  const hunter=hunters[0]||null,checker=checkers[0]||null;
  const currentRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const partnerName=$('stpartner')?.value||(currentRole==='ADMIN FINANCE MAJESTY CELL'?'Majesty Cell':currentRole==='MITRA STOCKIST'?String(profile?.outlet||'').trim():null);
  if(source==='STOCKIST'&&!partnerName)return alert('Unit Bisnis asal barang wajib dipilih.');

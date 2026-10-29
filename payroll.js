@@ -148,7 +148,8 @@
     const pending=rows.filter(x=>x.status==='PENDING').reduce((a,x)=>a+Number(x.commission_amount||0),0);
     const paid=rows.filter(x=>x.status==='PAID').reduce((a,x)=>a+Number(x.commission_amount||0),0);
     const all=rows.reduce((a,x)=>a+Number(x.commission_amount||0),0);
-    const teamTotal=(teamRows||[]).reduce((a,x)=>a+Number(x.total_commission||0),0);\n    const grandTotal=teamTotal+pending;
+    const teamTotal=(teamRows||[]).reduce((a,x)=>a+Number(x.total_commission||0),0);
+    const grandTotal=teamTotal+pending;
     const partnerNames=['Majesty Cell','Majesty Gadget','Majesty Store'];
     const summary=partnerNames.map(name=>{
       const list=rows.filter(x=>x.partner_name===name);

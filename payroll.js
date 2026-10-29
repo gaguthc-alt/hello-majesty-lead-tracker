@@ -162,7 +162,9 @@
         : '';
       return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:start"><b>'+esc(x.partner_name)+'</b><span class="badge">'+(x.status==='PAID'?'Sudah dibayar':x.status==='REVERSED'?'Dibatalkan':'Belum dibayar')+'</span></div><div class="small">'+esc(x.outlet)+' • '+new Date(x.sold_at).toLocaleDateString('id-ID')+'</div><div style="margin-top:5px">'+esc(product||'Produk')+'</div><div class="small">Laba transaksi: '+rp2(x.profit_basis)+' • Tarif 10%</div><div>Komisi mitra: <b>'+rp2(x.commission_amount)+'</b></div>'+(x.paid_at?'<div class="small">Dibayar: '+new Date(x.paid_at).toLocaleDateString('id-ID')+(x.payment_note?' • '+esc(x.payment_note):'')+'</div>':'')+action+'</div>';
     }).join('');
+    host.querySelector('[data-hm-partner-commission-section]')?.remove();
     const section=document.createElement('section');
+    section.dataset.hmPartnerCommissionSection='1';
     section.className='box';
     section.style.marginTop='16px';
     section.innerHTML='<h3 style="margin-top:0">🤝 Komisi Mitra Stockist</h3><p class="small">Dihitung 10% dari laba transaksi unit milik Majesty Cell, Majesty Gadget, dan Majesty Store yang berstatus SOLD. Terpisah dari bagi hasil modal, serta komisi Hunter/Checker/CS/Sales.</p><div class="hm-budget-metrics"><div class="metric-profit"><small>Total komisi historis</small><strong>'+rp2(all)+'</strong></div><div class="metric-commission"><small>Belum dibayar</small><strong>'+rp2(pending)+'</strong></div><div class="metric-ratio"><small>Sudah dibayar</small><strong>'+rp2(paid)+'</strong></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:12px 0">'+summary+'</div><h4>Rincian transaksi</h4>'+(detail||'<p class="small">Belum ada komisi mitra.</p>');

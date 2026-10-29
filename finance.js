@@ -748,7 +748,7 @@ window.openFinanceSection=async function(section){
       const [start,end]=rangeFn('month');
       const x=await sb.rpc('finance_management_dashboard',{p_start_date:start,p_end_date:end});
       if(x.error)throw x.error;
-      const accounts=x.data?.accounts||[];
+      const accounts=(x.data?.accounts||[]).filter(a=>['1103','1104','1110','1111','1112'].includes(String(a.code)));
     window.hmCashAccounts=accounts;
       let accurateBalanceHtml='<div class="box" style="margin-top:12px"><h3 style="margin-top:0">Saldo dari Accurate</h3><div class="small">Menguji pembacaan saldo read-only...</div></div>';
       try{

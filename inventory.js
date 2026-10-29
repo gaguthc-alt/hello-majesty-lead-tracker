@@ -1092,7 +1092,7 @@ window.openReceiveStock=async function openReceiveStock(){
   const uid=String(t.user_id||'').trim();
   const name=String(t.name||'').trim();
   if(!uid||!name||t.is_management===true||mgmtIds.has(uid))continue;
-  if(!checkerById.has(uid))checkerById.set(uid,{user_id:uid,name});
+  if(!checkerById.has(uid))checkerById.set(uid,{user_id:uid,name,outlet:String(t.outlet||teamRows.find(y=>String(y.user_id||'')===uid)?.outlet||'').trim()});
  }
  const checkerOptionRows=Array.from(checkerById.values()).sort((a,b)=>a.name.localeCompare(b.name,'id')); window.hmReceiveCheckerOptions=checkerOptionRows; window.hmReceiveHunterOptions=hunterRows; const checkerOptions=checkerOptionRows.map(x=>'<option value="'+esc(x.user_id)+'">'+esc(x.name)+'</option>').join('');
  $('mt').textContent='📦 Barang Masuk';

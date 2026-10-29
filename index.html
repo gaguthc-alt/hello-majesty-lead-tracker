@@ -3787,11 +3787,11 @@ function renderRoleHome(){
  // Management melihat seluruh modul utama.
  const isAtmadita=stockistUser;
  const cards=[],add=(icon,title,desc,fn)=>{
-  // Sementara, menu Finance global hanya menyisakan Kas & Bank dan Payroll.
+  // Sementara, menu Finance global hanya menyisakan Kas & Bank dan Payroll/Payroll & Komisi.
   // Ini hanya mengatur navigasi; tidak mengubah data, transaksi, atau hak akses database.
-  const financeHiddenTitles=['Finance','Laporan Finance','Hutang & Piutang','Payroll & Komisi','Accounting','Konfirmasi Pencairan Finance'];
+  const financeHiddenTitles=['Finance','Laporan Finance','Hutang & Piutang','Accounting','Konfirmasi Pencairan Finance'];
   if(financeHiddenTitles.includes(title))return;
-  const financeKeepTitles=['Kas & Bank','Payroll'];
+  const financeKeepTitles=['Kas & Bank','Payroll','Payroll & Komisi'];
   if(stockistUser && !financeKeepTitles.includes(title))return;
   if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
  };

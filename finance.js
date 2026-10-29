@@ -748,29 +748,39 @@ window.openFinanceSection=async function(section){
       const [start,end]=rangeFn('month');
       const x=await sb.rpc('finance_management_dashboard',{p_start_date:start,p_end_date:end});
       if(x.error)throw x.error;
+      // Saldo utama bersumber dari Accurate. RPC internal hanya dipanggil untuk menjaga kompatibilitas proses lain, tetapi angkanya tidak ditampilkan sebagai saldo utama.
       const accounts=(x.data?.accounts||[]).filter(a=>['1103','1104','1110','1111','1112'].includes(String(a.code)));
-    window.hmCashAccounts=accounts;
-      let accurateBalanceHtml='<div class="box" style="margin-top:12px"><h3 style="margin-top:0">Saldo dari Accurate</h3><div class="small">Menguji pembacaan saldo read-only...</div></div>';
+      window.hmCashAccounts=accounts;
+      const money=v=>typeof window.hmRp==='function'?window.hmRp(v):('Rp'+Number(v||0).toLocaleString('id-ID'));
+      const extractBalance=v=>{
+        if(typeof v==='number'&&Number.isFinite(v))return v;
+        if(typeof v==='string'&&v.trim()!==''&&Number.isFinite(Number(v)))return Number(v);
+        if(v&&typeof v==='object'){
+          for(const k of ['balance','endingBalance','ending_balance','amount','value','saldo','endingBalanceAmount','accountBalance']){
+            if(v[k]!==undefined&&v[k]!==null&&Number.isFinite(Number(v[k])))return Number(v[k]);
+          }
+          if(v.d!==undefined)return extractBalance(v.d);
+          if(v.r!==undefined)return extractBalance(v.r);
+        }
+        return null;
+      };
+      let accurateBalanceHtml='';
       try{
         const ar=await sb.functions.invoke('accurate-sync',{body:{action:'get_accurate_account_balances'}});
         if(ar.error)throw ar.error;
         const payload=ar.data||{};
-        if(!payload.ok)throw new Error(payload.error||payload.message||'Accurate belum mengembalikan saldo terverifikasi.');
-        const fmtRaw=v=>{
-          if(typeof v==='number'&&Number.isFinite(v))return hmRp(v);
-          if(typeof v==='string'&&v.trim()!==''&&Number.isFinite(Number(v)))return hmRp(Number(v));
-          if(v&&typeof v==='object'){
-            for(const k of ['balance','endingBalance','ending_balance','amount','value','saldo']){
-              if(v[k]!==undefined&&v[k]!==null&&Number.isFinite(Number(v[k])))return hmRp(Number(v[k]));
-            }
-          }
-          return '<span class="small">Respons diterima; format saldo perlu diverifikasi</span>';
-        };
-        accurateBalanceHtml='<div class="box" style="margin-top:12px"><h3 style="margin-top:0">Saldo dari Accurate</h3><div class="small">Read-only • per '+String(payload.as_of_date||'-')+'</div><div style="margin-top:8px">'+(payload.accounts||[]).map(a=>'<div class="fin-summary-line"><span>'+String(a.account_name||'Akun')+' <span class="small">('+String(a.accurate_account_no||'')+')</span></span><b>'+fmtRaw(a.data)+'</b></div>').join('')+'</div><div class="small">Sumber: Accurate /api/glaccount/get-balance.do. Data jurnal internal tidak diubah.</div></div>';
+        if(!payload.ok||!Array.isArray(payload.accounts))throw new Error(payload.error||payload.message||'Accurate belum mengembalikan saldo terverifikasi.');
+        let total=0,allKnown=true;
+        const rows=payload.accounts.map(a=>{
+          const val=extractBalance(a.data);
+          if(val===null)allKnown=false;else total+=val;
+          return '<div class="fin-summary-line"><span>'+String(a.account_name||'Akun')+' <span class="small">('+String(a.accurate_account_no||'')+')</span></span><b>'+(val===null?'<span class="small">Saldo belum dapat dibaca</span>':money(val))+'</b></div>';
+        }).join('');
+        accurateBalanceHtml='<div class="small">Sumber saldo utama: Accurate • per '+String(payload.as_of_date||'-')+'</div><div style="margin-top:10px">'+rows+'</div><div class="fin-summary-line" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border,#cbd5e1)"><b>Total saldo Accurate'+(allKnown?'':' (parsial)')+'</b><b>'+(allKnown?money(total):'Belum lengkap')+'</b></div><div class="small" style="margin-top:8px">Saldo ditampilkan langsung dari Accurate secara read-only. Jurnal dan transaksi internal Hello Majesty tidak diubah.</div>';
+        box.innerHTML='<div class="box" style="margin-top:8px"><h3 style="margin-top:0">Saldo Kas & Bank — Accurate</h3>'+accurateBalanceHtml+'</div>';
       }catch(ae){
-        accurateBalanceHtml='<div class="box" style="margin-top:12px;border:1px solid #f59e0b"><h3 style="margin-top:0">Saldo dari Accurate belum terverifikasi</h3><div class="small">'+String(ae?.message||ae||'Gagal membaca saldo Accurate').replace(/[<>]/g,'')+'</div><div class="small" style="margin-top:6px">Saldo internal di atas tidak dianggap sebagai saldo Accurate.</div></div>';
+        box.innerHTML='<div class="box" style="border:1px solid #f59e0b"><h3 style="margin-top:0">Saldo Accurate belum tersedia</h3><div class="small">'+String(ae?.message||ae||'Gagal membaca saldo Accurate').replace(/[<>]/g,'')+'</div><div class="small" style="margin-top:8px">Untuk mencegah angka yang keliru, saldo internal tidak ditampilkan sebagai pengganti saldo Accurate. Coba Refresh kembali.</div></div>';
       }
-      box.innerHTML='<div class="small">Saldo internal Hello Majesty • bulan berjalan</div><div style="margin-top:10px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:5px 0" data-code="'+String(a.code||'').replace(/"/g,'&quot;')+'" onclick="hmOpenCash(this.dataset.code)"><div class="row" style="justify-content:space-between"><span><b>'+a.code+'</b> '+a.name+'</span><b>'+hmRp(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada akun Kas & Bank aktif.</div>')+'</div>'+accurateBalanceHtml+'<div class="box" style="margin-top:12px"><div class="small">Fungsi berikutnya: pencatatan uang masuk, uang keluar, transfer antar Kas/Bank, dan rekonsiliasi.</div></div>';
       panel.scrollIntoView({behavior:'smooth',block:'start'});
     }catch(ex){
       console.error('[HM] Kas & Bank:',ex);

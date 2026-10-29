@@ -2639,12 +2639,13 @@ if(!window.__hmStockistClickCapture){
   const title=String(btn.getAttribute('data-hm-menu-title')||'').trim();
   const isReceive=title==='Ajukan Barang Masuk Unit Bisnis';
   const isStockistApproval=title==='Persetujuan Barang Masuk'&&!!btn.closest('.hm-stockist-group');
+  const isCenterApproval=title==='Persetujuan Barang Masuk'&&!!btn.closest('.role-home-category')&&String(btn.closest('.role-home-category').innerText||'').toUpperCase().includes('PUSAT PERSEDIAAN');
   const isPartnerInfo=title==='Majesty Gadget'||title==='Majesty Store';
-  if(!isReceive&&!isPartnerInfo&&!isStockistApproval)return;
+  if(!isReceive&&!isPartnerInfo&&!isStockistApproval&&!isCenterApproval)return;
   e.preventDefault();
   e.stopPropagation();
   if(e.stopImmediatePropagation)e.stopImmediatePropagation();
-  if(isStockistApproval){
+  if(isStockistApproval||isCenterApproval){
    try{if(typeof hmCloseMainMenu==='function')hmCloseMainMenu();}catch(_){}
    hmActiveMainMenu='Persetujuan Barang Masuk';
    if(typeof hmSetMainMenuButtonOpen==='function')hmSetMainMenuButtonOpen('Persetujuan Barang Masuk');

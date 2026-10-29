@@ -750,7 +750,27 @@ window.openFinanceSection=async function(section){
       if(x.error)throw x.error;
       const accounts=x.data?.accounts||[];
     window.hmCashAccounts=accounts;
-      box.innerHTML='<div class="small">Posisi rekening • bulan berjalan</div><div style="margin-top:10px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:5px 0" data-code="'+String(a.code||'').replace(/"/g,'&quot;')+'" onclick="hmOpenCash(this.dataset.code)"><div class="row" style="justify-content:space-between"><span><b>'+a.code+'</b> '+a.name+'</span><b>'+hmRp(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada akun Kas & Bank aktif.</div>')+'</div><div class="box" style="margin-top:12px"><div class="small">Fungsi berikutnya: pencatatan uang masuk, uang keluar, transfer antar Kas/Bank, dan rekonsiliasi.</div></div>';
+      let accurateBalanceHtml='<div class="box" style="margin-top:12px"><h3 style="margin-top:0">Saldo dari Accurate</h3><div class="small">Menguji pembacaan saldo read-only...</div></div>';
+      try{
+        const ar=await sb.functions.invoke('accurate-sync',{body:{action:'get_accurate_account_balances'}});
+        if(ar.error)throw ar.error;
+        const payload=ar.data||{};
+        if(!payload.ok)throw new Error(payload.error||payload.message||'Accurate belum mengembalikan saldo terverifikasi.');
+        const fmtRaw=v=>{
+          if(typeof v==='number'&&Number.isFinite(v))return hmRp(v);
+          if(typeof v==='string'&&v.trim()!==''&&Number.isFinite(Number(v)))return hmRp(Number(v));
+          if(v&&typeof v==='object'){
+            for(const k of ['balance','endingBalance','ending_balance','amount','value','saldo']){
+              if(v[k]!==undefined&&v[k]!==null&&Number.isFinite(Number(v[k])))return hmRp(Number(v[k]));
+            }
+          }
+          return '<span class="small">Respons diterima; format saldo perlu diverifikasi</span>';
+        };
+        accurateBalanceHtml='<div class="box" style="margin-top:12px"><h3 style="margin-top:0">Saldo dari Accurate</h3><div class="small">Read-only • per '+String(payload.as_of_date||'-')+'</div><div style="margin-top:8px">'+(payload.accounts||[]).map(a=>'<div class="fin-summary-line"><span>'+String(a.account_name||'Akun')+' <span class="small">('+String(a.accurate_account_no||'')+')</span></span><b>'+fmtRaw(a.data)+'</b></div>').join('')+'</div><div class="small">Sumber: Accurate /api/glaccount/get-balance.do. Data jurnal internal tidak diubah.</div></div>';
+      }catch(ae){
+        accurateBalanceHtml='<div class="box" style="margin-top:12px;border:1px solid #f59e0b"><h3 style="margin-top:0">Saldo dari Accurate belum terverifikasi</h3><div class="small">'+String(ae?.message||ae||'Gagal membaca saldo Accurate').replace(/[<>]/g,'')+'</div><div class="small" style="margin-top:6px">Saldo internal di atas tidak dianggap sebagai saldo Accurate.</div></div>';
+      }
+      box.innerHTML='<div class="small">Saldo internal Hello Majesty • bulan berjalan</div><div style="margin-top:10px">'+(accounts.length?accounts.map(a=>'<button class="secondary" style="width:100%;text-align:left;margin:5px 0" data-code="'+String(a.code||'').replace(/"/g,'&quot;')+'" onclick="hmOpenCash(this.dataset.code)"><div class="row" style="justify-content:space-between"><span><b>'+a.code+'</b> '+a.name+'</span><b>'+hmRp(a.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada akun Kas & Bank aktif.</div>')+'</div>'+accurateBalanceHtml+'<div class="box" style="margin-top:12px"><div class="small">Fungsi berikutnya: pencatatan uang masuk, uang keluar, transfer antar Kas/Bank, dan rekonsiliasi.</div></div>';
       panel.scrollIntoView({behavior:'smooth',block:'start'});
     }catch(ex){
       console.error('[HM] Kas & Bank:',ex);

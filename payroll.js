@@ -180,20 +180,24 @@
       if(!months.length){content.innerHTML='<p>Belum ada transaksi komisi yang valid.</p>';return;}
       const initialMonth=months.includes(currentMonth)?currentMonth:months[0];
       const monthLabel=m=>{const [y,mo]=m.split('-');return new Date(Number(y),Number(mo)-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});};
-      const renderMonth=month=>{
-        const filtered=rows.filter(x=>String(x.sold_at||'').slice(0,7)===month);
+      const outlets=[...new Set(rows.map(x=>String(x.outlet||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+      const renderReport=()=>{
+        const month=content.querySelector('#hmPartnerCommissionMonth').value;
+        const outlet=content.querySelector('#hmPartnerCommissionOutlet').value;
+        const filtered=rows.filter(x=>String(x.sold_at||'').slice(0,7)===month&&(!outlet||String(x.outlet||'').trim()===outlet));
         const total=filtered.reduce((a,x)=>a+Number(x.commission_amount||0),0);
-        const summaryNames=isManagement?['Majesty Cell','Majesty Gadget','Majesty Store'].filter(n=>partnerNames.includes(n)):[...new Set(filtered.map(x=>x.partner_name))];
+        const summaryNames=isManagement?['Majesty Cell','Majesty Gadget','Majesty Store'].filter(n=>filtered.some(x=>x.partner_name===n)):[...new Set(filtered.map(x=>x.partner_name))];
         const summary=summaryNames.map(name=>{const list=filtered.filter(x=>x.partner_name===name),amount=list.reduce((a,x)=>a+Number(x.commission_amount||0),0);return '<div class="hm-partner-summary"><b>'+esc(name)+'</b><div>'+list.length+' transaksi • Total komisi '+rp(amount)+'</div></div>';}).join('');
         const detail=filtered.map(x=>{const product=[x.product_name,x.product_variant,x.color,x.condition||x.grade,(x.battery_health!=null?'BH '+x.battery_health+'%':'')].filter(Boolean).join(' — ');return '<div class="hm-partner-detail"><b>'+esc(x.partner_name)+'</b><div class="hm-partner-muted">'+esc(x.outlet)+' • '+new Date(x.sold_at).toLocaleDateString('id-ID')+'</div><div style="margin:7px 0">'+esc(product||'Produk')+'</div><div>Laba transaksi: <b>'+rp(x.profit_basis)+'</b> • Tarif '+Math.round(Number(x.commission_rate||.1)*100)+'%</div><div>Komisi mitra: <b>'+rp(x.commission_amount)+'</b></div></div>';}).join('');
         const old=content.querySelector('[data-month-content]');if(old)old.remove();
         const section=document.createElement('div');section.dataset.monthContent='1';
-        section.innerHTML='<div class="hm-partner-summary"><b>Total komisi bulan '+esc(monthLabel(month))+'</b><h2 style="margin:6px 0">'+rp(total)+'</h2><div>'+filtered.length+' transaksi valid</div></div>'+summary+'<h3>Rincian transaksi</h3>'+(detail||'<p>Tidak ada transaksi valid pada bulan ini.</p>');
+        section.innerHTML='<div class="hm-partner-summary"><b>Total komisi '+esc(monthLabel(month))+(outlet?' • '+esc(outlet):' • Semua outlet')+'</b><h2 style="margin:6px 0">'+rp(total)+'</h2><div>'+filtered.length+' transaksi valid</div></div>'+summary+'<h3>Rincian transaksi</h3>'+(detail||'<p>Tidak ada transaksi valid untuk filter ini.</p>');
         content.appendChild(section);
       };
-      content.innerHTML='<label for="hmPartnerCommissionMonth"><b>Filter bulan transaksi</b></label><select id="hmPartnerCommissionMonth">'+months.map(m=>'<option value="'+m+'" '+(m===initialMonth?'selected':'')+'>'+esc(monthLabel(m))+'</option>').join('')+'</select>';
-      content.querySelector('#hmPartnerCommissionMonth').addEventListener('change',e=>renderMonth(e.target.value));
-      renderMonth(initialMonth);
+      content.innerHTML='<label for="hmPartnerCommissionMonth"><b>Filter bulan transaksi</b></label><select id="hmPartnerCommissionMonth">'+months.map(m=>'<option value="'+m+'" '+(m===initialMonth?'selected':'')+'>'+esc(monthLabel(m))+'</option>').join('')+'</select><label for="hmPartnerCommissionOutlet"><b>Filter unit outlet</b></label><select id="hmPartnerCommissionOutlet"><option value="">Semua outlet</option>'+outlets.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select>';
+      content.querySelector('#hmPartnerCommissionMonth').addEventListener('change',renderReport);
+      content.querySelector('#hmPartnerCommissionOutlet').addEventListener('change',renderReport);
+      renderReport();
     }catch(e){content.textContent='Gagal memuat rekap bulanan: '+(e?.message||'Kesalahan query');}
   };
   const css=document.createElement('style');

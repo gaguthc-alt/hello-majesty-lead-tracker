@@ -803,6 +803,31 @@ window.openFinanceSection=async function(section){
     panel.classList.remove('hidden');
     body.innerHTML='<div class="box"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">💳 PAYROLL & KOMISI</h3><div class="small" style="margin-top:4px">Gaji, komisi, reward dan pembayaran tim</div></div><button class="primary" type="button" onclick="window.openFinanceSection(\'payroll\')">🔄 Refresh</button></div><div id="hmPayrollBox" style="margin-top:12px">Memuat data...</div></div>';
     const box=document.getElementById('hmPayrollBox');
+    // Payroll UI cleanup: constrain wide tables/cards to the available viewport, including mobile.
+    if(!document.getElementById('hmPayrollLayoutStyles')){
+      const style=document.createElement('style');
+      style.id='hmPayrollLayoutStyles';
+      style.textContent=`
+        #hmPayrollBox{width:100%;max-width:100%;min-width:0;box-sizing:border-box;color:#24364b}
+        #hmPayrollBox *{box-sizing:border-box}
+        #hmPayrollBox>.box{width:100%;max-width:100%;min-width:0;overflow:hidden;margin:12px 0 0;padding:clamp(12px,2.5vw,18px);border:1px solid #dbe3ed;border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.05)}
+        #hmPayrollBox .fin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+        #hmPayrollBox .fin-card{min-width:0;max-width:100%;padding:14px;border-radius:14px;overflow:hidden}
+        #hmPayrollBox .fin-big{font-size:clamp(17px,3.5vw,25px);font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+        #hmPayrollBox div[style*="overflow:auto"],#hmPayrollBox div[style*="overflow: auto"]{width:100%;max-width:100%;min-width:0;overflow-x:auto!important;border-radius:12px}
+        #hmPayrollBox table{width:100%!important;max-width:100%!important;min-width:0!important;border-collapse:collapse;table-layout:auto;background:#fff}
+        #hmPayrollBox th,#hmPayrollBox td{max-width:320px;padding:10px 9px;white-space:normal;overflow-wrap:anywhere;word-break:normal;line-height:1.4}
+        #hmPayrollBox th{background:#203b5b;color:#fff;text-align:left}
+        #hmPayrollBox .small{line-height:1.5;overflow-wrap:anywhere}
+        @media(max-width:640px){
+          #hmPayrollBox .fin-grid{grid-template-columns:repeat(1,minmax(0,1fr))!important;gap:8px}
+          #hmPayrollBox .fin-card{padding:12px}
+          #hmPayrollBox th,#hmPayrollBox td{padding:9px 7px;font-size:12px}
+          #hmPayrollBox>.box>div:first-child{flex-wrap:wrap}
+        }
+      `;
+      document.head.appendChild(style);
+    }
     try{
       const money=v=>typeof window.hmRp==='function'?window.hmRp(v):('Rp'+Number(v||0).toLocaleString('id-ID'));
       const [startDate,endDate]=typeof window.hmDateRange==='function'?window.hmDateRange('month'):hmDateRange('month');

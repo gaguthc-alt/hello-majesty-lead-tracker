@@ -1331,7 +1331,7 @@ async function openSalesReport(){
    return {
      ...r,
      display_product:[st.product||pm.product||r.product_name||'Produk tidak ditemukan',st.variant||pm.variant].filter(Boolean).join(' — '),
-     display_product_details:[st.color?'Warna: '+st.color:'',st.grade?'Grade: '+st.grade:'',st.battery_health?'BH: '+st.battery_health:'',st.imei_1?'IMEI akhir: '+String(st.imei_1).replace(/\\D/g,'').slice(-4):''].filter(Boolean).join(' • '),
+     display_product_details:[st.color?'Warna: '+st.color:'',st.grade?'Grade: '+st.grade:'',st.battery_health?'BH: '+st.battery_health:'',st.imei_1?'IMEI akhir: '+String(st.imei_1).replace(/\D/g,'').slice(-4):''].filter(Boolean).join(' • '),
      display_cs:r.customer_source==='WALK-IN'?'Walk-In':(r.lead_id?(r.cs_closing||r.cs_pic||peopleMap[r.id]?.cs_name||lead?.cs||lead?.cs_claimed_by||'-'):(peopleMap[r.id]?.cs_name||r.cs_closing||lead?.cs||lead?.cs_claimed_by||'-')),
      display_sales:peopleMap[r.id]?.sales_name||r.sales_closing||'-'
    };

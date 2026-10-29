@@ -744,12 +744,8 @@ window.openFinanceSection=async function(section){
     const box=document.getElementById('hmCashBankBox');
     try{
       if(!sb)throw new Error('Koneksi database belum siap.');
-      const rangeFn=typeof window.hmDateRange==='function'?window.hmDateRange:hmDateRange;
-      const [start,end]=rangeFn('month');
-      const x=await sb.rpc('finance_management_dashboard',{p_start_date:start,p_end_date:end});
-      if(x.error)throw x.error;
-      // Saldo utama bersumber dari Accurate. RPC internal hanya dipanggil untuk menjaga kompatibilitas proses lain, tetapi angkanya tidak ditampilkan sebagai saldo utama.
-      const accounts=(x.data?.accounts||[]).filter(a=>['1103','1104','1110','1111','1112'].includes(String(a.code)));
+      // Saldo utama bersumber langsung dari Accurate. Tidak memanggil RPC saldo internal pada tampilan ini.
+      const accounts=[];
       window.hmCashAccounts=accounts;
       const money=v=>typeof window.hmRp==='function'?window.hmRp(v):('Rp'+Number(v||0).toLocaleString('id-ID'));
       const extractBalance=v=>{

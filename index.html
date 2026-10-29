@@ -2471,6 +2471,10 @@ function getActiveRoles(){
  const base=raw.split(/[,;|+]+/).map(x=>x.trim()).filter(Boolean);
  return [...new Set([...base,...hmPermissionRoles])];
 }
+function currentManagementForStockApproval(){
+ const rs=(typeof getActiveRoles==='function'?getActiveRoles():[String(profile?.role||'')]).map(r=>String(r).trim().toUpperCase().replace(/_/g,' '));
+ return !!profile?.is_management||rs.includes('DIVISI')||rs.includes('DEVELOPER')||rs.includes('DEVELOPER APLIKASI')||rs.includes('MITRA STOCKIST')||rs.includes('ADMIN FINANCE MAJESTY CELL');
+}
 async function hmOpenInventoryApprovalDirect(){
  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
  if(!panel||!body) return;
@@ -4704,6 +4708,10 @@ window.hmRunStockistJournalReclass = async function(){
    if((isAtmaditaAccount || stockistUser) && g[1]==='PUSAT PERSEDIAAN'){
      allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Laporan Stok & Modal Unit Bisnis'].includes(item[1]));
    }
+   // Persetujuan barang milik stockist hanya untuk Management/Divisi, Mitra Stockist, atau Admin Finance Majesty Cell.
+   // Role Fasilitator (termasuk Ifa di Majesty Plaza) tidak menampilkan kartu persetujuan ini meski antreannya kosong.
+   const canSeeStockistApproval=currentManagementForStockApproval();
+   if(g[1]==='PUSAT PERSEDIAAN' && !canSeeStockistApproval){allowed=allowed.filter(item=>item[1]!=='Persetujuan Barang Masuk');}
    if((isAtmaditaAccount || stockistUser) && g[1]==='KOORDINASI ANTARUNIT BISNIS'){
      allowed=g[2].filter(item=>['Panduan Kerja Sama','Daftar & Profil Unit Bisnis','Pembayaran Settlement'].includes(item[1]));
    }

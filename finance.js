@@ -1,5 +1,5 @@
 (function(){
-function hmRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID');}
+function hmRp(v){const n=Number(v||0);return 'Rp'+(Number.isFinite(n)?Math.round(n):0).toLocaleString('id-ID');}
 function hmFinNum(v){return 'font-size:clamp(18px,5.5vw,24px);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'}
 window.hmRp=hmRp;
 window.hmDateRange=hmDateRange;

@@ -378,10 +378,10 @@ async function renderStandaloneHunterStock(){
   ]);
   if(hunterResult.error)throw hunterResult.error;
   if(checkerResult.error)throw checkerResult.error;
-  const rows=[
-   ...(hunterResult.data||[]).map(x=>({...x,hm_source_type:'HUNTER',hm_commission_rate:10})),
-   ...(checkerResult.data||[]).map(x=>({...x,hm_source_type:'CHECKER',hm_commission_rate:5}))
-  ].sort((a,b)=>new Date(b.received_at||0)-new Date(a.received_at||0));
+  const assignedStockById=new Map();
+  for(const x of (hunterResult.data||[]))assignedStockById.set(x.id,{...x,hm_source_type:'MANAGEMENT'});
+  for(const x of (checkerResult.data||[])){const previous=assignedStockById.get(x.id)||{};assignedStockById.set(x.id,{...previous,...x,hm_source_type:'MANAGEMENT'});}
+  const rows=[...assignedStockById.values()].sort((a,b)=>new Date(b.received_at||0)-new Date(a.received_at||0));
   // Load checker attribution separately so Hunter-sourced stock can display both roles.
   const stockIds=rows.map(x=>x.id).filter(Boolean);
   const checkerByStock={};
@@ -400,12 +400,12 @@ async function renderStandaloneHunterStock(){
       const photos=[x.photo_1,x.photo_2,x.photo_3,x.photo_4,x.photo_5].filter(Boolean);
       const img=photos[0]?'<img src="'+esc(photos[0])+'" alt="Foto '+esc(x.product||'Produk')+'" style="width:100%;max-height:190px;object-fit:contain;border-radius:10px;background:#f3f4f6;margin-bottom:8px">':'';
       const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;
-      const isHunter=x.hm_source_type==='HUNTER';
       const assigned=checkerByStock[x.id]||{};
       const hunterNames=String(assigned.hunters||'').trim();
       const checkerNames=String(assigned.checkers||'').trim();
+      const isHunter=!!hunterNames,isChecker=!!checkerNames;
       return '<div class="lead" style="margin-bottom:12px">'+img+
-       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px">'+(isHunter?'<span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#e8f1ff;color:#174ea6">🏹 HUNTER · KOMISI 10%</span>':'')+(!isHunter?'<span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#f3e8ff;color:#6b21a8">🔎 CHECKER · KOMISI 5%</span>':'')+'</div>'+
+       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px">'+(isHunter?'<span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#e8f1ff;color:#174ea6">🏹 HUNTER · KOMISI 10%</span>':'')+(isChecker?'<span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#f3e8ff;color:#6b21a8">🔎 CHECKER · KOMISI 5%</span>':'')+'</div>'+
        '<div style="margin-top:7px"><b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b></div>'+
        '<div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div>'+
        (hunterNames?'<div class="small">🏹 Hunter: <b>'+esc(hunterNames)+'</b></div>':'')+

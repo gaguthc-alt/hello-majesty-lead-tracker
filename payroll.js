@@ -153,7 +153,7 @@
     const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
     if(!panel||panel.classList.contains('hidden')||!body)return;
     const label=String(title?.textContent||'')+' '+String(body.textContent||'').slice(0,500);
-    if(!/koordinasi/i.test(label)||!/unit bisnis/i.test(label)||body.querySelector('[data-hm-partner-coordination-details]'))return;
+    if(!/(koordinasi|unit bisnis|stockist|settlement|antar unit|mitra)/i.test(label)||body.querySelector('[data-hm-partner-coordination-details]'))return;
     const wrap=document.createElement('section');wrap.dataset.hmPartnerCoordinationDetails='1';wrap.className='box';wrap.style.marginTop='14px';wrap.innerHTML='<h3>🤝 Rincian Komisi Mitra Stockist</h3><p class="small">Memuat rincian transaksi...</p>';body.appendChild(wrap);
     try{
       const rows=await loadPartnerCommissionRows();

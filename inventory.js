@@ -542,7 +542,8 @@ window.refreshHunterLauncher=async function(){
 function renderMasterProductView(){
  const panel=document.getElementById('inventoryPanel');
  if(!panel)return;
- const canManage=!!profile?.is_management || inventoryCanFacilitator;
+ const canManage=hmCanManageProductMaster();
+ const canCreate=hmCanCreateProductMaster();
  const management=!!profile?.is_management;
  const q=String(document.getElementById('hmMasterProductSearch')?.value||'').trim().toLowerCase();
  const cat=String(document.getElementById('hmMasterProductCategory')?.value||'');
@@ -553,7 +554,7 @@ function renderMasterProductView(){
  panel.className='box';
  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2 style="margin:0">🧾 MASTER PRODUK</h2><div class="small">Database produk dan data master</div></div><div class="row">'+
    '<button class="secondary" type="button" onclick="refreshMasterProductView(this)">↻ Refresh</button>'+
-   (canManage?'<button class="success" type="button" onclick="openAddProduct()">＋ Tambah Produk</button>':'')+
+   (canCreate?'<button class="success" type="button" onclick="openAddProduct()">＋ Tambah Produk</button>':'')+
    '</div></div>'+
    '<div class="row" style="margin-top:12px"><input id="hmMasterProductSearch" placeholder="🔎 Cari produk / varian / kategori / warna" value="'+esc(q)+'" oninput="renderMasterProductView()">'+
    '<select id="hmMasterProductCategory" onchange="renderMasterProductView()"><option value="">Semua Kategori</option><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option></select></div>'+
@@ -597,6 +598,7 @@ async function openInventorySection(view){
    return;
  }
  if(view==='products'){
+   if(!hmCanManageProductMaster()){alert('Master Produk hanya dapat diakses oleh Divisi/Developer.');return;}
    inventoryView='products';
    if(btn)btn.textContent='✖ Tutup Master Produk';
    try{
@@ -966,6 +968,7 @@ async function markStockSold(id){
  return alert('Form Closing belum siap. Silakan refresh aplikasi.');
 }
 function hmCanManageProductMaster(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return role==='DIVISI'||role==='DEVELOPER'||role==='DEVELOPER APLIKASI';}
+function hmCanCreateProductMaster(){return String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI';}
 function hmApplyProductMasterAccess(){const allowed=hmCanManageProductMaster();document.querySelectorAll('button,a,[role="button"]').forEach(el=>{const label=String(el.innerText||el.textContent||'').trim().toLowerCase();const action=String(el.getAttribute('onclick')||'').toLowerCase();if(label.includes('master produk')||action.includes('openproductmaster')){el.style.display=allowed?'':'none';el.hidden=!allowed;}});}
 function openProductMaster(){
  if(!hmCanManageProductMaster())return alert('Master Produk hanya dapat diakses dan dikelola oleh Divisi.');
@@ -1012,9 +1015,9 @@ async function deactivateProduct(id){
  const x=await sb.from('product_master').update({active:false,updated_at:new Date().toISOString()}).eq('id',id);
  if(x.error)return alert(x.error.message);closeModal();await renderInventory();
 }
-function openAddProduct(){if(!hmCanManageProductMaster())return alert('Master Produk hanya dapat dikelola oleh Divisi.');$('mt').textContent='＋ Master Produk';$('mb').innerHTML='<label>Kategori</label><select id="pmcat" required onchange="toggleProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option></select><label>Produk</label><input id="pmprod" required placeholder="Contoh: iPhone 17 Pro Max"><div id="pmcolorBox"><label>Warna</label><input id="pmcolor" placeholder="Contoh: Black, Natural Titanium, Lavender"></div><label>Varian / Storage</label><input id="pmvar" required placeholder="Contoh: 128GB, 256GB"><div id="pmgradeBox"><label>Grade</label><select id="pmgrade"><option value="">Pilih Grade</option><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option></select></div><button class="success" onclick="saveProduct()">Simpan Produk</button>';$('modal').classList.remove('hidden');toggleProductFields()}
+function openAddProduct(){if(!hmCanCreateProductMaster())return alert('Hanya Divisi yang boleh membuat Master Produk.');$('mt').textContent='＋ Master Produk';$('mb').innerHTML='<label>Kategori</label><select id="pmcat" required onchange="toggleProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option></select><label>Produk</label><input id="pmprod" required placeholder="Contoh: iPhone 17 Pro Max"><div id="pmcolorBox"><label>Warna</label><input id="pmcolor" placeholder="Contoh: Black, Natural Titanium, Lavender"></div><label>Varian / Storage</label><input id="pmvar" required placeholder="Contoh: 128GB, 256GB"><div id="pmgradeBox"><label>Grade</label><select id="pmgrade"><option value="">Pilih Grade</option><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option></select></div><button class="success" onclick="saveProduct()">Simpan Produk</button>';$('modal').classList.remove('hidden');toggleProductFields()}
 function toggleProductFields(){const cat=$('pmcat')?.value||'',color=$('pmcolor'),grade=$('pmgrade');const showColor=true,showGrade=isSecondMasterCategory(cat);$('pmcolorBox')?.classList.toggle('hidden',!showColor);$('pmgradeBox')?.classList.toggle('hidden',!showGrade);if(color)color.required=showColor;if(grade)grade.required=showGrade}
-async function saveProduct(){if(!hmCanManageProductMaster())return alert('Master Produk hanya dapat dikelola oleh Divisi.');const cat=$('pmcat').value,rawProduct=$('pmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('pmvar').value.trim(),color=String($('pmcolor')?.value||'').trim(),showGrade=isSecondMasterCategory(cat),grade=showGrade?String($('pmgrade')?.value||'').trim():null;if(!cat||!rawProduct||!color||!variant)return alert('Kategori, Produk, Warna, dan Varian / Storage wajib diisi.');if(showGrade&&!grade)return alert('Grade wajib dipilih untuk kategori Second.');const x=await sb.from('product_master').insert({category:cat,product,variant,color,grade});if(x.error)return alert(x.error.message);closeModal();await renderInventory();openProductMaster()}
+async function saveProduct(){if(!hmCanCreateProductMaster())return alert('Hanya Divisi yang boleh membuat Master Produk.');const cat=$('pmcat').value,rawProduct=$('pmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('pmvar').value.trim(),color=String($('pmcolor')?.value||'').trim(),showGrade=isSecondMasterCategory(cat),grade=showGrade?String($('pmgrade')?.value||'').trim():null;if(!cat||!rawProduct||!color||!variant)return alert('Kategori, Produk, Warna, dan Varian / Storage wajib diisi.');if(showGrade&&!grade)return alert('Grade wajib dipilih untuk kategori Second.');const x=await sb.from('product_master').insert({category:cat,product,variant,color,grade});if(x.error)return alert(x.error.message);closeModal();await renderInventory();openProductMaster()}
 function filterReceiveCategory(){
  const cat=$('stcategory')?.value||'',sel=$('stprod'),search=$('stprodsearch');
  if(!sel)return;

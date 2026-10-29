@@ -132,10 +132,10 @@
     });
     html+='</tbody></table></div>';
     host.innerHTML=html;
-    await renderPartnerCommissionPayroll(host);
+    await renderPartnerCommissionPayroll(host, rows);
   }
 
-  async function renderPartnerCommissionPayroll(host){
+  async function renderPartnerCommissionPayroll(host, teamRows=[]){
     const sb=window.sb;
     if(!sb||!host)return;
     const q=await sb.from('partner_commission_payroll_view').select('id,sales_transaction_id,partner_name,outlet,sold_at,profit_basis,commission_rate,commission_amount,status,paid_at,payment_note,product_name,product_variant,color,condition,grade,battery_health,sale_price,gross_profit').order('sold_at',{ascending:false});
@@ -147,7 +147,7 @@
     const rp2=rp;
     const pending=rows.filter(x=>x.status==='PENDING').reduce((a,x)=>a+Number(x.commission_amount||0),0);
     const paid=rows.filter(x=>x.status==='PAID').reduce((a,x)=>a+Number(x.commission_amount||0),0);
-    const all=rows.reduce((a,x)=>a+Number(x.commission_amount||0),0);
+    const all=rows.reduce((a,x)=>a+Number(x.commission_amount||0),0);\n    const teamTotal=(teamRows||[]).reduce((a,x)=>a+Number(x.total_commission||0),0);\n    const grandTotal=teamTotal+all;
     const partnerNames=['Majesty Cell','Majesty Gadget','Majesty Store'];
     const summary=partnerNames.map(name=>{
       const list=rows.filter(x=>x.partner_name===name);
@@ -167,7 +167,7 @@
     section.dataset.hmPartnerCommissionSection='1';
     section.className='box';
     section.style.marginTop='16px';
-    section.innerHTML='<h3 style="margin-top:0">🤝 Komisi Mitra Stockist</h3><p class="small">Dihitung 10% dari laba transaksi unit milik Majesty Cell, Majesty Gadget, dan Majesty Store yang berstatus SOLD. Terpisah dari bagi hasil modal, serta komisi Hunter/Checker/CS/Sales.</p><div class="hm-budget-metrics"><div class="metric-profit"><small>Total komisi historis</small><strong>'+rp2(all)+'</strong></div><div class="metric-commission"><small>Belum dibayar</small><strong>'+rp2(pending)+'</strong></div><div class="metric-ratio"><small>Sudah dibayar</small><strong>'+rp2(paid)+'</strong></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:12px 0">'+summary+'</div><h4>Rincian transaksi</h4>'+(detail||'<p class="small">Belum ada komisi mitra.</p>');
+    section.innerHTML='<h3 style="margin-top:0">🤝 Komisi Mitra Stockist</h3><p class="small">Dihitung 10% dari laba transaksi unit milik Majesty Cell, Majesty Gadget, dan Majesty Store yang berstatus SOLD. Terpisah dari bagi hasil modal, serta komisi Hunter/Checker/CS/Sales.</p><div class="hm-budget-metrics"><div class="metric-profit"><small>Total komisi tim</small><strong>'+rp2(teamTotal)+'</strong></div><div class="metric-commission"><small>Total komisi mitra</small><strong>'+rp2(all)+'</strong></div><div class="metric-ratio"><small>GRAND TOTAL PAYROLL</small><strong>'+rp2(grandTotal)+'</strong></div></div><div class="hm-budget-metrics"><div class="metric-profit"><small>Total komisi historis</small><strong>'+rp2(all)+'</strong></div><div class="metric-commission"><small>Belum dibayar</small><strong>'+rp2(pending)+'</strong></div><div class="metric-ratio"><small>Sudah dibayar</small><strong>'+rp2(paid)+'</strong></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:12px 0">'+summary+'</div><h4>Rincian transaksi</h4>'+(detail||'<p class="small">Belum ada komisi mitra.</p>');
     host.appendChild(section);
   }
 
@@ -178,7 +178,7 @@
     const q=await window.sb.from('partner_commissions').update({status:'PAID',paid_at:new Date().toISOString(),paid_by:window.profile.user_id,payment_note:note,updated_at:new Date().toISOString()}).eq('id',id).eq('status','PENDING');
     if(q.error)return alert('Gagal memperbarui status: '+q.error.message);
     const host=document.querySelector('#hmPayrollBox .hm-team-commission-wrap')?.parentElement;
-    if(host)await renderPartnerCommissionPayroll(host);
+    if(host){const r=await loadCommission();await renderPartnerCommissionPayroll(host,r);}
     else alert('Status pembayaran diperbarui. Buka kembali Payroll untuk melihat rekap terbaru.');
   };
 

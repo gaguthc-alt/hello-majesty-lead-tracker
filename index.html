@@ -3988,7 +3988,8 @@ function renderRoleHome(){
        allowed = inventoryIsManagementLevel;
      } else if (item[1] === 'Persetujuan Barang Masuk') {
        const approvalRoles=['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'];
-       allowed = inventoryIsManagementLevel || roles.some(r=>approvalRoles.includes(String(r).trim().toUpperCase().replace(/_/g,' ')));
+       // Fasilitator tetap melihat menu; daftar transaksi difilter berdasarkan outlet tujuan di modul persetujuan.
+       allowed = inventoryIsManagementLevel || inventoryFacDivAccess || roles.some(r=>approvalRoles.includes(String(r).trim().toUpperCase().replace(/_/g,' ')));
      } else {
        allowed = inventoryIsManagementLevel || allItems.includes(item[1]) || (inventoryFacDivAccess && facDivItems.includes(item[1]));
      }

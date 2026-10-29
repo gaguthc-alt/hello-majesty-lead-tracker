@@ -42,6 +42,7 @@ async function loadInventoryData(){
   ]);
   if(p.error) throw p.error; if(s.error) throw s.error;
   inventoryProducts=p.data||[]; inventoryStock=s.data||[];
+  try{hmApplyProductMasterAccess();}catch(_e){}
   if((role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL') && inventoryStock.length){
     const ids=inventoryStock.map(x=>x.id).filter(Boolean);
     const costs=await sb.from('stock_units').select('id,cost').in('id',ids);

@@ -284,7 +284,7 @@ async function openMyClosings(){
       return true;
     });
     const stockIds=[...new Set([...approvalRows.map(x=>x.stock_unit_id),...soldSales.map(x=>x.stock_unit_id)].filter(Boolean))];
-    const stocks=stockIds.length?(await sb.from('stock_units').select('id,product_id,outlet,color,status').in('id',stockIds)):{data:[],error:null};
+    const stocks=stockIds.length?(await sb.from('stock_units').select('id,product_id,product,variant,outlet,color,imei_1,status').in('id',stockIds)):{data:[],error:null};
     if(stocks.error)throw stocks.error;
     const pids=[...new Set((stocks.data||[]).map(x=>x.product_id).filter(Boolean))];
     const products=pids.length?(await sb.from('product_master').select('id,product,variant').in('id',pids)):{data:[],error:null};
@@ -301,14 +301,14 @@ async function openMyClosings(){
         const s=sm[x.stock_unit_id]||{},p=pm[s.product_id]||{};
         const ok=String(x.status||'').toUpperCase()==='APPROVED';
         const rej=String(x.status||'').toUpperCase()==='REJECTED';
-        return {source:'STOCK',date:x.reviewed_at||x.requested_at,customer:'-',product:(p.product||'Produk')+(p.variant?' — '+p.variant:''),outlet:x.outlet||s.outlet,status:x.status,statusLabel:ok?'🟢 DISETUJUI • SOLD':rej?'🔴 DITOLAK':'🟠 MENUNGGU PERSETUJUAN',price:x.sale_price,note:x.review_note,leadId:null};
+        const productName=s.product||p.product||'Produk',variant=s.variant||p.variant||'',color=s.color||'',imeiTail=String(s.imei_1||'').replace(/\D/g,'').slice(-4);return {source:'STOCK',date:x.reviewed_at||x.requested_at,customer:'-',product:productName+(variant?' — '+variant:''),details:[color?'Warna: '+color:'',imeiTail?'IMEI akhir: '+imeiTail:''].filter(Boolean).join(' • '),outlet:x.outlet||s.outlet,status:x.status,statusLabel:ok?'🟢 DISETUJUI • SOLD':rej?'🔴 DITOLAK':'🟠 MENUNGGU PERSETUJUAN',price:x.sale_price,note:x.review_note,leadId:null};
       }),
-      ...soldSales.map(x=>{ const s=sm[x.stock_unit_id]||{},p=pm[s.product_id]||{}; return {source:'SOLD',date:x.sold_at,customer:x.customer_name||'-',product:(p.product||'Produk')+(p.variant?' — '+p.variant:''),outlet:x.outlet||s.outlet||'-',status:'APPROVED',statusLabel:'🟢 SOLD',price:x.sale_price,note:null,leadId:null}; }),
+      ...soldSales.map(x=>{ const s=sm[x.stock_unit_id]||{},p=pm[s.product_id]||{},productName=s.product||p.product||'Produk',variant=s.variant||p.variant||'',color=s.color||'',imeiTail=String(s.imei_1||'').replace(/\D/g,'').slice(-4);return {source:'SOLD',date:x.sold_at,customer:x.customer_name||'-',product:productName+(variant?' — '+variant:''),details:[color?'Warna: '+color:'',imeiTail?'IMEI akhir: '+imeiTail:''].filter(Boolean).join(' • '),outlet:x.outlet||s.outlet||'-',status:'APPROVED',statusLabel:'🟢 SOLD',price:x.sale_price,note:null,leadId:null}; }),
       ...[...walkMap.values()].map(x=>{
         const s=sm[x.stock_unit_id]||{},p=pm[s.product_id]||{};
         const ok=String(x.status||'').toUpperCase()==='APPROVED';
         const rej=String(x.status||'').toUpperCase()==='REJECTED';
-        return {source:'WALKIN',date:x.reviewed_at||x.requested_at,customer:'-',product:(p.product||'Produk')+(p.variant?' — '+p.variant:''),outlet:s.outlet||'-',status:x.status,statusLabel:ok?'🟢 DISETUJUI • SOLD':rej?'🔴 DITOLAK':'🟠 MENUNGGU PERSETUJUAN',price:x.sale_price,note:x.review_note,leadId:null};
+        const productName=s.product||p.product||'Produk',variant=s.variant||p.variant||'',color=s.color||'',imeiTail=String(s.imei_1||'').replace(/\D/g,'').slice(-4);return {source:'WALKIN',date:x.reviewed_at||x.requested_at,customer:'-',product:productName+(variant?' — '+variant:''),details:[color?'Warna: '+color:'',imeiTail?'IMEI akhir: '+imeiTail:''].filter(Boolean).join(' • '),outlet:s.outlet||'-',status:x.status,statusLabel:ok?'🟢 DISETUJUI • SOLD':rej?'🔴 DITOLAK':'🟠 MENUNGGU PERSETUJUAN',price:x.sale_price,note:x.review_note,leadId:null};
       })
     ].sort((a,b)=>new Date(b.date)-new Date(a.date));
 
@@ -320,7 +320,7 @@ async function openMyClosings(){
     const cards=items.map((x,i)=>{
       const date=x.date?new Date(x.date).toLocaleString('id-ID'):'-';
       const source=x.source==='LEAD'?'🏆 CLOSING LEAD':x.source==='WALKIN'?'🚶 WALK-IN':x.source==='SOLD'?'📦 PENJUALAN SOLD':'📦 CLOSING STOCK SIAP JUAL';
-      return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><b>'+String(i+1).padStart(2,'0')+'. '+source+'</b><b>'+x.statusLabel+'</b></div><div style="margin-top:5px">📱 '+esc(x.product||'-')+'</div><div class="small">📍 '+esc(x.outlet||'-')+' • 🕒 '+esc(date)+'</div>'+money(x)+(x.note?'<div class="small" style="margin-top:5px">📝 Catatan: '+esc(x.note)+'</div>':'')+'</div>';
+      return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><b>'+String(i+1).padStart(2,'0')+'. '+source+'</b><b>'+x.statusLabel+'</b></div><div style="margin-top:5px">📱 <b>'+esc(x.product||'-')+'</b></div>'+(x.details?'<div class="small" style="margin-top:3px">🔎 '+esc(x.details)+'</div>':'')+'<div class="small">📍 '+esc(x.outlet||'-')+' • 🕒 '+esc(date)+'</div>'+money(x)+(x.note?'<div class="small" style="margin-top:5px">📝 Catatan: '+esc(x.note)+'</div>':'')+'</div>';
     }).join('');
 
     $('mt').textContent='📋 Closing Saya — Bulan Ini ('+items.length+')';

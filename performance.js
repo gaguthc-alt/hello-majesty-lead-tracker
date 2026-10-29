@@ -257,14 +257,14 @@
     const active=r=>r.claim||r.handover||r.claimSales||r.cs||r.sales||r.hunter;
     const outletNames=[...new Set([...today,...month].map(r=>r.outlet).filter(x=>x&&x!=='-'))];
     const metrics=t=>{
-      const parts=[];
-      if(t.claim)parts.push('📲 Claim CS: '+fmt(t.claim));
-      if(t.handover)parts.push('🤝 Handover: '+fmt(t.handover));
-      if(t.claimSales)parts.push('📥 Claim Sales: '+fmt(t.claimSales));
-      if(t.cs)parts.push('🎯 CS Closing: '+fmt(t.cs));
-      if(t.sales)parts.push('🏆 Sales Closing: '+fmt(t.sales));
-      if(t.hunter)parts.push('🏹 Hunter: '+fmt(t.hunter));
-      return (parts.length?parts.join(' | '):'Belum ada aktivitas')+NL;
+      const lines=[];
+      if(t.claim)lines.push('📲 Claim CS: '+fmt(t.claim));
+      if(t.handover)lines.push('🤝 Handover: '+fmt(t.handover));
+      if(t.claimSales)lines.push('📥 Claim Sales: '+fmt(t.claimSales));
+      if(t.cs)lines.push('🎯 CS Closing: '+fmt(t.cs));
+      if(t.sales)lines.push('🏆 Sales Closing: '+fmt(t.sales));
+      if(t.hunter)lines.push('🏹 Hunter: '+fmt(t.hunter));
+      return (lines.length?lines.join(NL):'Belum ada aktivitas')+NL;
     };
     const personLines=rs=>{
       const activeRows=rs.filter(active).sort((a,b)=>(b.claim+b.handover+b.claimSales+b.cs+b.sales+b.hunter)-(a.claim+a.handover+a.claimSales+a.cs+a.sales+a.hunter));

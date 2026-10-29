@@ -722,7 +722,7 @@ function renderInventoryDashboardBody(){
  const outletSel=isAdminFinance?(profile?.outlet||''):($('invDashOutlet')?.value||'');
  const catSel=$('invDashCat')?.value||'';
  const sourceSel=$('invDashSource')?.value||'';
- const partnerSel=$('invDashPartner')?.value||'';
+ const partnerSel=sourceSel==='STOCKIST'?($('invDashPartner')?.value||''):'';
  const statusSel=$('invDashStatus')?.value||'READY';
  const query=String($('invDashSearch')?.value||'').trim().toLowerCase();
  const allRows=inventoryStock.filter(s=>

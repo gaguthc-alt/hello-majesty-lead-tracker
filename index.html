@@ -2498,7 +2498,7 @@ async function hmOpenInventoryApprovalDirect(){
   const um=Object.fromEntries((ur.data||[]).map(x=>[x.user_id,x]));
   body.innerHTML=rows.map((a,i)=>{
    const s=stocks.find(x=>x.id===a.stock_unit_id)||{},p=pm[s.product_id]||{},u=um[a.requested_by]||{};
-   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),partner=String(s.partner_name||'').trim().toUpperCase();const can=typeof window.reviewInventoryReceive==='function' && String(a.requested_by)!==String(profile?.user_id) && (!!profile?.is_management||role==='DIVISI'||role==='FASILITATOR'||role==='DEVELOPER'||role==='DEVELOPER APLIKASI'||role===partner||role==='STOCKIST '+partner||role==='MITRA '+partner||(role==='ADMIN FINANCE MAJESTY CELL'&&partner==='MAJESTY CELL'));
+   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),partner=String(s.partner_name||'').trim().toUpperCase();const can=typeof window.reviewInventoryReceive==='function' && String(a.requested_by)!==String(profile?.user_id) && (!!profile?.is_management||role==='DIVISI'||role==='FASILITATOR'||role==='DEVELOPER'||role==='DEVELOPER APLIKASI'||role===partner||role==='STOCKIST '+partner||role==='MITRA '+partner||(role==='MITRA STOCKIST'&&partner==='MAJESTY CELL')||(role==='ADMIN FINANCE MAJESTY CELL'&&partner==='MAJESTY CELL'));
    return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(s.outlet||'-')+'</b> • 👤 Diinput oleh: <b>'+esc(u.name||'User')+'</b><br>🕒 '+new Date(a.requested_at).toLocaleString('id-ID')+'</div><div>IMEI: '+esc(s.imei_1||'-')+'<br>Modal: <b>Rp'+Number(s.cost||0).toLocaleString('id-ID')+'</b> • Jual: <b>Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</b></div><div class="small">Status: MENUNGGU PERSETUJUAN</div>'+(can?'<div class="row" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="success" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'APPROVE\')">✓ Setujui & Masukkan ke Stock</button><button class="danger" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'REJECT\')">✕ Tolak Barang Masuk</button></div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi.</div>')+'</div>';
   }).join('');
  }catch(ex){
@@ -2638,11 +2638,24 @@ if(!window.__hmStockistClickCapture){
   if(!btn)return;
   const title=String(btn.getAttribute('data-hm-menu-title')||'').trim();
   const isReceive=title==='Ajukan Barang Masuk Unit Bisnis';
+  const isStockistApproval=title==='Persetujuan Barang Masuk'&&!!btn.closest('.hm-stockist-group');
   const isPartnerInfo=title==='Majesty Gadget'||title==='Majesty Store';
-  if(!isReceive&&!isPartnerInfo)return;
+  if(!isReceive&&!isPartnerInfo&&!isStockistApproval)return;
   e.preventDefault();
   e.stopPropagation();
   if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+  if(isStockistApproval){
+   try{if(typeof hmCloseMainMenu==='function')hmCloseMainMenu();}catch(_){}
+   hmActiveMainMenu='Persetujuan Barang Masuk';
+   if(typeof hmSetMainMenuButtonOpen==='function')hmSetMainMenuButtonOpen('Persetujuan Barang Masuk');
+   Promise.resolve().then(()=>hmOpenInventoryApprovalDirect()).catch(ex=>{
+    console.error('[HM] Persetujuan Barang Masuk Pusat Persediaan gagal:',ex);
+    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),pt=document.getElementById('hmMenuPanelTitle');
+    if(panel&&body){if(pt)pt.textContent='⚠️ Persetujuan Barang Masuk';body.innerHTML='<div class="box"><b>Persetujuan Barang Masuk gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:10px" onclick="window.location.reload()">Muat ulang aplikasi</button></div>';panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}
+    else alert('Persetujuan Barang Masuk gagal dibuka: '+(ex?.message||ex));
+   });
+   return;
+  }
   if(isReceive){
    try{if(typeof hmCloseMainMenu==='function')hmCloseMainMenu();}catch(_){}
    hmActiveMainMenu='Barang Masuk';

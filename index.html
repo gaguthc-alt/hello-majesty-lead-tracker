@@ -2480,8 +2480,11 @@ async function hmOpenInventoryApprovalDirect(){
  if(!panel||!body) return;
  const currentRoles=(typeof getActiveRoles==='function'?getActiveRoles():[String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')]).map(r=>String(r).trim().toUpperCase().replace(/_/g,' '));
  const currentManagement=!!profile?.is_management||currentRoles.includes('DIVISI')||currentRoles.includes('DEVELOPER')||currentRoles.includes('DEVELOPER APLIKASI');
- const mayReviewCell=currentManagement||currentRoles.includes('MITRA STOCKIST')||currentRoles.includes('ADMIN FINANCE MAJESTY CELL');
- if(!mayReviewCell){title.textContent='🔔 Persetujuan Barang Masuk (0)';panel.classList.remove('hidden');body.innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">🔒</div><b>Akun ini tidak memiliki akses persetujuan barang masuk.</b></div>';panel.scrollIntoView({behavior:'smooth',block:'start'});return;}
+ const isFacilitator=currentRoles.includes('FASILITATOR');
+ const isCellStockist=currentRoles.includes('MITRA STOCKIST')||currentRoles.includes('ADMIN FINANCE MAJESTY CELL');
+ const myOutlet=String(profile?.outlet||'').trim().toUpperCase();
+ const mayOpenApproval=currentManagement||isFacilitator||isCellStockist;
+ if(!mayOpenApproval){title.textContent='🔔 Persetujuan Barang Masuk (0)';panel.classList.remove('hidden');body.innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">🔒</div><b>Akun ini tidak memiliki akses persetujuan barang masuk.</b></div>';panel.scrollIntoView({behavior:'smooth',block:'start'});return;}
  title.textContent='🔔 Persetujuan Barang Masuk';
  panel.classList.remove('hidden');
  body.innerHTML='<div class="box"><b>Memuat data Barang Masuk…</b></div>';
@@ -2496,7 +2499,7 @@ async function hmOpenInventoryApprovalDirect(){
   const ids=rows.map(x=>x.stock_unit_id).filter(Boolean);
   const s=ids.length?await db.from('stock_units').select('id,product_id,outlet,color,imei_1,cost,asking_price,status,partner_name,source_type').in('id',ids):{data:[],error:null};
   if(s.error)throw s.error;
-  const stocks=s.data||[];const eligibleRows=rows.filter(a=>{const st=stocks.find(x=>x.id===a.stock_unit_id)||{};const cell=String(st.source_type||'').toUpperCase()==='STOCKIST'&&String(st.partner_name||'').trim().toUpperCase()==='MAJESTY CELL';return !cell||mayReviewCell;});rows.splice(0,rows.length,...eligibleRows);if(!rows.length){title.textContent='🔔 Persetujuan Barang Masuk (0)';body.innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">✅</div><b>Tidak ada pengajuan yang memerlukan persetujuan akun ini.</b></div>';return;}const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
+  const stocks=s.data||[];const eligibleRows=rows.filter(a=>{const st=stocks.find(x=>x.id===a.stock_unit_id)||{};const cell=String(st.source_type||'').toUpperCase()==='STOCKIST'&&String(st.partner_name||'').trim().toUpperCase()==='MAJESTY CELL';if(currentManagement)return true;if(isFacilitator)return String(st.outlet||'').trim().toUpperCase()===myOutlet&&String(a.requested_by||'')!==String(profile?.user_id||'');if(isCellStockist)return cell;return false;});rows.splice(0,rows.length,...eligibleRows);if(!rows.length){title.textContent='🔔 Persetujuan Barang Masuk (0)';body.innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">✅</div><b>Tidak ada pengajuan yang memerlukan persetujuan untuk outlet akun ini.</b></div>';return;}const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
   const pr=pids.length?await db.from('product_master').select('id,product,variant').in('id',pids):{data:[],error:null};
   if(pr.error)throw pr.error;
   const users=[...new Set(rows.map(x=>x.requested_by).filter(Boolean))];
@@ -2506,7 +2509,7 @@ async function hmOpenInventoryApprovalDirect(){
   const um=Object.fromEntries((ur.data||[]).map(x=>[x.user_id,x]));
   body.innerHTML=rows.map((a,i)=>{
    const s=stocks.find(x=>x.id===a.stock_unit_id)||{},p=pm[s.product_id]||{},u=um[a.requested_by]||{};
-   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),partner=String(s.partner_name||'').trim().toUpperCase();const can=typeof window.reviewInventoryReceive==='function' && String(a.requested_by)!==String(profile?.user_id) && (!!profile?.is_management||role==='DIVISI'||role==='FASILITATOR'||role==='DEVELOPER'||role==='DEVELOPER APLIKASI'||role===partner||role==='STOCKIST '+partner||role==='MITRA '+partner||(role==='MITRA STOCKIST'&&partner==='MAJESTY CELL')||(role==='ADMIN FINANCE MAJESTY CELL'&&partner==='MAJESTY CELL'));
+   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),partner=String(s.partner_name||'').trim().toUpperCase(),cell=String(s.source_type||'').toUpperCase()==='STOCKIST'&&partner==='MAJESTY CELL';const can=typeof window.reviewInventoryReceive==='function'&&String(a.requested_by)!==String(profile?.user_id)&&(currentManagement||(isFacilitator&&String(s.outlet||'').trim().toUpperCase()===myOutlet)||((currentRoles.includes('MITRA STOCKIST')||currentRoles.includes('ADMIN FINANCE MAJESTY CELL'))&&cell));
    return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(s.outlet||'-')+'</b> • 👤 Diinput oleh: <b>'+esc(u.name||'User')+'</b><br>🕒 '+new Date(a.requested_at).toLocaleString('id-ID')+'</div><div>IMEI: '+esc(s.imei_1||'-')+'<br>Modal: <b>Rp'+Number(s.cost||0).toLocaleString('id-ID')+'</b> • Jual: <b>Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</b></div><div class="small">Status: MENUNGGU PERSETUJUAN</div>'+(can?'<div class="row" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="success" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'APPROVE\')">✓ Setujui & Masukkan ke Stock</button><button class="danger" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'REJECT\')">✕ Tolak Barang Masuk</button></div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi.</div>')+'</div>';
   }).join('');
  }catch(ex){
@@ -4708,10 +4711,7 @@ window.hmRunStockistJournalReclass = async function(){
    if((isAtmaditaAccount || stockistUser) && g[1]==='PUSAT PERSEDIAAN'){
      allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Laporan Stok & Modal Unit Bisnis'].includes(item[1]));
    }
-   // Persetujuan barang milik stockist hanya untuk Management/Divisi, Mitra Stockist, atau Admin Finance Majesty Cell.
-   // Role Fasilitator (termasuk Ifa di Majesty Plaza) tidak menampilkan kartu persetujuan ini meski antreannya kosong.
-   const canSeeStockistApproval=currentManagementForStockApproval();
-   if(g[1]==='PUSAT PERSEDIAAN' && !canSeeStockistApproval){allowed=allowed.filter(item=>item[1]!=='Persetujuan Barang Masuk');}
+   // Persetujuan Barang Masuk tetap tersedia bagi Fasilitator; daftar transaksi dibatasi di fungsi persetujuan berdasarkan outlet tujuan.
    if((isAtmaditaAccount || stockistUser) && g[1]==='KOORDINASI ANTARUNIT BISNIS'){
      allowed=g[2].filter(item=>['Panduan Kerja Sama','Daftar & Profil Unit Bisnis','Pembayaran Settlement'].includes(item[1]));
    }

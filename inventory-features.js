@@ -4,6 +4,8 @@
   const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID');
   const role=()=>String(window.profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
   function can(){return !!window.profile?.is_management||['DEVELOPER','DEVELOPER APLIKASI','FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJESTY CELL','MITRA STOCKIST'].includes(role());}
+  function canSeeFullImei(){return !!window.profile?.is_management||['MANAGEMENT','FASILITATOR'].includes(role());}
+  function displayImei(imei){const value=String(imei||'');if(!value)return '-';return canSeeFullImei()?value:'••••'+value.slice(-4);}
   function panel(title,html){
     const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
     if(!p||!b) throw new Error('Panel Menu Utama belum siap.');
@@ -70,10 +72,10 @@
     const ids=(r.data||[]).map(x=>x.stock_unit_id), us=[...new Set((r.data||[]).map(x=>x.actor_user_id).filter(Boolean))];
     const [pm,users]=await Promise.all([products(await stockProductIds(ids)),loadUsers(us)]);
     const stocks=await loadStocks(ids);
-    panel('📋 Riwayat Stok',(r.data||[]).length?(r.data||[]).map((m,i)=>{const s=stocks[m.stock_unit_id]||{},p=pm[s.product_id]||{},u=users[m.actor_user_id]||{},src=s.partner_name||s.supplier||'';return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+escx(p.product||'Produk')+(p.variant?' — '+escx(p.variant):'')+(s.color?' — '+escx(s.color):'')+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+escx(m.movement_type||'-')+'</div><div>IMEI 1: <b>'+escx(s.imei_1||'-')+'</b></div><div>IMEI 2: <b>'+escx(s.imei_2||'-')+'</b></div><div>Outlet tujuan/lokasi: <b>'+escx(s.outlet||'Belum ditentukan')+'</b></div>'+(src?'<div class="small">Sumber/Stockist: '+escx(src)+'</div>':'')+'<div>Status saat riwayat dicatat: '+escx(m.from_status||'-')+' → <b>'+escx(m.to_status||'-')+'</b></div><div>Status stok sekarang: <b>'+escx(s.status||'Tidak diketahui')+'</b></div><div class="small">Dicatat oleh: '+escx(u.name||'-')+(m.note?' • '+escx(m.note):'')+'</div></div>';}).join(''):'<div class="box"><b>Belum ada riwayat pergerakan stok.</b></div>');
+    panel('📋 Riwayat Stok',(r.data||[]).length?(r.data||[]).map((m,i)=>{const s=stocks[m.stock_unit_id]||{},p=pm[s.product_id]||{},u=users[m.actor_user_id]||{},src=s.partner_name||s.supplier||'';return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+escx(p.product||'Produk')+(p.variant?' — '+escx(p.variant):'')+(s.color?' — '+escx(s.color):'')+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+escx(m.movement_type||'-')+'</div><div>IMEI 1: <b>'+escx(displayImei(s.imei_1))+'</b></div><div>Outlet tujuan/lokasi: <b>'+escx(s.outlet||'Belum ditentukan')+'</b></div>'+(src?'<div class="small">Sumber/Stockist: '+escx(src)+'</div>':'')+'<div>Status saat riwayat dicatat: '+escx(m.from_status||'-')+' → <b>'+escx(m.to_status||'-')+'</b></div><div>Status stok sekarang: <b>'+escx(s.status||'Tidak diketahui')+'</b></div><div class="small">Dicatat oleh: '+escx(u.name||'-')+(m.note?' • '+escx(m.note):'')+'</div></div>';}).join(''):'<div class="box"><b>Belum ada riwayat pergerakan stok.</b></div>');
   }
   async function stockProductIds(ids){const s=await loadStocks(ids);return Object.values(s).map(x=>x.product_id).filter(Boolean);}
-  async function loadStocks(ids){const u=[...new Set(ids.filter(Boolean))];if(!u.length)return {};const r=await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,imei_2,status,partner_name,supplier,source_type').in('id',u);if(r.error)throw r.error;return Object.fromEntries((r.data||[]).map(x=>[x.id,x]));}
+  async function loadStocks(ids){const u=[...new Set(ids.filter(Boolean))];if(!u.length)return {};const r=await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,status,partner_name,supplier,source_type').in('id',u);if(r.error)throw r.error;return Object.fromEntries((r.data||[]).map(x=>[x.id,x]));}
   async function loadUsers(ids){if(!ids.length)return {};const r=await sb.from('team_profiles').select('user_id,name,role').in('user_id',ids);if(r.error)return {};return Object.fromEntries((r.data||[]).map(x=>[x.user_id,x]));}
 
   async function openPenyesuaian(){

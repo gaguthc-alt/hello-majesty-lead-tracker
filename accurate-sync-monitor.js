@@ -94,9 +94,27 @@
       alert('Sinkronisasi terkonfirmasi oleh backend. Periksa nomor faktur dan status di Accurate Sync Monitor.');
       await window.hmOpenAccurateSyncMonitor();
     }catch(e){
-      const msg=String(e?.message||e||'Kesalahan tidak diketahui');
-      if(result) result.textContent='Belum berhasil: '+msg;
-      alert('Transaksi belum terkonfirmasi berhasil. Jangan kirim ulang lagi sebelum membaca pesan ini:\n'+msg);
+      let msg=String(e?.message||e||'Kesalahan tidak diketahui');
+      // Supabase FunctionsHttpError sering menyimpan pesan asli Accurate di context Response,
+      // bukan di error.message. Baca body respons agar alasan kegagalan tidak hilang.
+      try{
+        const ctx=e?.context;
+        if(ctx && typeof ctx.clone==='function'){
+          const copy=ctx.clone();
+          let body=null;
+          try{body=await copy.json();}catch(_){try{body={raw:await copy.text()};}catch(__){}}
+          if(body){
+            const detail=body.error||body.message||body.details||body.hint||body.raw;
+            if(detail) msg=typeof detail==='string'?detail:JSON.stringify(detail);
+            else if(body.code||body.status||body.name) msg=JSON.stringify(body);
+          }
+        }else if(ctx && typeof ctx==='object'){
+          const detail=ctx.error||ctx.message||ctx.details||ctx.hint;
+          if(detail) msg=typeof detail==='string'?detail:JSON.stringify(detail);
+        }
+      }catch(parseErr){/* pertahankan pesan error awal */}
+      if(result) result.textContent='GAGAL: '+msg;
+      alert('Sinkronisasi gagal. Alasan dari backend:\n'+msg+'\n\nJangan kirim ulang sebelum penyebabnya diperiksa.');
       try{await window.hmOpenAccurateSyncMonitor();}catch(_){}
     }
   };

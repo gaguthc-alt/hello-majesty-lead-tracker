@@ -3787,9 +3787,17 @@ function renderRoleHome(){
  // Management melihat seluruh modul utama.
  const isAtmadita=stockistUser;
  const cards=[],add=(icon,title,desc,fn)=>{
-  if(stockistUser)return;
+  // Sementara, menu Finance global hanya menyisakan Kas & Bank dan Payroll.
+  // Ini hanya mengatur navigasi; tidak mengubah data, transaksi, atau hak akses database.
+  const financeHiddenTitles=['Finance','Laporan Finance','Hutang & Piutang','Payroll & Komisi','Accounting','Konfirmasi Pencairan Finance'];
+  if(financeHiddenTitles.includes(title))return;
+  const financeKeepTitles=['Kas & Bank','Payroll'];
+  if(stockistUser && !financeKeepTitles.includes(title))return;
   if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
  };
+ // Kas & Bank dan Payroll tampil untuk semua role selama pembatasan Finance sementara.
+ add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
+ add('💼','Payroll','Pusat pengelolaan gaji Hello Majesty','hmOpenPayroll()');
 
  if(cs && !mg && !developer){
    add('💬','Hello Majesty Chat','Inbox chat customer • claim & balas customer','hmOpenHelloMajestyChat()');

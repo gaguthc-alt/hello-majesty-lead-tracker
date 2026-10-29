@@ -814,16 +814,19 @@ window.openFinanceSection=async function(section){
         #hmPayrollBox .fin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
         #hmPayrollBox .fin-card{min-width:0;max-width:100%;padding:14px;border-radius:14px;overflow:hidden}
         #hmPayrollBox .fin-big{font-size:clamp(17px,3.5vw,25px);font-weight:800;line-height:1.25;overflow-wrap:anywhere}
-        #hmPayrollBox div[style*="overflow:auto"],#hmPayrollBox div[style*="overflow: auto"]{width:100%;max-width:100%;min-width:0;overflow-x:auto!important;border-radius:12px}
-        #hmPayrollBox table{width:100%!important;max-width:100%!important;min-width:0!important;border-collapse:collapse;table-layout:auto;background:#fff}
-        #hmPayrollBox th,#hmPayrollBox td{max-width:320px;padding:10px 9px;white-space:normal;overflow-wrap:anywhere;word-break:normal;line-height:1.4}
-        #hmPayrollBox th{background:#203b5b;color:#fff;text-align:left}
+        #hmPayrollBox div[style*="overflow:auto"],#hmPayrollBox div[style*="overflow: auto"]{display:block;width:100%;max-width:100%;min-width:0;overflow-x:auto!important;overflow-y:hidden;background:#fff!important;border:1px solid #dbe3ed;border-radius:12px;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+        #hmPayrollBox table{width:100%;max-width:none;min-width:680px;border-collapse:collapse;table-layout:auto;background:#fff!important;color:#24364b}
+        #hmPayrollBox th,#hmPayrollBox td{padding:10px 9px;white-space:normal;overflow-wrap:break-word;word-break:normal;line-height:1.4;vertical-align:middle}
+        #hmPayrollBox th{background:#203b5b!important;color:#fff!important;text-align:left}
+        #hmPayrollBox tbody tr:nth-child(even){background:#f7f9fc}
         #hmPayrollBox .small{line-height:1.5;overflow-wrap:anywhere}
+        #hmPayrollBox .fin-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
         @media(max-width:640px){
-          #hmPayrollBox .fin-grid{grid-template-columns:repeat(1,minmax(0,1fr))!important;gap:8px}
+          #hmPayrollBox .fin-grid{grid-template-columns:minmax(0,1fr)!important;gap:8px}
           #hmPayrollBox .fin-card{padding:12px}
-          #hmPayrollBox th,#hmPayrollBox td{padding:9px 7px;font-size:12px}
+          #hmPayrollBox th,#hmPayrollBox td{padding:9px 8px;font-size:12px}
           #hmPayrollBox>.box>div:first-child{flex-wrap:wrap}
+          #hmPayrollBox table{min-width:640px}
         }
       `;
       document.head.appendChild(style);

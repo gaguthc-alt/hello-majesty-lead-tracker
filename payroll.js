@@ -135,53 +135,39 @@
     await renderPartnerCommissionPayroll(host, rows);
   }
 
-  async function renderPartnerCommissionPayroll(host, teamRows=[]){
-    const sb=window.sb;
-    if(!sb||!host)return;
-    const q=await sb.from('partner_commission_payroll_view').select('id,sales_transaction_id,partner_name,outlet,sold_at,profit_basis,commission_rate,commission_amount,status,paid_at,payment_note,product_name,product_variant,color,condition,grade,battery_health,sale_price,gross_profit').order('sold_at',{ascending:false});
-    if(q.error){
-      host.insertAdjacentHTML('beforeend','<div class="box" style="margin-top:14px"><h3>🤝 Komisi Mitra Stockist</h3><p class="small">Data mitra belum dapat dimuat: '+esc(q.error.message||'Kesalahan query')+'</p></div>');
-      return;
-    }
-    const rows=q.data||[];
-    const rp2=rp;
-    const pending=rows.filter(x=>x.status==='PENDING').reduce((a,x)=>a+Number(x.commission_amount||0),0);
-    const paid=rows.filter(x=>x.status==='PAID').reduce((a,x)=>a+Number(x.commission_amount||0),0);
-    const all=rows.reduce((a,x)=>a+Number(x.commission_amount||0),0);
-    const teamTotal=(teamRows||[]).reduce((a,x)=>a+Number(x.total_commission||0),0);
-    const grandTotal=teamTotal+pending;
-    const partnerNames=['Majesty Cell','Majesty Gadget','Majesty Store'];
-    const summary=partnerNames.map(name=>{
-      const list=rows.filter(x=>x.partner_name===name);
-      const total=list.reduce((a,x)=>a+Number(x.commission_amount||0),0);
-      const unpaid=list.filter(x=>x.status==='PENDING').reduce((a,x)=>a+Number(x.commission_amount||0),0);
-      return '<div style="border:1px solid #dbe3ed;border-radius:12px;padding:12px;background:#f8fafc"><b>'+esc(name)+'</b><div class="small" style="margin-top:5px">'+list.length+' transaksi valid</div><div style="margin-top:5px">Total komisi: <b>'+rp2(total)+'</b></div><div class="small">Belum dibayar: '+rp2(unpaid)+'</div></div>';
-    }).join('');
-    const detail=rows.map(x=>{
-      const product=[x.product_name,x.product_variant,x.color,x.condition||x.grade,(x.battery_health!=null?'BH '+x.battery_health+'%':'')].filter(Boolean).join(' — ');
-      const action=window.profile?.is_management&&x.status==='PENDING'
-        ? '<button type="button" class="success" style="margin-top:7px" onclick="window.hmMarkPartnerCommissionPaid(\''+x.id+'\')">✓ Tandai Sudah Dibayar</button>'
-        : '';
-      return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:start"><b>'+esc(x.partner_name)+'</b><span class="badge">'+(x.status==='PAID'?'Sudah dibayar':x.status==='REVERSED'?'Dibatalkan':'Belum dibayar')+'</span></div><div class="small">'+esc(x.outlet)+' • '+new Date(x.sold_at).toLocaleDateString('id-ID')+'</div><div style="margin-top:5px">'+esc(product||'Produk')+'</div><div class="small">Laba transaksi: '+rp2(x.profit_basis)+' • Tarif 10%</div><div>Komisi mitra: <b>'+rp2(x.commission_amount)+'</b></div>'+(x.paid_at?'<div class="small">Dibayar: '+new Date(x.paid_at).toLocaleDateString('id-ID')+(x.payment_note?' • '+esc(x.payment_note):'')+'</div>':'')+action+'</div>';
-    }).join('');
-    host.querySelector('[data-hm-partner-commission-section]')?.remove();
-    const section=document.createElement('section');
-    section.dataset.hmPartnerCommissionSection='1';
-    section.className='box';
-    section.style.marginTop='16px';
-    section.innerHTML='<h3 style="margin-top:0">🤝 Komisi Mitra Stockist</h3><p class="small">Dihitung 10% dari laba transaksi unit milik Majesty Cell, Majesty Gadget, dan Majesty Store yang berstatus SOLD. Terpisah dari bagi hasil modal, serta komisi Hunter/Checker/CS/Sales.</p><div class="hm-budget-metrics"><div class="metric-profit"><small>Total komisi tim</small><strong>'+rp2(teamTotal)+'</strong></div><div class="metric-commission"><small>Total komisi mitra</small><strong>'+rp2(all)+'</strong></div><div class="metric-ratio"><small>Kewajiban payroll: tim bulan ini + mitra belum dibayar</small><strong>'+rp2(grandTotal)+'</strong></div></div><div class="hm-budget-metrics"><div class="metric-profit"><small>Total komisi historis</small><strong>'+rp2(all)+'</strong></div><div class="metric-commission"><small>Belum dibayar</small><strong>'+rp2(pending)+'</strong></div><div class="metric-ratio"><small>Sudah dibayar</small><strong>'+rp2(paid)+'</strong></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:12px 0">'+summary+'</div><h4>Rincian transaksi</h4>'+(detail||'<p class="small">Belum ada komisi mitra.</p>');
-    host.appendChild(section);
+  async function loadPartnerCommissionRows(){
+    const sb=window.sb;if(!sb)throw new Error('Koneksi database belum siap.');
+    const q=await sb.from('partner_commission_payroll_view').select('id,sales_transaction_id,partner_name,outlet,sold_at,profit_basis,commission_rate,commission_amount,status,paid_at,paid_by,payment_note,product_name,product_variant,color,condition,grade,battery_health,sale_price,gross_profit').order('sold_at',{ascending:false});
+    if(q.error)throw q.error;return q.data||[];
   }
-
+  async function renderPartnerCommissionPayroll(host,teamRows=[]){
+    if(!host)return;
+    try{
+      const rows=await loadPartnerCommissionRows(),pending=rows.filter(x=>x.status==='PENDING').reduce((a,x)=>a+Number(x.commission_amount||0),0),paid=rows.filter(x=>x.status==='PAID').reduce((a,x)=>a+Number(x.commission_amount||0),0),all=rows.reduce((a,x)=>a+Number(x.commission_amount||0),0),teamTotal=(teamRows||[]).reduce((a,x)=>a+Number(x.total_commission||0),0);
+      const section=document.createElement('section');section.dataset.hmPartnerCommissionSection='1';section.className='box';section.style.marginTop='16px';
+      section.innerHTML='<h3 style="margin-top:0">🤝 Rekap Komisi Mitra Stockist</h3><p class="small">Ringkasan saja. Rincian transaksi dan konfirmasi pembayaran tersedia di menu Koordinasi Antar Unit Bisnis.</p><div class="hm-budget-metrics"><div class="metric-profit"><small>Total komisi tim</small><strong>'+rp(teamTotal)+'</strong></div><div class="metric-commission"><small>Total komisi mitra historis</small><strong>'+rp(all)+'</strong></div><div class="metric-ratio"><small>Komisi mitra belum dibayar</small><strong>'+rp(pending)+'</strong></div></div><div class="small">Komisi mitra sudah dibayar: <b>'+rp(paid)+'</b></div>';
+      host.querySelector('[data-hm-partner-commission-section]')?.remove();host.appendChild(section);
+    }catch(e){host.insertAdjacentHTML('beforeend','<div class="box" style="margin-top:14px"><h3>🤝 Rekap Komisi Mitra Stockist</h3><p class="small">Data mitra belum dapat dimuat: '+esc(e?.message||'Kesalahan query')+'</p></div>');}
+  }
+  async function renderPartnerCommissionCoordination(){
+    const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+    if(!panel||panel.classList.contains('hidden')||!body)return;
+    const label=String(title?.textContent||'')+' '+String(body.textContent||'').slice(0,500);
+    if(!/koordinasi/i.test(label)||!/unit bisnis/i.test(label)||body.querySelector('[data-hm-partner-coordination-details]'))return;
+    const wrap=document.createElement('section');wrap.dataset.hmPartnerCoordinationDetails='1';wrap.className='box';wrap.style.marginTop='14px';wrap.innerHTML='<h3>🤝 Rincian Komisi Mitra Stockist</h3><p class="small">Memuat rincian transaksi...</p>';body.appendChild(wrap);
+    try{
+      const rows=await loadPartnerCommissionRows();
+      const summary=['Majesty Cell','Majesty Gadget','Majesty Store'].map(name=>{const list=rows.filter(x=>x.partner_name===name),amount=list.reduce((a,x)=>a+Number(x.commission_amount||0),0),pending=list.filter(x=>x.status==='PENDING').reduce((a,x)=>a+Number(x.commission_amount||0),0);return '<div class="lead"><b>'+esc(name)+'</b><div class="small">'+list.length+' transaksi valid • Total '+rp(amount)+' • Belum dibayar '+rp(pending)+'</div></div>';}).join('');
+      const detail=rows.map(x=>{const product=[x.product_name,x.product_variant,x.color,x.condition||x.grade,(x.battery_health!=null?'BH '+x.battery_health+'%':'')].filter(Boolean).join(' — '),action=window.profile?.is_management&&x.status==='PENDING'?'<button type="button" class="success" style="margin-top:7px" onclick="window.hmMarkPartnerCommissionPaid(\''+x.id+'\')">✓ Tandai Sudah Dibayar</button>':'';return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:start"><b>'+esc(x.partner_name)+'</b><span class="badge">'+(x.status==='PAID'?'Sudah dibayar':x.status==='REVERSED'?'Dibatalkan':'Belum dibayar')+'</span></div><div class="small">'+esc(x.outlet)+' • '+new Date(x.sold_at).toLocaleDateString('id-ID')+'</div><div style="margin-top:5px">'+esc(product||'Produk')+'</div><div class="small">Laba transaksi: '+rp(x.profit_basis)+' • Tarif 10%</div><div>Komisi mitra: <b>'+rp(x.commission_amount)+'</b></div>'+(x.paid_at?'<div class="small">Dibayar: '+new Date(x.paid_at).toLocaleDateString('id-ID')+(x.payment_note?' • '+esc(x.payment_note):'')+'</div>':'')+action+'</div>';}).join('');
+      wrap.innerHTML='<h3 style="margin-top:0">🤝 Rincian Komisi Mitra Stockist</h3><p class="small">Komisi 10% dari laba transaksi unit milik Majesty Cell, Majesty Gadget, dan Majesty Store. Stok milik Management, termasuk iPhone 18, tidak termasuk.</p>'+summary+'<h4>Rincian transaksi</h4>'+(detail||'<p class="small">Belum ada transaksi komisi mitra.</p>');
+    }catch(e){wrap.innerHTML='<h3>🤝 Rincian Komisi Mitra Stockist</h3><p class="small">Gagal memuat rincian: '+esc(e?.message||'Kesalahan query')+'</p>';}
+  }
   window.hmMarkPartnerCommissionPaid=async function(id){
     if(!window.profile?.is_management)return alert('Hanya Management yang dapat menandai komisi mitra sudah dibayar.');
     if(!confirm('Pastikan transfer komisi mitra untuk transaksi ini benar-benar sudah dilakukan. Lanjut tandai dibayar?'))return;
-    const note=prompt('Catatan pembayaran / referensi transfer (opsional):')||null;
-    const q=await window.sb.from('partner_commissions').update({status:'PAID',paid_at:new Date().toISOString(),paid_by:window.profile.user_id,payment_note:note,updated_at:new Date().toISOString()}).eq('id',id).eq('status','PENDING');
+    const note=prompt('Catatan pembayaran / referensi transfer (opsional):')||null,q=await window.sb.from('partner_commissions').update({status:'PAID',paid_at:new Date().toISOString(),paid_by:window.profile.user_id,payment_note:note,updated_at:new Date().toISOString()}).eq('id',id).eq('status','PENDING');
     if(q.error)return alert('Gagal memperbarui status: '+q.error.message);
-    const host=document.querySelector('#hmPayrollBox .hm-team-commission-wrap')?.parentElement;
-    if(host){const r=await loadCommission();await renderPartnerCommissionPayroll(host,r);}
-    else alert('Status pembayaran diperbarui. Buka kembali Payroll untuk melihat rekap terbaru.');
+    document.querySelectorAll('[data-hm-partner-coordination-details]').forEach(x=>x.remove());await renderPartnerCommissionCoordination();alert('Status komisi mitra diperbarui.');
   };
 
   const css=document.createElement('style');
@@ -219,9 +205,9 @@
     catch(e){host.innerHTML='<div class="small">Gagal memuat rincian komisi: '+esc(e?.message||e)+'</div>';}
   }
 
-  const obs=new MutationObserver(()=>{enhance().catch(e=>console.warn('[HM] commission UI',e));});
+  const obs=new MutationObserver(()=>{enhance().catch(e=>console.warn('[HM] commission UI',e));renderPartnerCommissionCoordination().catch(()=>{});});
   obs.observe(document.documentElement,{childList:true,subtree:true});
-  setInterval(()=>enhance().catch(()=>{}),1000);
+  setInterval(()=>{enhance().catch(()=>{});renderPartnerCommissionCoordination().catch(()=>{});},1000);
 
   window.hmCopyCommissionReport=copyCommissionReport;
   window.hmOpenPayroll = window.hmOpenPayroll || function(){

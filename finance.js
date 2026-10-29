@@ -414,7 +414,8 @@ window.openFinance=async function(){
     // Kas Finance mengikuti akun MNG aktif: 1103 Refill dan 1104 Plaza.
     // RPC lama masih mengenal 1101/1102, jadi Finance menormalkan daftar akun di sini
     // tanpa mengubah jurnal historis.
-    const {data:cashAccounts,error:cashErr}=await sb.from('accounting_accounts').select('id,code,name,account_type,active').in('code',['1101','1102','1103','1104','1110','1111','1112','1113','1114']).order('code');
+    // Tampilan sementara hanya akun Kas MNG dan bank yang dipakai. BNI/Seabank serta akun lama disembunyikan dari layar saja; data akun/jurnal tidak dihapus atau dinonaktifkan.
+    const {data:cashAccounts,error:cashErr}=await sb.from('accounting_accounts').select('id,code,name,account_type,active').in('code',['1103','1104','1110','1111','1112']).eq('active',true).order('code');
     if(cashErr)throw cashErr;
     const ids=(cashAccounts||[]).map(a=>a.id);
     let cashLines=[];

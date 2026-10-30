@@ -7521,7 +7521,7 @@ async function openAccountingModule(module){
     const section=(title,arr)=>'<div class="box accounting-section"><h4>'+title+'</h4>'+
       (arr.length?arr.map(r=>'<button type="button" class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="openBalanceAccountDetail(\''+escA(r.account_id)+'\',\''+escA(r.account_code)+'\',\''+escA(r.account_name).replace(/'/g,"&#39;")+'\')"><div class="row" style="justify-content:space-between;gap:10px"><span><b>'+escA(r.account_code)+'</b> — '+escA(r.account_name)+'</span><b style="white-space:nowrap">'+accountingRp(r.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+
       '</div>';
-    host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+'<button type="button" class="secondary" style="margin:8px 0;width:100%" onclick="testAccurateGLAccountList()">🔎 Uji koneksi daftar akun Accurate</button>'++selector+
+    host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+'<button type="button" class="secondary" style="margin:8px 0;width:100%" onclick="testAccurateGLAccountList()">🔎 Uji koneksi daftar akun Accurate</button>'+selector+
       section('ASET',assets)+
       '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Aset</div><div class="num accounting-num">'+accountingRp(totalAssets)+'</div></div>'+
       section('LIABILITAS',liabilities)+

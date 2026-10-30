@@ -7502,7 +7502,7 @@ window.testAccurateNeracaPreview=async function(){
     const section=(title,codes)=>{
       const list=roots.filter(d=>codes.includes(String(d.accountType||'')));
       const total=list.reduce((n,d)=>n+Number(d.balance||0),0);
-      return '<div class="lead" style="margin-top:10px"><b>'+title+'</b><div class="row" style="justify-content:space-between;margin:6px 0"><span>Total saldo akun induk/root</span><b>'+rp(total)+'</b></div>'+(list.length?list.map(d=>render(d)).join(''):'<div class="small">Tidak ada akun root.</div>')+'</div>';
+      return '<details class="lead" style="margin-top:10px"><summary style="cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:center"><b>'+title+'</b><b>'+rp(total)+'</b></summary><div class="small" style="margin:7px 0">Total saldo akun induk/root · '+list.length+' akun utama</div>'+(list.length?list.map(d=>render(d)).join(''):'<div class="small">Tidak ada akun root.</div>')+'</details>';
     };
     const unknown=[...new Set(good.map(a=>String(a.detail.accountType||'')).filter(t=>t&&!allKnown.has(t)))];
     const longDebt=roots.filter(d=>d.no==='1801'||String(d.name||'').toLowerCase().includes('hutang jangka panjang'));
@@ -7541,8 +7541,13 @@ window.testAccurateNeracaPreview=async function(){
     const balanceDifference=profitResult?totalAssets-totalLiabilities-adjustedEquity:null;
     const isBalanced=profitResult&&Math.abs(balanceDifference)<=0.01;
     const reconciliationStatus=profitResult?'<div class="lead" style="margin:8px 0;border-left:4px solid '+(isBalanced?'#16a34a':'#dc2626')+'"><b>'+(isBalanced?'🟢 NERACA SEIMBANG':'🔴 NERACA BELUM SEIMBANG')+'</b><div class="small">'+(isBalanced?'Selisih berada dalam toleransi Rp0,01.':'Selisih melebihi toleransi Rp0,01. Periksa rincian sebelum digunakan.')+'</div></div>':'<div class="lead" style="margin:8px 0"><b>⚠️ STATUS REKONSILIASI BELUM TERSEDIA</b></div>';
-    box.innerHTML=reconciliationStatus+'<h3 style="margin-top:0">⚖️ Pratinjau Neraca Accurate</h3><div class="small">Per '+esc(good[0]?.detail?.asOf||'—')+' · '+good.length+' akun berhasil · Read-only · Neraca lokal tidak diubah</div>'+
-      '<div class="small" style="margin-top:8px">Perhitungan memakai akun root/induk saja untuk mencegah saldo induk dan anak dihitung dua kali. Akun anak ditampilkan sebagai rincian.</div>'+
+    box.innerHTML='<h3 style="margin-top:0">⚖️ Neraca Accurate</h3><div class="small">Per '+esc(good[0]?.detail?.asOf||'—')+' · '+good.length+' akun berhasil · Read-only · Neraca lokal tidak diubah</div>'+reconciliationStatus+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:10px 0">'+
+      '<div class="lead"><div class="small">TOTAL ASET</div><b>'+rp(totalAssets)+'</b></div>'+
+      '<div class="lead"><div class="small">TOTAL LIABILITAS</div><b>'+rp(totalLiabilities)+'</b></div>'+
+      '<div class="lead"><div class="small">EKUITAS TERCATAT</div><b>'+rp(totalEquity)+'</b></div>'+
+      (profitResult?'<div class="lead"><div class="small">EKUITAS SETELAH LABA/RUGI</div><b>'+rp(adjustedEquity)+'</b></div>':'')+'</div>'+
+      '<div class="small" style="margin-top:8px">Pilih kelompok akun untuk membuka rincian. Perhitungan memakai akun root/induk saja agar saldo induk dan anak tidak dihitung dua kali.</div>'+
       section('ASET',types.ASET)+section('PENGURANG ASET',types['PENGURANG ASET'])+section('LIABILITAS',types.LIABILITAS)+section('EKUITAS TERCATAT',types.EKUITAS)+
       '<div class="lead" style="margin-top:10px"><b>REKONSILIASI EKUITAS</b>'+
       (profitResult?'<div class="row" style="justify-content:space-between;margin-top:8px"><span>Laba/rugi bersih Accurate ('+esc(profitResult.period)+')</span><b>'+rp(profitResult.amount)+'</b></div><div class="row" style="justify-content:space-between;margin-top:6px"><span>Ekuitas setelah laba/rugi</span><b>'+rp(adjustedEquity)+'</b></div><div class="row" style="justify-content:space-between;margin-top:6px"><span>Total Aset</span><b>'+rp(totalAssets)+'</b></div><div class="row" style="justify-content:space-between;margin-top:6px"><span>Total Liabilitas + Ekuitas</span><b>'+rp(totalLiabilities+adjustedEquity)+'</b></div><div class="row" style="justify-content:space-between;margin-top:6px"><span>Selisih</span><b>'+rp(balanceDifference)+'</b></div><div class="small" style="margin-top:8px">Laba/rugi ditampilkan sebagai penyesuaian perhitungan ekuitas saja. Tidak membuat jurnal dan tidak mengubah saldo akun modal.</div>':'<div class="small" style="margin-top:8px">Laba/rugi belum dapat dihitung otomatis: '+esc(profitError)+'. Total rekonsiliasi tidak ditampilkan agar tidak menyesatkan.</div>')+'</div>'+

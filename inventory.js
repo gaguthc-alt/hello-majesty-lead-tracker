@@ -36,12 +36,19 @@ async function loadInventoryData(){
   const stockView=(profile?.is_management||isDeveloper)?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
   if(!profile?.is_management && profile?.outlet && !isPartnerFinance) stockQuery=stockQuery.eq('outlet',profile.outlet);
-  const [p,s]=await Promise.all([
-    sb.from('product_master').select('*').eq('active',true).order('category').order('product'),
-    stockQuery
-  ]);
-  if(p.error) throw p.error; if(s.error) throw s.error;
-  inventoryProducts=p.data||[]; inventoryStock=s.data||[];
+  // product_master may exceed the API's per-request row cap. Fetch in pages so later models (iPhone 14+) are not silently omitted.
+  const productRows=[];
+  const productPageSize=500;
+  for(let offset=0; ; offset+=productPageSize){
+    const page=await sb.from('product_master').select('*').eq('active',true).order('category').order('product').order('variant').order('color').order('grade').range(offset,offset+productPageSize-1);
+    if(page.error) throw page.error;
+    const batch=page.data||[];
+    productRows.push(...batch);
+    if(batch.length<productPageSize) break;
+  }
+  const s=await stockQuery;
+  if(s.error) throw s.error;
+  inventoryProducts=productRows; inventoryStock=s.data||[];
   try{hmApplyProductMasterAccess();}catch(_e){}
   if((role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL') && inventoryStock.length){
     const ids=inventoryStock.map(x=>x.id).filter(Boolean);

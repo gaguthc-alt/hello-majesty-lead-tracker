@@ -5799,7 +5799,7 @@ async function hmCheckAccurateProfitLoss(){
  const host=document.getElementById('hmAccurateProfitCheck'); if(!host)return;
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  if(!profile?.is_management && role!=='MANAGEMENT'){host.textContent='Akses khusus Management.';return;}
- host.innerHTML='<div class="small">Mengambil data read-only dari Accurate...</div>';
+ host.innerHTML='<div class="small">Mengambil realisasi laba konsolidasi dari Accurate...</div>';
  try{
   if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
   const token=await window.hmAccessToken(),now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),1);
@@ -5807,8 +5807,13 @@ async function hmCheckAccurateProfitLoss(){
   const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_pl_account_amount',from_date:fmt(start),to_date:fmt(now)})});
   const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
   if(!response.ok||data?.ok!==true)throw new Error(data?.accurate_error||data?.error||('HTTP '+response.status));
-  host.innerHTML='<b>Data Accurate berhasil dibaca (read-only)</b><div class="small">Periode '+fmt(start)+' s/d '+fmt(now)+'</div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;font-size:11px">'+esc(JSON.stringify(data.response,null,2))+'</pre><div class="small">Belum memengaruhi angka Realisasi Target Laba. Cocokkan akun 410101, 410102, 410105, 410201, 4301, dan 4302 terlebih dahulu.</div>';
- }catch(e){host.innerHTML='<b>Data Accurate belum berhasil diverifikasi</b><div class="small">'+esc(e?.message||String(e))+'</div><div class="small">Angka target tetap memakai perhitungan lama.</div>';}
+  const rows=Array.isArray(data.response?.d)?data.response.d:[];
+  const amount=no=>Number(rows.find(x=>String(x.accountNo)===no&&!x.isParent)?.amount||0);
+  const revenue=['410101','410102','410105','410201'].reduce((v,n)=>v+amount(n),0);
+  const cogs=amount('4301')+amount('4302'),profit=revenue-cogs;
+  const money=v=>'Rp'+Math.round(v).toLocaleString('id-ID');
+  host.innerHTML='<b>📊 Realisasi Laba Accurate — '+money(profit)+'</b><div class="small">Periode '+fmt(start)+' s/d '+fmt(now)+' • Read-only</div><div class="small">Pendapatan '+money(revenue)+' • HPP '+money(cogs)+'</div><div class="small">Perhitungan: 410101 + 410102 + 410105 + 410201 − 4301 − 4302</div><div class="small">Angka konsolidasi Accurate. Realisasi per outlet pada kartu di bawah masih memakai data lokal karena HPP Accurate belum dipisahkan per outlet.</div>';
+ }catch(e){host.innerHTML='<b>⚠️ Accurate belum berhasil dibaca</b><div class="small">'+esc(e?.message||String(e))+'</div><div class="small">Angka target tetap memakai perhitungan lama.</div>';}
 }
 window.hmCheckAccurateProfitLoss=hmCheckAccurateProfitLoss;
 async function renderTargetBoard(){
@@ -5837,7 +5842,7 @@ async function renderTargetBoard(){
  const outletCards=outlets.map(o=>{const targetLaba=Number(o.nominal_target||0),actualLaba=Number(labaByOutlet[o.outlet]||0);return '<div class="box"><h3>🎯 TARGET '+esc(o.outlet)+'</h3><div class="stats">'+bar('WA',o.wa_actual,o.wa_target,'📲')+bar('Handover',o.handover_actual,o.qualified_target,'🤝')+bar('Closing',o.closing_actual,o.closing_target,'🏆')+'<div class="stat"><div class="small">📈 Target Laba</div><div class="num">'+shortNominal(targetLaba)+'</div><div class="small">Realisasi '+shortNominal(actualLaba)+' • '+labaPct(actualLaba,targetLaba)+'%</div></div></div><div style="margin-top:10px;font-weight:700">🎁 Bonus: '+esc(o.bonus_label)+' Rp'+Number(o.bonus_amount||0).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:6px">Sisa: WA '+Math.max(0,o.wa_target-o.wa_actual)+' • Handover '+Math.max(0,Number(o.qualified_target||0)-Number(o.handover_actual||0))+' • Closing '+Math.max(0,Number(o.closing_target||0)-Number(o.closing_actual||0))+' • Laba '+shortNominal(Math.max(0,targetLaba-actualLaba))+'</div></div>';}).join('');
  const roleText=roles.length?roles.map(r=>'• '+esc(r)).join('<br>'):'• Belum ada peran operasional';
  const manageBtn=d.management?'<button class="secondary" onclick="openTargetSettings()">⚙️ Atur Target Outlet</button><button class="secondary" onclick="hmCheckAccurateProfitLoss()">🔄 Uji Data Laba Accurate</button><div id="hmAccurateProfitCheck" class="small" style="margin-top:8px"></div>':''; const facilitatorBtn='';
- const rc=d.role_contribution||{}; const firstTarget=outlets[0]||{}; const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':(facilitatorBtn||''); const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';if(!hmActiveMainMenu)box.classList.add('hidden');box.innerHTML=''+ownBox+outletCards; const dash=document.getElementById('workspace'); const content=document.getElementById('contentPerformance'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(dash&&!dash.contains(box))dash.insertBefore(box,content||inventorySection||stats);
+ const rc=d.role_contribution||{}; const firstTarget=outlets[0]||{}; const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':(facilitatorBtn||''); const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';if(!hmActiveMainMenu)box.classList.add('hidden');box.innerHTML=''+ownBox+outletCards; const dash=document.getElementById('workspace'); const content=document.getElementById('contentPerformance'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(dash&&!dash.contains(box))dash.insertBefore(box,content||inventorySection||stats); if(d.management)hmCheckAccurateProfitLoss();
 
 async function openTargetSettings(){
  const x=await sb.rpc('dashboard_target_summary');if(x.error)return alert(x.error.message);

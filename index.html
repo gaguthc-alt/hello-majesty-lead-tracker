@@ -7480,7 +7480,7 @@ window.testAccurateNeracaPreview=async function(){
       LIABILITAS:['ACCOUNT_PAYABLE','OTHER_CURRENT_LIABILITY','LONG_TERM_LIABILITY'],
       EKUITAS:['EQUITY']
     };
-    const allKnown=new Set(Object.values(types).flat());
+    const allKnown=new Set([...Object.values(types).flat(),'REVENUE','COGS','EXPENSE','OTHER_INCOME','OTHER_EXPENSE']);
     const roots=good.map(a=>a.detail).filter(d=>!d.parent?.no||!byNo.has(String(d.parent.no)));
     const diagnostics=[];
     for(const d of roots){
@@ -7531,7 +7531,8 @@ window.testAccurateNeracaPreview=async function(){
         if(sign===undefined)continue;
         const amount=Number(row.amount);
         if(!Number.isFinite(amount))continue;
-        net+=sign*Math.abs(amount);matched++;
+        // Pertahankan tanda asli Accurate: saldo beban negatif (mis. ongkir -11.000 dan admin finance -170.973) mengurangi beban, bukan dibalik menjadi positif.
+        net+=sign*amount;matched++;
       }
       if(!matched)throw new Error('Rincian Laba/Rugi tidak cocok dengan metadata jenis akun Accurate.');
       profitResult={amount:net,matched,period:fromDate+' s/d '+toDate};

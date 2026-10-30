@@ -3598,6 +3598,37 @@ async function hmRenderManagementMessage(){
      }else context.data_limitations.push('ringkasan lead tidak dapat dibaca sesuai akses pengguna');
    }
  }catch(e){context.data_limitations.push('ringkasan lead tidak tersedia');console.warn('[HM] Ringkasan lead pesan beranda:',e);}
+ // Target outlet dan realisasi funnel dibaca lebih dahulu agar fallback tidak mendahului apresiasi keberhasilan tim.
+ context.outlet_target_summary=null;
+ try{
+   if(db&&typeof db.from==='function'&&outlet){
+     const ms=monthStart.toISOString().slice(0,10);
+     const {data:targetRows,error:targetErr}=await db.from('monthly_outlet_targets')
+       .select('outlet,wa_target,qualified_target,closing_target,month_start,active')
+       .eq('month_start',ms).eq('outlet',outlet).eq('active',true).limit(1);
+     if(!targetErr&&targetRows?.length){
+       const t=targetRows[0];
+       const dayStart=new Date(today),dayEnd=new Date(today);dayEnd.setDate(dayEnd.getDate()+1);
+       const monthEndLocal=new Date(monthStart.getFullYear(),monthStart.getMonth()+1,1);
+       const countLeads=async(field,start,end,extra)=>{let q=db.from('leads').select('id',{count:'exact',head:true}).eq('outlet',outlet).gte(field,start.toISOString()).lt(field,end.toISOString());if(extra)q=extra(q);return await q;};
+       const [wa,hand,close]=await Promise.all([
+         countLeads('created_at',monthStart,monthEndLocal,q=>q.is('archived_at',null)),
+         countLeads('sales_claimed_at',monthStart,monthEndLocal,q=>q.not('cs_claimed_by','is',null)),
+         db.from('sales_transactions').select('id',{count:'exact',head:true}).eq('outlet',outlet).gte('sold_at',monthStart.toISOString()).lt('sold_at',monthEndLocal.toISOString())
+       ]);
+       if(!wa.error&&!hand.error&&!close.error){
+         const daysInMonth=new Date(monthStart.getFullYear(),monthStart.getMonth()+1,0).getDate();
+         const dayNo=today.getDate(),pace=dayNo/daysInMonth;
+         const kpis=[
+           {key:'wa_masuk',actual:Number(wa.count||0),target:Number(t.wa_target||0)},
+           {key:'handover',actual:Number(hand.count||0),target:Number(t.qualified_target||0)},
+           {key:'closing',actual:Number(close.count||0),target:Number(t.closing_target||0)}
+         ].filter(x=>x.target>0);
+         context.outlet_target_summary={outlet,day:dayNo,days_in_month:daysInMonth,kpis:kpis.map(x=>({...x,cumulative_target:Math.ceil(x.target*pace),monthly_target_reached:x.actual>=x.target,cumulative_target_reached:x.actual>=Math.ceil(x.target*pace)})),all_cumulative_targets_reached:kpis.length>0&&kpis.every(x=>x.actual>=Math.ceil(x.target*pace)),all_monthly_targets_reached:kpis.length>0&&kpis.every(x=>x.actual>=x.target)};
+       }else context.data_limitations.push('realisasi target outlet belum dapat diverifikasi');
+     }else if(targetErr)context.data_limitations.push('target outlet belum dapat dibaca');
+   }
+ }catch(e){context.data_limitations.push('target dan realisasi outlet belum dapat diverifikasi');console.warn('[HM] Target outlet pesan beranda:',e);}
  // Status Accurate hanya dibaca untuk Management/Divisi/Finance; tidak mengubah transaksi.
  if(allOutlet||hasRole('ADMIN FINANCE','FINANCE')){
    try{
@@ -3613,9 +3644,13 @@ async function hmRenderManagementMessage(){
      }
    }catch(e){context.data_limitations.push('status Accurate belum dapat diverifikasi');console.warn('[HM] Status Accurate pesan beranda:',e);}
  }else context.data_limitations.push('status Accurate tidak diperiksa untuk role ini');
- // Fallback yang singkat dan berbasis data; AI akan menggantinya jika berhasil.
+ // Fallback wajib mendahulukan keberhasilan target outlet sebelum isu follow-up.
  const a=context.lead_attention;
- if(a.follow_up_overdue>0)message='PERHATIAN: '+a.follow_up_overdue+' follow-up sudah lewat jadwal. Dahulukan hari ini dan perbarui next action.';
+ const outletSuccess=context.outlet_target_summary&&(context.outlet_target_summary.all_cumulative_targets_reached||context.outlet_target_summary.all_monthly_targets_reached);
+ if(outletSuccess){
+   const summary=context.outlet_target_summary.kpis.map(k=>k.key+' '+k.actual+'/'+k.target).join(', ');
+   message='Apresiasi untuk seluruh tim '+outlet+'! Target kumulatif outlet sudah tercapai ('+summary+'); pertahankan konsistensi sampai akhir bulan dan siapkan tantangan berikutnya.';
+ }else if(a.follow_up_overdue>0)message='PERHATIAN: '+a.follow_up_overdue+' follow-up sudah lewat jadwal. Dahulukan hari ini dan perbarui next action.';
  else if(a.follow_up_due>0)message='Pengingat: ada '+a.follow_up_due+' follow-up jatuh tempo hari ini. Selesaikan dan catat hasilnya.';
  else if(context.accurate_sync.available&&(context.accurate_sync.failed_or_pending>0||context.accurate_sync.open_conflicts>0))message='PERLU TINDAKAN: sinkronisasi Accurate belum tuntas ('+context.accurate_sync.failed_or_pending+' antrean, '+context.accurate_sync.open_conflicts+' konflik terbuka). Periksa error dan PIC.';
  else if(context.performance&&context.performance.sales_closing>0)message='Apresiasi: sudah tercatat '+context.performance.sales_closing+' Sales Closing bulan ini. Jaga kualitas follow-up dan ketepatan data.';
@@ -3626,7 +3661,7 @@ async function hmRenderManagementMessage(){
    return;
  }
  try{
-   const question='Susun SATU pesan beranda Hello Majesty yang relevan dan spesifik berdasarkan DATA TERKINI. Maksimal 1-2 kalimat, 15-35 kata. WAJIB hormati profil.role, profile.active_roles, profile.division dan data_scope; role tambahan juga diperhitungkan untuk menentukan tugas yang memang dapat dilakukan, tetapi jangan memberi akses atau tugas di luar kewenangan. Jika profile.is_division_management=true, anggap pengguna sebagai Management Hello Majesty pada divisi di profile.division dan fokus hanya pada tanggung jawab divisi itu; Wawan=MAJESTY (penjualan/target closing), Tyar=HELLO (promosi/WA masuk/lead baru), Gagut=REFILL (handover, developer aplikasi, Admin Finance dan Management System sesuai role aktif). Ketiganya adalah Management Hello Majesty, tetapi pesan tidak boleh mencampur KPI semua divisi. Jika Management global lain, beri ringkasan lintas outlet sesuai hak akses. Jika role Divisi, batasi pesan pada divisi tersebut, jangan menganggap Divisi berarti akses semua outlet. Fokus divisi: MAJESTY = penjualan, Sales Closing dan pencapaian target closing; HELLO = promosi, leads baru dan WA masuk; REFILL = handover sebagai target operasional, pengembangan aplikasi/developer, Admin Finance dan Management System sesuai role aktif. Untuk role individu, pilih tindakan dari fungsi yang sesuai: CS pada WA masuk/lead dan handover; Sales pada follow-up dan closing; Content Creator pada konten/promosi/leads; Admin Finance pada akurasi finance/rekonsiliasi; Developer/Data Control pada fungsi aplikasi, data dan error sistem; Fasilitator pada kontrol outlet dan handover. Jangan mengasumsikan orang memiliki kemampuan/izin hanya karena nama divisi—ikuti role utama dan tambahan yang tercantum. WARNING hanya bila data menunjukkan masalah aktual; pengingat bila ada tugas jatuh tempo; apresiasi bila hasil aktual baik dan tidak ada masalah mendesak. Sebut target atau persentase hanya jika target dan pencapaian tersedia di data; jangan mengarang target. Beri satu tindakan yang bisa dilakukan oleh role itu. Jangan menyebut data kosong sebagai masalah atau mengklaim sudah memeriksa sumber yang unavailable. DATA TERKINI: '+JSON.stringify(context);
+   const question='Susun SATU pesan beranda Hello Majesty yang relevan dan spesifik berdasarkan DATA TERKINI. Maksimal 1-2 kalimat, 15-35 kata. WAJIB hormati profil.role, profile.active_roles, profile.division dan data_scope; role tambahan juga diperhitungkan untuk menentukan tugas yang memang dapat dilakukan, tetapi jangan memberi akses atau tugas di luar kewenangan. Jika profile.is_division_management=true, anggap pengguna sebagai Management Hello Majesty pada divisi di profile.division dan fokus hanya pada tanggung jawab divisi itu; Wawan=MAJESTY (penjualan/target closing), Tyar=HELLO (promosi/WA masuk/lead baru), Gagut=REFILL (handover, developer aplikasi, Admin Finance dan Management System sesuai role aktif). Ketiganya adalah Management Hello Majesty, tetapi pesan tidak boleh mencampur KPI semua divisi. Jika Management global lain, beri ringkasan lintas outlet sesuai hak akses. Jika role Divisi, batasi pesan pada divisi tersebut, jangan menganggap Divisi berarti akses semua outlet. Fokus divisi: MAJESTY = penjualan, Sales Closing dan pencapaian target closing; HELLO = promosi, leads baru dan WA masuk; REFILL = handover sebagai target operasional, pengembangan aplikasi/developer, Admin Finance dan Management System sesuai role aktif. Untuk role individu, pilih tindakan dari fungsi yang sesuai: CS pada WA masuk/lead dan handover; Sales pada follow-up dan closing; Content Creator pada konten/promosi/leads; Admin Finance pada akurasi finance/rekonsiliasi; Developer/Data Control pada fungsi aplikasi, data dan error sistem; Fasilitator pada kontrol outlet dan handover. Jangan mengasumsikan orang memiliki kemampuan/izin hanya karena nama divisi—ikuti role utama dan tambahan yang tercantum. PRIORITAS: jika DATA TERKINI.outlet_target_summary.all_cumulative_targets_reached atau all_monthly_targets_reached bernilai true, pesan WAJIB mengapresiasi keberhasilan seluruh outlet/tim, menyebut ringkas KPI yang tercapai, menjaga konsistensi sampai akhir bulan dan persiapan bulan depan. Dalam kondisi sukses ini jangan jadikan overdue sebagai pesan utama dan jangan evaluasi pribadi. Hanya jika target kumulatif outlet belum tercapai, baru evaluasi pribadi/overdue sesuai role. WARNING hanya bila data menunjukkan masalah aktual; apresiasi bila target outlet sukses. Sebut target atau persentase hanya jika target dan pencapaian tersedia di data; jangan mengarang target. Beri satu tindakan yang bisa dilakukan oleh role itu. Jangan menyebut data kosong sebagai masalah atau mengklaim sudah memeriksa sumber yang unavailable. DATA TERKINI: '+JSON.stringify(context);
    const result=await db.functions.invoke('hello-majesty-ai-gemini',{body:{question,lead:null}});
    if(result?.error)throw result.error;
    const answer=String(result?.data?.answer||'').trim();

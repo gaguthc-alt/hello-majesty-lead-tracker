@@ -389,17 +389,15 @@ async function renderStandaloneHunterStock(){
   for(const x of (hunterResult.data||[]))assignedStockById.set(x.id,{...x,hm_source_type:'MANAGEMENT'});
   for(const x of (checkerResult.data||[])){const previous=assignedStockById.get(x.id)||{};assignedStockById.set(x.id,{...previous,...x,hm_source_type:'MANAGEMENT'});}
   const rows=[...assignedStockById.values()].sort((a,b)=>new Date(b.received_at||0)-new Date(a.received_at||0));
-  // Load checker attribution separately so Hunter-sourced stock can display both roles.
-  const stockIds=rows.map(x=>x.id).filter(Boolean);
+  // Attribution comes from the SECURITY DEFINER catalog RPCs. Do not re-query stock_units
+  // here: its RLS intentionally limits ordinary team members to their own assignments.
   const checkerByStock={};
-  if(stockIds.length){
-   const sr=await sb.from('stock_units').select('id,hunter_user_id,checker_user_id,hunter_user_ids,checker_user_ids').in('id',stockIds);
-   if(sr.error)throw sr.error;
-   const peopleIds=[...new Set((sr.data||[]).flatMap(x=>[...(x.hunter_user_ids||[]),...(x.checker_user_ids||[]),x.hunter_user_id,x.checker_user_id].filter(Boolean)))];
-   const names={};
-   if(peopleIds.length){const ur=await sb.from('team_directory').select('user_id,name').in('user_id',peopleIds);if(ur.error)throw ur.error;(ur.data||[]).forEach(u=>names[u.user_id]=u.name);}
-   (sr.data||[]).forEach(x=>checkerByStock[x.id]={hunters:[...new Set([...(x.hunter_user_ids||[]),x.hunter_user_id].filter(Boolean))].map(id=>names[id]).filter(Boolean).join(', '),checkers:[...new Set([...(x.checker_user_ids||[]),x.checker_user_id].filter(Boolean))].map(id=>names[id]).filter(Boolean).join(', ')});
-  }
+  (hunterResult.data||[]).forEach(x=>{
+   checkerByStock[x.id]={...(checkerByStock[x.id]||{}),hunters:x.hunter_name||''};
+  });
+  (checkerResult.data||[]).forEach(x=>{
+   checkerByStock[x.id]={...(checkerByStock[x.id]||{}),checkers:x.hunter_name||''};
+  });
   // Stock Hunter & Checker hanya menampilkan unit yang memiliki minimal satu penanggung jawab.
   const displayRows=rows.filter(x=>{const a=checkerByStock[x.id]||{};return !!(String(a.hunters||'').trim()||String(a.checkers||'').trim());});
   panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧑‍💼 STOCK HUNTER & CHECKER</h2><div class="small">Daftar unit Hunter dan Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneHunterStock()">↻ Refresh</button></div>'+
@@ -434,18 +432,14 @@ async function renderStandaloneCheckerStock(){
  section.classList.remove('hidden');section.setAttribute('aria-hidden','false');
  panel.className='box';panel.innerHTML='<div class="small">⏳ Memuat Stock Checker...</div>';
  try{
-  const r=await sb.rpc('get_checker_stock_catalog');if(r.error)throw r.error;
+  const [r,hunterR]=await Promise.all([sb.rpc('get_checker_stock_catalog'),sb.rpc('get_hunter_stock_catalog')]);
+  if(r.error)throw r.error;if(hunterR.error)throw hunterR.error;
   const rows=r.data||[];
-  const stockMeta=rows.length?await sb.from('stock_units').select('id,hunter_user_ids,checker_user_ids,hunter_user_id,checker_user_id').in('id',rows.map(x=>x.id)): {data:[]};
-  if(stockMeta.error)throw stockMeta.error;
-  const ids=[...new Set((stockMeta.data||[]).flatMap(s=>[...(s.hunter_user_ids||[]),...(s.checker_user_ids||[]),s.hunter_user_id,s.checker_user_id].filter(Boolean)))];
-  const teamMeta=ids.length?await sb.from('team_directory').select('user_id,name').in('user_id',ids):{data:[]};
-  if(teamMeta.error)throw teamMeta.error;
-  const nameMap=Object.fromEntries((teamMeta.data||[]).map(t=>[t.user_id,t.name]));
-  const metaMap=Object.fromEntries((stockMeta.data||[]).map(s=>[s.id,s]));
-  const checkerRows=rows.filter(x=>{const m=metaMap[x.id]||{};return [...new Set([...(m.checker_user_ids||[]),m.checker_user_id].filter(Boolean))].some(id=>nameMap[id]);});
+  const hunterMap=Object.fromEntries((hunterR.data||[]).map(x=>[x.id,x.hunter_name||'']));
+  // Checker RPC returns the checker assignment in hunter_user_id/hunter_name fields.
+  const checkerRows=rows.filter(x=>String(x.hunter_name||'').trim());
   panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧾 STOCK CHECKER</h2><div class="small">Barang dari Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneCheckerStock()">↻ Refresh</button></div><div class="small" style="margin-top:10px">Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
-  (checkerRows.length?'<div style="margin-top:12px">'+checkerRows.map((x,i)=>{const photos=[x.photo_1,x.photo_2,x.photo_3,x.photo_4,x.photo_5].filter(Boolean);const img=photos[0]?'<img src="'+esc(photos[0])+'" alt="Foto '+esc(x.product||'Produk')+'" style="width:100%;max-height:190px;object-fit:contain;border-radius:10px;background:#f3f4f6;margin-bottom:8px">':'';const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;const m=metaMap[x.id]||{};const hunters=[...new Set([...(m.hunter_user_ids||[]),m.hunter_user_id].filter(Boolean))].map(id=>nameMap[id]).filter(Boolean);const checkers=[...new Set([...(m.checker_user_ids||[]),m.checker_user_id].filter(Boolean))].map(id=>nameMap[id]).filter(Boolean);return '<div class="lead" style="margin-bottom:12px">'+img+'<b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b><div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div><div class="small">🏹 Hunter: <b>'+esc(hunters.join(', ')||'-')+'</b></div><div class="small">🧾 Checker: <b>'+esc(checkers.join(', ')||x.hunter_name||'-')+'</b></div><div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div><div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div><div class="small" style="margin-top:5px">🟢 READY — belum laku</div></div>';}).join('')+'</div>':'<div class="box" style="text-align:center;margin-top:12px"><b>Belum ada Stock Checker yang menunggu closing.</b><div class="small" style="margin-top:5px">Saat unit Checker terjual, unit otomatis tidak muncul lagi di daftar ini.</div></div>');
+  (checkerRows.length?'<div style="margin-top:12px">'+checkerRows.map((x,i)=>{const photos=[x.photo_1,x.photo_2,x.photo_3,x.photo_4,x.photo_5].filter(Boolean);const img=photos[0]?'<img src="'+esc(photos[0])+'" alt="Foto '+esc(x.product||'Produk')+'" style="width:100%;max-height:190px;object-fit:contain;border-radius:10px;background:#f3f4f6;margin-bottom:8px">':'';const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;const hunters=[hunterMap[x.id]].filter(Boolean);const checkers=[x.hunter_name].filter(Boolean);return '<div class="lead" style="margin-bottom:12px">'+img+'<b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b><div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div><div class="small">🏹 Hunter: <b>'+esc(hunters.join(', ')||'-')+'</b></div><div class="small">🧾 Checker: <b>'+esc(checkers.join(', ')||x.hunter_name||'-')+'</b></div><div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div><div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div><div class="small" style="margin-top:5px">🟢 READY — belum laku</div></div>';}).join('')+'</div>':'<div class="box" style="text-align:center;margin-top:12px"><b>Belum ada Stock Checker yang menunggu closing.</b><div class="small" style="margin-top:5px">Saat unit Checker terjual, unit otomatis tidak muncul lagi di daftar ini.</div></div>');
  }catch(e){console.error('[HM] Stock Checker error',e);panel.innerHTML='<div class="box" style="color:#b42318"><b>Stock Checker gagal dimuat.</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';}
 }
 async function openCheckerStock(){

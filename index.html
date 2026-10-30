@@ -7539,7 +7539,9 @@ window.testAccurateNeracaPreview=async function(){
     }catch(e){profitError=String(e?.message||e);}
     const adjustedEquity=profitResult?totalEquity+profitResult.amount:null;
     const balanceDifference=profitResult?totalAssets-totalLiabilities-adjustedEquity:null;
-    box.innerHTML='<h3 style="margin-top:0">⚖️ Pratinjau Neraca Accurate</h3><div class="small">Per '+esc(good[0]?.detail?.asOf||'—')+' · '+good.length+' akun berhasil · Read-only · Neraca lokal tidak diubah</div>'+
+    const isBalanced=profitResult&&Math.abs(balanceDifference)<=0.01;
+    const reconciliationStatus=profitResult?'<div class="lead" style="margin:8px 0;border-left:4px solid '+(isBalanced?'#16a34a':'#dc2626')+'"><b>'+(isBalanced?'🟢 NERACA SEIMBANG':'🔴 NERACA BELUM SEIMBANG')+'</b><div class="small">'+(isBalanced?'Selisih berada dalam toleransi Rp0,01.':'Selisih melebihi toleransi Rp0,01. Periksa rincian sebelum digunakan.')+'</div></div>':'<div class="lead" style="margin:8px 0"><b>⚠️ STATUS REKONSILIASI BELUM TERSEDIA</b></div>';
+    box.innerHTML=reconciliationStatus+'<h3 style="margin-top:0">⚖️ Pratinjau Neraca Accurate</h3><div class="small">Per '+esc(good[0]?.detail?.asOf||'—')+' · '+good.length+' akun berhasil · Read-only · Neraca lokal tidak diubah</div>'+
       '<div class="small" style="margin-top:8px">Perhitungan memakai akun root/induk saja untuk mencegah saldo induk dan anak dihitung dua kali. Akun anak ditampilkan sebagai rincian.</div>'+
       section('ASET',types.ASET)+section('PENGURANG ASET',types['PENGURANG ASET'])+section('LIABILITAS',types.LIABILITAS)+section('EKUITAS TERCATAT',types.EKUITAS)+
       '<div class="lead" style="margin-top:10px"><b>REKONSILIASI EKUITAS</b>'+

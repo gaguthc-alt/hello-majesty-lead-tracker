@@ -7703,14 +7703,18 @@ async function openAccountingModule(module){
     const section=(title,arr)=>'<div class="box accounting-section"><h4>'+title+'</h4>'+
       (arr.length?arr.map(r=>'<button type="button" class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="openBalanceAccountDetail(\''+escA(r.account_id)+'\',\''+escA(r.account_code)+'\',\''+escA(r.account_name).replace(/'/g,"&#39;")+'\')"><div class="row" style="justify-content:space-between;gap:10px"><span><b>'+escA(r.account_code)+'</b> — '+escA(r.account_name)+'</span><b style="white-space:nowrap">'+accountingRp(r.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+
       '</div>';
-    host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+'<button type="button" class="secondary" style="margin:8px 0;width:100%" onclick="testAccurateGLAccountList()">🔎 Uji koneksi daftar akun Accurate</button><button type="button" class="secondary" style="margin:0 0 8px;width:100%" onclick="testAccurateAllGLBalances()">💰 Uji saldo seluruh akun Accurate</button><button type="button" class="secondary" style="margin:0 0 8px;width:100%" onclick="testAccurateGLMetadata()">🧾 Uji metadata akun Accurate</button><button type="button" class="secondary" style="margin:0 0 8px;width:100%" onclick="testAccurateNeracaPreview()">⚖️ Pratinjau Neraca Accurate (read-only)</button>'+selector+
+    host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+
+      '<div class="lead" style="margin:10px 0;border-left:4px solid #64748b"><b>📘 NERACA LOKAL — HELLO MAJESTY</b><div class="small" style="margin-top:5px">Saldo dan jurnal yang tercatat di aplikasi. Ringkasan di bawah ini tidak mengambil alih pembukuan Accurate.</div></div>'+
+      '<button type="button" class="secondary" style="margin:0 0 10px;width:100%" onclick="testAccurateNeracaPreview()">⚖️ Lihat Neraca Accurate (read-only)</button>'+
+      selector+
       section('ASET',assets)+
-      '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Aset</div><div class="num accounting-num">'+accountingRp(totalAssets)+'</div></div>'+
+      '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Aset Lokal</div><div class="num accounting-num">'+accountingRp(totalAssets)+'</div></div>'+
       section('LIABILITAS',liabilities)+
-      '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Liabilitas</div><div class="num accounting-num">'+accountingRp(totalLiabilities)+'</div></div>'+
+      '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Liabilitas Lokal</div><div class="num accounting-num">'+accountingRp(totalLiabilities)+'</div></div>'+
       section('EKUITAS',equity)+
-      '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Ekuitas</div><div class="num accounting-num">'+accountingRp(totalEquity)+'</div></div>'+
-      '<div class="lead" style="margin-top:10px"><b>'+(Math.abs(totalExpected)<0.01?'🟢 NERACA SEIMBANG':'🔴 NERACA TIDAK SEIMBANG')+'</b><div class="small">Selisih: '+accountingRp(totalExpected)+'</div><div class="small" style="margin-top:6px">💡 Tekan akun untuk melihat jurnal pembentuk saldo.</div></div>';
+      '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Ekuitas Lokal</div><div class="num accounting-num">'+accountingRp(totalEquity)+'</div></div>'+
+      '<div class="lead" style="margin-top:10px"><b>'+(Math.abs(totalExpected)<0.01?'🟢 NERACA LOKAL SEIMBANG':'🔴 NERACA LOKAL TIDAK SEIMBANG')+'</b><div class="small">Selisih lokal: '+accountingRp(totalExpected)+'</div><div class="small" style="margin-top:6px">💡 Tekan akun untuk melihat jurnal pembentuk saldo lokal.</div></div>'+
+      '<div class="small" style="margin-top:10px">📗 Neraca Accurate ditampilkan terpisah sebagai referensi read-only. Tidak ada sinkronisasi balik atau perubahan saldo Accurate dari menu ini.</div>';
     return;
   }
   if(module==='profit'){

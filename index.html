@@ -7464,6 +7464,11 @@ window.testAccurateGLAccountList=async function(){
     if(!response.ok||data?.ok!==true)throw new Error(data?.accurate_error||data?.error||('HTTP '+response.status));
     const rows=Array.isArray(data.accounts)?data.accounts:[];
     box.innerHTML='<b>🟢 Daftar akun berhasil dibaca dari Accurate</b><div class="small">Jumlah akun: '+Number(data.account_count||rows.length)+' • Diperbarui: '+new Date(data.fetched_at||Date.now()).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:8px">Tahap verifikasi daftar akun. Saldo dan klasifikasi Neraca belum dialihkan.</div>'+rows.map(a=>'<div class="small" style="padding:5px 0;border-bottom:1px solid #ddd"><b>'+esc(a.no||'—')+'</b> — '+esc(a.name||'')+'</div>').join('');
+    const balanceResponse=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_account_balances'})});
+    const balanceData=await balanceResponse.json().catch(()=>({ok:false,error:'Respons saldo tidak dapat dibaca.'}));
+    if(!balanceResponse.ok||balanceData?.ok!==true)throw new Error('Daftar akun terbaca, tetapi saldo gagal: '+(balanceData?.accurate_error||balanceData?.error||('HTTP '+balanceResponse.status)));
+    const balanceRows=Array.isArray(balanceData.accounts)?balanceData.accounts:[];
+    box.innerHTML+='<hr><b>💰 Uji saldo kas & bank Accurate</b><div class="small">Per tanggal '+esc(balanceData.as_of_date||'—')+' • '+balanceRows.length+' akun • Read-only</div>'+balanceRows.map(a=>'<div style="padding:8px 0;border-bottom:1px solid #ddd"><b>'+esc(a.accurate_account_no||'—')+' — '+esc(a.account_name||'')+'</b><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0;font-size:12px">'+esc(JSON.stringify(a.data,null,2))+'</pre></div>').join('')+'<div class="small">Saldo masih tahap verifikasi dan belum menggantikan Neraca.</div>';
   }catch(e){box.innerHTML='<b>Belum berhasil membaca akun Accurate</b><div class="small">'+esc(e?.message||e)+'</div><div class="small">Neraca lama tetap dipertahankan dan tidak dianggap sebagai data Accurate.</div>';}
 };
 async function openAccountingModule(module){

@@ -7919,6 +7919,34 @@ async function openAccountingModule(module){
     window.loadAccurateGeneralJournals();
     return;
   }}
+window.loadAccurateGeneralJournals=async function(){
+  const status=document.getElementById('accurateJournalStatus'),host=document.getElementById('accurateJournalResult');
+  const from=document.getElementById('accurateJournalFrom')?.value,to=document.getElementById('accurateJournalTo')?.value;
+  if(!status||!host)return;
+  if(!from||!to||from>to){status.textContent='Periksa rentang tanggal jurnal.';return;}
+  const fmt=v=>{const p=v.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
+  const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const money=v=>accountingRp(Number(v||0));
+  status.textContent='⏳ Mengambil jurnal dan rincian langsung dari Accurate...';host.innerHTML='<div class="box">Memuat jurnal Accurate...</div>';
+  try{
+    const token=await window.hmAccessToken();
+    const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_general_journals_readonly',from_date:fmt(from),to_date:fmt(to)})});
+    const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
+    if(!response.ok||data?.ok!==true)throw new Error(data?.error||('HTTP '+response.status));
+    const rows=Array.isArray(data.journals)?data.journals:[];
+    if(!rows.length){
+      host.innerHTML='<div class="box">Tidak ada jurnal pada rentang tanggal ini.</div>';
+    }else{
+      host.innerHTML='<div class="stats" style="margin-bottom:10px"><div class="stat"><div class="small">Jurnal Accurate</div><div class="num">'+rows.length+'</div></div><div class="stat"><div class="small">Total Debit</div><div class="num" style="font-size:16px">'+money(rows.reduce((n,r)=>n+Number(r.debit_total||0),0))+'</div></div><div class="stat"><div class="small">Total Kredit</div><div class="num" style="font-size:16px">'+money(rows.reduce((n,r)=>n+Number(r.credit_total||0),0))+'</div></div></div>'+
+      rows.map((r,i)=>'<details class="lead" style="margin:8px 0" '+(i===0?'open':'')+'><summary><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>'+esc(r.number)+'</b><b>'+money(r.debit_total)+'</b></div><div class="small">'+esc(r.transDate)+' · '+esc(r.description||'Tanpa keterangan')+'</div></summary><div style="overflow:auto;margin-top:10px"><table style="width:100%;border-collapse:collapse;min-width:460px"><thead><tr><th style="text-align:left">Akun</th><th style="text-align:left">Keterangan</th><th style="text-align:right">Debit</th><th style="text-align:right">Kredit</th></tr></thead><tbody>'+r.lines.map(l=>'<tr><td>'+esc(l.account_no)+' '+esc(l.account_name)+'</td><td>'+esc(l.memo)+'</td><td style="text-align:right;white-space:nowrap">'+money(l.debit)+'</td><td style="text-align:right;white-space:nowrap">'+money(l.credit)+'</td></tr>').join('')+'</tbody><tfoot><tr><th colspan="2" style="text-align:right">Total</th><th style="text-align:right">'+money(r.debit_total)+'</th><th style="text-align:right">'+money(r.credit_total)+'</th></tr></tfoot></table></div></details>').join('');
+    }
+    status.textContent='Sumber Accurate Online · '+rows.length+' jurnal · '+data.failed_detail_count+' rincian gagal dibaca · '+(data.truncated?'Hasil dibatasi, persempit rentang tanggal.':'Data berhasil dimuat')+' · Read-only';
+    if(data.failed_detail_count)host.insertAdjacentHTML('afterbegin','<div class="lead">⚠️ '+data.failed_detail_count+' jurnal tidak berhasil dibaca rinciannya. Periksa kembali dengan rentang tanggal lebih kecil.</div>');
+  }catch(e){
+    status.textContent='Gagal membaca Jurnal Umum Accurate: '+(e?.message||e);
+    host.innerHTML='<div class="lead">Data tidak ditampilkan agar tidak tertukar dengan jurnal lokal. Coba kembali atau kirim screenshot pesan ini.</div>';
+  }
+};
 window.submitCashTransfer=async function(){
   if(!profile?.is_management)return alert('Hanya Management yang dapat membuat transfer kas.');
   const button=document.querySelector('[data-cash-transfer-submit]');

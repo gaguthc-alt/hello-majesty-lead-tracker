@@ -8030,6 +8030,7 @@ async function loadAccurateLedger(){
     if(!response.ok||data?.ok!==true)throw new Error(data?.error||data?.message||('HTTP '+response.status));
     const raw=data.data;
     const transactions=Array.isArray(data.transactions)?data.transactions:[];
+    const diag=data.diagnostics||{};
     if(transactions.length){
       const money=v=>accountingRp(Number(v||0));
       const rendered=transactions.map(r=>'<tr><td>'+esc(r.transDate||'—')+'</td><td>'+esc(r.number||'—')+'</td><td>'+esc(r.description||r.line?.memo||r.line?.description||'—')+'</td><td style="text-align:right;white-space:nowrap">'+money(r.debit)+'</td><td style="text-align:right;white-space:nowrap">'+money(r.credit)+'</td><td style="text-align:right;white-space:nowrap">—</td></tr>').join('');
@@ -8054,10 +8055,10 @@ async function loadAccurateLedger(){
       host.innerHTML='<div class="box" style="overflow:auto"><div style="font-weight:800;margin-bottom:10px">Mutasi Akun '+esc(no)+' · '+rows.length+' baris</div><table style="width:100%;border-collapse:collapse;min-width:720px"><thead><tr><th style="text-align:left">Tanggal</th><th style="text-align:left">No. Referensi</th><th style="text-align:left">Keterangan</th><th style="text-align:right">Debit</th><th style="text-align:right">Kredit</th><th style="text-align:right">Saldo</th></tr></thead><tbody>'+rendered+'</tbody></table></div>';
     }else{
       const obj=raw&&typeof raw==='object'?raw:{value:raw};
-      const entries=Object.entries(obj||{});
-      host.innerHTML='<div class="box"><b>Respons histori Accurate berhasil diterima</b><div class="small" style="margin-top:6px">Struktur respons belum berisi daftar baris transaksi yang dikenali. Data mentah ditampilkan untuk validasi pemetaan:</div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px">'+esc(JSON.stringify(raw,null,2))+'</pre></div>';
+      const diagHtml='<div class="box" style="margin-bottom:12px"><b>Diagnostik pembacaan Accurate</b><div class="small" style="margin-top:8px;line-height:1.8">Jurnal ditemukan: <b>'+Number(diag.listed_vouchers||0)+'</b><br>Jurnal dalam periode: <b>'+Number(diag.date_matched_vouchers||0)+'</b><br>Rincian berhasil dibaca: <b>'+Number(diag.detail_success_count||0)+'</b><br>Rincian gagal dibaca: <b>'+Number(diag.failed_detail_count||0)+'</b><br>Baris cocok dengan akun '+esc(no)+': <b>'+Number(diag.account_line_match_count||0)+'</b></div></div>';
+      host.innerHTML=diagHtml+'<div class="box"><b>Belum ada mutasi akun yang dapat ditampilkan</b><div class="small" style="margin-top:6px">Respons Accurate diterima, tetapi belum ada baris transaksi yang cocok dengan akun dan periode ini.</div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px">'+esc(JSON.stringify({sample_detail_line_keys:diag.sample_detail_line_keys||[],sample_account_fields:diag.sample_account_fields||[],failed_vouchers:diag.failed_vouchers||[]},null,2))+'</pre></div>';
     }
-    status.textContent='Berhasil membaca Accurate · Akun '+no+' · '+fmt(from.value)+' s/d '+fmt(to.value)+' · Read-only';
+    status.textContent=transactions.length?'Berhasil membaca Accurate · '+transactions.length+' mutasi · Read-only':'Accurate merespons, tetapi belum ada baris mutasi yang cocok. Periksa diagnostik di bawah · Read-only';
   }catch(e){host.innerHTML='<div class="box" style="border-left:4px solid #dc604d"><b>Gagal membaca Buku Besar Accurate</b><div class="small" style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';status.textContent='Pembacaan Accurate gagal. Tidak ada angka lokal yang digunakan sebagai pengganti.';}
 }
 window.openAccounting=openAccounting;

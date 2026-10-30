@@ -7753,24 +7753,28 @@ async function openAccountingModule(module){
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
   const d=accountingDates(),escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   if(module==='transfer'){
-    const accounts=await sb.from('accounting_accounts').select('code,name').eq('active',true).eq('account_type','ASSET').in('code',['1103','1104','1110','1111','1112','1113','1114']).order('code');
-    if(accounts.error)return host.innerHTML='<p>'+escA(accounts.error.message)+'</p>';
-    const banks=accounts.data||[];
-    const bankOptions=banks.map(a=>'<option value="'+escA(a.code)+'">'+escA(a.code)+' — '+escA(a.name)+'</option>').join('');
-    const x=await sb.from('cash_transfers').select('id,transfer_date,from_outlet,to_account_id,amount,note,created_at').order('transfer_date',{ascending:false}).limit(50);
-    if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';
-    const rows=x.data||[], ids=[...new Set(rows.map(r=>r.to_account_id).filter(Boolean))];
-    let names={};
-    if(ids.length){const ar=await sb.from('accounting_accounts').select('id,code,name').in('id',ids);(ar.data||[]).forEach(a=>names[a.id]=a);}
-    host.innerHTML='<h3>💸 Transfer Kas ke Pusat</h3><div class="small">Transfer outlet dicatat sebagai Piutang ke Pusat, sedangkan Pusat mencatat Hutang ke Outlet. Tidak memengaruhi omzet/laba.</div>'+
-      '<div class="box" style="margin-top:10px"><label>Dari Outlet</label><select id="cashTransferOutlet"><option>Majesty Plaza iPhone</option><option>Majesty Refill Phone</option></select>'+
-      '<label style="margin-top:8px">Masuk ke</label><select id="cashTransferBank">'+bankOptions+'</select>'+
-      '<label style="margin-top:8px">Nominal</label><input id="cashTransferAmount" type="number" min="1" step="1" placeholder="Contoh: 10000000">'+
-      '<label style="margin-top:8px">Tanggal</label><input id="cashTransferDate" type="date" value="'+new Date().toISOString().slice(0,10)+'">'+
-      '<label style="margin-top:8px">Keterangan</label><input id="cashTransferNote" type="text" placeholder="Contoh: Setoran kas outlet ke pusat">'+
-      '<button type="button" style="width:100%;margin-top:10px" onclick="submitCashTransfer()">💸 Simpan Transfer</button></div>'+
-      '<div class="box" style="margin-top:10px"><h4 style="margin-top:0">Riwayat Transfer</h4>'+
-      (rows.length?rows.map(r=>{const a=names[r.to_account_id]||{};return '<div class="lead" style="margin:7px 0"><div class="row" style="justify-content:space-between"><b>'+escA(r.from_outlet)+'</b><b>'+accountingRp(r.amount)+'</b></div><div class="small">'+new Date(r.transfer_date).toLocaleDateString('id-ID')+' • '+escA(a.code||'')+' — '+escA(a.name||'Pusat')+'</div><div class="small">'+escA(r.note||'Transfer kas ke Pusat')+'</div></div>';}).join(''):'<div class="small">Belum ada transfer.</div>')+'</div>';
+    host.innerHTML='<h3>💸 Transfer Kas ke Pusat</h3><div class="small">Jurnal dibuat langsung di Accurate Online. Debit rekening pusat, kredit kas outlet. Hello Majesty hanya menyimpan riwayat operasional; tidak membuat jurnal lokal.</div><div class="lead" style="margin-top:10px">⏳ Memuat daftar akun Accurate...</div>';
+    try{
+      const token=await window.hmAccessToken();
+      const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_gl_account_metadata_readonly'})});
+      const meta=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
+      if(!response.ok||meta?.ok!==true||meta.complete===false)throw new Error(meta?.error||'Daftar akun Accurate belum lengkap.');
+      const accounts=(meta.accounts||[]).filter(a=>a?.ok&&a.detail?.no).map(a=>a.detail).sort((a,b)=>String(a.no).localeCompare(String(b.no),undefined,{numeric:true}));
+      const choices=accounts.map(a=>'<option value="'+escA(a.no)+'">'+escA(a.no)+' — '+escA(a.name||'')+'</option>').join('');
+      const x=await sb.from('cash_transfers').select('id,transfer_date,from_outlet,to_account_id,amount,note,accurate_voucher_no,from_account_no,to_account_no,created_at').order('transfer_date',{ascending:false}).limit(50);
+      if(x.error)throw new Error(x.error.message);
+      const rows=x.data||[];
+      host.innerHTML='<h3>💸 Transfer Kas ke Pusat</h3><div class="small">Posting satu Jurnal Umum di Accurate: Debit akun kas/bank pusat, Kredit kas outlet. Tidak ada jurnal accounting lokal.</div>'+
+        '<div class="box" style="margin-top:10px"><label>Dari Outlet</label><select id="cashTransferOutlet"><option>Majesty Plaza iPhone</option><option>Majesty Refill Phone</option></select>'+
+        '<div class="small">Akun kredit otomatis: 1101 untuk Plaza atau 1102 untuk Refill.</div>'+
+        '<label style="margin-top:8px">Masuk ke — Akun Accurate</label><select id="cashTransferBank"><option value="">Pilih akun kas/bank pusat...</option>'+choices+'</select>'+
+        '<label style="margin-top:8px">Nominal</label><input id="cashTransferAmount" type="number" min="1" step="1" placeholder="Contoh: 10000000">'+
+        '<label style="margin-top:8px">Tanggal</label><input id="cashTransferDate" type="date" value="'+new Date().toISOString().slice(0,10)+'">'+
+        '<label style="margin-top:8px">Keterangan</label><input id="cashTransferNote" type="text" placeholder="Contoh: Setoran kas outlet ke pusat">'+
+        '<button data-cash-transfer-submit type="button" style="width:100%;margin-top:10px" onclick="submitCashTransfer()">💸 Kirim & Catat di Accurate</button></div>'+
+        '<div class="box" style="margin-top:10px"><h4 style="margin-top:0">Riwayat Transfer</h4>'+
+        (rows.length?rows.map(r=>'<div class="lead" style="margin:7px 0"><div class="row" style="justify-content:space-between"><b>'+escA(r.from_outlet)+'</b><b>'+accountingRp(r.amount)+'</b></div><div class="small">'+new Date(r.transfer_date).toLocaleDateString('id-ID')+' • '+escA(r.to_account_no||'')+' • Jurnal Accurate: '+escA(r.accurate_voucher_no||'belum tercatat')+'</div><div class="small">'+escA(r.note||'Transfer kas ke Pusat')+'</div></div>').join(''):'<div class="small">Belum ada transfer.</div>')+'</div>';
+    }catch(e){host.innerHTML='<h3>💸 Transfer Kas ke Pusat</h3><div class="lead">Tidak dapat memuat akun Accurate: '+escA(e?.message||e)+'</div><div class="small">Tidak ada transfer yang dikirim.</div>';}
     return;
   }
   if(module==='health'){
@@ -7911,18 +7915,29 @@ async function openAccountingModule(module){
   }
 }
 window.submitCashTransfer=async function(){
-  if(!profile?.is_management)return alert('Accounting hanya dapat diakses Management.');
+  if(!profile?.is_management)return alert('Hanya Management yang dapat membuat transfer kas.');
+  const button=document.querySelector('[data-cash-transfer-submit]');
   const outlet=document.getElementById('cashTransferOutlet')?.value;
   const bank=document.getElementById('cashTransferBank')?.value;
   const amount=Number(document.getElementById('cashTransferAmount')?.value||0);
   const date=document.getElementById('cashTransferDate')?.value;
-  const note=document.getElementById('cashTransferNote')?.value||null;
-  if(!outlet||!bank||amount<=0||!date)return alert('Lengkapi outlet, akun pusat, nominal, dan tanggal.');
-  if(!confirm('Simpan transfer '+accountingRp(amount)+' dari '+outlet+' ke Pusat?'))return;
-  const x=await sb.rpc('create_cash_transfer_to_center',{p_from_outlet:outlet,p_to_account_code:bank,p_amount:amount,p_transfer_date:date,p_note:note});
-  if(x.error)return alert('Transfer gagal: '+x.error.message);
-  alert('Transfer kas berhasil dicatat.');
-  await openAccountingModule('transfer');
+  const note=document.getElementById('cashTransferNote')?.value||'Transfer kas outlet ke Pusat';
+  if(!outlet||!bank||amount<=0||!date)return alert('Lengkapi outlet, akun Accurate tujuan, nominal, dan tanggal.');
+  if(!confirm('Kirim jurnal transfer '+accountingRp(amount)+' ke Accurate sekarang?\nDebit: '+bank+' (Pusat)\nKredit: '+(outlet==='Majesty Plaza iPhone'?'1101':'1102')+' ('+outlet+')'))return;
+  if(button){button.disabled=true;button.textContent='Mengirim ke Accurate...';}
+  try{
+    const token=await window.hmAccessToken();
+    const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'create_accurate_cash_transfer',from_outlet:outlet,to_account_no:bank,amount,transfer_date:date,note})});
+    const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
+    if(!response.ok||data?.ok!==true)throw new Error(data?.error||data?.accurate_error||('HTTP '+response.status));
+    const t=data.transfer||{};
+    const {data:localAccount}=await sb.from('accounting_accounts').select('id').eq('code',bank).eq('active',true).maybeSingle();
+    const log=await sb.from('cash_transfers').insert({from_outlet:outlet,to_account_id:localAccount?.id||null,amount,transfer_date:date+'T12:00:00',note,created_by:profile?.user_id||profile?.id,accurate_voucher_id:t.accurate_voucher_id,accurate_voucher_no:t.accurate_voucher_no,from_account_no:t.from_account_no,to_account_no:t.to_account_no});
+    if(log.error)alert('Jurnal berhasil dibuat di Accurate ('+(t.accurate_voucher_no||'nomor belum terbaca')+'), tetapi catatan riwayat Hello Majesty gagal disimpan: '+log.error.message+'. Jangan kirim ulang transfer ini.');
+    else alert('Transfer berhasil dicatat di Accurate. Nomor Jurnal: '+(t.accurate_voucher_no||'-'));
+    await openAccountingModule('transfer');
+  }catch(e){alert('Transfer gagal: '+(e?.message||e)+'. Periksa Jurnal Umum Accurate sebelum mencoba kembali.');}
+  finally{if(button){button.disabled=false;button.textContent='💸 Kirim & Catat di Accurate';}}
 };
 async function loadAccurateLedgerAccounts(){
   const select=document.getElementById('accurateLedgerAccount'),status=document.getElementById('accurateLedgerStatus');

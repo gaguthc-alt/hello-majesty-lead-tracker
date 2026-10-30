@@ -545,11 +545,14 @@ function renderMasterProductView(){
  const canManage=hmCanManageProductMaster();
  const canCreate=hmCanCreateProductMaster();
  const management=!!profile?.is_management;
- const q=String(document.getElementById('hmMasterProductSearch')?.value||'').trim().toLowerCase();
+ const q=String(document.getElementById('hmMasterProductSearch')?.value||'').trim();
  const cat=String(document.getElementById('hmMasterProductCategory')?.value||'');
  const rows=inventoryProducts.filter(p=>{
-   const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ').toLowerCase();
-   return (!cat||p.category===cat)&&(!q||searchHaystack(hay,q));
+   const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ');
+   // Mendukung input ringkas seperti ip15 / ip 15 / iphone15 dan pencarian kata tanpa urutan tetap.
+   const compactHay=normalizeSearch(hay).replace(/[^a-z0-9]/g,'');
+   const compactQ=normalizeSearch(q).replace(/[^a-z0-9]/g,'');
+   return (!cat||p.category===cat)&&(!q||searchHaystack(hay,q)||compactHay.includes(compactQ));
  });
  panel.className='box';
  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2 style="margin:0">🧾 MASTER PRODUK</h2><div class="small">Database produk dan data master</div></div><div class="row">'+

@@ -1120,6 +1120,10 @@ window.openReceiveStock=async function openReceiveStock(){
  if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management, Fasilitator, dan Admin Finance Majesty Cell.');return;}
  $('mt').textContent='📦 Barang Masuk';$('mb').innerHTML='<div class="box" style="text-align:center;padding:24px"><b>⏳ Menyiapkan formulir Barang Masuk…</b><div class="small" style="margin-top:8px">Sedang memuat daftar tim dan hak akses.</div></div>';$('modal').classList.remove('hidden');
  try{
+ // Selalu ambil katalog master terbaru saat form dibuka agar produk yang baru dibuat/diaktifkan langsung tersedia.
+ const freshProducts=await sb.from('product_master').select('*').eq('active',true).order('category').order('product');
+ if(freshProducts.error)throw freshProducts.error;
+ inventoryProducts=Array.isArray(freshProducts.data)?freshProducts.data:[];
  const teamOptionsResult=await sb.rpc('get_inventory_receive_team_options',{p_outlet:profile?.is_management?null:(profile?.outlet||null)});if(teamOptionsResult.error)throw teamOptionsResult.error;
  const teams={data:teamOptionsResult.data||[]};
  const receiveCategories=[['IPHONE_NEW','iPhone New'],['IPHONE_SECOND','iPhone Second'],['ANDROID_NEW','Android New'],['ANDROID_SECOND','Android Second']];

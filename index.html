@@ -7368,9 +7368,21 @@ function closeModal(ev){if(ev){ev.preventDefault();ev.stopPropagation();}const m
 $('email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
 async function openAccounting(){
   const accountingAllowed=!!profile?.is_management||getActiveRoles().includes('FASILITATOR');
-  if(!accountingAllowed){return alert('Accounting hanya dapat diakses Management atau Fasilitator.');}
-  $('mt').textContent='📊 Accounting';
-  $('mb').innerHTML='<div id="accountingPanel"><div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">📊 ACCOUNTING</h3><div class="small">Sumber data: Journal Engine • Jurnal POSTED</div></div></div><div class="box" style="margin-top:10px"><label>Periode Laba Rugi</label><select id="accountingPeriod" onchange="loadAccountingDashboard()"><option value="MONTH">Bulan Ini</option><option value="TODAY">Hari Ini</option><option value="YEAR">Tahun Ini</option></select></div><div id="accountingHealth" class="box">Memuat...</div><div id="accountingSummary" class="stats" style="grid-template-columns:1fr;gap:8px"></div><div id="accountingDetail" class="box hidden" style="margin-top:10px"></div></div>';
+  if(!accountingAllowed){return alert('Dashboard Accounting hanya dapat diakses Management atau Fasilitator.');}
+  $('mt').textContent='📊 Dashboard Accounting';
+  $('mb').innerHTML='<div id="accountingPanel" style="display:grid;gap:12px">'+
+    '<div style="padding:18px;border-radius:18px;background:linear-gradient(120deg,#0b1730,#17415b);color:#f8fafc;border:1px solid #b9974f">'+
+      '<div style="font-size:10px;letter-spacing:2px;font-weight:800;color:#e7ca83">HELLO MAJESTY · FINANCIAL OVERVIEW</div>'+
+      '<h3 style="margin:8px 0;color:#fff">📊 Dashboard Accounting</h3>'+
+      '<div style="color:#e2e8f0;font-size:13px">Sumber pembukuan resmi: Accurate · Konsolidasi seluruh unit · Read-only</div>'+
+      '<div id="accountingSyncMeta" style="font-size:11px;color:#cbd5e1;margin-top:8px">Menghubungkan ke Accurate...</div>'+
+    '</div>'+
+    '<div class="box" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>Periode Laba/Rugi</b><div class="small">Saldo neraca mengikuti tanggal saldo Accurate</div></div><select id="accountingPeriod" onchange="loadAccountingDashboard()" style="min-width:145px"><option value="MONTH">Bulan Ini</option><option value="TODAY">Hari Ini</option><option value="YEAR">Tahun Ini</option></select></div>'+
+    '<div id="accountingHealth" class="box">Memuat status koneksi Accurate...</div>'+
+    '<div id="accountingSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px"></div>'+
+    '<div class="box"><div style="font-weight:800;margin-bottom:9px">📌 Ringkasan Sumber Data</div><div id="accountingSourceDetails" class="small">Menunggu data Accurate...</div></div>'+
+    '<div class="small" style="text-align:center;color:#64748b">Hello Majesty tidak menyelenggarakan pembukuan sendiri. Angka di atas dibaca langsung dari Accurate dan tidak mengubah jurnal maupun saldo.</div>'+
+    '</div>';
   $('modal').classList.remove('hidden');
   await loadAccountingDashboard();
 }
@@ -7384,24 +7396,87 @@ function accountingDates(){
   const iso=d=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};
   return {start:iso(start),end:iso(end)};
 }
-function accountingRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID');}
+function accountingRp(v){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0,maximumFractionDigits:2}).format(Number(v||0));}
 async function loadAccountingDashboard(){
   const accountingAllowed=!!profile?.is_management||getActiveRoles().includes('FASILITATOR');
   if(!accountingAllowed)return;
-  const d=accountingDates();
-  const [pl,h,b]=await Promise.all([
-    sb.rpc('profit_loss_totals',{p_start_date:d.start,p_end_date:d.end}),
-    sb.rpc('accounting_health_check'),
-    sb.rpc('balance_sheet_totals',{p_as_of_date:d.end})
-  ]);
-  if(pl.error)return alert('Accounting: '+pl.error.message);
-  if(h.error)return alert('Health Check: '+h.error.message);
-  if(b.error)return alert('Neraca: '+b.error.message);
-  const p=(pl.data||[])[0]||{}, bs=(b.data||[])[0]||{}, health=h.data||{};
-  const hc=document.getElementById('accountingHealth');
-  if(hc)hc.innerHTML='<div class="row" style="justify-content:space-between"><b>🩺 Accounting Health</b><b>'+(health.status==='HEALTHY'?'🟢 ACCOUNTING SEHAT':'🔴 PERLU PERHATIAN')+'</b></div><div class="small" style="margin-top:6px">Jurnal bermasalah: '+Number(health.summary?.unbalanced_journals||0)+' • Transaksi tanpa jurnal: '+Number(health.summary?.missing_source_journals||0)+' • Jurnal ganda: '+Number(health.summary?.duplicate_source_journals||0)+'</div>';
-  const box=document.getElementById('accountingSummary');
-  if(box)box.innerHTML='<div class="stat accounting-stat"><div class="small">💰 Total Aset</div><div class="num accounting-num">'+accountingRp(bs.total_assets)+'</div></div><div class="stat accounting-stat"><div class="small">🧾 Liabilitas</div><div class="num accounting-num">'+accountingRp(bs.total_liabilities)+'</div></div><div class="stat accounting-stat"><div class="small">🏦 Ekuitas</div><div class="num accounting-num">'+accountingRp(bs.total_equity)+'</div></div><div class="stat accounting-stat"><div class="small">📈 Laba Bersih</div><div class="num accounting-num">'+accountingRp(p.net_profit)+'</div></div>';
+  const summary=document.getElementById('accountingSummary'),healthBox=document.getElementById('accountingHealth'),meta=document.getElementById('accountingSyncMeta'),source=document.getElementById('accountingSourceDetails');
+  if(summary)summary.innerHTML='<div class="box">Membaca neraca dan laba/rugi dari Accurate...</div>';
+  if(healthBox)healthBox.innerHTML='⏳ Menghubungkan ke Accurate...';
+  const escA=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  try{
+    if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
+    const token=await window.hmAccessToken();
+    const headers={'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token};
+    const call=async(body,timeout=90000)=>{
+      const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(timeout)});
+      const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
+      if(!response.ok||data?.ok!==true)throw new Error(data?.accurate_error||data?.error||data?.message||('HTTP '+response.status));
+      return data;
+    };
+    const [metaData,balanceData]=await Promise.all([
+      call({action:'get_accurate_gl_account_metadata_readonly'},150000),
+      call({action:'get_accurate_all_gl_balances_readonly'},150000)
+    ]);
+    const accountRows=Array.isArray(metaData.accounts)?metaData.accounts:[];
+    const good=accountRows.filter(a=>a?.ok&&a.detail&&typeof a.detail==='object');
+    const failed=accountRows.filter(a=>!a?.ok||!a.detail||typeof a.detail!=='object');
+    if(!good.length)throw new Error('Metadata akun Accurate kosong.');
+    if(failed.length||metaData.complete===false)throw new Error('Data akun Accurate belum lengkap: '+good.length+' dari '+Number(metaData.account_count||accountRows.length)+' akun berhasil dibaca. Periksa Neraca Accurate sebelum menggunakan ringkasan.');
+    const byNo=new Map(good.map(a=>[String(a.detail.no||''),a.detail]));
+    const roots=good.map(a=>a.detail).filter(d=>!d.parent?.no||!byNo.has(String(d.parent.no)));
+    const types={asset:['CASH_BANK','ACCOUNT_RECEIVABLE','FIXED_ASSET','INVENTORY','OTHER_CURRENT_ASSET'],contraAsset:['ACCUMULATED_DEPRECIATION'],liability:['ACCOUNT_PAYABLE','OTHER_CURRENT_LIABILITY','LONG_TERM_LIABILITY'],equity:['EQUITY']};
+    const totalByType=codes=>roots.filter(d=>codes.includes(String(d.accountType||''))).reduce((n,d)=>n+Number(d.balance||0),0);
+    const assets=totalByType(types.asset)-totalByType(types.contraAsset);
+    const liabilities=totalByType(types.liability);
+    const equity=totalByType(types.equity);
+    const balanceRows=Array.isArray(balanceData.accounts)?balanceData.accounts:[];
+    const getBalance=a=>{const v=a?.data?.balance??a?.data?.endingBalance??a?.data?.amount;const n=Number(v);return Number.isFinite(n)?n:null;};
+    const cashNos=new Set(good.filter(a=>String(a.detail.accountType||'')==='CASH_BANK').map(a=>String(a.detail.no||'')));
+    const cash=roots.filter(d=>cashNos.has(String(d.no||''))).reduce((n,d)=>n+Number(d.balance||0),0);
+    const receivable=totalByType(['ACCOUNT_RECEIVABLE']);
+    const inventory=totalByType(['INVENTORY']);
+    const period=accountingDates();
+    const fmtDate=v=>{const p=v.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
+    const plData=await call({action:'get_accurate_pl_account_amount',from_date:fmtDate(period.start),to_date:fmtDate(period.end)},60000);
+    const plRows=Array.isArray(plData.response?.d)?plData.response.d:[];
+    if(!plRows.length)throw new Error('Rincian Laba/Rugi Accurate untuk periode '+period.start+' s/d '+period.end+' belum tersedia.');
+    const signs={REVENUE:1,OTHER_INCOME:1,COGS:-1,EXPENSE:-1,OTHER_EXPENSE:-1};
+    let netProfit=0,revenue=0,expenses=0,matched=0;
+    for(const row of plRows){
+      if(row?.isParent)continue;
+      const account=byNo.get(String(row.accountNo||'')),type=String(account?.accountType||'');
+      if(signs[type]===undefined)continue;
+      const amount=Number(row.amount);
+      if(!Number.isFinite(amount))continue;
+      netProfit+=signs[type]*amount;
+      if(type==='REVENUE'||type==='OTHER_INCOME')revenue+=amount;
+      else expenses-=amount;
+      matched++;
+    }
+    if(!matched)throw new Error('Rincian Laba/Rugi tidak cocok dengan metadata akun Accurate.');
+    const cards=[
+      ['💰','TOTAL ASET',assets,'#2563eb'],
+      ['🧾','TOTAL LIABILITAS',liabilities,'#db3158'],
+      ['🏛️','TOTAL EKUITAS',equity,'#7c3aed'],
+      ['🏦','KAS & BANK',cash,'#0f9273'],
+      ['📦','PERSEDIAAN',inventory,'#e59b18'],
+      ['🤝','PIUTANG USAHA',receivable,'#d59a24'],
+      ['📈','LABA/RUGI PERIODE',netProfit,'#16845b'],
+      ['💹','PENDAPATAN',revenue,'#3989c9'],
+      ['📉','BEBAN & HPP',expenses,'#dc604d']
+    ];
+    if(summary)summary.innerHTML=cards.map(c=>'<div class="stat accounting-stat" style="background:#fff;border:1px solid #e2e8f0;border-radius:15px;padding:14px;box-shadow:0 5px 16px rgba(15,35,65,.06)"><div style="height:4px;width:42px;background:'+c[3]+';border-radius:8px;margin-bottom:10px"></div><div class="small" style="color:#475569;font-weight:700">'+c[0]+' '+c[1]+'</div><div class="num accounting-num" style="color:#172033;font-size:clamp(17px,3vw,22px);font-weight:800;overflow-wrap:anywhere;margin-top:5px">'+accountingRp(c[2])+'</div></div>').join('');
+    const asOf=good[0]?.detail?.asOf||balanceData.as_of_date||'—';
+    if(meta)meta.textContent='Terakhir dibaca: '+asOf+' · '+good.length+' akun · Read-only';
+    if(healthBox)healthBox.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>🟢 DATA ACCURATE BERHASIL DIBACA</b><span style="font-size:11px;color:#64748b">Read-only</span></div><div class="small" style="margin-top:7px;color:#475569">Neraca: '+good.length+' akun berhasil · Laba/Rugi: '+matched+' akun cocok · Tidak ada jurnal atau saldo Accurate yang diubah.</div>';
+    if(source)source.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px"><div><b>Sumber</b><br>Accurate Online</div><div><b>Tanggal Neraca</b><br>'+escA(asOf)+'</div><div><b>Periode Laba/Rugi</b><br>'+escA(period.start)+' s/d '+escA(period.end)+'</div><div><b>Akun metadata</b><br>'+good.length+' akun</div><div><b>Respons saldo akun</b><br>'+balanceRows.length+' akun</div><div><b>Status pembukuan</b><br>Hanya Accurate</div></div>';
+  }catch(e){
+    if(summary)summary.innerHTML='<div class="box" style="grid-column:1/-1;border-left:4px solid #dc604d"><b>⚠️ Dashboard belum dapat menampilkan angka</b><div class="small" style="margin-top:6px;color:#475569">'+escA(e?.message||e)+'</div><div class="small" style="margin-top:6px">Tidak ada angka lokal yang digunakan sebagai pengganti. Data Accurate tetap tidak diubah.</div></div>';
+    if(healthBox)healthBox.innerHTML='<b>🟠 Menunggu data Accurate yang valid</b>';
+    if(meta)meta.textContent='Pembacaan Accurate belum berhasil';
+    if(source)source.textContent='Data belum tersedia. Silakan coba muat ulang.';
+  }
 }
 window.openBalanceAccountDetail=async function(accountId,accountCode,accountName){
   const host=hmEnsureAccountingDetailPanel();

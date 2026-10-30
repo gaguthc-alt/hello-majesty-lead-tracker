@@ -3088,6 +3088,11 @@ function hmShowLeadTodayStatus(type){
  if(all)all.style.display='none';
 }
 function hmLeadVisibleByMonth(l){
+ // Management/Divisi memiliki akses arsip penuh lintas bulan.
+ // Jangan sembunyikan lead lama hanya karena tidak memiliki follow-up aktif.
+ const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const roles=(typeof getActiveRoles==='function'?getActiveRoles():[]).map(r=>String(r||'').trim().toUpperCase().replace(/_/g,' '));
+ if(!!profile?.is_management||rawRole==='DIVISI'||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||roles.includes('MANAGEMENT'))return true;
  const created=l?.created_at?new Date(l.created_at):null;
  if(!created||isNaN(created.getTime()))return true;
  const now=new Date();

@@ -7449,7 +7449,7 @@ async function loadAccountingDashboard(){
     // Jalankan bertahap agar dua proses besar tidak membebani API Accurate secara bersamaan.
     if(meta)meta.textContent='Membaca daftar dan detail akun Accurate...';
     const metaData=await call({action:'get_accurate_gl_account_metadata_readonly'},180000);
-    if(meta)meta.textContent='118 akun metadata terbaca. Memeriksa saldo akun Accurate...';
+    if(meta)meta.textContent='Metadata akun selesai diperiksa. Memeriksa saldo akun Accurate...';
     const balanceData=await call({action:'get_accurate_all_gl_balances_readonly'},180000);
     const accountRows=Array.isArray(metaData.accounts)?metaData.accounts:[];
     const good=accountRows.filter(a=>a?.ok&&a.detail&&typeof a.detail==='object');

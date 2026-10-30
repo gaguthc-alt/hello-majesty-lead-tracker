@@ -7910,10 +7910,15 @@ async function openAccountingModule(module){
     loadAccurateLedgerAccounts();return;
   }
   if(module==='journal'){
-    const x=await sb.from('journal_entries').select('id,journal_no,journal_date,source_type,source_id,description,posted').eq('posted',true).order('journal_date',{ascending:false}).limit(100);if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';const rows=x.data||[];
-    host.innerHTML='<h3>📒 Jurnal Umum</h3>'+rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+escA(r.journal_no)+'</b><span class="badge">'+escA(r.source_type)+'</span></div><div class="small">'+new Date(r.journal_date).toLocaleString('id-ID')+' • '+escA(r.description||'-')+'</div></div>').join('')||'<div class="small">Belum ada jurnal POSTED.</div>';
-  }
-}
+    const today=new Date(),to=today.toISOString().slice(0,10),from=new Date(today.getFullYear(),today.getMonth(),1).toISOString().slice(0,10);
+    const escJ=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const fmtJ=v=>{const p=String(v||'').split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:'';};
+    host.innerHTML='<h3>📒 Jurnal Umum</h3><div class="small">Sumber data: Accurate Online · Hanya baca · Tidak membuat atau mengubah jurnal</div>'+
+      '<div class="box" style="margin-top:10px"><div class="row" style="gap:8px;flex-wrap:wrap"><div style="flex:1;min-width:130px"><label>Dari tanggal</label><input id="accurateJournalFrom" type="date" value="'+from+'"></div><div style="flex:1;min-width:130px"><label>Sampai tanggal</label><input id="accurateJournalTo" type="date" value="'+to+'"></div></div><button type="button" style="width:100%;margin-top:10px" onclick="loadAccurateGeneralJournals()">🔎 Tampilkan Jurnal</button></div>'+
+      '<div id="accurateJournalStatus" class="small" style="margin:10px 0">⏳ Mengambil daftar jurnal dari Accurate...</div><div id="accurateJournalResult"></div>';
+    window.loadAccurateGeneralJournals();
+    return;
+  }}
 window.submitCashTransfer=async function(){
   if(!profile?.is_management)return alert('Hanya Management yang dapat membuat transfer kas.');
   const button=document.querySelector('[data-cash-transfer-submit]');

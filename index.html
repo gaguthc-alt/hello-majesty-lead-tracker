@@ -7452,7 +7452,7 @@ function hmEnsureAccountingDetailPanel(){
   return host;
 }
 window.testAccurateGLAccountList=async function(){
-  const host=document.getElementById('accountingDetailPanel');if(!host)return;
+  const host=document.getElementById('accountingDetail')||document.getElementById('accountingDetailPanel');if(!host){alert('Panel Neraca tidak ditemukan. Tutup menu lalu buka Accounting → Neraca kembali.');return;}
   let box=document.getElementById('accurateGlProbeResult');if(box)box.remove();
   box=document.createElement('div');box.id='accurateGlProbeResult';box.className='box';box.style.marginTop='10px';box.textContent='Menguji daftar akun langsung dari Accurate...';host.prepend(box);
   const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

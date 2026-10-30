@@ -7705,7 +7705,7 @@ async function openAccountingModule(module){
     document.querySelectorAll('#accurateNeracaPreviewHost').forEach(node=>node.replaceChildren());
     host.innerHTML='<h3>⚖️ Neraca Konsolidasi</h3>'+
       '<div class="small">Sumber utama: Accurate · Konsolidasi seluruh unit · Read-only</div>'+
-      ''<div id="accurateNeracaPreviewHost" class="small" style="margin-top:10px">Mengambil Neraca Accurate...</div>';
+      '<div id="accurateNeracaPreviewHost" class="small" style="margin-top:10px">Mengambil Neraca Accurate...</div>';
     if(typeof window.testAccurateNeracaPreview==='function'){
       window.testAccurateNeracaPreview();
     }else{

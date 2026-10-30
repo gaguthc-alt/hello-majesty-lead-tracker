@@ -1064,7 +1064,14 @@ function filterReceiveCategory(){
  filterReceiveProducts();
 }
 function normalizeSearch(q){return String(q||'').toLowerCase().trim().replace(/\bip\s*(?=\d)/g,'iphone ').replace(/\biph\s*(?=\d)/g,'iphone ').replace(/\bpm\b/g,'pro max').replace(/\s+/g,' ')}
-function searchHaystack(value,q){const hay=normalizeSearch(value),needle=normalizeSearch(q);if(!needle)return true;return hay.includes(needle)||hay.replace(/\s+/g,'').includes(needle.replace(/\s+/g,''))}
+function searchHaystack(value,q){
+ const hay=normalizeSearch(value),needle=normalizeSearch(q);if(!needle)return true;
+ if(hay.includes(needle)||hay.replace(/\s+/g,'').includes(needle.replace(/\s+/g,'')))return true;
+ // Pencarian per-kata: urutan bebas dan boleh hanya mengetik sebagian nama/varian/warna.
+ const hayTokens=hay.split(/[^a-z0-9]+/).filter(Boolean);
+ const queryTokens=needle.split(/[^a-z0-9]+/).filter(Boolean);
+ return queryTokens.every(token=>hayTokens.some(word=>word.startsWith(token)||(token.length>=3&&word.includes(token))));
+}
 async function filterReceiveProducts(){
  const q=($('stprodsearch')?.value||'').trim();
  const sel=$('stprod'),cat=String($('stcategory')?.value||'').trim().toUpperCase();

@@ -7464,26 +7464,24 @@ async function openAccountingModule(module){
     return;
   }
   if(module==='profit'){
-    const outletState = window.financeProfitOutlet || '';
-    const outletLabel=outletState||'Semua Cabang';
-    const outletsRes = await sb.from('journal_lines').select('outlet').not('outlet','is',null);
-    const outlets = [...new Set((outletsRes.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean))].sort();
-    const outletOptions = '<option value="" selected>Semua Cabang — Accurate</option>'+outlets.map(o=>'<option value="'+escA(o)+'" disabled>'+escA(o)+' — belum tersedia sebagai filter Accurate</option>').join('');
-    if(outletState){window.financeProfitOutlet='';}
-    host.innerHTML='<h3>📈 Laba Penjualan</h3><div class="small">Periode '+d.start+' s/d '+d.end+'</div><div class="small">Sumber data: Accurate • Konsolidasi seluruh cabang • Read-only</div><div class="box" style="margin-top:8px"><label>Cabang</label><select disabled>'+outletOptions+'</select><div class="small">Laporan Accurate saat ini ditarik secara konsolidasi. Filter per cabang belum tersedia dari endpoint ini.</div></div><div class="small" style="margin-top:8px">Mengambil data dari Accurate...</div>';
+    host.innerHTML='<h3>📈 Laba Penjualan</h3><div class="small">Periode '+d.start+' s/d '+d.end+'</div><div class="small">Sumber data: Accurate • Read-only</div><div class="small" style="margin-top:8px">Mengambil rincian laba per unit usaha...</div>';
     try{
       if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
       const token=await window.hmAccessToken();
-      const toDate=new Date(d.end+'T00:00:00');
       const fmt=v=>{const p=v.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
       const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_pl_account_amount',from_date:fmt(d.start),to_date:fmt(d.end)})});
       const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
       if(!response.ok||data?.ok!==true)throw new Error(data?.accurate_error||data?.error||('HTTP '+response.status));
       const rows=Array.isArray(data.response?.d)?data.response.d:[];
       const amount=no=>Number(rows.find(x=>String(x.accountNo)===no&&!x.isParent)?.amount||0);
-      const revenue=['410101','410102','410105','410201'].reduce((v,n)=>v+amount(n),0);
-      const cogs=amount('4301')+amount('4302'),profit=revenue-cogs;
-      host.innerHTML='<h3>📈 Laba Penjualan</h3><div class="small">Periode '+d.start+' s/d '+d.end+'</div><div class="small">Sumber data: Accurate • Konsolidasi seluruh cabang • Read-only</div><div class="box" style="margin-top:8px"><label>Cabang</label><select disabled>'+outletOptions+'</select><div class="small">Filter per cabang belum tersedia dari endpoint Accurate ini.</div></div><div class="stats" style="margin-top:8px;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><div class="stat accounting-stat"><div class="small">Pendapatan</div><div class="num accounting-num" style="white-space:normal;font-size:clamp(17px,3vw,22px)">'+accountingRp(revenue)+'</div></div><div class="stat accounting-stat"><div class="small">HPP</div><div class="num accounting-num" style="white-space:normal;font-size:clamp(17px,3vw,22px)">'+accountingRp(cogs)+'</div></div><div class="stat accounting-stat"><div class="small">Laba Penjualan</div><div class="num accounting-num" style="white-space:normal;font-size:clamp(17px,3vw,22px)">'+accountingRp(profit)+'</div></div></div><div class="small" style="margin-top:8px">Pendapatan: akun 410101, 410102, 410105, 410201. HPP: akun 4301 dan 4302. Data Accurate tidak mengubah jurnal atau saldo.</div>';
+      const stock=amount('410101')-amount('4301');
+      const consPlaza=amount('410105');
+      const service=amount('410102')-amount('4302');
+      const consRefill=amount('410201');
+      const plaza=stock+consPlaza+service,refill=consRefill,total=plaza+refill;
+      const detail=(label,value,formula)=>'<div class="lead"><div class="row" style="justify-content:space-between;gap:8px"><span>'+label+'</span><b>'+accountingRp(value)+'</b></div><div class="small">'+formula+'</div></div>';
+      const totalCard=value=>'<div class="stat accounting-stat"><div class="small">Total Laba</div><div class="num accounting-num" style="white-space:normal;font-size:clamp(17px,3vw,22px)">'+accountingRp(value)+'</div></div>';
+      host.innerHTML='<h3>📈 Laba Penjualan</h3><div class="small">Periode '+d.start+' s/d '+d.end+'</div><div class="small">Sumber data: Accurate • Konsolidasi • Read-only</div><h4 style="margin:14px 0 6px">🏬 Majesty Plaza iPhone</h4>'+detail('Laba Stock Sendiri',stock,'410101 Penjualan − 4301 Beban Pokok Penjualan')+detail('Laba Konsinyasi',consPlaza,'410105 Pendapatan Margin Konsinyasi Plaza')+detail('Laba Unit Service',service,'410102 Pendapatan Jasa Service − 4302 Beban Unit Service')+totalCard(plaza)+'<h4 style="margin:16px 0 6px">🏬 Majesty Refill Phone</h4>'+detail('Laba Konsinyasi',consRefill,'410201 Pendapatan Margin Konsinyasi Refill')+totalCard(refill)+'<h4 style="margin:16px 0 6px">📊 Total Laba Seluruh Unit</h4>'+totalCard(total)+'<div class="small" style="margin-top:10px">Rumus mengikuti pemetaan laba yang ditetapkan. Tidak ada pengurangan HPP pada pendapatan konsinyasi karena akun konsinyasi sudah mencatat margin. Data Accurate tidak mengubah jurnal atau saldo.</div>';
     }catch(e){host.innerHTML='<h3>📈 Laba Penjualan</h3><div class="small">Periode '+d.start+' s/d '+d.end+'</div><div class="box">Gagal mengambil data Accurate: '+escA(e?.message||String(e))+'</div>';}
     return;
   }

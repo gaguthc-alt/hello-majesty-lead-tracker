@@ -7506,13 +7506,47 @@ window.testAccurateNeracaPreview=async function(){
     };
     const unknown=[...new Set(good.map(a=>String(a.detail.accountType||'')).filter(t=>t&&!allKnown.has(t)))];
     const longDebt=roots.filter(d=>d.no==='1801'||String(d.name||'').toLowerCase().includes('hutang jangka panjang'));
+    const totalByType=codes=>roots.filter(d=>codes.includes(String(d.accountType||''))).reduce((n,d)=>n+Number(d.balance||0),0);
+    const totalAssets=totalByType(types.ASET)-totalByType(types['PENGURANG ASET']);
+    const totalLiabilities=totalByType(types.LIABILITAS);
+    const totalEquity=totalByType(types.EKUITAS);
+    let profitResult=null,profitError='';
+    try{
+      const asOf=String(good[0]?.detail?.asOf||'');
+      const dateParts=asOf.split('/');
+      if(dateParts.length!==3)throw new Error('Tanggal saldo Accurate tidak dikenali.');
+      const toDate=dateParts.join('/');
+      const fromDate='01/01/'+dateParts[2];
+      const plResponse=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_pl_account_amount',from_date:fromDate,to_date:toDate}),signal:AbortSignal.timeout(30000)});
+      const plData=await plResponse.json().catch(()=>({ok:false,error:'Respons Laba/Rugi tidak dapat dibaca.'}));
+      if(!plResponse.ok||plData?.ok!==true)throw new Error(plData?.accurate_error||plData?.error||('HTTP '+plResponse.status));
+      const plRows=Array.isArray(plData.response?.d)?plData.response.d:[];
+      if(!plRows.length)throw new Error('Accurate tidak mengirim rincian akun Laba/Rugi.');
+      const plTypes={REVENUE:1,OTHER_INCOME:1,COGS:-1,EXPENSE:-1,OTHER_EXPENSE:-1};
+      let matched=0,net=0;
+      for(const row of plRows){
+        if(row?.isParent)continue;
+        const account=byNo.get(String(row.accountNo||''));
+        const sign=plTypes[String(account?.accountType||'')];
+        if(sign===undefined)continue;
+        const amount=Number(row.amount);
+        if(!Number.isFinite(amount))continue;
+        net+=sign*Math.abs(amount);matched++;
+      }
+      if(!matched)throw new Error('Rincian Laba/Rugi tidak cocok dengan metadata jenis akun Accurate.');
+      profitResult={amount:net,matched,period:fromDate+' s/d '+toDate};
+    }catch(e){profitError=String(e?.message||e);}
+    const adjustedEquity=profitResult?totalEquity+profitResult.amount:null;
+    const balanceDifference=profitResult?totalAssets-totalLiabilities-adjustedEquity:null;
     box.innerHTML='<h3 style="margin-top:0">⚖️ Pratinjau Neraca Accurate</h3><div class="small">Per '+esc(good[0]?.detail?.asOf||'—')+' · '+good.length+' akun berhasil · Read-only · Neraca lokal tidak diubah</div>'+
       '<div class="small" style="margin-top:8px">Perhitungan memakai akun root/induk saja untuk mencegah saldo induk dan anak dihitung dua kali. Akun anak ditampilkan sebagai rincian.</div>'+
-      section('ASET',types.ASET)+section('PENGURANG ASET',types['PENGURANG ASET'])+section('LIABILITAS',types.LIABILITAS)+section('EKUITAS',types.EKUITAS)+
-      (longDebt.length?'<div class="lead" style="margin-top:10px"><b>⚠️ Verifikasi akun liabilitas jangka panjang</b>'+longDebt.map(d=>'<div class="small">'+esc(d.no)+' — '+esc(d.name)+' : '+rp(d.balance)+'; akun anak: '+children(d.no).length+'</div>').join('')+'<div class="small">Saldo akun 1801 perlu dicocokkan dengan buku besar Accurate sebelum Neraca dijadikan sumber utama.</div></div>':'')+
+      section('ASET',types.ASET)+section('PENGURANG ASET',types['PENGURANG ASET'])+section('LIABILITAS',types.LIABILITAS)+section('EKUITAS TERCATAT',types.EKUITAS)+
+      '<div class="lead" style="margin-top:10px"><b>REKONSILIASI EKUITAS</b>'+
+      (profitResult?'<div class="row" style="justify-content:space-between;margin-top:8px"><span>Laba/rugi bersih Accurate ('+esc(profitResult.period)+')</span><b>'+rp(profitResult.amount)+'</b></div><div class="row" style="justify-content:space-between;margin-top:6px"><span>Ekuitas setelah laba/rugi</span><b>'+rp(adjustedEquity)+'</b></div><div class="row" style="justify-content:space-between;margin-top:6px"><span>Total Aset</span><b>'+rp(totalAssets)+'</b></div><div class="row" style="justify-content:space-between;margin-top:6px"><span>Total Liabilitas + Ekuitas</span><b>'+rp(totalLiabilities+adjustedEquity)+'</b></div><div class="row" style="justify-content:space-between;margin-top:6px"><span>Selisih</span><b>'+rp(balanceDifference)+'</b></div><div class="small" style="margin-top:8px">Laba/rugi ditampilkan sebagai penyesuaian perhitungan ekuitas saja. Tidak membuat jurnal dan tidak mengubah saldo akun modal.</div>':'<div class="small" style="margin-top:8px">Laba/rugi belum dapat dihitung otomatis: '+esc(profitError)+'. Total rekonsiliasi tidak ditampilkan agar tidak menyesatkan.</div>')+'</div>'+
+      (longDebt.length?'<div class="lead" style="margin-top:10px"><b>Catatan utang pembelian aset</b>'+longDebt.map(d=>'<div class="small">'+esc(d.no)+' — '+esc(d.name)+' : '+rp(d.balance)+'; akun anak: '+children(d.no).length+'</div>').join('')+'<div class="small">Saldo utang tetap ditampilkan terpisah dari aset tetap dan tidak dinetokan.</div></div>':'')+
       (diagnostics.length?'<div class="lead" style="margin-top:10px"><b>⚠️ Saldo induk tidak sama dengan jumlah anak langsung</b>'+diagnostics.map(x=>'<div class="small">'+esc(x.no)+' — '+esc(x.name)+': induk '+rp(x.own)+'; jumlah anak '+rp(x.sum)+'; selisih '+rp(x.diff)+'</div>').join('')+'</div>':'<div class="small" style="margin-top:10px">Saldo akun induk yang memiliki anak cocok dengan jumlah saldo anak langsung.</div>')+
       (unknown.length?'<div class="lead" style="margin-top:10px"><b>Jenis akun belum dipetakan</b><div class="small">'+unknown.map(esc).join(', ')+'</div></div>':'')+
-      '<div class="small" style="margin-top:10px">Ini pratinjau rekonsiliasi, belum menggantikan Neraca lokal. Saldo laba/rugi periode berjalan belum ditambahkan ke ekuitas; lakukan rekonsiliasi sebelum aktivasi.</div>';
+      '<div class="small" style="margin-top:10px">Pratinjau rekonsiliasi read-only. Neraca lokal dan pembukuan Accurate tidak diubah.</div>';
   }catch(e){box.innerHTML='<b>Pratinjau Neraca Accurate gagal</b><div class="small">'+esc(e?.message||e)+'</div><div class="small">Neraca lokal tetap utuh.</div>';}
 };
 window.testAccurateGLMetadata=async function(){

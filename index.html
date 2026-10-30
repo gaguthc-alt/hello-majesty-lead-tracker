@@ -7774,13 +7774,86 @@ async function openAccountingModule(module){
     return;
   }
   if(module==='health'){
-    const [x,detailRes]=await Promise.all([sb.rpc('accounting_health_check'),sb.rpc('accounting_health_check_details')]);
-    if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';
-    if(detailRes.error)return host.innerHTML='<p>Ringkasan Health Check tersedia, tetapi detail jurnal gagal dimuat: '+escA(detailRes.error.message)+'</p>';
-    const z=x.data||{}, details=Array.isArray(detailRes.data)?detailRes.data:[];
-    const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
-    const rows=details.map(r=>'<div class="lead" style="margin-top:8px"><b>'+escA(r.account_code)+' — '+escA(r.account_name)+'</b><div class="small">Tanggal: '+escA(r.journal_date?new Date(r.journal_date).toLocaleString('id-ID'):'—')+' • Status akun: '+(r.account_active===false?'Tidak aktif':'Tidak ditemukan')+'</div><div class="small">Jurnal: '+escA(r.journal_id)+' • Sumber: '+escA(r.source_type||'—')+' • ID sumber: '+escA(r.source_id||'—')+'</div><div class="small">'+escA(r.description||'Tanpa keterangan')+'</div><div class="small">Debit: '+money(r.debit)+' • Kredit: '+money(r.credit)+'</div></div>').join('');
-    host.innerHTML='<h3>🩺 Health Check</h3><div class="lead"><b>'+(z.status==='HEALTHY'?'🟢 ACCOUNTING SEHAT':'🔴 PERLU PERHATIAN')+'</b><div class="small" style="margin-top:8px">Diperiksa: '+new Date(z.checked_at||Date.now()).toLocaleString('id-ID')+'</div></div>'+((z.issues||[]).map(i=>'<div class="lead"><b>'+escA(i.code)+'</b><div class="small">'+escA(i.message)+' • '+i.count+'</div></div>').join('')||'<div class="small">Tidak ada masalah ditemukan.</div>')+(details.length?'<h4 style="margin-top:14px">Detail jurnal dengan akun tidak aktif/tidak ditemukan ('+details.length+' baris)</h4>'+rows:'<div class="lead">Tidak ada detail jurnal akun bermasalah.</div>');return;
+    host.innerHTML='<h3>🩺 Accounting Health Check</h3><div class="small">Sumber pemeriksaan: Accurate Online · Read-only · Data jurnal lokal tidak digunakan</div><div class="lead" style="margin-top:10px">⏳ Mengambil metadata akun dan laporan Laba/Rugi langsung dari Accurate...</div>';
+    const escH=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const money=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(v||0));
+    try{
+      if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
+      const token=await window.hmAccessToken();
+      const headers={'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token};
+      const call=async(body,timeout=150000)=>{
+        const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(timeout)});
+        const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
+        if(!response.ok||data?.ok!==true)throw new Error(data?.accurate_error||data?.error||data?.message||('HTTP '+response.status));
+        return data;
+      };
+      const meta=await call({action:'get_accurate_gl_account_metadata_readonly'});
+      const rows=Array.isArray(meta.accounts)?meta.accounts:[];
+      const good=rows.filter(a=>a?.ok&&a.detail&&typeof a.detail==='object');
+      const failed=rows.filter(a=>!a?.ok||!a.detail||typeof a.detail!=='object');
+      if(!good.length)throw new Error('Metadata akun Accurate kosong. Health Check tidak dapat menyimpulkan status.');
+      const byNo=new Map(good.map(a=>[String(a.detail.no||''),a.detail]));
+      const roots=good.map(a=>a.detail).filter(d=>!d.parent?.no||!byNo.has(String(d.parent.no)));
+      const children=no=>good.map(a=>a.detail).filter(d=>String(d.parent?.no??'')===String(no));
+      const hierarchy=[];
+      for(const a of roots){
+        const kids=children(a.no);
+        if(!kids.length)continue;
+        const parent=Number(a.balance||0),sum=kids.reduce((n,k)=>n+Number(k.balance||0),0),diff=parent-sum;
+        if(Math.abs(diff)>0.01)hierarchy.push({no:a.no,name:a.name,diff,parent,sum});
+      }
+      const known=['CASH_BANK','ACCOUNT_RECEIVABLE','FIXED_ASSET','INVENTORY','OTHER_CURRENT_ASSET','ACCUMULATED_DEPRECIATION','ACCOUNT_PAYABLE','OTHER_CURRENT_LIABILITY','LONG_TERM_LIABILITY','EQUITY','REVENUE','COGS','EXPENSE','OTHER_INCOME','OTHER_EXPENSE'];
+      const unknown=[...new Set(good.map(a=>String(a.detail.accountType||'')).filter(t=>t&&!known.includes(t)))];
+      const types={asset:['CASH_BANK','ACCOUNT_RECEIVABLE','FIXED_ASSET','INVENTORY','OTHER_CURRENT_ASSET'],contra:['ACCUMULATED_DEPRECIATION'],liability:['ACCOUNT_PAYABLE','OTHER_CURRENT_LIABILITY','LONG_TERM_LIABILITY'],equity:['EQUITY']};
+      const sumType=codes=>roots.filter(d=>codes.includes(String(d.accountType||''))).reduce((n,d)=>n+Number(d.balance||0),0);
+      const assets=sumType(types.asset)-sumType(types.contra),liabilities=sumType(types.liability),equity=sumType(types.equity);
+      let pl=null,plError='';
+      try{
+        const asOf=String(good[0]?.detail?.asOf||'');
+        const pp=asOf.split('/');
+        if(pp.length!==3)throw new Error('Tanggal saldo akun Accurate tidak tersedia.');
+        const from='01/01/'+pp[2],to=pp.join('/');
+        const plData=await call({action:'get_accurate_pl_account_amount',from_date:from,to_date:to},45000);
+        const plRows=Array.isArray(plData.response?.d)?plData.response.d:[];
+        const signs={REVENUE:1,OTHER_INCOME:1,COGS:-1,EXPENSE:-1,OTHER_EXPENSE:-1};
+        let amount=0,matched=0;
+        for(const r of plRows){
+          if(r?.isParent)continue;
+          const a=byNo.get(String(r.accountNo||'')),sign=signs[String(a?.accountType||'')],v=Number(r.amount);
+          if(sign===undefined||!Number.isFinite(v))continue;
+          amount+=sign*v;matched++;
+        }
+        if(!matched)throw new Error('Rincian Laba/Rugi tidak cocok dengan metadata akun.');
+        pl={amount,matched,from,to};
+      }catch(e){plError=String(e?.message||e);}
+      const adjustedEquity=pl?equity+pl.amount:null;
+      const diff=pl?assets-liabilities-adjustedEquity:null;
+      const balanced=pl&&Math.abs(diff)<=0.01;
+      const status=failed.length?'INCOMPLETE':(balanced&&hierarchy.length===0&&unknown.length===0?'HEALTHY':'ATTENTION');
+      const check=(label,ok,detail)=>'<div class="lead" style="margin:7px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+label+'</b><b>'+(ok===true?'🟢 LULUS':ok===false?'🔴 PERLU CEK':'🟡 BELUM TERVERIFIKASI')+'</b></div><div class="small" style="margin-top:4px">'+detail+'</div></div>';
+      const accountStatus=failed.length===0;
+      const activeField=good.some(a=>['active','isActive','suspended','inactive'].some(k=>Object.prototype.hasOwnProperty.call(a.detail,k)));
+      const inactive=good.filter(a=>a.detail.active===false||a.detail.isActive===false||a.detail.suspended===true||a.detail.inactive===true);
+      host.innerHTML='<h3>🩺 Accounting Health Check</h3><div class="small">Sumber: Accurate Online · Read-only · Diperiksa '+new Date().toLocaleString('id-ID')+'</div>'+
+        '<div class="lead" style="margin-top:10px"><b style="font-size:18px">'+(status==='HEALTHY'?'🟢 ACCOUNTING SEHAT':status==='INCOMPLETE'?'🟡 PEMERIKSAAN BELUM LENGKAP':'🟠 PERLU PERHATIAN')+'</b><div class="small">Akun berhasil dibaca '+good.length+' dari '+Number(meta.account_count||rows.length)+' akun</div></div>'+
+        '<h4>1. Integritas data Accurate</h4>'+
+        check('Koneksi & metadata akun',accountStatus,good.length+' akun berhasil dibaca; '+failed.length+' akun gagal dibaca.')+
+        check('Struktur akun induk dan anak',hierarchy.length===0,hierarchy.length?hierarchy.length+' akun induk memiliki saldo berbeda dari total akun anak.':'Saldo akun induk cocok dengan penjumlahan akun anak yang terbaca.')+
+        check('Klasifikasi akun',unknown.length===0,unknown.length?'Jenis akun belum dikenali: '+unknown.map(escH).join(', '):'Semua jenis akun terbaca dikenali.')+
+        check('Status aktif/nonaktif akun',activeField?(inactive.length===0):null,activeField?(inactive.length?inactive.length+' akun ditandai nonaktif.':'Tidak ditemukan akun nonaktif.'):'Metadata Accurate yang tersedia tidak memberikan field status aktif secara eksplisit; tidak disimpulkan.')+
+        '<h4>2. Rekonsiliasi Neraca Accurate</h4>'+
+        check('Aset = Liabilitas + Ekuitas + Laba/Rugi berjalan',pl?(balanced):null,pl?'Aset '+money(assets)+' • Liabilitas '+money(liabilities)+' • Ekuitas '+money(equity)+' • Laba/Rugi '+money(pl.amount)+' • Selisih '+money(diff):'Belum dapat dihitung: '+escH(plError||'data Laba/Rugi tidak tersedia'))+
+        '<h4>3. Validasi transaksi jurnal</h4>'+
+        check('Debit/kredit per voucher',null,'Belum dinyatakan lulus. Endpoint daftar dan detail voucher Accurate perlu divalidasi terhadap respons database sebelum pemeriksaan ini diaktifkan.')+
+        check('Jurnal duplikat dan transaksi tanpa jurnal',null,'Belum dapat disimpulkan dari metadata akun dan saldo. Tidak menggunakan tabel jurnal lokal sebagai pengganti data Accurate.')+
+        (failed.length?'<details class="lead"><summary>Akun Accurate gagal dibaca ('+failed.length+')</summary>'+failed.map(a=>'<div class="small">'+escH(a.no||'—')+' — '+escH(a.name||'')+': '+escH(a.error||'Gagal membaca detail')+'</div>').join('')+'</details>':'')+
+        (hierarchy.length?'<details class="lead"><summary>Selisih akun induk/anak ('+hierarchy.length+')</summary>'+hierarchy.map(a=>'<div class="small">'+escH(a.no)+' — '+escH(a.name)+': selisih '+money(a.diff)+'</div>').join('')+'</details>':'')+
+        '<div class="small" style="margin-top:10px">Pemeriksaan ini hanya membaca Accurate. Tidak ada jurnal, akun, saldo, atau transaksi yang dibuat maupun diubah. Pemeriksaan jurnal lokal lama tidak dipakai.</div>'+
+        '<button type="button" class="secondary" style="width:100%;margin-top:12px" onclick="openAccountingModule(\'health\')">↻ Periksa Ulang</button>';
+    }catch(e){
+      host.innerHTML='<h3>🩺 Accounting Health Check</h3><div class="lead"><b>⚠️ Accurate belum berhasil diperiksa</b><div class="small">'+escH(e?.message||e)+'</div></div><div class="small">Tidak ada fallback ke jurnal lokal. Data Accurate tidak diubah.</div><button type="button" class="secondary" style="width:100%;margin-top:12px" onclick="openAccountingModule(\'health\')">↻ Coba Lagi</button>';
+    }
+    return;
   }
   if(module==='balance'){
     document.querySelectorAll('#accurateNeracaPreview').forEach(node=>node.remove());

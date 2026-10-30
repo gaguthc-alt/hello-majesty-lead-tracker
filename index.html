@@ -7464,7 +7464,21 @@ window.testAccurateAllGLBalances=async function(){
     const data=await response.json().catch(()=>({ok:false,error:'Respons saldo tidak dapat dibaca.'}));
     if(!response.ok||data?.ok!==true)throw new Error(data?.error||data?.message||('HTTP '+response.status));
     const rows=Array.isArray(data.accounts)?data.accounts:[];
-    box.innerHTML='<b>💰 Hasil pembacaan saldo seluruh akun Accurate</b><div class="small">Per '+esc(data.as_of_date||'—')+' • '+Number(data.account_count||rows.length)+' akun • Berhasil '+Number(data.succeeded||0)+' • Gagal '+Number(data.failed||0)+' • Read-only</div>'+rows.map(a=>'<div style="padding:7px 0;border-bottom:1px solid #ddd"><b>'+esc(a.accurate_account_no||'—')+' — '+esc(a.account_name||'')+'</b><div class="small">'+(a.ok?'🟢 '+esc(JSON.stringify(a.data)):'🔴 '+esc(a.error||'Gagal'))+'</div></div>').join('')+'<div class="small" style="margin-top:8px">Hasil ini masih tahap verifikasi; belum menggantikan Neraca.</div>';
+    const amount=a=>{const v=a?.data?.balance??a?.data?.endingBalance??a?.data?.amount;const n=Number(v);return Number.isFinite(n)?n:null;};
+    const successful=rows.filter(a=>a.ok);
+    const aggregate=new Set();
+    for(const p of successful){
+      const pn=String(p.accurate_account_no||'');
+      const pv=amount(p);if(!pn||pv===null)continue;
+      const descendants=successful.filter(c=>{const cn=String(c.accurate_account_no||'');return cn.length>pn.length&&cn.startsWith(pn)&&amount(c)!==null;});
+      if(!descendants.length)continue;
+      const direct=descendants.filter(c=>!descendants.some(mid=>{const mn=String(mid.accurate_account_no||'');return mn.length>pn.length&&mn.length<String(c.accurate_account_no||'').length&&String(c.accurate_account_no||'').startsWith(mn);}));
+      const sum=direct.reduce((t,c)=>t+amount(c),0);
+      if(Math.abs(pv-sum)<0.01)aggregate.add(pn);
+    }
+    const fmt=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:2}).format(n);
+    const rowsHtml=rows.map(a=>{const no=String(a.accurate_account_no||'');const val=amount(a);const isGroup=aggregate.has(no);return '<div style="padding:7px 0;border-bottom:1px solid #ddd"><b>'+esc(no||'—')+' — '+esc(a.account_name||'')+'</b><div class="small">'+(a.ok?'🟢 '+(val===null?esc(JSON.stringify(a.data)):esc(fmt(val))):'🔴 '+esc(a.error||'Gagal'))+(isGroup?' <b>• AKUN INDUK / SUBTOTAL — jangan dijumlah ulang</b>':'')+'</div></div>';}).join('');
+    box.innerHTML='<b>💰 Hasil pembacaan saldo seluruh akun Accurate</b><div class="small">Per '+esc(data.as_of_date||'—')+' • '+Number(data.account_count||rows.length)+' akun • Berhasil '+Number(data.succeeded||0)+' • Gagal '+Number(data.failed||0)+' • Read-only</div><div class="small" style="margin:8px 0;padding:8px;background:#fff3cd;border-radius:8px">Akun induk yang saldonya sama dengan total akun turunan ditandai sebagai subtotal agar tidak dihitung dua kali. Penandaan ini berdasarkan kecocokan saldo dan kode akun.</div>'+rowsHtml+'<div class="small" style="margin-top:8px">Klasifikasi Aktiva, Liabilitas, dan Ekuitas belum ditentukan dari nama/kode saja. Hasil ini belum menggantikan Neraca.</div>';
   }catch(e){box.innerHTML='<b>Pengujian saldo seluruh akun belum berhasil</b><div class="small">'+esc(e?.message||e)+'</div><div class="small">Neraca lama tetap dipertahankan.</div>';}
 };
 window.testAccurateGLAccountList=async function(){

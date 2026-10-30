@@ -1101,14 +1101,21 @@ async function filterReceiveProducts(){
  // If the in-memory catalogue is empty or category labels differ, fetch active master
  // products directly and normalize them before rebuilding the native Android select.
  if(cat&&matches.length===0){
-  const r=await sb.from('product_master').select('*').eq('active',true).order('product');
-  if(!r.error&&Array.isArray(r.data)){
+  const fetchedRows=[];
+  try{
+   const pageSize=500;
+   for(let offset=0; ; offset+=pageSize){
+    const page=await sb.from('product_master').select('*').eq('active',true).order('category').order('product').order('variant').order('color').order('grade').range(offset,offset+pageSize-1);
+    if(page.error)throw page.error;
+    const batch=page.data||[];fetchedRows.push(...batch);
+    if(batch.length<pageSize)break;
+   }
    const byId=new Map(inventoryProducts.map(p=>[p.id,p]));
-   r.data.forEach(p=>byId.set(p.id,p));
+   fetchedRows.forEach(p=>byId.set(p.id,p));
    inventoryProducts=Array.from(byId.values());
    matches=inventoryProducts.filter(p=>categoryMatches(p));
-  }else if(r.error){
-   console.error('[HM] Product list fallback failed:',r.error);
+  }catch(error){
+   console.error('[HM] Product list fallback failed:',error);
    sel.innerHTML='<option value="">Produk gagal dimuat — coba tutup dan buka lagi</option>';
    return;
   }
@@ -1131,9 +1138,16 @@ window.openReceiveStock=async function openReceiveStock(){
  $('mt').textContent='📦 Barang Masuk';$('mb').innerHTML='<div class="box" style="text-align:center;padding:24px"><b>⏳ Menyiapkan formulir Barang Masuk…</b><div class="small" style="margin-top:8px">Sedang memuat daftar tim dan hak akses.</div></div>';$('modal').classList.remove('hidden');
  try{
  // Selalu ambil katalog master terbaru saat form dibuka agar produk yang baru dibuat/diaktifkan langsung tersedia.
- const freshProducts=await sb.from('product_master').select('*').eq('active',true).order('category').order('product');
- if(freshProducts.error)throw freshProducts.error;
- inventoryProducts=Array.isArray(freshProducts.data)?freshProducts.data:[];
+ // Ambil seluruh master aktif bertahap; satu request Supabase dapat terpotong batas maksimum baris.
+ const freshProductRows=[];
+ const receivePageSize=500;
+ for(let offset=0; ; offset+=receivePageSize){
+  const freshPage=await sb.from('product_master').select('*').eq('active',true).order('category').order('product').order('variant').order('color').order('grade').range(offset,offset+receivePageSize-1);
+  if(freshPage.error)throw freshPage.error;
+  const batch=freshPage.data||[];freshProductRows.push(...batch);
+  if(batch.length<receivePageSize)break;
+ }
+ inventoryProducts=freshProductRows;
  const teamOptionsResult=await sb.rpc('get_inventory_receive_team_options',{p_outlet:profile?.is_management?null:(profile?.outlet||null)});if(teamOptionsResult.error)throw teamOptionsResult.error;
  const teams={data:teamOptionsResult.data||[]};
  const receiveCategories=[['IPHONE_NEW','iPhone New'],['IPHONE_SECOND','iPhone Second'],['ANDROID_NEW','Android New'],['ANDROID_SECOND','Android Second']];

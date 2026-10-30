@@ -7463,13 +7463,13 @@ window.testAccurateNeracaPreview=async function(){
     const token=await window.hmAccessToken();
     const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_gl_account_metadata_readonly'}),signal:AbortSignal.timeout(150000)});
     const data=await response.json().catch(()=>({ok:false,error:'Respons metadata tidak dapat dibaca.'}));
-    if(!response.ok||data?.ok!==true)throw new Error(data?.error||('HTTP '+response.status));
+    if(!response.ok)throw new Error(data?.error||data?.message||('HTTP '+response.status));
     const rows=Array.isArray(data.accounts)?data.accounts:[];
     const good=rows.filter(a=>a?.ok&&a.detail&&typeof a.detail==='object');
     const failed=rows.filter(a=>!a?.ok||!a.detail||typeof a.detail!=='object');
-    if(failed.length){
-      const missing=failed.map(a=>'<div class="small">Akun '+esc(a.no||'—')+' — '+esc(a.name||'Tanpa nama')+': '+esc(a.error||'Detail tidak tersedia')+'</div>').join('');
-      box.innerHTML='<h3 style="margin-top:0">⚠️ Pratinjau Neraca Accurate belum lengkap</h3><div class="small">Berhasil '+good.length+' dari '+rows.length+' akun. Ada '+failed.length+' akun yang belum terbaca. Total Aset, Liabilitas, dan Ekuitas tidak ditampilkan agar tidak menyesatkan.</div><div class="lead" style="margin-top:8px"><b>Akun yang perlu dibaca ulang</b>'+missing+'</div><div class="small" style="margin-top:8px">Neraca Accurate tetap read-only dan Neraca lokal tidak diubah.</div>';
+    if(failed.length||data?.complete===false){
+      const missing=failed.map(a=>'<div class="small">Akun '+esc(a.no||'—')+' — '+esc(a.name||'Tanpa nama')+': '+esc(a.error||'Detail tidak tersedia')+' · percobaan '+esc(a.attempts||'—')+'</div>').join('');
+      box.innerHTML='<h3 style="margin-top:0">⚠️ Pratinjau Neraca Accurate belum lengkap</h3><div class="small">Berhasil '+good.length+' dari '+Number(data.account_count||rows.length)+' akun. Ada '+failed.length+' akun yang belum terbaca. Total Aset, Liabilitas, dan Ekuitas tidak ditampilkan agar tidak menyesatkan.</div><div class="lead" style="margin-top:8px"><b>Akun yang perlu dibaca ulang</b>'+(missing||'<div class="small">Respons Accurate menyatakan data belum lengkap, tetapi tidak mengirim rincian akun gagal.</div>')+'</div><div class="small" style="margin-top:8px">Neraca Accurate tetap read-only dan Neraca lokal tidak diubah.</div>';
       return;
     }
     const byNo=new Map(good.map(a=>[String(a.detail.no||''),a.detail]));

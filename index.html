@@ -4176,40 +4176,7 @@ window.hmPrintSettlementDocument=function(btn){
  const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
  const partner=btn.dataset.partner||'—',outlet=btn.dataset.outlet||'—',date=btn.dataset.date||'—',amount=Number(btn.dataset.amount||0).toLocaleString('id-ID'),status=btn.dataset.status||'—',detail=btn.dataset.detail||'Rincian produk tidak tersedia';
  const w=window.open('','_blank');if(!w){alert('Pop-up diblokir. Izinkan pop-up untuk aplikasi Hello Majesty lalu coba lagi.');return;}
- w.document.open();w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settlement Hello Majesty</title><style>*{box-sizing:border-box}body{font:12px Arial,sans-serif;color:#172033;margin:0 auto;padding:0;max-width:100%;width:100%}h1{font-size:21px;margin-bottom:4px}h2{font-size:16px}table{width:100%;border-collapse:collapse;margin:14px 0}td{border:1px solid #cbd5e1;padding:8px;vertical-align:top}.amount{font-size:19px;font-weight:bold}.detail{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;border:1px solid #cbd5e1;padding:12px;border-radius:6px;width:100%}.note{font-size:10px;color:#475569;margin-top:18px}@media screen{body{max-width:760px;padding:24px;margin:0 auto}}@media print{body{max-width:none;padding:0;margin:0}table{break-inside:avoid} .detail{break-inside:auto;page-break-inside:auto} .note{break-inside:avoid}}@page{size:A4;margin:12mm}</style></head><body onload="setTimeout(function(){window.print()},300)"><h1>HELLO MAJESTY</h1><div>Dokumen Penyelesaian Pembayaran Antarunit</div><hr><h2>Rincian Settlement</h2><table><tr><td><b>Stockist</b></td><td>'+esc(partner)+'</td></tr><tr><td><b>Outlet</b></td><td>'+esc(outlet)+'</td></tr><tr><td><b>Tanggal settlement</b></td><td>'+esc(date)+'</td></tr><tr><td><b>Status</b></td><td>'+esc(status)+'</td></tr><tr><td><b>Total kewajiban settlement</b></td><td class="amount">Rp '+esc(amount)+'</td></tr></table><h2>Ringkasan dan Rincian Produk</h2><div class="detail">'+esc(detail)+'</div><div class="note">Dokumen dicetak dari data aplikasi Hello Majesty. Bukti transfer bank merupakan lampiran terpisah jika tersedia.</div>
-<style id="hm-accurate-neraca-premium-contrast">
-#modal #mb #hm-accurate-neraca-hero,
-#modal #mb #hm-accurate-neraca-hero *{
-  color:#f8fafc!important;
-  -webkit-text-fill-color:#f8fafc!important;
-  opacity:1!important;
-  text-shadow:none!important;
-}
-#modal #mb #hm-accurate-neraca-hero>div:first-child{
-  color:#e7ca83!important;
-  -webkit-text-fill-color:#e7ca83!important;
-}
-#modal #mb #hm-accurate-neraca-hero>div>div:last-child,
-#modal #mb #hm-accurate-neraca-hero>div>div:last-child *{
-  color:#ecfdf5!important;
-  -webkit-text-fill-color:#ecfdf5!important;
-}
-#modal #mb #hm-accurate-neraca-hero>div>div:last-child>div{
-  color:#d1fae5!important;
-  -webkit-text-fill-color:#d1fae5!important;
-}
-#modal #mb #accurateNeracaPreview .lead{
-  color:#172554!important;
-}
-#modal #mb #accurateNeracaPreview .lead .small{
-  color:#475569!important;
-}
-@media(max-width:600px){
-  #modal #mb #hm-accurate-neraca-hero{padding:19px 16px!important;border-radius:18px!important}
-  #modal #mb #accurateNeracaPreview .lead{padding:14px!important}
-}
-</style>
-</body></html>');w.document.close();
+ w.document.open();w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settlement Hello Majesty</title><style>*{box-sizing:border-box}body{font:12px Arial,sans-serif;color:#172033;margin:0 auto;padding:0;max-width:100%;width:100%}h1{font-size:21px;margin-bottom:4px}h2{font-size:16px}table{width:100%;border-collapse:collapse;margin:14px 0}td{border:1px solid #cbd5e1;padding:8px;vertical-align:top}.amount{font-size:19px;font-weight:bold}.detail{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;border:1px solid #cbd5e1;padding:12px;border-radius:6px;width:100%}.note{font-size:10px;color:#475569;margin-top:18px}@media screen{body{max-width:760px;padding:24px;margin:0 auto}}@media print{body{max-width:none;padding:0;margin:0}table{break-inside:avoid} .detail{break-inside:auto;page-break-inside:auto} .note{break-inside:avoid}}@page{size:A4;margin:12mm}</style></head><body onload="setTimeout(function(){window.print()},300)"><h1>HELLO MAJESTY</h1><div>Dokumen Penyelesaian Pembayaran Antarunit</div><hr><h2>Rincian Settlement</h2><table><tr><td><b>Stockist</b></td><td>'+esc(partner)+'</td></tr><tr><td><b>Outlet</b></td><td>'+esc(outlet)+'</td></tr><tr><td><b>Tanggal settlement</b></td><td>'+esc(date)+'</td></tr><tr><td><b>Status</b></td><td>'+esc(status)+'</td></tr><tr><td><b>Total kewajiban settlement</b></td><td class="amount">Rp '+esc(amount)+'</td></tr></table><h2>Ringkasan dan Rincian Produk</h2><div class="detail">'+esc(detail)+'</div><div class="note">Dokumen dicetak dari data aplikasi Hello Majesty. Bukti transfer bank merupakan lampiran terpisah jika tersedia.</div></body></html>');w.document.close();
 };
 window.hmOpenPartnerSettlementManagement=async function(){
  const roleKey=String(profile?.role||'').toUpperCase().replace(/_/g,' ').trim();
@@ -8235,4 +8202,36 @@ html body :is(.small,.muted,.text-muted,small) { color:#cbd5e1!important; opacit
   },true);
 })();
 </script>
+<style id="hm-accurate-neraca-premium-contrast">
+#modal #mb #hm-accurate-neraca-hero,
+#modal #mb #hm-accurate-neraca-hero *{
+  color:#f8fafc!important;
+  -webkit-text-fill-color:#f8fafc!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+#modal #mb #hm-accurate-neraca-hero>div:first-child{
+  color:#e7ca83!important;
+  -webkit-text-fill-color:#e7ca83!important;
+}
+#modal #mb #hm-accurate-neraca-hero>div>div:last-child,
+#modal #mb #hm-accurate-neraca-hero>div>div:last-child *{
+  color:#ecfdf5!important;
+  -webkit-text-fill-color:#ecfdf5!important;
+}
+#modal #mb #hm-accurate-neraca-hero>div>div:last-child>div{
+  color:#d1fae5!important;
+  -webkit-text-fill-color:#d1fae5!important;
+}
+#modal #mb #accurateNeracaPreview .lead{
+  color:#172554!important;
+}
+#modal #mb #accurateNeracaPreview .lead .small{
+  color:#475569!important;
+}
+@media(max-width:600px){
+  #modal #mb #hm-accurate-neraca-hero{padding:19px 16px!important;border-radius:18px!important}
+  #modal #mb #accurateNeracaPreview .lead{padding:14px!important}
+}
+</style>
 </body></html>

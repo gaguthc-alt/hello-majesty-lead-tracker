@@ -7376,18 +7376,39 @@ async function openAccounting(){
   const accountingAllowed=!!profile?.is_management||getActiveRoles().includes('FASILITATOR');
   if(!accountingAllowed){return alert('Dashboard Accounting hanya dapat diakses Management atau Fasilitator.');}
   $('mt').textContent='📊 Dashboard Accounting';
-  $('mb').innerHTML='<div id="accountingPanel" style="display:grid;gap:12px">'+
-    '<div style="padding:18px;border-radius:18px;background:linear-gradient(120deg,#0b1730,#17415b);color:#f8fafc;border:1px solid #b9974f">'+
-      '<div style="font-size:10px;letter-spacing:2px;font-weight:800;color:#e7ca83">HELLO MAJESTY · FINANCIAL OVERVIEW</div>'+
-      '<h3 style="margin:8px 0;color:#fff">📊 Dashboard Accounting</h3>'+
-      '<div style="color:#e2e8f0;font-size:13px">Sumber pembukuan resmi: Accurate · Konsolidasi seluruh unit · Read-only</div>'+
-      '<div id="accountingSyncMeta" style="font-size:11px;color:#cbd5e1;margin-top:8px">Menghubungkan ke Accurate...</div>'+
-    '</div>'+
-    '<div class="box" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>Periode Laba/Rugi</b><div class="small">Saldo neraca mengikuti tanggal saldo Accurate</div></div><select id="accountingPeriod" onchange="loadAccountingDashboard()" style="min-width:145px"><option value="MONTH">Bulan Ini</option><option value="TODAY">Hari Ini</option><option value="YEAR">Tahun Ini</option></select></div>'+
-    '<div id="accountingHealth" class="box">Memuat status koneksi Accurate...</div>'+
-    '<div id="accountingSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px"></div>'+
-    '<div class="box"><div style="font-weight:800;margin-bottom:9px">📌 Ringkasan Sumber Data</div><div id="accountingSourceDetails" class="small">Menunggu data Accurate...</div></div>'+
-    '<div class="small" style="text-align:center;color:#64748b">Hello Majesty tidak menyelenggarakan pembukuan sendiri. Angka di atas dibaca langsung dari Accurate dan tidak mengubah jurnal maupun saldo.</div>'+
+  $('mb').innerHTML='<style>'+
+    '#accountingPanel{display:grid;gap:16px;color:#172033}'+
+    '#accountingPanel .acc-hero{position:relative;overflow:hidden;padding:24px;border-radius:24px;background:radial-gradient(circle at 88% 12%,rgba(214,178,100,.23),transparent 32%),linear-gradient(135deg,#07172d 0%,#102e4a 58%,#17445a 100%);border:1px solid rgba(214,178,100,.7);box-shadow:0 16px 34px rgba(7,23,45,.2);color:#fff!important}'+
+    '#accountingPanel .acc-hero *{color:#fff!important}'+
+    '#accountingPanel .acc-kicker{font-size:10px;letter-spacing:2.4px;font-weight:900;color:#e8c982!important}'+
+    '#accountingPanel .acc-title{font-size:clamp(22px,4vw,30px);line-height:1.15;font-weight:900;margin:10px 0 8px;color:#fff!important}'+
+    '#accountingPanel .acc-sub{font-size:13px;line-height:1.6;color:#e4edf6!important;max-width:520px}'+
+    '#accountingPanel .acc-meta{display:inline-flex;align-items:center;gap:7px;margin-top:15px;padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);font-size:11px;color:#f8fafc!important}'+
+    '#accountingPanel .acc-period{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:16px 18px;border-radius:18px;background:linear-gradient(145deg,#fff,#f3f6fb);border:1px solid #d9e1ec;box-shadow:0 7px 18px rgba(18,38,63,.05)}'+
+    '#accountingPanel .acc-period select{min-width:160px;padding:12px 15px;border-radius:12px;border:1px solid #cbd5e1;background:#10243d;color:#fff;font-weight:700}'+
+    '#accountingPanel .acc-health{padding:16px 18px;border-radius:18px;background:linear-gradient(145deg,#f0fdf8,#e8f5f2);border:1px solid #b8dfd2;color:#153b35}'+
+    '#accountingPanel .acc-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}'+
+    '#accountingPanel .acc-card{position:relative;overflow:hidden;min-width:0;padding:16px;border-radius:19px;background:linear-gradient(145deg,#fff 0%,#f1f5fa 100%);border:1px solid #dce4ee;box-shadow:0 8px 22px rgba(18,38,63,.07)}'+
+    '#accountingPanel .acc-card:after{content:"";position:absolute;width:92px;height:92px;right:-34px;top:-42px;border-radius:50%;background:var(--acc-tint);opacity:.13}'+
+    '#accountingPanel .acc-card-top{height:4px;width:42px;border-radius:8px;margin-bottom:13px;background:var(--acc-accent)}'+
+    '#accountingPanel .acc-card-label{font-size:11px;line-height:1.4;font-weight:900;letter-spacing:.35px;color:#526174}'+
+    '#accountingPanel .acc-card-value{font-size:clamp(17px,3.6vw,23px);font-weight:900;line-height:1.25;letter-spacing:-.5px;color:#14243a;overflow-wrap:anywhere;margin-top:8px}'+
+    '#accountingPanel .acc-source{padding:18px;border-radius:18px;background:#f7f9fc;border:1px solid #dce4ee;color:#334155}'+
+    '@media(max-width:520px){#accountingPanel .acc-cards{gap:9px}#accountingPanel .acc-card{padding:13px;border-radius:16px}#accountingPanel .acc-hero{padding:20px}#accountingPanel .acc-period select{width:100%}}'+
+    '</style>'+
+    '<div id="accountingPanel" style="display:grid;gap:16px">'+
+      '<section class="acc-hero">'+
+        '<div class="acc-kicker">HELLO MAJESTY · FINANCIAL INTELLIGENCE</div>'+
+        '<div class="acc-title">📊 Dashboard Accounting</div>'+
+        '<div class="acc-sub">Pusat pemantauan keuangan konsolidasi seluruh unit bisnis. Accurate tetap menjadi satu-satunya sumber pembukuan resmi.</div>'+
+        '<div class="acc-meta">🔒 Accurate Online <span style="opacity:.5">•</span> READ ONLY</div>'+
+        '<div id="accountingSyncMeta" style="font-size:11px;color:#e2e8f0!important;margin-top:12px">Menghubungkan ke Accurate...</div>'+
+      '</section>'+
+      '<section class="acc-period"><div><div style="font-size:15px;font-weight:900;color:#172033">Periode Laba/Rugi</div><div class="small" style="margin-top:4px;color:#64748b">Saldo neraca mengikuti tanggal saldo Accurate</div></div><select id="accountingPeriod" onchange="loadAccountingDashboard()"><option value="MONTH">Bulan Ini</option><option value="TODAY">Hari Ini</option><option value="YEAR">Tahun Ini</option></select></section>'+
+      '<div id="accountingHealth" class="acc-health">Memuat status koneksi Accurate...</div>'+
+      '<div id="accountingSummary" class="acc-cards"></div>'+
+      '<section class="acc-source"><div style="font-weight:900;color:#172033;margin-bottom:12px">📌 Ringkasan Sumber Data</div><div id="accountingSourceDetails" class="small">Menunggu data Accurate...</div></section>'+
+      '<div style="font-size:11px;line-height:1.6;text-align:center;color:#718096;padding:0 12px">Hello Majesty tidak menyelenggarakan pembukuan sendiri. Seluruh angka dibaca langsung dari Accurate dan tidak mengubah jurnal maupun saldo.</div>'+
     '</div>';
   $('modal').classList.remove('hidden');
   await loadAccountingDashboard();
@@ -7472,11 +7493,11 @@ async function loadAccountingDashboard(){
       ['💹','PENDAPATAN',revenue,'#3989c9'],
       ['📉','BEBAN & HPP',expenses,'#dc604d']
     ];
-    if(summary)summary.innerHTML=cards.map(c=>'<div class="stat accounting-stat" style="background:#fff;border:1px solid #e2e8f0;border-radius:15px;padding:14px;box-shadow:0 5px 16px rgba(15,35,65,.06)"><div style="height:4px;width:42px;background:'+c[3]+';border-radius:8px;margin-bottom:10px"></div><div class="small" style="color:#475569;font-weight:700">'+c[0]+' '+c[1]+'</div><div class="num accounting-num" style="color:#172033;font-size:clamp(17px,3vw,22px);font-weight:800;overflow-wrap:anywhere;margin-top:5px">'+accountingRp(c[2])+'</div></div>').join('');
+    if(summary)summary.innerHTML=cards.map(c=>'<article class="acc-card" style="--acc-accent:'+c[3]+';--acc-tint:'+c[3]+'"><div class="acc-card-top"></div><div class="acc-card-label">'+c[0]+' '+c[1]+'</div><div class="acc-card-value">'+accountingRp(c[2])+'</div></article>').join('');
     const asOf=good[0]?.detail?.asOf||balanceData.as_of_date||'—';
     if(meta)meta.textContent='Terakhir dibaca: '+asOf+' · '+good.length+' akun · Read-only';
-    if(healthBox)healthBox.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>🟢 DATA ACCURATE BERHASIL DIBACA</b><span style="font-size:11px;color:#64748b">Read-only</span></div><div class="small" style="margin-top:7px;color:#475569">Neraca: '+good.length+' akun berhasil · Laba/Rugi: '+matched+' akun cocok · Tidak ada jurnal atau saldo Accurate yang diubah.</div>';
-    if(source)source.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px"><div><b>Sumber</b><br>Accurate Online</div><div><b>Tanggal Neraca</b><br>'+escA(asOf)+'</div><div><b>Periode Laba/Rugi</b><br>'+escA(period.start)+' s/d '+escA(period.end)+'</div><div><b>Akun metadata</b><br>'+good.length+' akun</div><div><b>Respons saldo akun</b><br>'+balanceRows.length+' akun</div><div><b>Status pembukuan</b><br>Hanya Accurate</div></div>';
+    if(healthBox)healthBox.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:15px;color:#145b49">🟢 DATA ACCURATE BERHASIL DIBACA</b><span style="font-size:10px;font-weight:800;letter-spacing:.6px;color:#26735f;background:#d8f1e8;padding:6px 9px;border-radius:99px">READ ONLY</span></div><div class="small" style="margin-top:8px;color:#365d55;line-height:1.6">Neraca: '+good.length+' akun berhasil · Laba/Rugi: '+matched+' akun cocok · Tidak ada jurnal atau saldo Accurate yang diubah.</div>';
+    if(source)source.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px">'+[['SUMBER','Accurate Online'],['TANGGAL NERACA',escA(asOf)],['PERIODE LABA/RUGI',escA(period.start)+' s/d '+escA(period.end)],['AKUN METADATA',good.length+' akun'],['RESPONS SALDO',balanceRows.length+' akun'],['PEMBUKUAN','Hanya Accurate']].map(x=>'<div style="padding:11px 12px;border-radius:12px;background:#fff;border:1px solid #e5eaf1"><div style="font-size:9px;font-weight:900;letter-spacing:.7px;color:#8290a2;margin-bottom:5px">'+x[0]+'</div><div style="font-size:12px;font-weight:800;color:#26364b">'+x[1]+'</div></div>').join('')+'</div>';
   }catch(e){
     if(summary)summary.innerHTML='<div class="box" style="grid-column:1/-1;border-left:4px solid #dc604d"><b>⚠️ Dashboard belum dapat menampilkan angka</b><div class="small" style="margin-top:6px;color:#475569">'+escA(e?.message||e)+'</div><div class="small" style="margin-top:6px">Tidak ada angka lokal yang digunakan sebagai pengganti. Data Accurate tetap tidak diubah.</div></div>';
     if(healthBox)healthBox.innerHTML='<b>🟠 Menunggu data Accurate yang valid</b>';

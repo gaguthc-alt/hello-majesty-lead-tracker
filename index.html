@@ -7451,6 +7451,64 @@ function hmEnsureAccountingDetailPanel(){
   panel.classList.remove('hidden');
   return host;
 }
+window.testAccurateNeracaPreview=async function(){
+  const host=document.getElementById('accountingDetail')||document.getElementById('accountingDetailPanel');
+  if(!host){alert('Panel Neraca tidak ditemukan. Buka Accounting → Neraca kembali.');return;}
+  let box=document.getElementById('accurateNeracaPreview');if(box)box.remove();
+  box=document.createElement('div');box.id='accurateNeracaPreview';box.className='box';box.style.marginTop='10px';box.textContent='Menyusun pratinjau Neraca dari metadata Accurate (read-only)...';host.prepend(box);
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const rp=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(v||0));
+  try{
+    if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
+    const token=await window.hmAccessToken();
+    const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_gl_account_metadata_readonly'}),signal:AbortSignal.timeout(150000)});
+    const data=await response.json().catch(()=>({ok:false,error:'Respons metadata tidak dapat dibaca.'}));
+    if(!response.ok||data?.ok!==true)throw new Error(data?.error||('HTTP '+response.status));
+    const rows=Array.isArray(data.accounts)?data.accounts:[];
+    const good=rows.filter(a=>a?.ok&&a.detail&&typeof a.detail==='object');
+    const byNo=new Map(good.map(a=>[String(a.detail.no||''),a.detail]));
+    const children=no=>good.map(a=>a.detail).filter(d=>String(d.parent?.no??'')===String(no));
+    const types={
+      ASET:['CASH_BANK','ACCOUNT_RECEIVABLE','FIXED_ASSET','INVENTORY','OTHER_CURRENT_ASSET'],
+      'PENGURANG ASET':['ACCUMULATED_DEPRECIATION'],
+      LIABILITAS:['ACCOUNT_PAYABLE','OTHER_CURRENT_LIABILITY','LONG_TERM_LIABILITY'],
+      EKUITAS:['EQUITY']
+    };
+    const allKnown=new Set(Object.values(types).flat());
+    const roots=good.map(a=>a.detail).filter(d=>!d.parent?.no||!byNo.has(String(d.parent.no)));
+    const diagnostics=[];
+    for(const d of roots){
+      const kids=children(d.no);
+      if(kids.length){
+        const sum=kids.reduce((n,c)=>n+Number(c.balance||0),0);
+        const own=Number(d.balance||0);
+        if(Math.abs(own-sum)>0.01)diagnostics.push({no:d.no,name:d.name,own,sum,diff:own-sum});
+      }
+    }
+    const render=(d,depth=0,seen=new Set())=>{
+      const no=String(d.no||''),key=no+'|'+String(d.id||'');
+      if(seen.has(key))return '';
+      const next=new Set(seen);next.add(key);
+      const kids=children(no);
+      const row='<div style="padding:5px 0;border-bottom:1px solid #e2e8f0;margin-left:'+(depth*12)+'px"><b>'+esc(no)+' — '+esc(d.name||'')+'</b><div class="small">'+esc(d.accountType||'—')+' · '+rp(d.balance)+' · '+(kids.length?'subtotal induk':'saldo akun')+'</div>'+kids.map(c=>render(c,depth+1,next)).join('')+'</div>';
+      return row;
+    };
+    const section=(title,codes)=>{
+      const list=roots.filter(d=>codes.includes(String(d.accountType||'')));
+      const total=list.reduce((n,d)=>n+Number(d.balance||0),0);
+      return '<div class="lead" style="margin-top:10px"><b>'+title+'</b><div class="row" style="justify-content:space-between;margin:6px 0"><span>Total saldo akun induk/root</span><b>'+rp(total)+'</b></div>'+(list.length?list.map(d=>render(d)).join(''):'<div class="small">Tidak ada akun root.</div>')+'</div>';
+    };
+    const unknown=[...new Set(good.map(a=>String(a.detail.accountType||'')).filter(t=>t&&!allKnown.has(t)))];
+    const longDebt=roots.filter(d=>d.no==='1801'||String(d.name||'').toLowerCase().includes('hutang jangka panjang'));
+    box.innerHTML='<h3 style="margin-top:0">⚖️ Pratinjau Neraca Accurate</h3><div class="small">Per '+esc(good[0]?.detail?.asOf||'—')+' · '+good.length+' akun berhasil · Read-only · Neraca lokal tidak diubah</div>'+
+      '<div class="small" style="margin-top:8px">Perhitungan memakai akun root/induk saja untuk mencegah saldo induk dan anak dihitung dua kali. Akun anak ditampilkan sebagai rincian.</div>'+
+      section('ASET',types.ASET)+section('PENGURANG ASET',types['PENGURANG ASET'])+section('LIABILITAS',types.LIABILITAS)+section('EKUITAS',types.EKUITAS)+
+      (longDebt.length?'<div class="lead" style="margin-top:10px"><b>⚠️ Verifikasi akun liabilitas jangka panjang</b>'+longDebt.map(d=>'<div class="small">'+esc(d.no)+' — '+esc(d.name)+' : '+rp(d.balance)+'; akun anak: '+children(d.no).length+'</div>').join('')+'<div class="small">Saldo akun 1801 perlu dicocokkan dengan buku besar Accurate sebelum Neraca dijadikan sumber utama.</div></div>':'')+
+      (diagnostics.length?'<div class="lead" style="margin-top:10px"><b>⚠️ Saldo induk tidak sama dengan jumlah anak langsung</b>'+diagnostics.map(x=>'<div class="small">'+esc(x.no)+' — '+esc(x.name)+': induk '+rp(x.own)+'; jumlah anak '+rp(x.sum)+'; selisih '+rp(x.diff)+'</div>').join('')+'</div>':'<div class="small" style="margin-top:10px">Saldo akun induk yang memiliki anak cocok dengan jumlah saldo anak langsung.</div>')+
+      (unknown.length?'<div class="lead" style="margin-top:10px"><b>Jenis akun belum dipetakan</b><div class="small">'+unknown.map(esc).join(', ')+'</div></div>':'')+
+      '<div class="small" style="margin-top:10px">Ini pratinjau rekonsiliasi, belum menggantikan Neraca lokal. Saldo laba/rugi periode berjalan belum ditambahkan ke ekuitas; lakukan rekonsiliasi sebelum aktivasi.</div>';
+  }catch(e){box.innerHTML='<b>Pratinjau Neraca Accurate gagal</b><div class="small">'+esc(e?.message||e)+'</div><div class="small">Neraca lokal tetap utuh.</div>';}
+};
 window.testAccurateGLMetadata=async function(){
   const host=document.getElementById('accountingDetail')||document.getElementById('accountingDetailPanel');
   if(!host){alert('Panel Neraca tidak ditemukan. Buka Accounting → Neraca kembali.');return;}
@@ -7597,7 +7655,7 @@ async function openAccountingModule(module){
     const section=(title,arr)=>'<div class="box accounting-section"><h4>'+title+'</h4>'+
       (arr.length?arr.map(r=>'<button type="button" class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="openBalanceAccountDetail(\''+escA(r.account_id)+'\',\''+escA(r.account_code)+'\',\''+escA(r.account_name).replace(/'/g,"&#39;")+'\')"><div class="row" style="justify-content:space-between;gap:10px"><span><b>'+escA(r.account_code)+'</b> — '+escA(r.account_name)+'</span><b style="white-space:nowrap">'+accountingRp(r.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+
       '</div>';
-    host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+'<button type="button" class="secondary" style="margin:8px 0;width:100%" onclick="testAccurateGLAccountList()">🔎 Uji koneksi daftar akun Accurate</button><button type="button" class="secondary" style="margin:0 0 8px;width:100%" onclick="testAccurateAllGLBalances()">💰 Uji saldo seluruh akun Accurate</button><button type="button" class="secondary" style="margin:0 0 8px;width:100%" onclick="testAccurateGLMetadata()">🧾 Uji metadata akun Accurate</button>'+selector+
+    host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+'<button type="button" class="secondary" style="margin:8px 0;width:100%" onclick="testAccurateGLAccountList()">🔎 Uji koneksi daftar akun Accurate</button><button type="button" class="secondary" style="margin:0 0 8px;width:100%" onclick="testAccurateAllGLBalances()">💰 Uji saldo seluruh akun Accurate</button><button type="button" class="secondary" style="margin:0 0 8px;width:100%" onclick="testAccurateGLMetadata()">🧾 Uji metadata akun Accurate</button><button type="button" class="secondary" style="margin:0 0 8px;width:100%" onclick="testAccurateNeracaPreview()">⚖️ Pratinjau Neraca Accurate (read-only)</button>'+selector+
       section('ASET',assets)+
       '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Aset</div><div class="num accounting-num">'+accountingRp(totalAssets)+'</div></div>'+
       section('LIABILITAS',liabilities)+

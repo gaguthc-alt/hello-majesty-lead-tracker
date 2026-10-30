@@ -7451,6 +7451,21 @@ function hmEnsureAccountingDetailPanel(){
   panel.classList.remove('hidden');
   return host;
 }
+window.testAccurateGLAccountList=async function(){
+  const host=document.getElementById('accountingDetailPanel');if(!host)return;
+  let box=document.getElementById('accurateGlProbeResult');if(box)box.remove();
+  box=document.createElement('div');box.id='accurateGlProbeResult';box.className='box';box.style.marginTop='10px';box.textContent='Menguji daftar akun langsung dari Accurate...';host.prepend(box);
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  try{
+    if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
+    const token=await window.hmAccessToken();
+    const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_gl_accounts_readonly'})});
+    const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
+    if(!response.ok||data?.ok!==true)throw new Error(data?.accurate_error||data?.error||('HTTP '+response.status));
+    const rows=Array.isArray(data.accounts)?data.accounts:[];
+    box.innerHTML='<b>🟢 Daftar akun berhasil dibaca dari Accurate</b><div class="small">Jumlah akun: '+Number(data.account_count||rows.length)+' • Diperbarui: '+new Date(data.fetched_at||Date.now()).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:8px">Tahap verifikasi daftar akun. Saldo dan klasifikasi Neraca belum dialihkan.</div>'+rows.map(a=>'<div class="small" style="padding:5px 0;border-bottom:1px solid #ddd"><b>'+esc(a.no||'—')+'</b> — '+esc(a.name||'')+'</div>').join('');
+  }catch(e){box.innerHTML='<b>Belum berhasil membaca akun Accurate</b><div class="small">'+esc(e?.message||e)+'</div><div class="small">Neraca lama tetap dipertahankan dan tidak dianggap sebagai data Accurate.</div>';}
+};
 async function openAccountingModule(module){
   const host=hmEnsureAccountingDetailPanel();
   host.classList.remove('hidden');host.innerHTML='<b>Memuat...</b>';
@@ -7506,7 +7521,7 @@ async function openAccountingModule(module){
     const section=(title,arr)=>'<div class="box accounting-section"><h4>'+title+'</h4>'+
       (arr.length?arr.map(r=>'<button type="button" class="secondary" style="width:100%;text-align:left;margin:4px 0" onclick="openBalanceAccountDetail(\''+escA(r.account_id)+'\',\''+escA(r.account_code)+'\',\''+escA(r.account_name).replace(/'/g,"&#39;")+'\')"><div class="row" style="justify-content:space-between;gap:10px"><span><b>'+escA(r.account_code)+'</b> — '+escA(r.account_name)+'</span><b style="white-space:nowrap">'+accountingRp(r.balance)+'</b></div></button>').join(''):'<div class="small">Belum ada saldo.</div>')+
       '</div>';
-    host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+selector+
+    host.innerHTML='<h3>⚖️ Neraca '+(selected==='ALL'?'Konsolidasi':'— '+escA(selected))+'</h3><div class="small">Per '+d.end+' • Bank berada di Pusat</div>'+'<button type="button" class="secondary" style="margin:8px 0;width:100%" onclick="testAccurateGLAccountList()">🔎 Uji koneksi daftar akun Accurate</button>'++selector+
       section('ASET',assets)+
       '<div class="stat accounting-stat" style="margin-top:8px"><div class="small">Total Aset</div><div class="num accounting-num">'+accountingRp(totalAssets)+'</div></div>'+
       section('LIABILITAS',liabilities)+

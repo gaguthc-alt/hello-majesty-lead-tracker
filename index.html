@@ -3655,9 +3655,11 @@ async function hmRenderManagementMessage(){
  else if(context.accurate_sync.available&&(context.accurate_sync.failed_or_pending>0||context.accurate_sync.open_conflicts>0))message='PERLU TINDAKAN: sinkronisasi Accurate belum tuntas ('+context.accurate_sync.failed_or_pending+' antrean, '+context.accurate_sync.open_conflicts+' konflik terbuka). Periksa error dan PIC.';
  else if(context.performance&&context.performance.sales_closing>0)message='Apresiasi: sudah tercatat '+context.performance.sales_closing+' Sales Closing bulan ini. Jaga kualitas follow-up dan ketepatan data.';
  else message='Fokus hari ini: periksa prioritas sesuai peran, tuntaskan tindak lanjut, dan pastikan status kerja tercatat.';
- body.textContent=message;
+ // Jangan tampilkan fallback teguran sebelum hasil AI siap; cegah pesan yang salah muncul sesaat.
+ body.textContent='Menyusun pesan Management berdasarkan pencapaian outlet…';
  if(!db?.functions||typeof db.functions.invoke!=='function'){
-   const foot=card.querySelector('.hm-message-foot');if(foot)foot.textContent='Ringkasan berdasarkan data yang berhasil dibaca; AI tidak tersedia.';
+   body.textContent=message;
+   const foot=card.querySelector('.hm-message-foot');if(foot)foot.textContent='Ringkasan otomatis berdasarkan data yang berhasil dibaca; AI tidak tersedia.';
    return;
  }
  try{
@@ -3671,7 +3673,8 @@ async function hmRenderManagementMessage(){
    }else throw new Error('AI tidak mengembalikan pesan.');
  }catch(e){
    console.warn('[HM] AI pesan beranda gagal; gunakan fallback berbasis data:',e);
-   const foot=card.querySelector('.hm-message-foot');if(foot)foot.textContent='Pesan otomatis dari data yang berhasil dibaca; AI tidak tersedia atau sesi perlu diperiksa.';
+   body.textContent=message;
+   const foot=card.querySelector('.hm-message-foot');if(foot)foot.textContent='Pesan otomatis berdasarkan data yang berhasil dibaca; AI tidak tersedia atau sesi perlu diperiksa.';
  }
 }
 async function hmRenderHomePerformance(){

@@ -8022,11 +8022,17 @@ async function loadAccurateLedger(){
   if(!from.value||!to.value||from.value>to.value){if(status)status.textContent='Periksa rentang tanggal.';return;}
   const fmt=v=>{const p=v.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
   const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  status.textContent='Mengambil histori akun '+no+' dari Accurate...';host.innerHTML='<div class="box">⏳ Membaca transaksi Accurate...</div>';
+  let ledgerStartedAt=Date.now(),ledgerTimer=null;
+  const elapsedLabel=()=>{const sec=Math.floor((Date.now()-ledgerStartedAt)/1000);return sec<60?sec+' detik':Math.floor(sec/60)+' menit '+(sec%60)+' detik';};
+  const renderLedgerProgress=(phase)=>{const elapsed=elapsedLabel();status.textContent=phase+' · '+elapsed;host.innerHTML='<div class="box" style="padding:16px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fafc"><div style="font-weight:700;color:#1e293b">⏳ '+phase+'</div><div style="margin-top:7px;color:#475569;font-size:13px">Waktu proses: <b id="hmLedgerElapsed">'+elapsed+'</b></div><div style="height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-top:12px"><div style="height:100%;width:35%;background:#64748b;border-radius:99px;animation:hmLedgerPulse 1.4s ease-in-out infinite alternate"></div></div><div style="font-size:12px;color:#64748b;margin-top:8px">Mengambil data langsung dari Accurate. Indikator ini menunjukkan proses berjalan, bukan persentase transaksi.</div><style>@keyframes hmLedgerPulse{from{transform:translateX(-80%)}to{transform:translateX(185%)}}</style></div>';};
+  renderLedgerProgress('Menghubungkan ke Accurate');
+  ledgerTimer=setInterval(()=>{const el=document.getElementById('hmLedgerElapsed');if(el)el.textContent=elapsedLabel();},1000);
   try{
     const token=await window.hmAccessToken();
+    renderLedgerProgress('Membaca daftar jurnal dan rincian transaksi');
     const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_gl_account_activity_readonly',account_no:no,from_date:fmt(from.value),to_date:fmt(to.value)})});
     const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
+    if(ledgerTimer){clearInterval(ledgerTimer);ledgerTimer=null;}
     if(!response.ok||data?.ok!==true)throw new Error(data?.error||data?.message||('HTTP '+response.status));
     const raw=data.data;
     const transactions=Array.isArray(data.transactions)?data.transactions:[];
@@ -8076,7 +8082,7 @@ async function loadAccurateLedger(){
       host.innerHTML=diagHtml+'<div class="box"><b>Belum ada mutasi akun yang dapat ditampilkan</b><div class="small" style="margin-top:6px">Respons Accurate diterima, tetapi belum ada baris transaksi yang cocok dengan akun dan periode ini.</div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px">'+esc(JSON.stringify({sample_detail_line_keys:diag.sample_detail_line_keys||[],sample_account_fields:diag.sample_account_fields||[],failed_vouchers:diag.failed_vouchers||[]},null,2))+'</pre></div>';
     }
     status.textContent=transactions.length?'Berhasil membaca Accurate · '+transactions.length+' mutasi · Read-only':'Accurate merespons, tetapi belum ada baris mutasi yang cocok. Periksa diagnostik di bawah · Read-only';
-  }catch(e){host.innerHTML='<div class="box" style="border-left:4px solid #dc604d"><b>Gagal membaca Buku Besar Accurate</b><div class="small" style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';status.textContent='Pembacaan Accurate gagal. Tidak ada angka lokal yang digunakan sebagai pengganti.';}
+  }catch(e){if(ledgerTimer){clearInterval(ledgerTimer);ledgerTimer=null;}host.innerHTML='<div class="box" style="border-left:4px solid #dc604d"><b>Gagal membaca Buku Besar Accurate</b><div class="small" style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';status.textContent='Pembacaan Accurate gagal setelah '+elapsedLabel()+'. Tidak ada angka lokal yang digunakan sebagai pengganti.';}
 }
 window.openAccounting=openAccounting;
 window.openAccountingModule=openAccountingModule;

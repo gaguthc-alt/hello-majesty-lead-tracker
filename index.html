@@ -7813,8 +7813,18 @@ async function openAccountingModule(module){
     return;
   }
   if(module==='ledger'){
-    const x=await sb.rpc('general_ledger_accounts_summary',{p_start_date:d.start,p_end_date:d.end});if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';const rows=x.data||[];
-    host.innerHTML='<h3>📖 Buku Besar — Ringkasan Akun</h3><div class="small">'+d.start+' s/d '+d.end+'</div>'+rows.filter(r=>Math.abs(Number(r.total_debit||0))+Math.abs(Number(r.total_credit||0))>0.0001).map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+escA(r.account_code)+' — '+escA(r.account_name)+'</b><b>'+accountingRp(r.ending_balance)+'</b></div><div class="small">Debit '+accountingRp(r.total_debit)+' • Kredit '+accountingRp(r.total_credit)+'</div></div>').join('')||'<div class="small">Belum ada jurnal POSTED.</div>';return;
+    const today=new Date(),first=new Date(today.getFullYear(),today.getMonth(),1);
+    const iso=v=>v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
+    host.innerHTML='<h3>📖 Buku Besar Accurate</h3><div class="small">Histori transaksi per akun · Sumber Accurate · Read-only</div>'+
+      '<div class="box" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px">'+
+      '<div><label>Pilih Akun</label><select id="accurateLedgerAccount" style="width:100%"><option value="">Memuat daftar akun Accurate...</option></select></div>'+
+      '<div><label>Dari Tanggal</label><input id="accurateLedgerFrom" type="date" value="'+iso(first)+'" style="width:100%"></div>'+
+      '<div><label>Sampai Tanggal</label><input id="accurateLedgerTo" type="date" value="'+iso(today)+'" style="width:100%"></div>'+
+      '<button type="button" onclick="loadAccurateLedger()" style="align-self:end">🔎 Tampilkan Buku Besar</button></div>'+
+      '<div id="accurateLedgerStatus" class="small" style="margin:10px 0">Mengambil daftar akun Accurate...</div>'+
+      '<div id="accurateLedgerResult"></div>'+
+      '<div class="small" style="margin-top:12px;color:#64748b">Data dibaca langsung dari histori akun Accurate. Tidak ada jurnal atau saldo yang dibuat maupun diubah di Hello Majesty.</div>';
+    loadAccurateLedgerAccounts();return;
   }
   if(module==='journal'){
     const x=await sb.from('journal_entries').select('id,journal_no,journal_date,source_type,source_id,description,posted').eq('posted',true).order('journal_date',{ascending:false}).limit(100);if(x.error)return host.innerHTML='<p>'+escA(x.error.message)+'</p>';const rows=x.data||[];
@@ -7835,6 +7845,59 @@ window.submitCashTransfer=async function(){
   alert('Transfer kas berhasil dicatat.');
   await openAccountingModule('transfer');
 };
+async function loadAccurateLedgerAccounts(){
+  const select=document.getElementById('accurateLedgerAccount'),status=document.getElementById('accurateLedgerStatus');
+  if(!select)return;
+  try{
+    if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
+    const token=await window.hmAccessToken();
+    const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_gl_account_metadata_readonly'})});
+    const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
+    if(!response.ok||data?.ok!==true||data.complete===false)throw new Error(data?.error||'Daftar akun Accurate belum lengkap.');
+    const accounts=(data.accounts||[]).filter(a=>a?.ok&&a.detail?.no).map(a=>a.detail).sort((a,b)=>String(a.no).localeCompare(String(b.no),undefined,{numeric:true}));
+    if(!accounts.length)throw new Error('Daftar akun Accurate kosong.');
+    select.innerHTML='<option value="">Pilih akun perkiraan...</option>'+accounts.map(a=>'<option value="'+String(a.no).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'">'+String(a.no)+' — '+String(a.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</option>').join('');
+    if(status)status.textContent=accounts.length+' akun Accurate tersedia · Pilih satu akun untuk melihat histori.';
+  }catch(e){if(status)status.textContent='Gagal memuat akun Accurate: '+(e?.message||e);select.innerHTML='<option value="">Daftar akun gagal dimuat</option>';}
+}
+async function loadAccurateLedger(){
+  const select=document.getElementById('accurateLedgerAccount'),from=document.getElementById('accurateLedgerFrom'),to=document.getElementById('accurateLedgerTo'),status=document.getElementById('accurateLedgerStatus'),host=document.getElementById('accurateLedgerResult');
+  if(!select||!from||!to||!host)return;
+  const no=select.value;
+  if(!no){if(status)status.textContent='Pilih akun terlebih dahulu.';return;}
+  if(!from.value||!to.value||from.value>to.value){if(status)status.textContent='Periksa rentang tanggal.';return;}
+  const fmt=v=>{const p=v.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
+  const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  status.textContent='Mengambil histori akun '+no+' dari Accurate...';host.innerHTML='<div class="box">⏳ Membaca transaksi Accurate...</div>';
+  try{
+    const token=await window.hmAccessToken();
+    const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_gl_account_history_readonly',account_no:no,from_date:fmt(from.value),to_date:fmt(to.value)})});
+    const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
+    if(!response.ok||data?.ok!==true)throw new Error(data?.error||data?.message||('HTTP '+response.status));
+    const raw=data.data;
+    const candidates=[];
+    const scan=(v,depth=0)=>{if(depth>4||v==null)return;if(Array.isArray(v)){if(v.length&&v.every(x=>x&&typeof x==='object'))candidates.push(v);return;}if(typeof v==='object'){for(const [k,x] of Object.entries(v)){if(Array.isArray(x)&&x.length&&x.every(y=>y&&typeof y==='object'))candidates.push(x);else if(x&&typeof x==='object')scan(x,depth+1);}}};
+    scan(raw);
+    const rows=candidates.sort((a,b)=>b.length-a.length)[0]||[];
+    const money=v=>accountingRp(Number(v||0));
+    const key=(o,keys)=>{for(const k of keys){const found=Object.keys(o||{}).find(x=>x.toLowerCase()===k.toLowerCase());if(found!==undefined&&o[found]!==null)return o[found];}return null;};
+    const dateKeys=['transDate','date','transactionDate','voucherDate','documentDate'];
+    const noKeys=['number','transNo','voucherNo','sourceNo','documentNo','no'];
+    const descKeys=['description','memo','remarks','note','detail'];
+    const debitKeys=['debit','debitAmount','debitLocal','debitValue'];
+    const creditKeys=['credit','creditAmount','creditLocal','creditValue'];
+    const balanceKeys=['balance','endingBalance','runningBalance','accountBalance'];
+    if(rows.length){
+      const rendered=rows.map(r=>'<tr><td>'+esc(key(r,dateKeys)||'—')+'</td><td>'+esc(key(r,noKeys)||'—')+'</td><td>'+esc(key(r,descKeys)||'—')+'</td><td style="text-align:right;white-space:nowrap">'+money(key(r,debitKeys))+'</td><td style="text-align:right;white-space:nowrap">'+money(key(r,creditKeys))+'</td><td style="text-align:right;white-space:nowrap">'+(key(r,balanceKeys)!==null?money(key(r,balanceKeys)):'—')+'</td></tr>').join('');
+      host.innerHTML='<div class="box" style="overflow:auto"><div style="font-weight:800;margin-bottom:10px">Mutasi Akun '+esc(no)+' · '+rows.length+' baris</div><table style="width:100%;border-collapse:collapse;min-width:720px"><thead><tr><th style="text-align:left">Tanggal</th><th style="text-align:left">No. Referensi</th><th style="text-align:left">Keterangan</th><th style="text-align:right">Debit</th><th style="text-align:right">Kredit</th><th style="text-align:right">Saldo</th></tr></thead><tbody>'+rendered+'</tbody></table></div>';
+    }else{
+      const obj=raw&&typeof raw==='object'?raw:{value:raw};
+      const entries=Object.entries(obj||{});
+      host.innerHTML='<div class="box"><b>Respons histori Accurate berhasil diterima</b><div class="small" style="margin-top:6px">Struktur respons belum berisi daftar baris transaksi yang dikenali. Data mentah ditampilkan untuk validasi pemetaan:</div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px">'+esc(JSON.stringify(raw,null,2))+'</pre></div>';
+    }
+    status.textContent='Berhasil membaca Accurate · Akun '+no+' · '+fmt(from.value)+' s/d '+fmt(to.value)+' · Read-only';
+  }catch(e){host.innerHTML='<div class="box" style="border-left:4px solid #dc604d"><b>Gagal membaca Buku Besar Accurate</b><div class="small" style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';status.textContent='Pembacaan Accurate gagal. Tidak ada angka lokal yang digunakan sebagai pengganti.';}
+}
 window.openAccounting=openAccounting;
 window.openAccountingModule=openAccountingModule;
 

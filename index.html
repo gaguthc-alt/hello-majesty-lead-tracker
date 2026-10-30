@@ -3750,7 +3750,7 @@ async function hmRenderHomePerformance(){
      outletSections=rowsByOutlet.join('');
    }
    if(renderToken!==(window.__hmPerfRenderToken||0))return;
-   block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+section('PERFORMA SAYA',own,'Aktivitas akun ini',null,false)+section(isManagement?'PERFORMA TIM • SELURUH OUTLET':'PERFORMA TIM',total,scopeLabel,isManagement?null:outletTargets)+(isManagement?outletSections:'');
+   block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+(isManagement?'':section('PERFORMA SAYA',own,'Aktivitas akun ini',null,false))+section(isManagement?'PERFORMA TIM • SELURUH OUTLET':'PERFORMA TIM',total,scopeLabel,isManagement?null:outletTargets)+(isManagement?outletSections:'');
  }catch(e){
    console.error('[HM] Home performance:',e);
    if(renderToken!==(window.__hmPerfRenderToken||0))return;

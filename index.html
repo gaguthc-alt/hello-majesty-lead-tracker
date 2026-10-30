@@ -7457,13 +7457,39 @@ window.testAccurateGLMetadata=async function(){
   let box=document.getElementById('accurateGlMetadataResult');if(box)box.remove();
   box=document.createElement('div');box.id='accurateGlMetadataResult';box.className='box';box.style.marginTop='10px';box.textContent='Membaca detail metadata akun dari Accurate...';host.prepend(box);
   const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const rp=v=>'Rp '+Number(v||0).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2});
   try{
     const token=await window.hmAccessToken();
     const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_gl_account_metadata_readonly'}),signal:AbortSignal.timeout(150000)});
     const data=await response.json().catch(()=>({ok:false,error:'Respons metadata tidak dapat dibaca.'}));
     if(!response.ok||data?.ok!==true)throw new Error(data?.error||('HTTP '+response.status));
     const rows=Array.isArray(data.accounts)?data.accounts:[];
-    box.innerHTML='<b>🧾 Hasil uji metadata akun Accurate</b><div class="small">'+Number(data.account_count||rows.length)+' akun • Detail berhasil '+Number(data.succeeded||0)+' • Gagal '+Number(data.failed||0)+' • Read-only</div>'+rows.map(a=>'<details style="padding:7px 0;border-bottom:1px solid #ddd"><summary><b>'+esc(a.no||'—')+' — '+esc(a.name||'')+'</b> '+(a.ok?'🟢':'🔴')+'</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px">'+esc(JSON.stringify(a.ok?a.detail:a.error,null,2))+'</pre></details>').join('')+'<div class="small">Metadata ditampilkan apa adanya dari Accurate. Belum ada klasifikasi otomatis atau perubahan Neraca.</div>';
+    const good=rows.filter(a=>a?.ok&&a.detail&&typeof a.detail==='object');
+    const byNo=new Map(good.map(a=>[String(a.detail.no||a.no||''),a.detail]));
+    const typeMap=new Map(),roots=[];
+    good.forEach(a=>{
+      const d=a.detail||{},type=String(d.accountType||'BELUM DIKETAHUI'),name=String(d.accountTypeName||'Tanpa nama jenis');
+      const key=type+' · '+name;typeMap.set(key,(typeMap.get(key)||0)+1);
+      const p=d.parent&&d.parent.no!=null?String(d.parent.no):'';
+      if(!p||!byNo.has(p))roots.push(d);
+    });
+    const childrenOf=no=>good.map(a=>a.detail).filter(d=>String(d.parent?.no??'')===String(no));
+    const renderNode=(d,depth=0,seen=new Set())=>{
+      const no=String(d.no||''),key=no+'|'+String(d.id||'');
+      if(seen.has(key))return '';
+      const next=new Set(seen);next.add(key);
+      const children=childrenOf(no);
+      const label='<b>'+esc(no)+'</b> — '+esc(d.name||'');
+      const meta='<span class="small">'+esc(d.accountType||'—')+' · '+esc(d.accountTypeName||'—')+' · '+(d.sub?'Akun anak':'Akun induk/root')+' · '+rp(d.balance)+'</span>';
+      const raw=good.find(a=>String(a.detail.no||'')===no);
+      const rawHtml=raw?'<details style="margin:4px 0 4px 14px"><summary>Detail metadata</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px">'+esc(JSON.stringify(d,null,2))+'</pre></details>':'';
+      return '<div style="margin-left:'+(depth?14:0)+'px;padding:7px 0;border-bottom:1px solid #e2e8f0">'+(children.length?'<details open><summary>'+label+'</summary>'+meta+children.map(c=>renderNode(c,depth+1,next)).join('')+rawHtml+'</details>':'<div>'+label+'</div>'+meta+rawHtml)+'</div>';
+    };
+    box.innerHTML='<h3 style="margin-top:0">🧾 Struktur Akun Accurate</h3><div class="small">'+Number(data.account_count||rows.length)+' akun • Detail berhasil '+Number(data.succeeded||good.length)+' • Gagal '+Number(data.failed||0)+' • Read-only • Metadata per '+esc(good[0]?.detail?.asOf||'—')+'</div>'+
+      '<div class="lead" style="margin-top:8px"><b>Jenis akun yang ditemukan</b>'+Array.from(typeMap.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>'<div class="row" style="justify-content:space-between"><span>'+esc(k)+'</span><b>'+v+'</b></div>').join('')+'</div>'+
+      '<div class="lead" style="margin-top:8px"><b>Struktur induk dan anak dari Accurate</b><div class="small">Hierarki menggunakan parent.no dan childList/relasi induk yang dikembalikan Accurate. Saldo induk ditampilkan sebagai subtotal; jangan dijumlahkan lagi dengan anaknya.</div></div>'+
+      (roots.length?roots.map(d=>renderNode(d)).join(''):'<div class="small">Akun root tidak dapat dibentuk dari metadata yang diterima.</div>')+
+      '<div class="small" style="margin-top:10px">Ini pratinjau struktur sumber Accurate, belum menggantikan Neraca lokal. Klasifikasi Aset, Liabilitas, dan Ekuitas akan diterapkan setelah pemetaan seluruh kode accountType diverifikasi.</div>';
   }catch(e){box.innerHTML='<b>Uji metadata belum berhasil</b><div class="small">'+esc(e?.message||e)+'</div><div class="small">Neraca lama tetap dipertahankan.</div>';}
 };
 window.testAccurateAllGLBalances=async function(){

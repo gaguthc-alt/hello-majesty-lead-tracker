@@ -5861,11 +5861,11 @@ async function renderTargetBoard(){
  const localDateKey=v=>v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
  const monthStart=localDateKey(new Date(now.getFullYear(),now.getMonth(),1));
  const todayKey=localDateKey(now);
+ const fmt=v=>{const p=v.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
  const labaByOutlet={}; let accurateProfitLoaded=false;
  try{
   if(typeof window.hmAccessToken!=='function')throw new Error('Sesi login belum siap.');
   const token=await window.hmAccessToken();
-  const fmt=v=>{const p=v.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
   const response=await fetch(SUPABASE_URL+'/functions/v1/accurate-sync',{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+token},body:JSON.stringify({action:'get_accurate_pl_account_amount',from_date:fmt(monthStart),to_date:fmt(todayKey)})});
   const data=await response.json().catch(()=>({ok:false,error:'Respons Accurate tidak dapat dibaca.'}));
   if(!response.ok||data?.ok!==true)throw new Error(data?.accurate_error||data?.error||('HTTP '+response.status));

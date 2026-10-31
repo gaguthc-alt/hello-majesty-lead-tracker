@@ -5879,7 +5879,8 @@ async function renderTargetBoard(){
  if(!d.management&&facPerm?.data?.can_facilitator&&!roles.includes('Fasilitator'))roles.push('Fasilitator');
  window.hmRoles=roles;
  const own=d.own_contribution||{};
- const pct=(a,t)=>t>0?Math.min(100,Math.round((a/t)*100)):0;
+ // Persentase pencapaian harus menunjukkan realisasi sebenarnya, termasuk jika melampaui target (>100%).
+ const pct=(a,t)=>Number(t)>0?Math.round((Number(a)||0)/Number(t)*100):0;
  const bar=(label,a,t,icon)=>'<div class="stat"><div class="small">'+icon+' '+label+'</div><div class="num">'+a+' / '+t+'</div><div class="small">'+pct(a,t)+'%</div></div>';
  const labaPct=(a,t)=>Number(t)>0?Math.round(Number(a||0)/Number(t)*100):0;
  const outletCards=outlets.map(o=>{const targetLaba=Number(o.nominal_target||0),actualLaba=Number(labaByOutlet[o.outlet]||0);return '<div class="box"><h3>🎯 TARGET '+esc(o.outlet)+'</h3><div class="stats">'+bar('WA',o.wa_actual,o.wa_target,'📲')+bar('Handover',o.handover_actual,o.qualified_target,'🤝')+bar('Closing',o.closing_actual,o.closing_target,'🏆')+'<div class="stat"><div class="small">📈 Target Laba</div><div class="num">'+shortNominal(targetLaba)+'</div><div class="small">Realisasi '+(accurateProfitLoaded?accountingRp(actualLaba):'Data Accurate belum tersedia')+' • '+(accurateProfitLoaded?labaPct(actualLaba,targetLaba)+'%':'—')+'</div><div class="small" style="margin-top:3px">Accurate · '+fmt(monthStart)+' s/d '+fmt(todayKey)+'</div></div></div><div style="margin-top:10px;font-weight:700">🎁 Bonus: '+esc(o.bonus_label)+' Rp'+Number(o.bonus_amount||0).toLocaleString('id-ID')+'</div><div class="small" style="margin-top:6px">Sisa: WA '+Math.max(0,o.wa_target-o.wa_actual)+' • Handover '+Math.max(0,Number(o.qualified_target||0)-Number(o.handover_actual||0))+' • Closing '+Math.max(0,Number(o.closing_target||0)-Number(o.closing_actual||0))+' • Laba '+shortNominal(Math.max(0,targetLaba-actualLaba))+'</div></div>';}).join('');

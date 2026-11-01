@@ -3128,7 +3128,6 @@ function hmShowLeadTodayStatus(type){
 }
 function hmLeadVisibleByMonth(l){
  // Management/Divisi memiliki akses arsip penuh lintas bulan.
- // Jangan sembunyikan lead lama hanya karena tidak memiliki follow-up aktif.
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const roles=(typeof getActiveRoles==='function'?getActiveRoles():[]).map(r=>String(r||'').trim().toUpperCase().replace(/_/g,' '));
  if(!!profile?.is_management||rawRole==='DIVISI'||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||roles.includes('MANAGEMENT'))return true;
@@ -3145,16 +3144,19 @@ function hmLeadVisibleByMonth(l){
  const sales=String(l?.sales_result||'').trim().toUpperCase();
  const cs=String(l?.qualification_result||'').trim().toUpperCase();
  const hasil=String(l?.hasil||'').trim().toUpperCase();
- const status=String(l?.status_lead||'').trim().toUpperCase();
- const finalResult=['CLOSING','GAGAL','LOST'].includes(sales)||['CLOSING','GAGAL','LOST'].includes(cs)||['CLOSING','GAGAL','LOST'].includes(hasil)||status==='HASIL';
+ // status_lead=HASIL hanya berarti laporan telah diisi, bukan hasil akhir.
+ // POTENSIAL/FOLLOW-UP harus tetap terlihat untuk PIC.
+ const finalResult=['CLOSING','GAGAL','LOST'].includes(sales)||['CLOSING','GAGAL','LOST'].includes(cs)||['CLOSING','GAGAL','LOST'].includes(hasil);
  return recentOrUpcoming&&!finalResult;
 }
 function hmLeadTrackerBucket(l){
  const sales=String(l.sales_result||'').trim().toUpperCase(),cs=String(l.qualification_result||'').trim().toUpperCase(),st=String(l.status_lead||'').trim().toUpperCase(),hasil=String(l.hasil||'').trim().toUpperCase(),type=String(l.need_type||'').trim().toUpperCase();
  if(type==='SERVICE')return 'SERVICE';
  if(sales==='CLOSING'||cs==='CLOSING'||hasil==='CLOSING')return 'CLOSING';
- if(sales==='GAGAL'||cs==='GAGAL'||hasil==='GAGAL'||hasil==='LOST'||st==='HASIL')return 'GAGAL';
- if(cs==='POTENSIAL'||sales==='POTENSIAL')return 'POTENSIAL';
+ if(sales==='GAGAL'||cs==='GAGAL'||hasil==='GAGAL'||hasil==='LOST')return 'GAGAL';
+ // Hasil Sales POTENSIAL tetap merupakan follow-up aktif meskipun status_lead=HASIL.
+ if(sales==='POTENSIAL'||cs==='POTENSIAL')return 'POTENSIAL';
+ if(st==='HASIL')return 'GAGAL';
  if(st==='HANDLE'||String(l.sales_claimed_by||'').trim())return 'HANDLE';
  if(st==='QUALIFIED'||cs==='QUALIFIED')return 'QUALIFIED';
  if(st==='CS LOCK'||String(l.cs_claimed_by||'').trim())return 'CS LOCK';

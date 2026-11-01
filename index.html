@@ -3479,6 +3479,7 @@ function hmRunMainMenuAction(action){
   case 'hmOpenStockistReceiving()': return window.hmOpenStockistReceiving();
   case 'hmOpenPartnerSettlementManagement()': return window.hmOpenPartnerSettlementManagement();
   case 'window.openCellFinanceReport()': return window.openCellFinanceReport();
+  case 'window.openStockOutReport()': return (async()=>{if(typeof window.openStockOutReport!=='function'){await new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='stock-out-report.js?v=20261101-stockout-dispatch-fix-3';sc.onload=resolve;sc.onerror=()=>reject(new Error('Modul Laporan Stock Keluar gagal dimuat.'));document.head.appendChild(sc);});}if(typeof window.openStockOutReport!=='function')throw new Error('Fungsi Laporan Stock Keluar tidak tersedia.');return window.openStockOutReport();})();
   case 'window.openPartnerSettlement()': return window.openPartnerSettlement();
   case 'window.openFinanceInventoryApprovals()': return (typeof window.openInventoryApprovals==='function'?window.openInventoryApprovals():window.openFinanceInventoryApprovals());
   case 'hmOpenQuickAction()': return hmOpenQuickAction();
@@ -5339,7 +5340,7 @@ window.hmRunStockistJournalReclass = async function(){
        void Promise.resolve().then(async()=>{
          await new Promise((resolve,reject)=>{
            if(typeof window.openStockOutReport==='function'){resolve();return;}
-           const sc=document.createElement('script');sc.src='stock-out-report.js?v=20261101-outlet-permissions-2';sc.onload=resolve;sc.onerror=()=>reject(new Error('Modul Laporan Stock Keluar gagal dimuat.'));document.head.appendChild(sc);
+           const sc=document.createElement('script');sc.src='stock-out-report.js?v=20261101-stockout-dispatch-fix-3';sc.onload=resolve;sc.onerror=()=>reject(new Error('Modul Laporan Stock Keluar gagal dimuat.'));document.head.appendChild(sc);
          });
          if(typeof window.openStockOutReport!=='function')throw new Error('Fungsi Laporan Stock Keluar tidak tersedia.');
          return window.openStockOutReport();

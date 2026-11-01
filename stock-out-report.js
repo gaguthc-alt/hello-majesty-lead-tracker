@@ -40,7 +40,7 @@ window.openStockOutReport=async function(){
  '<label>Tanggal Sampai<input id="hmsoTo" type="date" value="'+d+'"></label></div>'+
  '<div class="hmso-actions"><button class="success" type="button" onclick="window.loadStockOutReport()">↻ Muat Laporan</button><button class="secondary" type="button" onclick="window.resetStockOutReport()">Reset Filter</button><button class="secondary" type="button" onclick="window.exportStockOutReport()">⇩ Export CSV</button></div>'+
  '<div id="hmsoResult"><div class="box">Memuat laporan...</div></div>';
- if(stockist){const el=document.getElementById('hmsoPartner');el.value=ownPartner;el.disabled=true;}const outletAccess=window.hmStockOutOutletAccess();if(outletAccess){const el=document.getElementById('hmsoOutlet');el.innerHTML='<option value="'+outletAccess+'">'+outletAccess+'</option>';el.value=outletAccess;el.disabled=true;}
+ if(stockist){const el=document.getElementById('hmsoPartner');el.value=ownPartner;el.disabled=true;}if(outletAccess){const el=document.getElementById('hmsoOutlet');el.innerHTML='<option value="'+outletAccess+'">'+outletAccess+'</option>';el.value=outletAccess;el.disabled=true;}
  await window.loadStockOutReport();
 };
 window.loadStockOutReport=async function(){

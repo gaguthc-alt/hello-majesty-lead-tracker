@@ -1977,7 +1977,7 @@ input:disabled,select:disabled,textarea:disabled{color:#475569!important;-webkit
 </div>
 </section>
 <!-- HM LOGIN: single source of truth is login-v9.js -->
-</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="roleHome"></div><div id="workspace" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Laporan Stok & Modal Unit Bisnis</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="contentPerformance" class="hidden"></div><section id="inventoryDashboardSection" class="hidden" aria-hidden="true"><div id="inventoryDashboardPanel" class="box hidden"></div></section><section id="hunterStockSection" class="hidden" aria-hidden="true"><div id="hunterStockPanel" class="box hidden"></div></section><div id="inventorySection" class="hidden" aria-hidden="true"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Kelola stok siap jual, stock hunter, dan master produk.</div></div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button><button class="secondary" type="button" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTodayBoard"></div>
+</script><section id="app" class="hidden"><div id="passwordBox" class="box hidden"><h3>Ganti Password</h3><label>Password baru</label><input id="newpass" type="password"><label>Ulangi password baru</label><input id="newpass2" type="password"><button class="success" onclick="changePassword()">Simpan Password Baru</button><p id="passErr"></p></div><div id="roleHome"></div><div id="workspace" class="hidden"><div id="dashboardActions" class="box dashboard-actions"><div class="row"><button id="refreshBtn" type="button" onclick="refreshAppTotal(this)">🔄 Refresh Aplikasi</button><button id="searchLeadBtn" class="secondary" type="button" onclick="openLeadSearch()">🔎 Search Lead</button><button id="aiBtn" class="success" type="button" onclick="openAI()">🤖 Tanya AI</button><button id="brochureBtn" class="secondary" type="button" onclick="openBrochures()">📖 Brosur</button><button id="accountingBtn" class="secondary" type="button" onclick="openAccounting()">📊 Accounting</button><button id="financeBtn" class="secondary" type="button" onclick="openFinance()">💰 Finance</button><button id="cellFinanceReportBtn" class="secondary hidden" type="button" onclick="window.openCellFinanceReport()">📊 Dashboard Inventory Mitra</button><button id="perfBtn" class="secondary" onclick="openPerformance()">📊 Laporan Performa</button><span id="commissionActions"></span><button id="waMasukBtn" class="success" onclick="addLead()">＋ WA MASUK</button><button id="tradeBtn" class="secondary" onclick="openTradeForm()">📱 Form Tukar Tambah</button><button class="secondary" onclick="logout()">Logout</button></div></div><div id="contentPerformance" class="hidden"></div><section id="inventoryDashboardSection" class="hidden" aria-hidden="true"><div id="inventoryDashboardPanel" class="box hidden"></div></section><section id="hunterStockSection" class="hidden" aria-hidden="true"><div id="hunterStockPanel" class="box hidden"></div></section><div id="inventorySection" class="hidden" aria-hidden="true"><div id="inventoryLauncher" class="box"><div><b>📦 Product & Stock</b><div class="small">Kelola stok siap jual, stock hunter, dan master produk.</div></div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="openInventorySection('stock')">📦 Stock</button><button class="secondary" type="button" onclick="openInventorySection('products')">🧾 Produk</button><button class="secondary" type="button" onclick="openFacilitatorReports()">📲 Laporan Fasilitator</button></div></div><div id="inventoryPanel" class="box hidden"></div></div><div id="activeLeadResume"></div><div id="stats" class="stats"></div><div id="leadTodayBoard"></div>
 <div id="leadTrackerBox" class="box"><h3>📋 DATA LEAD</h3><div class="small" style="margin-bottom:10px">Seluruh lead dari AVAILABLE sampai HASIL. Lead yang sudah CLOSING atau GAGAL tetap tersimpan dan ditampilkan sebagai hasil.</div><div id="leads"></div></div></div></section></main><div id="modal" class="modal hidden"><div class="box"><div class="row" style="justify-content:space-between"><h3 id="mt">Lead</h3><button class="secondary" type="button" onclick="return window.closeModal(event)">Tutup</button></div><div id="mb"></div></div></div><script>
 window.addEventListener('error',function(e){
   try{
@@ -3904,19 +3904,19 @@ function hmOpenDeveloperRolePreview(){
   'Majesty Gadget':[
    ['📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login'],
    ['📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri'],
-   ['📊','Laporan Stok & Modal Unit Bisnis','Stok, modal, dan kewajiban unit sendiri'],
+   ['📊','Dashboard Inventory Mitra','Stok, modal, dan kewajiban unit sendiri'],
    ['🤝','Pembayaran Settlement','Settlement khusus unit stockist ini']
   ],
   'Majesty Cell':[
    ['📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login'],
    ['📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri'],
-   ['📊','Laporan Stok & Modal Unit Bisnis','Stok, modal, dan kewajiban unit sendiri'],
+   ['📊','Dashboard Inventory Mitra','Stok, modal, dan kewajiban unit sendiri'],
    ['🤝','Pembayaran Settlement','Settlement khusus unit stockist ini']
   ],
   'Majesty Store':[
    ['📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login'],
    ['📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri'],
-   ['📊','Laporan Stok & Modal Unit Bisnis','Stok, modal, dan kewajiban unit sendiri'],
+   ['📊','Dashboard Inventory Mitra','Stok, modal, dan kewajiban unit sendiri'],
    ['🤝','Pembayaran Settlement','Settlement khusus unit stockist ini']
   ]
  };
@@ -4013,7 +4013,7 @@ function renderRoleHome(){
    add('🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')");
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
-   add('📊','Laporan Stok & Modal Unit Bisnis','Posisi stok dan kewajiban modal mitra','window.openCellFinanceReport()');
+   add('📊','Dashboard Inventory Mitra','Posisi stok READY, modal belum disetor & settlement mitra','window.openCellFinanceReport()');
    add('📤','Laporan Stock Keluar','Riwayat unit terjual dan retur berdasarkan periode','window.openStockOutReport()');
    add('🤝','Pengelolaan Unit Bisnis','Modal, kewajiban & settlement antarunit bisnis','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Barang masuk yang menunggu verifikasi','openInventoryApprovals()');
@@ -4025,7 +4025,7 @@ function renderRoleHome(){
  }else if(stockistUser){
    add('📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login',"window.hmOpenStockistInfo('Ringkasan Stok Unit Bisnis')");
    add('📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri',"window.hmOpenStockistInfo('Ajukan Barang Masuk Unit Bisnis')");
-   add('📊','Laporan Stok & Modal Unit Bisnis','Posisi stok dan kewajiban modal unit sendiri','window.openCellFinanceReport()');
+   add('📊','Dashboard Inventory Mitra','Posisi stok dan kewajiban modal unit sendiri','window.openCellFinanceReport()');
    add('📤','Laporan Stock Keluar','Riwayat unit terjual dan retur milik unit sendiri','window.openStockOutReport()');
    add('🤝','Pembayaran Settlement','Settlement khusus unit stockist ini','window.openPartnerSettlement()');
  }else if(facilitator){
@@ -4076,7 +4076,7 @@ function renderRoleHome(){
    add('💰','Komisi Saya','Komisi pribadi bulan ini & sebelumnya','openCommission()');
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
    add('💳','Konfirmasi Pencairan Finance','Catat dana finance/paylater yang benar-benar masuk','window.openFinanceDisbursement()');
-   add('📊','Laporan Stok & Modal Unit Bisnis','Stock, modal & profit sharing','window.openCellFinanceReport()');
+   add('📊','Dashboard Inventory Mitra','Stock, modal & profit sharing','window.openCellFinanceReport()');
    add('📤','Laporan Stock Keluar','Riwayat unit terjual dan retur','window.openStockOutReport()');
    add('🤝','Pengelolaan Unit Bisnis','Modal, kewajiban & settlement antarunit bisnis','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari Majesty Cell','window.openInventoryApprovals()');
@@ -4699,7 +4699,7 @@ window.hmOpenStockistInfo=async function(name,mode='summary'){
     '<div class="hm-stockist-stat"><div class="small">KODE MITRA</div><b style="font-size:18px">'+safe(sup?.supplier_code||'Belum diatur')+'</b></div>'+
     '<div class="hm-stockist-stat"><div class="small">STATUS KERJA SAMA</div><b style="font-size:18px">'+(sup?.active?'Aktif':'Perlu verifikasi')+'</b></div></div>'+
     '<p><b>Catatan kerja sama</b><br>'+safe(sup?.notes||'Belum ada catatan kerja sama pada master mitra.')+'</p>'+
-    '<p class="small">Halaman ini khusus untuk identitas dan ketentuan mitra. Untuk jumlah unit dan nilai modal, gunakan Ringkasan Stok Unit Bisnis atau Laporan Stok & Modal Unit Bisnis.</p></div>'+
+    '<p class="small">Halaman ini khusus untuk identitas dan ketentuan mitra. Untuk jumlah unit dan nilai modal, gunakan Ringkasan Stok Unit Bisnis atau Dashboard Inventory Mitra.</p></div>'+
     '<div class="box"><h3>💸 Riwayat Settlement</h3>'+profileSettlements+'</div>'+
     '<div class="box"><h3>📌 Alur kerja</h3><ol><li>Barang masuk diperiksa melalui Persetujuan Barang Masuk.</li><li>Posisi unit dan modal dipantau pada Ringkasan Stok.</li><li>Rincian penjualan dan modal yang belum disetor dicek di Laporan Stok & Modal.</li><li>Pengajuan dan verifikasi pembayaran dilakukan melalui Pembayaran Settlement.</li></ol></div>';
    return;
@@ -4839,7 +4839,7 @@ window.hmRunStockistJournalReclass = async function(){
      ['📥','Ajukan Barang Masuk Unit Bisnis','Input stok milik stockist, pilih outlet sendiri atau outlet titipan, lalu kirim untuk persetujuan','window.openReceiveStock()'],
      ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
      ['📦','Ringkasan Stok Unit Bisnis','Lihat jumlah unit, status, lokasi, dan nilai stok milik unit bisnis','hmOpenStockistSummary()'],
-     ['📊','Laporan Stok & Modal Unit Bisnis','Pantau posisi stok, kewajiban modal yang belum disetor, dan settlement','window.openCellFinanceReport()'],
+     ['📊','Dashboard Inventory Mitra','Pantau posisi stok, kewajiban modal yang belum disetor, dan settlement','window.openCellFinanceReport()'],
      ['📤','Laporan Stock Keluar','Riwayat unit terjual dan retur dengan filter tanggal, outlet, dan stockist','window.openStockOutReport()']
    ]],
    ['🤝','KOORDINASI ANTARUNIT BISNIS',[
@@ -4912,7 +4912,7 @@ window.hmRunStockistJournalReclass = async function(){
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
    if((isAtmaditaAccount || stockistUser) && g[1]==='PUSAT PERSEDIAAN'){
-     allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Laporan Stok & Modal Unit Bisnis','Laporan Stock Keluar'].includes(item[1]));
+     allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Dashboard Inventory Mitra','Laporan Stock Keluar'].includes(item[1]));
    }
    // Persetujuan Barang Masuk tetap tersedia bagi Fasilitator; daftar transaksi dibatasi di fungsi persetujuan berdasarkan outlet tujuan.
    if((isAtmaditaAccount || stockistUser) && g[1]==='KOORDINASI ANTARUNIT BISNIS'){
@@ -4972,7 +4972,7 @@ window.hmRunStockistJournalReclass = async function(){
        }).join('')+'</div></section>';
    };
    visibleGroups=
-     renderStockistGroup('PUSAT PERSEDIAAN',['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Laporan Stok & Modal Unit Bisnis'],'linear-gradient(145deg,#087cf0,#2563eb)','#eff6ff')
+     renderStockistGroup('PUSAT PERSEDIAAN',['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Dashboard Inventory Mitra'],'linear-gradient(145deg,#087cf0,#2563eb)','#eff6ff')
      +renderStockistGroup('KOORDINASI ANTARUNIT BISNIS',['Panduan Kerja Sama','Pembayaran Settlement','Sharing Profit Unit Bisnis'],'linear-gradient(145deg,#08b779,#10a981)','#ecfdf5');
  }
  const roleCards='';
@@ -5356,15 +5356,15 @@ window.hmRunStockistJournalReclass = async function(){
            const s=document.createElement('script');
            s.src='finance-cell.js?v=20261101-settlement-summary-fix-8';
            s.onload=resolve;
-           s.onerror=()=>reject(new Error('Modul Laporan Stok & Modal Unit Bisnis gagal dimuat.'));
+           s.onerror=()=>reject(new Error('Modul Dashboard Inventory Mitra gagal dimuat.'));
            document.head.appendChild(s);
          });
-         if(typeof window.openCellFinanceReport!=='function')throw new Error('Modul Laporan Stok & Modal Unit Bisnis tidak berhasil dimuat.');
+         if(typeof window.openCellFinanceReport!=='function')throw new Error('Modul Dashboard Inventory Mitra tidak berhasil dimuat.');
          return window.openCellFinanceReport();
        }).catch(ex=>{
-         console.error('[HM] Laporan Stok & Modal Unit Bisnis gagal dibuka:',ex);
+         console.error('[HM] Dashboard Inventory Mitra gagal dibuka:',ex);
          const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');
-         if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Laporan Stok & Modal Unit Bisnis: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
+         if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Dashboard Inventory Mitra: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}
        });
        return;
      }

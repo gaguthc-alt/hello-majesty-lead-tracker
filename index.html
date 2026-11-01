@@ -3886,7 +3886,7 @@ function renderRoleHome(){
  };
  // Kas & Bank dan Payroll tampil untuk semua role selama pembatasan Finance sementara.
  add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
- add('💼','Payroll','Pusat pengelolaan gaji Hello Majesty','hmOpenPayroll()');
+ 
 
  if(cs && !mg && !developer){
    add('💬','Hello Majesty Chat','Inbox chat customer • claim & balas customer','hmOpenHelloMajestyChat()');
@@ -3909,8 +3909,8 @@ function renderRoleHome(){
    add('📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()');
    add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
    add('🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")');
-   add('💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")');
-   add('💼','Payroll','Pusat pengelolaan gaji Hello Majesty','hmOpenPayroll()');
+   add('💰','Komisi Tim','Perhitungan komisi dan reward tim','openFinanceSection("payroll")');
+   
    add('📊','Accounting','Accounting & laporan','openAccounting()');
    add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')");
@@ -3993,7 +3993,7 @@ function renderRoleHome(){
    add('📊','Laporan Finance','Laporan keuangan','hmOpenFinanceReport()');
    add('💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")');
    add('🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")');
-   add('💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")');
+   add('💰','Komisi Tim','Perhitungan komisi dan reward tim','openFinanceSection("payroll")');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
    add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Bantuan finance','openAI()');
@@ -4718,7 +4718,7 @@ window.hmRunStockistJournalReclass = async function(){
      ['📋','Laporan Finance','Laporan keuangan outlet','hmOpenFinanceReport()'],
      ['💵','Kas & Bank','Saldo, mutasi & perpindahan dana','openFinanceSection("cashbank")'],
      ['🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")'],
-     ['💳','Payroll & Komisi','Gaji, komisi, reward & pembayaran','openFinanceSection("payroll")']
+     ['💰','Komisi Tim','Perhitungan komisi dan reward tim','openFinanceSection("payroll")']
    ]],
 ['📚','ACCOUNTING',[
      ['📊','Dashboard Accounting','Ringkasan & kontrol accounting','openAccounting()'],

@@ -2087,8 +2087,13 @@ function renderCommissionActions(){
  host.innerHTML=profile?.is_management?'<button class="secondary" onclick="openTeamCommission()">📊 Komisi Tim</button>':'';
 }
 
-async function openTeamCommission(){
- const monthStart=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'})();
+async function openTeamCommission(selectedMonthStart){
+ const today=new Date();
+ const monthKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+ const currentMonthStart=monthKey(today);
+ const previousMonthDate=new Date(today.getFullYear(),today.getMonth()-1,1);
+ const previousMonthStart=monthKey(previousMonthDate);
+ const monthStart=/^\d{4}-\d{2}-01$/.test(String(selectedMonthStart||''))?String(selectedMonthStart):currentMonthStart;
  const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
  const [r,profitRes]=await Promise.all([
    sb.rpc('management_team_commission_report_v2',{p_month_start:monthStart}),
@@ -2135,7 +2140,8 @@ async function openTeamCommission(){
  window._teamCommissionRows=rows;
  $('mt').textContent='📊 Komisi Tim';
  $('mb').innerHTML=
-   '<div class="box"><h3 style="margin-top:0">Periode '+new Date(monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</h3>'+
+   '<div class="box"><h3 style="margin-top:0">Periode '+new Date(monthStart+'T00:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</h3>'+
+   '<div class="row" style="gap:8px;flex-wrap:wrap;margin:8px 0 12px"><button type="button" class="'+(monthStart===currentMonthStart?'primary':'secondary')+'" onclick="window.openTeamCommission(\''+currentMonthStart+'\')">Bulan Ini</button><button type="button" class="'+(monthStart===previousMonthStart?'primary':'secondary')+'" onclick="window.openTeamCommission(\''+previousMonthStart+'\')">Bulan Sebelumnya</button></div>'+ 
    '<div class="stats hm-commission-stats">'+invStat('Tim',rows.length)+' '+invStat('Total Komisi',rp(total()))+' '+invStat('Laba',rp(totalProfit))+'</div></div>'+
    '<style>.hm-commission-desktop{display:block}.hm-commission-mobile{display:none}.hm-commission-mobile-card{border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin-top:9px;background:#fff}.hm-commission-mobile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}.hm-commission-mobile-grid small{display:block;color:#667085;font-size:11px}.hm-commission-mobile-grid b{display:block;margin-top:3px;font-size:14px}@media(max-width:640px){.hm-commission-desktop{display:none!important}.hm-commission-mobile{display:block!important}}</style>'+
    '<div class="box"><h3>Rekap Komisi Tim</h3>'+

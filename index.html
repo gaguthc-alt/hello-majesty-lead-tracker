@@ -5339,7 +5339,7 @@ window.hmRunStockistJournalReclass = async function(){
        void Promise.resolve().then(async()=>{
          await new Promise((resolve,reject)=>{
            if(typeof window.openStockOutReport==='function'){resolve();return;}
-           const sc=document.createElement('script');sc.src='stock-out-report.js?v=20261101-stock-out-1';sc.onload=resolve;sc.onerror=()=>reject(new Error('Modul Laporan Stock Keluar gagal dimuat.'));document.head.appendChild(sc);
+           const sc=document.createElement('script');sc.src='stock-out-report.js?v=20261101-outlet-permissions-2';sc.onload=resolve;sc.onerror=()=>reject(new Error('Modul Laporan Stock Keluar gagal dimuat.'));document.head.appendChild(sc);
          });
          if(typeof window.openStockOutReport!=='function')throw new Error('Fungsi Laporan Stock Keluar tidak tersedia.');
          return window.openStockOutReport();

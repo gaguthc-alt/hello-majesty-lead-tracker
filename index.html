@@ -5599,15 +5599,20 @@ async function logout(){
   location.reload();
 }
 async function loadLeads(){
- // Tandai gagal otomatis bila tanggal follow-up PIC aktif sudah lewat lebih dari 7 hari.
- // Closing/Gagal yang sudah tercatat dan lead Service dikecualikan oleh fungsi database.
- const overdue=await sb.rpc('auto_fail_overdue_leads');
- if(overdue.error)console.warn('[HM] Auto-fail follow-up:',overdue.error.message);
- // Arsip tidak dihapus dari Lead Tracker. Data lead tetap tersedia
- // dari AVAILABLE sampai HASIL, termasuk lead yang sudah diarsipkan.
- await sb.rpc('archive_completed_leads');
+ // Maintenance follow-up/arsip bersifat best-effort: kegagalan jaringan pada RPC
+ // tidak boleh memblokir dashboard atau pembacaan lead yang sudah ada.
+ // Fungsi database tetap dijalankan seperti sebelumnya; tidak ada perubahan aturan data.
+ try{
+  const overdue=await sb.rpc('auto_fail_overdue_leads');
+  if(overdue?.error)console.warn('[HM] Auto-fail follow-up (maintenance dilewati):',overdue.error.message);
+ }catch(e){console.warn('[HM] Auto-fail follow-up tidak tersedia; lanjut memuat lead:',e?.message||e);}
+ try{
+  // Arsip tidak menghapus lead dari Lead Tracker.
+  const archived=await sb.rpc('archive_completed_leads');
+  if(archived?.error)console.warn('[HM] Archive completed leads (maintenance dilewati):',archived.error.message);
+ }catch(e){console.warn('[HM] Arsip otomatis sementara tidak tersedia; lanjut memuat lead:',e?.message||e);}
  const x=await sb.from('leads').select('*').order('created_at',{ascending:false});
- if(x.error){alert(x.error.message);return}
+ if(x.error){alert('Gagal memuat Lead Tracker: '+x.error.message);return}
  leads=x.data||[];
  await render();
 }

@@ -10,7 +10,7 @@
   function rp(v){return 'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');}
   function monthStart(){
     const d=new Date();
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+    return window.hmPayrollSelectedMonthStart||d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
   }
 
   async function loadCommission(){
@@ -21,7 +21,7 @@
   }
 
   function buildText(rows){
-    const lines=['KOMISI TIM — '+new Date().toLocaleDateString('id-ID',{month:'long',year:'numeric'}),''];
+    const [y,m]=monthStart().split('-').map(Number); const lines=['KOMISI TIM — '+new Date(Date.UTC(y,m-1,1)).toLocaleDateString('id-ID',{month:'long',year:'numeric',timeZone:'UTC'}),''];
     let current='';
     rows.forEach(r=>{
       if(r.outlet!==current){
@@ -147,10 +147,12 @@
     if(!host)return;
     try{
       const rows=await loadPartnerCommissionRows();
-      const total=rows.reduce((a,x)=>a+Number(x.commission_amount||0),0);
+      const selected=window.hmPayrollSelectedMonthStart||monthStart();
+      const monthRows=rows.filter(x=>String(x.sold_at||'').slice(0,7)===selected.slice(0,7));
+      const total=monthRows.reduce((a,x)=>a+Number(x.commission_amount||0),0);
       const section=document.createElement('section');
       section.dataset.hmPartnerCommissionSection='1';section.className='box';section.style.marginTop='16px';
-      section.innerHTML='<h3 style="margin-top:0">🤝 Sharing Profit Unit Bisnis</h3><p class="small">Total komisi mitra dari seluruh transaksi valid: <b>'+rp(total)+'</b>. Rekap bulanan tersedia di menu Koordinasi Antar Unit Bisnis.</p>';
+      section.innerHTML='<h3 style="margin-top:0">🤝 Sharing Profit Unit Bisnis</h3><p class="small">Total komisi mitra untuk '+esc(new Date(selected+'T00:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'}))+': <b>'+rp(total)+'</b> dari '+monthRows.length+' transaksi valid.</p>';
       host.querySelector('[data-hm-partner-commission-section]')?.remove();host.appendChild(section);
     }catch(e){host.insertAdjacentHTML('beforeend','<div class="box" style="margin-top:14px"><h3>🤝 Sharing Profit Unit Bisnis</h3><p class="small">Data mitra belum dapat dimuat: '+esc(e?.message||'Kesalahan query')+'</p></div>');}
   }

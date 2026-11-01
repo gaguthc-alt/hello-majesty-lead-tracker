@@ -26,7 +26,7 @@ window.hmStockOutOutletAccess=function(){const n=String(window.profile?.name||''
 window.openStockOutReport=async function(){
  const p=window.profile||{},role=String(p.role||p.team_role||p.position||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' '),outletProfile=String(p.outlet||'').trim();
  const stockist=role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL';
- if(!p.is_management&&!stockist&&role!=='FASILITATOR'&&!role.includes('DEVELOPER')){alert('Akses Laporan Stock Keluar tidak diizinkan.');return;}
+ const outletAccess=window.hmStockOutOutletAccess();if(!p.is_management&&!stockist&&role!=='FASILITATOR'&&!role.includes('DEVELOPER')&&!outletAccess){alert('Akses Laporan Stock Keluar tidak diizinkan.');return;}
  const allowed=['Majesty Cell','Majesty Gadget','Majesty Store'];
  const ownPartner=allowed.find(x=>x.toUpperCase()===outletProfile.toUpperCase())|| (role==='ADMIN FINANCE MAJESTY CELL'?'Majesty Cell':null);
  if(stockist&&!ownPartner){alert('Mitra stockist pada profil tidak dikenali.');return;}

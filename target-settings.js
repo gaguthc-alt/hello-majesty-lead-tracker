@@ -6,7 +6,11 @@
   function panel(title,html){
     const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
     if(!p||!b) { alert('Panel menu belum siap. Silakan buka dashboard lalu coba lagi.'); return; }
-    if(t)t.textContent=title;b.innerHTML=html;p.classList.remove('hidden');
+    if(t)t.textContent=title;
+    b.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;min-height:120px!important;max-height:none!important;overflow:visible!important;background:#fff!important;color:#101828!important;padding:4px 0 12px!important;position:relative!important;z-index:2!important';
+    b.innerHTML=html;
+    p.style.cssText+=';display:block!important;visibility:visible!important;opacity:1!important;overflow:visible!important;height:auto!important;max-height:none!important';
+    p.classList.remove('hidden');
     requestAnimationFrame(()=>p.scrollIntoView({behavior:'smooth',block:'start'}));
   }
   window.hmOpenTargetSettings=async function(){
@@ -20,9 +24,12 @@
     const m=document.getElementById('hmTargetMonth')?.value;
     const list=document.getElementById('hmTargetList');if(!m||!list)return;
     const ms=m+'-01';
-    list.innerHTML='<div class="small">⏳ Memuat target…</div>';
+    list.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;min-height:100px!important;color:#101828!important;background:#fff!important';
+    list.innerHTML='<div style="display:block!important;padding:14px;color:#344054;background:#f2f4f7;border-radius:10px">⏳ Memuat target…</div>';
+    try{
+    if(!window.sb){list.innerHTML='<div style="padding:14px;background:#fff1f0;color:#b42318;border-radius:10px">Koneksi database belum siap. Muat ulang halaman lalu coba kembali.</div>';return;}
     const r=await window.sb.from('monthly_outlet_targets').select('*').eq('month_start',ms).order('outlet');
-    if(r.error){list.innerHTML='<div class="box">Gagal memuat target: '+esc(r.error.message)+'</div>';return;}
+    if(r.error){list.innerHTML='<div style="padding:14px;background:#fff1f0;color:#b42318;border-radius:10px">Gagal memuat target: '+esc(r.error.message)+'</div>';return;}
     const rows=r.data||[];
     const known=['Majesty Plaza iPhone','Majesty Refill Phone'];
     const names=[...new Set([...known,...rows.map(x=>x.outlet)])];
@@ -38,6 +45,10 @@
        '</div><button class="success" style="margin-top:10px;width:100%" data-outlet="'+esc(name)+'" onclick="hmSaveTarget('+i+', this.dataset.outlet)">💾 Simpan Target '+esc(name)+'</button></div>';
     }).join('');
     window._hmTargetRows=names;
+    }catch(e){
+      console.error('[HM target settings load]',e);
+      list.innerHTML='<div style="padding:14px;background:#fff1f0;color:#b42318;border-radius:10px">Pengaturan target gagal dimuat: '+esc(e?.message||String(e))+'</div>';
+    }
   };
   window.hmSaveTarget=async function(i,outlet){
     if(!allowed())return alert('Akses ditolak.');

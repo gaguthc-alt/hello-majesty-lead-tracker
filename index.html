@@ -2389,19 +2389,20 @@ async function start(u,authClient){
   const apiHeaders={apikey:KEY,Authorization:'Bearer '+token};
   const fetchJson=async(url,label)=>{
    let lastError=null;
-   for(let attempt=0;attempt<2;attempt++){
-    const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),10000);
+   for(let attempt=0;attempt<4;attempt++){
+    const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),12000);
     try{
      const res=await fetch(url,{headers:apiHeaders,signal:ctl.signal,cache:'no-store'});
      let data=null;try{data=await res.json()}catch(_e){}
      if(!res.ok)throw new Error(label+': '+(data?.message||data?.hint||data?.details||'akses database ditolak.'));
      return data;
     }catch(e){
-     if(e?.name==='AbortError')throw new Error(label+' terlalu lama. Koneksi ke database Supabase tidak merespons.');
+     if(e?.name==='AbortError')throw new Error(label+' terlalu lama. Server Supabase tidak merespons dalam 12 detik.');
      lastError=e;
      const networkFailure=e instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(String(e?.message||e));
-     if(!networkFailure||attempt===1)throw e;
-     await new Promise(resolve=>setTimeout(resolve,600));
+     if(!networkFailure)throw e;
+     if(attempt===3)throw new Error(label+' tidak dapat dijangkau setelah 4 percobaan. Server database saat ini aktif; periksa koneksi internet/DNS HP lalu tekan Coba lagi. Detail: '+String(e?.message||e));
+     await new Promise(resolve=>setTimeout(resolve,800*(attempt+1)));
     }finally{clearTimeout(timer)}
    }
    throw lastError||new Error(label+' gagal dimuat.');

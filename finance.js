@@ -923,7 +923,7 @@ window.openFinanceSection=async function(section){
         : '<div class="small" style="padding:12px 0">Belum ada reward yang dikonfigurasi untuk periode ini.</div>';
       const commissionItems=commissionRows.map(row=>({
         name:String(row.name||'Tim'),
-        amount:['cs_commission','cs_closing_commission','sales_commission','freelance_internal_commission','freelance_commission','hunter_commission','checker_commission','content_creator_commission','facilitator_commission'].reduce((s,k)=>s+Number(row[k]||0),0)
+        amount:['cs_commission','sales_commission','freelance_internal_commission','freelance_commission','hunter_commission','checker_commission','content_creator_commission','facilitator_commission'].reduce((s,k)=>s+Number(row[k]||0),0)
       })).sort((a,b)=>b.amount-a.amount);
       const commissionDetail=commissionItems.length
         ? '<div style="overflow:auto;border:1px solid #e5e7eb;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#f8fafc"><th style="text-align:center;padding:10px;width:48px">No</th><th style="text-align:left;padding:10px">Nama</th><th style="text-align:right;padding:10px">Komisi</th><th style="text-align:center;padding:10px;width:110px">Status</th></tr></thead><tbody>'+

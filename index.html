@@ -2224,6 +2224,24 @@ async function openTeamCommissionDetails(encodedName){
    if(missing>0.01)fallback.push({commission_type:t.type,sale_id:null,sold_at:monthStart+'T00:00:00',product_name:'Ringkasan komisi '+t.type,customer_name:'-',cs:null,cs_closing:null,sales:null,hunter:null,gross_profit:0,commission:missing,is_summary:true});
  });
  const allRows=[...rows,...fallback];
+ // Tampilkan pencapaian personal CS pada kartu komisi Handover.
+ let handoverAchievement=null;
+ if(report&&report.outlet){
+   try{
+     const start=new Date(monthStart+'T00:00:00+08:00');
+     const end=new Date(start);end.setMonth(end.getMonth()+1);
+     const startIso=start.toISOString(),endIso=end.toISOString();
+     const [leadCount,handoverCount,targetResult]=await Promise.all([
+       sb.from('leads').select('id',{count:'exact',head:true}).eq('outlet',report.outlet).eq('cs_claimed_by',name).gte('created_at',startIso).lt('created_at',endIso),
+       sb.from('leads').select('id',{count:'exact',head:true}).eq('outlet',report.outlet).eq('sales_handover_by',name).gte('sales_handover_at',startIso).lt('sales_handover_at',endIso),
+       sb.from('monthly_outlet_targets').select('wa_target,qualified_target').eq('outlet',report.outlet).eq('month_start',monthStart).maybeSingle()
+     ]);
+     if(!leadCount.error&&!handoverCount.error){
+       handoverAchievement={leads:Number(leadCount.count||0),handover:Number(handoverCount.count||0),waTarget:Number(targetResult.data?.wa_target||0),handoverTarget:Number(targetResult.data?.qualified_target||0)};
+     }
+     if(targetResult.error)console.warn('[HM] Target outlet tidak terbaca:',targetResult.error);
+   }catch(e){console.warn('[HM] Pencapaian handover personal tidak termuat:',e);}
+ }
  // Ambil seluruh Hunter dan Checker yang ditetapkan pada unit stok, termasuk skema multi-anggota.
  const assignmentSaleIds=[...new Set(allRows.filter(x=>x.sale_id).map(x=>x.sale_id))];
  const hunterNamesBySale=new Map(),checkerNamesBySale=new Map();
@@ -2293,6 +2311,12 @@ async function openTeamCommissionDetails(encodedName){
    const isPerformance=isSummary||performanceTypes.has(x.commission_type)||!x.sale_id;
    const fields=isPerformance?[
      ['Komponen',x.commission_type],
+     ...(x.commission_type==='CS Handover'&&handoverAchievement?[
+       ['Lead Baru Saya',handoverAchievement.leads+' lead'],
+       ['Target WA Outlet',handoverAchievement.waTarget?handoverAchievement.waTarget+' lead':'Belum diatur'],
+       ['Handover Saya',handoverAchievement.handover+' handover'],
+       ['Target Handover Outlet',handoverAchievement.handoverTarget?handoverAchievement.handoverTarget+' handover':'Belum diatur']
+     ]:[]),
      ['Rumus',formulaByType[x.commission_type]||'Mengikuti aturan komisi untuk komponen ini'],
      ...(isSummary?[]:[['Dasar Laba Outlet',rp(x.gross_profit)]]),
      ['Komisi',rp(x.commission)]

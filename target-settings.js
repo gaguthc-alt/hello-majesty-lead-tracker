@@ -4,14 +4,21 @@
   const allowed=()=>{const p=window.profile||{};const role=String(p.role||'').trim().toUpperCase().replace(/[_-]+/g,' ');return p.is_management===true && (role==='MANAGEMENT'||role==='BUSINESS LEADER');};
   const monthNow=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';};
   function panel(title,html){
-    const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
-    if(!p||!b) { alert('Panel menu belum siap. Silakan buka dashboard lalu coba lagi.'); return; }
-    if(t)t.textContent=title;
-    b.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;min-height:120px!important;max-height:none!important;overflow:visible!important;background:#fff!important;color:#101828!important;padding:4px 0 12px!important;position:relative!important;z-index:2!important';
-    b.innerHTML=html;
-    p.style.cssText+=';display:block!important;visibility:visible!important;opacity:1!important;overflow:visible!important;height:auto!important;max-height:none!important';
-    p.classList.remove('hidden');
-    requestAnimationFrame(()=>p.scrollIntoView({behavior:'smooth',block:'start'}));
+    let overlay=document.getElementById('hmTargetSettingsOverlay');
+    if(!overlay){
+      overlay=document.createElement('div');
+      overlay.id='hmTargetSettingsOverlay';
+      overlay.innerHTML='<div id="hmTargetSettingsDialog"><div id="hmTargetSettingsHead"><strong id="hmTargetSettingsTitle"></strong><button type="button" id="hmTargetSettingsClose">✕ Tutup</button></div><div id="hmTargetSettingsBody"></div></div>';
+      document.body.appendChild(overlay);
+      const style=document.createElement('style');
+      style.id='hmTargetSettingsStyle';
+      style.textContent='#hmTargetSettingsOverlay{position:fixed!important;inset:0!important;z-index:2147483000!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;padding: max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))!important;background:rgba(4,12,24,.72)!important;overflow-y:auto!important;box-sizing:border-box!important}#hmTargetSettingsDialog{display:flex!important;flex-direction:column!important;width:min(760px,100%)!important;max-height:calc(100dvh - 24px)!important;margin:auto!important;background:#fff!important;color:#101828!important;border-radius:20px!important;box-shadow:0 20px 60px rgba(0,0,0,.35)!important;overflow:hidden!important;min-height:0!important}#hmTargetSettingsHead{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:16px!important;background:#fff!important;color:#101828!important;border-bottom:1px solid #e4e7ec!important;flex:0 0 auto!important}#hmTargetSettingsTitle{font-size:18px!important;font-weight:800!important}#hmTargetSettingsClose{background:#344054!important;color:#fff!important;border:0!important;border-radius:10px!important;padding:12px 16px!important;white-space:nowrap!important}#hmTargetSettingsBody{display:block!important;visibility:visible!important;opacity:1!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;padding:14px!important;min-height:120px!important;color:#101828!important;background:#fff!important;flex:1 1 auto!important}#hmTargetSettingsBody .box,#hmTargetSettingsBody .lead{display:block!important;visibility:visible!important;opacity:1!important;background:#f8fafc!important;color:#101828!important;border:1px solid #d0d5dd!important;border-radius:14px!important;padding:14px!important;margin:8px 0!important;box-sizing:border-box!important}#hmTargetSettingsBody label{display:block!important;color:#344054!important;font-weight:700!important;margin:10px 0 5px!important}#hmTargetSettingsBody input{display:block!important;width:100%!important;min-height:44px!important;background:#fff!important;color:#101828!important;border:1px solid #98a2b3!important;border-radius:9px!important;padding:10px!important;box-sizing:border-box!important}#hmTargetSettingsBody .stats{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}#hmTargetSettingsBody button.success{display:block!important;width:100%!important;min-height:46px!important;background:#15803d!important;color:#fff!important;border:0!important;border-radius:10px!important;padding:12px!important}@media(max-width:480px){#hmTargetSettingsDialog{max-height:calc(100dvh - 16px)!important;border-radius:16px!important}#hmTargetSettingsBody{padding:10px!important}#hmTargetSettingsBody .stats{grid-template-columns:1fr!important}}';
+      document.head.appendChild(style);
+      document.getElementById('hmTargetSettingsClose').onclick=()=>overlay.remove();
+    }
+    document.getElementById('hmTargetSettingsTitle').textContent=title;
+    document.getElementById('hmTargetSettingsBody').innerHTML=html;
+    overlay.style.display='flex';
   }
   window.hmOpenTargetSettings=async function(){
     if(!allowed())return alert('Pengaturan target hanya dapat diakses Management.');

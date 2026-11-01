@@ -8,9 +8,14 @@
     }[c]));
   }
   function rp(v){return 'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');}
+  function witaMonthKey(value){
+    const d=value instanceof Date?value:new Date(value);
+    if(!Number.isFinite(d.getTime()))return '';
+    return new Date(d.getTime()+8*60*60*1000).toISOString().slice(0,7);
+  }
   function monthStart(){
-    const d=new Date();
-    return window.hmPayrollSelectedMonthStart||d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+    const d=new Date(Date.now()+8*60*60*1000);
+    return window.hmPayrollSelectedMonthStart||d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-01';
   }
 
   async function loadCommission(){
@@ -148,7 +153,7 @@
     try{
       const rows=await loadPartnerCommissionRows();
       const selected=window.hmPayrollSelectedMonthStart||monthStart();
-      const monthRows=rows.filter(x=>String(x.sold_at||'').slice(0,7)===selected.slice(0,7));
+      const monthRows=rows.filter(x=>witaMonthKey(x.sold_at)===selected.slice(0,7));
       const total=monthRows.reduce((a,x)=>a+Number(x.commission_amount||0),0);
       const section=document.createElement('section');
       section.dataset.hmPartnerCommissionSection='1';section.className='box';section.style.marginTop='16px';
@@ -177,8 +182,8 @@
       const role=String(profile.role||'').toUpperCase().replace(/_/g,' ');
       const isManagement=profile.is_management===true||['MANAGEMENT','BUSINESS LEADER'].includes(role);
       const partnerNames=[...new Set(rows.map(x=>x.partner_name))];
-      const months=[...new Set(rows.map(x=>String(x.sold_at||'').slice(0,7)).filter(x=>/^\d{4}-\d{2}$/.test(x)))].sort().reverse();
-      const currentMonth=new Date().toISOString().slice(0,7);
+      const months=[...new Set(rows.map(x=>witaMonthKey(x.sold_at)).filter(x=>/^\d{4}-\d{2}$/.test(x)))].sort().reverse();
+      const currentMonth=witaMonthKey(new Date());
       if(!months.length){content.innerHTML='<p>Belum ada transaksi komisi yang valid.</p>';return;}
       const initialMonth=months.includes(currentMonth)?currentMonth:months[0];
       const monthLabel=m=>{const [y,mo]=m.split('-');return new Date(Number(y),Number(mo)-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});};
@@ -186,7 +191,7 @@
       const renderReport=()=>{
         const month=content.querySelector('#hmPartnerCommissionMonth').value;
         const outlet=content.querySelector('#hmPartnerCommissionOutlet').value;
-        const filtered=rows.filter(x=>String(x.sold_at||'').slice(0,7)===month&&(!outlet||String(x.outlet||'').trim()===outlet));
+        const filtered=rows.filter(x=>witaMonthKey(x.sold_at)===month&&(!outlet||String(x.outlet||'').trim()===outlet));
         const total=filtered.reduce((a,x)=>a+Number(x.commission_amount||0),0);
         const summaryNames=isManagement?['Majesty Cell','Majesty Gadget','Majesty Store'].filter(n=>filtered.some(x=>x.partner_name===n)):[...new Set(filtered.map(x=>x.partner_name))];
         const summary=summaryNames.map(name=>{const list=filtered.filter(x=>x.partner_name===name),amount=list.reduce((a,x)=>a+Number(x.commission_amount||0),0);return '<div class="hm-partner-summary"><b>'+esc(name)+'</b><div>'+list.length+' transaksi • Total komisi '+rp(amount)+'</div></div>';}).join('');

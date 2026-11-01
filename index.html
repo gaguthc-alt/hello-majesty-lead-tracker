@@ -2558,7 +2558,7 @@ function hmResetMainMenuButtonLabels(){
      void Promise.resolve().then(()=>{
        if(typeof window.openFinance==='function') return run();
        const s=document.createElement('script');
-       s.src='finance.js?v=20261022-stock-report-cachefix-3';
+       s.src='finance.js?v=20261101-payroll-month-filter-1';
        return new Promise((resolve,reject)=>{
          s.onload=()=>{try{resolve(run())}catch(ex){reject(ex)}};
          s.onerror=()=>reject(new Error('Modul Finance gagal dimuat.'));

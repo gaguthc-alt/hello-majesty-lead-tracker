@@ -2251,7 +2251,7 @@ async function openTeamCommissionDetails(encodedName){
      ['CS',x.cs],
      ['CS Closing',x.cs_closing],
      ['Sales',x.sales],
-     ['Hunter',x.hunter],
+     [x.commission_type==='Checker'?'Checker':'Hunter',x.hunter],
      ['Laba Transaksi',rp(x.gross_profit)],
      ['Rumus',formulaByType[x.commission_type]||'Mengikuti aturan komisi untuk transaksi ini'],
      ['Komisi',rp(x.commission)]

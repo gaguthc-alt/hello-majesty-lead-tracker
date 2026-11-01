@@ -2902,6 +2902,14 @@ async function hmMainMenuClick(title,fn,actionKey){
  try{
   await Promise.resolve(typeof fn==='function'?fn():null);
   if(menuSeq!==hmMenuActionSeq || hmActiveMainMenu!==key)return;
+  // Finance sections own their inline panel rendering. Do not run the generic
+  // modal-to-panel transfer afterwards: it can overwrite the freshly rendered
+  // Payroll body with an empty legacy modal body.
+  if(/^openFinanceSection\("(cashbank|payable|payroll)"\)$/.test(route)){
+   const financePanel=document.getElementById('hmMenuPanel');
+   if(financePanel)financePanel.classList.remove('hidden');
+   return;
+  }
   // Semua menu utama dibuka LANGSUNG DI BAWAH MENU UTAMA.
   const modal=document.getElementById('modal');
   const panel=document.getElementById('hmMenuPanel');

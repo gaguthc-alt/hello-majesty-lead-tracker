@@ -4014,7 +4014,6 @@ function renderRoleHome(){
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('📊','Dashboard Inventory Mitra','Posisi stok READY, modal belum disetor & settlement mitra','window.openCellFinanceReport()');
-   add('📤','Laporan Stock Keluar','Riwayat unit terjual dan retur berdasarkan periode','window.openStockOutReport()');
    add('🤝','Pengelolaan Unit Bisnis','Modal, kewajiban & settlement antarunit bisnis','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Barang masuk yang menunggu verifikasi','openInventoryApprovals()');
    add('🚶','Persetujuan Walk-In','Semua penjualan tanpa Lead & CS yang menunggu persetujuan','openWalkinApprovals()');
@@ -4026,7 +4025,6 @@ function renderRoleHome(){
    add('📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login',"window.hmOpenStockistInfo('Ringkasan Stok Unit Bisnis')");
    add('📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri',"window.hmOpenStockistInfo('Ajukan Barang Masuk Unit Bisnis')");
    add('📊','Dashboard Inventory Mitra','Posisi stok dan kewajiban modal unit sendiri','window.openCellFinanceReport()');
-   add('📤','Laporan Stock Keluar','Riwayat unit terjual dan retur milik unit sendiri','window.openStockOutReport()');
    add('🤝','Pembayaran Settlement','Settlement khusus unit stockist ini','window.openPartnerSettlement()');
  }else if(facilitator){
    add('🎯','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
@@ -4077,7 +4075,6 @@ function renderRoleHome(){
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
    add('💳','Konfirmasi Pencairan Finance','Catat dana finance/paylater yang benar-benar masuk','window.openFinanceDisbursement()');
    add('📊','Dashboard Inventory Mitra','Stock, modal & profit sharing','window.openCellFinanceReport()');
-   add('📤','Laporan Stock Keluar','Riwayat unit terjual dan retur','window.openStockOutReport()');
    add('🤝','Pengelolaan Unit Bisnis','Modal, kewajiban & settlement antarunit bisnis','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Verifikasi barang masuk dari Majesty Cell','window.openInventoryApprovals()');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
@@ -4840,7 +4837,6 @@ window.hmRunStockistJournalReclass = async function(){
      ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
      ['📦','Ringkasan Stok Unit Bisnis','Lihat jumlah unit, status, lokasi, dan nilai stok milik unit bisnis','hmOpenStockistSummary()'],
      ['📊','Dashboard Inventory Mitra','Pantau posisi stok, kewajiban modal yang belum disetor, dan settlement','window.openCellFinanceReport()'],
-     ['📤','Laporan Stock Keluar','Riwayat unit terjual dan retur dengan filter tanggal, outlet, dan stockist','window.openStockOutReport()']
    ]],
    ['🤝','KOORDINASI ANTARUNIT BISNIS',[
      ['📋','Panduan Kerja Sama','Panduan alur stok jaringan, stok titip outlet, retur, pembagian hasil, dan settlement','hmOpenStockistCooperationGuide()'],
@@ -4912,7 +4908,7 @@ window.hmRunStockistJournalReclass = async function(){
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
    if((isAtmaditaAccount || stockistUser) && g[1]==='PUSAT PERSEDIAAN'){
-     allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Dashboard Inventory Mitra','Laporan Stock Keluar'].includes(item[1]));
+     allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Dashboard Inventory Mitra'].includes(item[1]));
    }
    // Persetujuan Barang Masuk tetap tersedia bagi Fasilitator; daftar transaksi dibatasi di fungsi persetujuan berdasarkan outlet tujuan.
    if((isAtmaditaAccount || stockistUser) && g[1]==='KOORDINASI ANTARUNIT BISNIS'){

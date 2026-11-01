@@ -228,8 +228,8 @@
     const actions=document.createElement('div');
     actions.className='row';
     actions.style.margin='0 0 10px';
-    actions.innerHTML='<button id="hmCopyCommissionBtn" class="secondary" type="button">📋 Copy Laporan Komisi</button>';
-    actions.querySelector('button').onclick=copyCommissionReport;
+    actions.innerHTML='<button id="hmPayrollThisMonth" class="primary" type="button">📅 Bulan Ini</button><button id="hmPayrollLastMonth" class="secondary" type="button">↶ Bulan Kemarin</button><button id="hmCopyCommissionBtn" class="secondary" type="button">📋 Copy Laporan Komisi</button>';
+    actions.querySelector('#hmCopyCommissionBtn').onclick=copyCommissionReport;
     heading.parentElement.insertBefore(actions,heading.nextSibling);
 
     const tables=section.querySelectorAll('table');
@@ -238,6 +238,23 @@
     host.style.marginTop='10px';
     if(old) old.replaceWith(host);
     else section.appendChild(host);
+    const setPeriod=(offset)=>{
+      const now=new Date(Date.now()+8*60*60*1000);
+      const d=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()+offset,1));
+      window.hmPayrollSelectedMonthStart=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-01';
+      const current=offset===0;
+      const a=actions.querySelector('#hmPayrollThisMonth'),b=actions.querySelector('#hmPayrollLastMonth');
+      if(a){a.className=current?'primary':'secondary';a.setAttribute('aria-pressed',String(current));}
+      if(b){b.className=current?'secondary':'primary';b.setAttribute('aria-pressed',String(!current));}
+      renderCommissionDetail(host).catch(e=>{host.innerHTML='<div class="small">Gagal memuat rincian komisi: '+esc(e?.message||e)+'</div>';});
+    };
+    actions.querySelector('#hmPayrollThisMonth').onclick=()=>setPeriod(0);
+    actions.querySelector('#hmPayrollLastMonth').onclick=()=>setPeriod(-1);
+    const initial=monthStart();
+    const nowKey=(()=>{const d=new Date(Date.now()+8*60*60*1000);return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-01';})();
+    const initialOffset=initial===nowKey?0:-1;
+    const a=actions.querySelector('#hmPayrollThisMonth'),b=actions.querySelector('#hmPayrollLastMonth');
+    if(a&&b){a.className=initialOffset===0?'primary':'secondary';b.className=initialOffset===-1?'primary':'secondary';}
     try{await renderCommissionDetail(host);}
     catch(e){host.innerHTML='<div class="small">Gagal memuat rincian komisi: '+esc(e?.message||e)+'</div>';}
   }

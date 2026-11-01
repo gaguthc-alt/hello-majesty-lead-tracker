@@ -4012,7 +4012,8 @@ function renderRoleHome(){
    add('🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')");
    add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
-   add('📊','Laporan Stok & Modal Unit Bisnis','Stock, modal & profit sharing','window.openCellFinanceReport()');
+   add('📊','Laporan Stok & Modal Unit Bisnis','Posisi stok dan kewajiban modal mitra','window.openCellFinanceReport()');
+   add('📤','Laporan Stock Keluar','Riwayat unit terjual dan retur berdasarkan periode','window.openStockOutReport()');
    add('🤝','Pengelolaan Unit Bisnis','Modal, kewajiban & settlement antarunit bisnis','window.openPartnerSettlement()');
    add('🔔','Persetujuan Barang Masuk','Barang masuk yang menunggu verifikasi','openInventoryApprovals()');
    add('🚶','Persetujuan Walk-In','Semua penjualan tanpa Lead & CS yang menunggu persetujuan','openWalkinApprovals()');
@@ -4023,7 +4024,8 @@ function renderRoleHome(){
  }else if(stockistUser){
    add('📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login',"window.hmOpenStockistInfo('Ringkasan Stok Unit Bisnis')");
    add('📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri',"window.hmOpenStockistInfo('Ajukan Barang Masuk Unit Bisnis')");
-   add('📊','Laporan Stok & Modal Unit Bisnis','Stok, modal, dan kewajiban unit sendiri','window.openCellFinanceReport()');
+   add('📊','Laporan Stok & Modal Unit Bisnis','Posisi stok dan kewajiban modal unit sendiri','window.openCellFinanceReport()');
+   add('📤','Laporan Stock Keluar','Riwayat unit terjual dan retur milik unit sendiri','window.openStockOutReport()');
    add('🤝','Pembayaran Settlement','Settlement khusus unit stockist ini','window.openPartnerSettlement()');
  }else if(facilitator){
    add('🎯','Target Outlet','Target & progres outlet','hmOpenTargetOutlet()');
@@ -4835,7 +4837,8 @@ window.hmRunStockistJournalReclass = async function(){
      ['📥','Ajukan Barang Masuk Unit Bisnis','Input stok milik stockist, pilih outlet sendiri atau outlet titipan, lalu kirim untuk persetujuan','window.openReceiveStock()'],
      ['🔔','Persetujuan Barang Masuk','Periksa barang masuk sebelum status stok menjadi READY','window.openInventoryApprovals()'],
      ['📦','Ringkasan Stok Unit Bisnis','Lihat jumlah unit, status, lokasi, dan nilai stok milik unit bisnis','hmOpenStockistSummary()'],
-     ['📊','Laporan Stok & Modal Unit Bisnis','Pantau stok, barang terjual, modal yang belum disetor, dan riwayat settlement semua unit bisnis','window.openCellFinanceReport()']
+     ['📊','Laporan Stok & Modal Unit Bisnis','Pantau posisi stok, kewajiban modal yang belum disetor, dan settlement','window.openCellFinanceReport()'],
+     ['📤','Laporan Stock Keluar','Riwayat unit terjual dan retur dengan filter tanggal, outlet, dan stockist','window.openStockOutReport()']
    ]],
    ['🤝','KOORDINASI ANTARUNIT BISNIS',[
      ['📋','Panduan Kerja Sama','Panduan alur stok jaringan, stok titip outlet, retur, pembagian hasil, dan settlement','hmOpenStockistCooperationGuide()'],
@@ -4907,7 +4910,7 @@ window.hmRunStockistJournalReclass = async function(){
    // Atmadita adalah MITRA STOCKIST Majesty Cell, bukan pengelola semua stockist.
    // Batasi menu yang tampil sesuai lingkup mitra.
    if((isAtmaditaAccount || stockistUser) && g[1]==='PUSAT PERSEDIAAN'){
-     allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Laporan Stok & Modal Unit Bisnis'].includes(item[1]));
+     allowed=g[2].filter(item=>['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Laporan Stok & Modal Unit Bisnis','Laporan Stock Keluar'].includes(item[1]));
    }
    // Persetujuan Barang Masuk tetap tersedia bagi Fasilitator; daftar transaksi dibatasi di fungsi persetujuan berdasarkan outlet tujuan.
    if((isAtmaditaAccount || stockistUser) && g[1]==='KOORDINASI ANTARUNIT BISNIS'){
@@ -5327,6 +5330,19 @@ window.hmRunStockistJournalReclass = async function(){
            panel.classList.remove('hidden');
          }
        });
+       return;
+     }
+     // LAPORAN STOCK KELUAR: modul terpisah dari laporan modal mitra.
+     if(action==='window.openStockOutReport()'){
+       hmCloseMainMenu(); hmActiveMainMenu='';
+       void Promise.resolve().then(async()=>{
+         await new Promise((resolve,reject)=>{
+           if(typeof window.openStockOutReport==='function'){resolve();return;}
+           const sc=document.createElement('script');sc.src='stock-out-report.js?v=20261101-stock-out-1';sc.onload=resolve;sc.onerror=()=>reject(new Error('Modul Laporan Stock Keluar gagal dimuat.'));document.head.appendChild(sc);
+         });
+         if(typeof window.openStockOutReport!=='function')throw new Error('Fungsi Laporan Stock Keluar tidak tersedia.');
+         return window.openStockOutReport();
+       }).catch(ex=>{console.error('[HM] Laporan Stock Keluar gagal dibuka:',ex);const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody');if(panel&&body){body.innerHTML='<div style="padding:10px;color:#b42318">Gagal membuka Laporan Stock Keluar: '+esc(ex?.message||'Terjadi kesalahan')+'</div>';panel.classList.remove('hidden');}});
        return;
      }
      // LAPORAN FINANCE CELL: pastikan modul Finance termuat lalu buka.

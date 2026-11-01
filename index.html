@@ -5902,16 +5902,70 @@ async function renderTargetBoard(){
  const rc=d.role_contribution||{}; const firstTarget=outlets[0]||{}; const ownBox=d.management?'<div class="box"><h3>👤 MANAGEMENT</h3><div class="small">Melihat target seluruh outlet.</div>'+manageBtn+'</div>':(facilitatorBtn||''); const box=document.getElementById('targetBoard')||document.createElement('div');box.id='targetBoard';if(!hmActiveMainMenu)box.classList.add('hidden');box.innerHTML=''+ownBox+outletCards; const dash=document.getElementById('workspace'); const content=document.getElementById('contentPerformance'); const inventorySection=document.getElementById('inventorySection'); const stats=document.getElementById('stats'); if(dash&&!dash.contains(box))dash.insertBefore(box,content||inventorySection||stats);
 
 async function openTargetSettings(){
- const x=await sb.rpc('dashboard_target_summary');if(x.error)return alert(x.error.message);
- const outlets=x.data?.outlets||[];
+ const monthNow=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
+ const defaults=[
+  {outlet:'Majesty Plaza iPhone',wa_target:300,qualified_target:175,closing_target:40,nominal_target:33000000},
+  {outlet:'Majesty Refill Phone',wa_target:200,qualified_target:50,closing_target:30,nominal_target:10000000}
+ ];
  $('mt').textContent='⚙️ Target Outlet Bulanan';
- $('mb').innerHTML=outlets.map(o=>'<div class="box"><h3>'+esc(o.outlet)+'</h3><label>WA Target</label><input id="twa_'+esc(o.outlet)+'" type="number" value="'+o.wa_target+'"><label>Handover Target</label><input id="tq_'+esc(o.outlet)+'" type="number" value="'+o.qualified_target+'"><label>Closing Target</label><input id="tc_'+esc(o.outlet)+'" type="number" value="'+o.closing_target+'"><label>Target Nominal</label><input id="tn_'+esc(o.outlet)+'" type="number" value="'+Number(o.nominal_target||0)+'"><label>Bonus</label><input id="tb_'+esc(o.outlet)+'" value="'+esc(o.bonus_label)+'"><label>Nominal Bonus</label><input id="ta_'+esc(o.outlet)+'" type="number" value="'+o.bonus_amount+'"><button class="success" onclick="saveTarget(\''+esc(o.outlet)+'\')">Simpan '+esc(o.outlet)+'</button></div>').join('');
+ $('mb').innerHTML='<div class="box"><div class="small">Atur target per outlet dan per bulan. Perubahan bulan tidak mengubah target bulan lain.</div><label>Bulan Target</label><input type="month" id="hmMonthlyTargetMonth" value="'+monthNow()+'" onchange="window.hmRenderMonthlyTargets()"><div id="hmMonthlyTargetList" style="margin-top:12px"><div class="small">Memuat target…</div></div></div>';
  $('modal').classList.remove('hidden');
+ window.hmRenderMonthlyTargets=async function(){
+  const month=document.getElementById('hmMonthlyTargetMonth')?.value;
+  const list=document.getElementById('hmMonthlyTargetList');
+  if(!month||!list)return;
+  list.innerHTML='<div class="box">⏳ Memuat target bulan '+esc(month)+'…</div>';
+  try{
+   if(!window.sb&&!sb)throw new Error('Koneksi database belum siap. Muat ulang halaman.');
+   const client=window.sb||sb;
+   const {data,error}=await client.from('monthly_outlet_targets').select('*').eq('month_start',month+'-01');
+   if(error)throw error;
+   const rows=data||[];
+   list.innerHTML=defaults.map((base,i)=>{
+    const row=rows.find(x=>String(x.outlet)===base.outlet)||base;
+    const v=(key)=>Number(row[key]||0);
+    return '<div class="box" style="margin-top:12px;border:1px solid #d0d5dd">'+
+     '<h3 style="margin:0 0 8px">🏪 '+esc(base.outlet)+'</h3>'+
+     '<div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">'+
+      '<div><label>Target WA Masuk</label><input type="number" min="0" id="hmTwa_'+i+'" value="'+v('wa_target')+'"></div>'+
+      '<div><label>Target Handover CS</label><input type="number" min="0" id="hmThand_'+i+'" value="'+v('qualified_target')+'"></div>'+
+      '<div><label>Target Closing (Unit)</label><input type="number" min="0" id="hmTclose_'+i+'" value="'+v('closing_target')+'"></div>'+
+      '<div><label>Target Laba (Rp)</label><input type="number" min="0" step="1000" id="hmTprofit_'+i+'" value="'+v('nominal_target')+'"></div>'+
+      '<div><label>Nama Reward</label><input id="hmTbonuslabel_'+i+'" value="'+esc(row.bonus_label||'')+'"></div>'+
+      '<div><label>Nominal Reward (Rp)</label><input type="number" min="0" step="1000" id="hmTbonus_'+i+'" value="'+v('bonus_amount')+'"></div>'+
+     '</div><button class="success" style="width:100%;margin-top:10px" type="button" onclick="window.hmSaveMonthlyTarget('+i+')">💾 Simpan Target '+(i===0?'Plaza':'Refill')+'</button></div>';
+   }).join('');
+   window.hmSaveMonthlyTarget=async function(i){
+    const monthValue=document.getElementById('hmMonthlyTargetMonth')?.value;
+    if(!monthValue)return;
+    const number=id=>Math.max(0,Number(document.getElementById(id+'_'+i)?.value||0));
+    const payload={
+     month_start:monthValue+'-01',
+     outlet:defaults[i].outlet,
+     wa_target:number('hmTwa'),
+     qualified_target:number('hmThand'),
+     closing_target:number('hmTclose'),
+     nominal_target:number('hmTprofit'),
+     bonus_label:document.getElementById('hmTbonuslabel_'+i)?.value||'',
+     bonus_amount:number('hmTbonus'),
+     active:true,
+     updated_at:new Date().toISOString()
+    };
+    const client=window.sb||sb;
+    const {error}=await client.from('monthly_outlet_targets').upsert(payload,{onConflict:'month_start,outlet'});
+    if(error){alert('Target gagal disimpan: '+error.message);return;}
+    alert('Target '+defaults[i].outlet+' bulan '+monthValue+' berhasil disimpan.');
+    await window.hmRenderMonthlyTargets();
+   };
+  }catch(e){
+   console.error('[HM monthly outlet targets]',e);
+   list.innerHTML='<div class="box" style="border:1px solid #fda29b;color:#b42318">Gagal memuat target: '+esc(e?.message||String(e))+'</div>';
+  }
+ };
+ await window.hmRenderMonthlyTargets();
 }
 async function saveTarget(outlet){
- const clean=s=>String(s).replace(/[^0-9]/g,'');
- const x=await sb.rpc('set_outlet_monthly_target',{p_month_start:new Date().toISOString().slice(0,10),p_outlet:outlet,p_wa_target:Number($('twa_'+outlet).value),p_qualified_target:Number($('tq_'+outlet).value),p_closing_target:Number($('tc_'+outlet).value),p_nominal_target:Number(clean($('tn_'+outlet).value)),p_bonus_label:$('tb_'+outlet).value,p_bonus_amount:Number(clean($('ta_'+outlet).value))});
- if(x.error)return alert(x.error.message);closeModal();await loadLeads();
+ return window.hmSaveMonthlyTarget?.(outlet==='Majesty Plaza iPhone'?0:1);
 }
  // Expose modal actions globally for inline onclick handlers.
  window.openTargetSettings=openTargetSettings;

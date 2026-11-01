@@ -2224,6 +2224,37 @@ async function openTeamCommissionDetails(encodedName){
    if(missing>0.01)fallback.push({commission_type:t.type,sale_id:null,sold_at:monthStart+'T00:00:00',product_name:'Ringkasan komisi '+t.type,customer_name:'-',cs:null,cs_closing:null,sales:null,hunter:null,gross_profit:0,commission:missing,is_summary:true});
  });
  const allRows=[...rows,...fallback];
+ // Ambil seluruh Hunter dan Checker yang ditetapkan pada unit stok, termasuk skema multi-anggota.
+ const assignmentSaleIds=[...new Set(allRows.filter(x=>x.sale_id).map(x=>x.sale_id))];
+ const hunterNamesBySale=new Map(),checkerNamesBySale=new Map();
+ if(assignmentSaleIds.length){
+   try{
+     const sr=await sb.from('sales_transactions').select('id,stock_unit_id').in('id',assignmentSaleIds);
+     if(sr.error)throw sr.error;
+     const stockIds=[...new Set((sr.data||[]).map(x=>x.stock_unit_id).filter(Boolean))];
+     if(stockIds.length){
+       const ur=await sb.from('stock_units').select('id,hunter_user_id,checker_user_id,hunter_user_ids,checker_user_ids').in('id',stockIds);
+       if(ur.error)throw ur.error;
+       const stockById=new Map((ur.data||[]).map(x=>[String(x.id),x]));
+       const saleStock=new Map((sr.data||[]).map(x=>[String(x.id),String(x.stock_unit_id||'')]));
+       const ids=[...new Set((ur.data||[]).flatMap(x=>[x.hunter_user_id,x.checker_user_id,...(x.hunter_user_ids||[]),...(x.checker_user_ids||[])].filter(Boolean).map(String)))];
+       let names=new Map();
+       if(ids.length){
+         const nr=await sb.from('team_profiles').select('user_id,name').in('user_id',ids);
+         if(nr.error)throw nr.error;
+         names=new Map((nr.data||[]).map(x=>[String(x.user_id),String(x.name||'')]));
+       }
+       assignmentSaleIds.forEach(id=>{
+         const unit=stockById.get(saleStock.get(String(id)));
+         if(!unit)return;
+         const hn=[unit.hunter_user_id,...(unit.hunter_user_ids||[])].filter(Boolean).map(String);
+         const cn=[unit.checker_user_id,...(unit.checker_user_ids||[])].filter(Boolean).map(String);
+         hunterNamesBySale.set(String(id),[...new Set(hn.map(x=>names.get(x)).filter(Boolean))]);
+         checkerNamesBySale.set(String(id),[...new Set(cn.map(x=>names.get(x)).filter(Boolean))]);
+       });
+     }
+   }catch(e){console.warn('[HM] Gagal memuat seluruh nama Hunter/Checker:',e);}
+ }
  // Ambil seluruh anggota tim closing dari tabel relasi transaksi; sales_closing tetap PIC utama.
  const salesDetailIds=[...new Set(allRows.filter(x=>x.commission_type==='Sales Closing'&&x.sale_id).map(x=>x.sale_id))];
  const closingMembersBySale=new Map();
@@ -2274,7 +2305,11 @@ async function openTeamCommissionDetails(encodedName){
        ['PIC Sales Utama',x.sales],
        ['Anggota Tim Closing',(closingMembersBySale.get(x.sale_id)||[]).join(', ')||'Tidak ada anggota tambahan']
      ]:[['Sales',x.sales]]),
-     [x.commission_type==='Checker'?'Checker':'Hunter',x.hunter],
+     ...(x.commission_type==='Checker'?
+       [['Checker',((checkerNamesBySale.get(String(x.sale_id))||[]).join(', ')||x.hunter)]]:
+       x.commission_type==='Hunter'?
+       [['Hunter',((hunterNamesBySale.get(String(x.sale_id))||[]).join(', ')||x.hunter)]]:
+       [[ 'Hunter',x.hunter ]]),
      ['Laba Transaksi',rp(x.gross_profit)],
      ['Rumus',formulaByType[x.commission_type]||'Mengikuti aturan komisi untuk transaksi ini'],
      ['Komisi',rp(x.commission)]

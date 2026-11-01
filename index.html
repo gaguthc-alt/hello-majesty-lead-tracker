@@ -3656,7 +3656,7 @@ function hmEnsureHomePerformanceStyle(){
 @media(max-width:760px){.hm-kd-command-grid{grid-template-columns:1fr}.hm-kd-command{padding:13px}.hm-kd-command-head h3{font-size:19px}}
 </style>`);
 }
-async function hmRenderManagementMessage(){
+async function hmBuildManagementMessage(){
  const card=document.getElementById('hmManagementMessage');
  if(!card||!profile)return;
  const body=card.querySelector('.hm-message-body');
@@ -3800,7 +3800,17 @@ async function hmRenderManagementMessage(){
    return;
  }
  try{
-   const question='Susun SATU pesan beranda Hello Majesty yang relevan dan spesifik berdasarkan DATA TERKINI. Maksimal 1-2 kalimat, 15-35 kata. WAJIB hormati profil.role, profile.active_roles, profile.division dan data_scope; role tambahan juga diperhitungkan untuk menentukan tugas yang memang dapat dilakukan, tetapi jangan memberi akses atau tugas di luar kewenangan. Jika profile.is_division_management=true, anggap pengguna sebagai Management Hello Majesty pada divisi di profile.division dan fokus hanya pada tanggung jawab divisi itu; Wawan=MAJESTY (penjualan/target closing), Tyar=HELLO (promosi/WA masuk/lead baru), Gagut=REFILL (handover, developer aplikasi, Admin Finance dan Management System sesuai role aktif). Ketiganya adalah Management Hello Majesty, tetapi pesan tidak boleh mencampur KPI semua divisi. Jika Management global lain, beri ringkasan lintas outlet sesuai hak akses. Jika role Divisi, batasi pesan pada divisi tersebut, jangan menganggap Divisi berarti akses semua outlet. Fokus divisi: MAJESTY = penjualan, Sales Closing dan pencapaian target closing; HELLO = promosi, leads baru dan WA masuk; REFILL = handover sebagai target operasional, pengembangan aplikasi/developer, Admin Finance dan Management System sesuai role aktif. Untuk role individu, pilih tindakan dari fungsi yang sesuai: CS pada WA masuk/lead dan handover; Sales pada follow-up dan closing; Content Creator pada konten/promosi/leads; Admin Finance pada akurasi finance/rekonsiliasi; Developer/Data Control pada fungsi aplikasi, data dan error sistem; Fasilitator pada kontrol outlet dan handover. Jangan mengasumsikan orang memiliki kemampuan/izin hanya karena nama divisi—ikuti role utama dan tambahan yang tercantum. PRIORITAS: jika DATA TERKINI.outlet_target_summary.all_cumulative_targets_reached atau all_monthly_targets_reached bernilai true, pesan WAJIB mengapresiasi keberhasilan seluruh outlet/tim, menyebut ringkas KPI yang tercapai, menjaga konsistensi sampai akhir bulan dan persiapan bulan depan. Dalam kondisi sukses ini jangan jadikan overdue sebagai pesan utama dan jangan evaluasi pribadi. Hanya jika target kumulatif outlet belum tercapai, baru evaluasi pribadi/overdue sesuai role. WARNING hanya bila data menunjukkan masalah aktual; apresiasi bila target outlet sukses. Sebut target atau persentase hanya jika target dan pencapaian tersedia di data; jangan mengarang target. Beri satu tindakan yang bisa dilakukan oleh role itu. Jangan menyebut data kosong sebagai masalah atau mengklaim sudah memeriksa sumber yang unavailable. DATA TERKINI: '+JSON.stringify(context);
+   const aiContext={
+     period:context.period,
+     profile:context.profile,
+     data_scope:context.data_scope,
+     performance:context.performance,
+     lead_attention:context.lead_attention,
+     outlet_target_summary:context.outlet_target_summary,
+     accurate_sync:context.accurate_sync,
+     data_limitations:context.data_limitations
+   };
+   const question='Susun satu pesan dashboard Hello Majesty, 1-2 kalimat (15-35 kata), natural dan tanpa markdown. Patuhi profile.role, active_roles, division, management_label dan data_scope; jangan menyarankan akses/tugas di luar kewenangan. Fokus: MAJESTY=penjualan/closing; HELLO=promosi/WA masuk/lead baru; REFILL=handover, finance, sistem/aplikasi sesuai role aktif. Management divisi hanya fokus divisinya; Management global lintas outlet hanya sesuai scope. Jika outlet_target_summary.all_cumulative_targets_reached atau all_monthly_targets_reached true, apresiasi tim/outlet, sebut KPI yang tersedia, ajak menjaga konsistensi; jangan menegur individu atau menjadikan overdue fokus utama. Jika target belum tercapai, berikan satu prioritas yang sesuai role dan data. Data kosong bukan nol; jangan mengarang angka, target, masalah, atau status Accurate. DATA: '+JSON.stringify(aiContext);
    const result=await db.functions.invoke('hello-majesty-ai-gemini',{body:{question,lead:null}});
    if(result?.error)throw result.error;
    const answer=String(result?.data?.answer||'').trim();
@@ -3814,6 +3824,45 @@ async function hmRenderManagementMessage(){
    const foot=card.querySelector('.hm-message-foot');if(foot)foot.textContent='Pesan otomatis berdasarkan data yang berhasil dibaca; AI tidak tersedia atau sesi perlu diperiksa.';
  }
 }
+
+async function hmRenderManagementMessage(){
+ const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
+ const identity=String(profile?.user_id||profile?.id||profile?.name||'user');
+ const cacheKey='hm_management_message_v1_'+encodeURIComponent([identity,profile?.outlet||'',profile?.role||'',roles.join(',')].join('|'));
+ const now=Date.now();
+ try{
+   const saved=JSON.parse(sessionStorage.getItem(cacheKey)||'null');
+   if(saved&&saved.expires_at>now&&saved.body){
+     const card=document.getElementById('hmManagementMessage');
+     const body=card?.querySelector('.hm-message-body');
+     if(body)body.textContent=saved.body;
+     const foot=card?.querySelector('.hm-message-foot');
+     if(foot&&saved.foot)foot.textContent=saved.foot;
+     return;
+   }
+ }catch(_e){}
+ if(window.__hmManagementMessagePromise){
+   try{await window.__hmManagementMessagePromise;}catch(_e){}
+   return;
+ }
+ const work=(async()=>{
+   await hmBuildManagementMessage();
+   const card=document.getElementById('hmManagementMessage');
+   const body=card?.querySelector('.hm-message-body');
+   if(!body)return;
+   const foot=card?.querySelector('.hm-message-foot');
+   try{
+     sessionStorage.setItem(cacheKey,JSON.stringify({
+       expires_at:Date.now()+10*60*1000,
+       body:body.textContent||'',
+       foot:foot?.textContent||''
+     }));
+   }catch(_e){}
+ })();
+ window.__hmManagementMessagePromise=work;
+ try{await work;}finally{if(window.__hmManagementMessagePromise===work)window.__hmManagementMessagePromise=null;}
+}
+
 async function hmRenderHomePerformance(){
  const renderToken=(window.__hmPerfRenderToken=(window.__hmPerfRenderToken||0)+1);
  const host=document.getElementById('roleHome');

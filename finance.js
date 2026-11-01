@@ -740,7 +740,7 @@ window.openFinanceSection=async function(section){
   // Finance sections render directly into hmMenuPanel. Hide the legacy modal first,
   // otherwise hmMainMenuClick may copy its (empty) #mb over the freshly rendered panel.
   const legacyFinanceModal=document.getElementById('modal');
-  if(legacyFinanceModal){legacyFinanceModal.classList.add('hidden');legacyFinanceModal.style.display='none';}
+  if(legacyFinanceModal)legacyFinanceModal.classList.add('hidden');
   if(section==='cashbank'){
     const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
     if(!panel||!body)return;

@@ -843,6 +843,8 @@ window.openFinanceSection=async function(section){
     body.classList.remove('hidden');
     body.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;min-width:0!important;min-height:180px!important;height:auto!important;max-height:none!important;overflow:visible!important;flex:1 1 auto!important;padding:12px!important;box-sizing:border-box!important;background:#f8fafc!important;color:#24364b!important;';
     body.innerHTML='<div id="hmPayrollLoading" style="display:block!important;visibility:visible!important;min-height:90px;padding:18px;border:1px solid #dbe3ed;border-radius:14px;background:#fff;color:#344054">⏳ Menyiapkan Payroll & Komisi…</div>';
+    try{
+      if(!window.sb)throw new Error('Koneksi database Supabase belum siap. Coba muat ulang aplikasi.');
     if(!window.hmPayrollSelectedMonthStart)window.hmPayrollSelectedMonthStart=hmPayrollMonthStart(0);
     const selectedPayrollMonth=window.hmPayrollSelectedMonthStart;
     const payrollHead=panel.querySelector('.hm-menu-panel-head');
@@ -959,6 +961,11 @@ window.openFinanceSection=async function(section){
     }catch(ex){
       console.error('[HM] Payroll & Komisi:',ex);
       if(box)box.innerHTML='<div class="danger box"><b>Gagal memuat Payroll & Komisi.</b><div class="small" style="margin-top:6px">'+String(ex?.message||ex||'Terjadi kesalahan saat memuat data.')+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.openFinanceSection(\'payroll\')">↻ Coba Lagi</button></div>';
+    }
+    }catch(payrollInitError){
+      console.error('[HM] Payroll initialization:',payrollInitError);
+      body.innerHTML='<div class="box" style="border:1px solid #fda29b;background:#fff7f6;color:#7a271a;padding:16px;border-radius:14px"><b>Payroll & Komisi gagal disiapkan.</b><div style="margin-top:8px;font-size:13px;overflow-wrap:anywhere">'+String(payrollInitError?.message||payrollInitError||'Terjadi kesalahan saat menyiapkan tampilan.')+'</div><button class="primary" type="button" style="margin-top:12px" onclick="window.openFinanceSection(\'payroll\')">↻ Coba Lagi</button></div>';
+      panel.classList.remove('hidden');
     }
     return;
   }

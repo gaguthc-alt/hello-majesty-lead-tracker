@@ -2207,6 +2207,7 @@ async function openTeamCommissionDetails(encodedName){
    {type:'Sales Closing',amount:Number(report.sales_commission||0),profit:0},
    {type:'Freelance Internal',amount:Number(report.freelance_internal_commission||0),profit:0},
    {type:'Hunter',amount:Number(report.hunter_commission||0),profit:0},
+   {type:'Checker',amount:Number(report.checker_commission||0),profit:0},
    {type:'Content Creator',amount:Number(report.content_creator_commission||0),profit:0},
    {type:'Fasilitator',amount:Number(report.facilitator_commission||0),profit:0}
  ]:[];
@@ -2226,6 +2227,7 @@ async function openTeamCommissionDetails(encodedName){
    'Sales Closing':'10% × laba transaksi yang memenuhi syarat Sales Closing, dibagi sesuai anggota tim closing',
    'Freelance Internal':'30% × laba transaksi Freelance Internal',
    'Hunter':'10% × laba unit yang di-hunt dan berhasil SOLD',
+   'Checker':'5% × laba positif unit yang diperiksa dan berhasil SOLD',
    'Content Creator':'(WA yang saya hasilkan ÷ Target WA Outlet) × 10% × Laba Aktual Outlet',
    'Fasilitator':'(WA Masuk ÷ Target WA) × (Handover Tim ÷ Target Handover) × (Unit Terjual ÷ Target Unit) × (Laba Aktual Outlet ÷ Target Laba Outlet) × 10% × Laba Aktual Outlet',
    'Service Closing':'Sesuai aturan komisi Service Closing pada transaksi'

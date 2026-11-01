@@ -2224,6 +2224,26 @@ async function openTeamCommissionDetails(encodedName){
    if(missing>0.01)fallback.push({commission_type:t.type,sale_id:null,sold_at:monthStart+'T00:00:00',product_name:'Ringkasan komisi '+t.type,customer_name:'-',cs:null,cs_closing:null,sales:null,hunter:null,gross_profit:0,commission:missing,is_summary:true});
  });
  const allRows=[...rows,...fallback];
+ // Ambil seluruh anggota tim closing dari tabel relasi transaksi; sales_closing tetap PIC utama.
+ const salesDetailIds=[...new Set(allRows.filter(x=>x.commission_type==='Sales Closing'&&x.sale_id).map(x=>x.sale_id))];
+ const closingMembersBySale=new Map();
+ if(salesDetailIds.length){
+   try{
+     const tm=await sb.from('sales_transaction_team_members').select('sale_id,user_id').in('sale_id',salesDetailIds);
+     if(tm.error)throw tm.error;
+     const memberRows=tm.data||[];
+     const userIds=[...new Set(memberRows.map(x=>x.user_id).filter(Boolean))];
+     let nameById=new Map();
+     if(userIds.length){
+       const nr=await sb.rpc('get_team_profile_names',{p_user_ids:userIds});
+       if(!nr.error&&Array.isArray(nr.data))nameById=new Map(nr.data.map(x=>[String(x.user_id),String(x.name||'')]));
+     }
+     memberRows.forEach(m=>{
+       const n=nameById.get(String(m.user_id));
+       if(n){const list=closingMembersBySale.get(m.sale_id)||[];if(!list.includes(n))list.push(n);closingMembersBySale.set(m.sale_id,list);}
+     });
+   }catch(e){console.warn('[HM] Gagal memuat anggota tim closing:',e);}
+ }
  const back='<button class="btn" onclick="openTeamCommission()">← Kembali ke Komisi Tim</button>';
  const performanceTypes=new Set(['CS Handover','Content Creator','Fasilitator']);
  const formulaByType={
@@ -2250,7 +2270,10 @@ async function openTeamCommissionDetails(encodedName){
      ['Customer',x.customer_name],
      ['CS',x.cs],
      ['CS Closing',x.cs_closing],
-     ['Sales',x.sales],
+     ...(x.commission_type==='Sales Closing'?[
+       ['PIC Sales Utama',x.sales],
+       ['Anggota Tim Closing',(closingMembersBySale.get(x.sale_id)||[]).join(', ')||'Tidak ada anggota tambahan']
+     ]:[['Sales',x.sales]]),
      [x.commission_type==='Checker'?'Checker':'Hunter',x.hunter],
      ['Laba Transaksi',rp(x.gross_profit)],
      ['Rumus',formulaByType[x.commission_type]||'Mengikuti aturan komisi untuk transaksi ini'],
@@ -6780,7 +6803,7 @@ async function shareWalkinApprovalWA(stockId,salePrice){
      const n=await sb.rpc('get_team_profile_names',{p_user_ids:lookupIds});
      if(!n.error && Array.isArray(n.data)){
        const map=new Map(n.data.map(x=>[String(x.user_id),x.name]));
-       salesNames=ids.map(id=>map.get(String(id))).filter(Boolean);
+       salesNames=[...new Set([...ids,...(requestedBy?[requestedBy]:[])].map(id=>map.get(String(id))).filter(Boolean))];
        requesterName=requestedBy?String(map.get(String(requestedBy))||''):'';
      }
    }
@@ -6788,7 +6811,7 @@ async function shareWalkinApprovalWA(stockId,salePrice){
  if(!salesNames.length)salesNames=[profile?.name||'Sales'];
  const sales=salesNames.join(', ');
  const approvalLink=window.location.origin+window.location.pathname+'?open=walkin&approval='+encodeURIComponent(approvalId||'');
- const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👥 Tim Sales: '+sales,...(requesterName&&!salesNames.includes(requesterName)?['🧾 Pengaju Closing: '+requesterName]:[]),'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
+ const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh tim Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👥 *Seluruh Tim Sales/Closing:* '+sales,...(requesterName?['🧾 Pengaju/PIC Utama: '+requesterName]:[]),'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
  if(!approvalId){alert('ID persetujuan Walk-In belum ditemukan. Pengajuan mungkin belum tersimpan pada daftar persetujuan. Silakan cek menu Persetujuan Walk-In.');return;}
  window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
 }

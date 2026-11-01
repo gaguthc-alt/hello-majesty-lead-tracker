@@ -4323,13 +4323,17 @@ window.hmOpenPartnerSettlementManagement=async function(){
  const stockistOutlet=String(profile?.outlet||'').trim();
  const allowedStockistOutlets=['MAJESTY CELL','MAJESTY GADGET','MAJESTY STORE'];
  const isStockistUser=!mg&&!developer&&stockistRole&&allowedStockistOutlets.includes(stockistOutlet.toUpperCase());
- if(!(mg||developer||isStockistUser||isFinanceUser)){alert('Menu Pembayaran Settlement tidak tersedia untuk role ini.');return;}
+ const isFacilitatorUser=!mg&&!developer&&roleKey==='FASILITATOR';
+ const facilitatorOutlet=String(profile?.outlet||'').trim();
+ const isAllowedFacilitatorOutlet=['MAJESTY PLAZA IPHONE','MAJESTY REFILL PHONE'].includes(facilitatorOutlet.toUpperCase());
+ if(!(mg||developer||isStockistUser||isFinanceUser||(isFacilitatorUser&&isAllowedFacilitatorOutlet))){alert('Menu Pembayaran Settlement tidak tersedia untuk role ini.');return;}
  const stockistName=isStockistUser?String(profile.outlet).trim():null;
+ const outletScope=isFacilitatorUser?facilitatorOutlet:null;
  const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),t=document.getElementById('hmMenuPanelTitle');
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
  const partners=isStockistUser?[stockistName]:['Majesty Cell','Majesty Gadget','Majesty Store'];
- const outlets=['Majesty Plaza iPhone','Majesty Refill Phone'];
+ const outlets=outletScope?[outletScope]:['Majesty Plaza iPhone','Majesty Refill Phone'];
  if(!window.sb||!p||!b||!t){alert('Panel atau koneksi database belum siap. Refresh lalu coba lagi.');return;}
  t.textContent='🤝 Penyelesaian Pembayaran Antarunit';p.classList.remove('hidden');
  b.innerHTML='<div class="box">Memuat unit SOLD dan riwayat settlement…</div>';
@@ -4343,11 +4347,11 @@ window.hmOpenPartnerSettlementManagement=async function(){
   if(uRes.error)throw uRes.error;if(hRes.error)throw hRes.error;if(sRes.error)throw sRes.error;if(iRes.error)throw iRes.error;
   const liveUnits=(uRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||'').toLowerCase()===n.toLowerCase())&&outlets.some(o=>{const v=String(x.outlet||'').toLowerCase();return v===o.toLowerCase()||(o==='Majesty Plaza iPhone'&&['majesty plaza','plaza','plaza iphone'].includes(v));})).map(x=>({...x,_source:'LIVE',_key:'live:'+x.id,_partner:x.partner_name||x.supplier||'',_outlet:(['majesty plaza','plaza','plaza iphone','majesty plaza iphone'].includes(String(x.outlet||'').toLowerCase())?'Majesty Plaza iPhone':x.outlet),_product:x.product_master?.product||'Produk',_variant:x.product_master?.variant||''}));
   const historicalUnits=(hRes.data||[]).filter(x=>partners.some(n=>String(x.partner_name||'').toLowerCase()===n.toLowerCase())&&outlets.some(o=>{const v=String(x.outlet||'').toLowerCase();return v===o.toLowerCase()||(o==='Majesty Plaza iPhone'&&['majesty plaza','plaza','plaza iphone'].includes(v));})).map(x=>({...x,_source:'HISTORICAL',_key:'hist:'+x.id,_partner:x.partner_name||'',_outlet:(['majesty plaza','plaza','plaza iphone','majesty plaza iphone'].includes(String(x.outlet||'').toLowerCase())?'Majesty Plaza iPhone':x.outlet),_product:x.product_name||'Produk',_variant:[x.color,x.storage_gb?x.storage_gb+'GB':null,x.condition,x.grade?'Grade '+x.grade:null].filter(Boolean).join(' · ')}));
-  const settles=sRes.data||[],items=iRes.data||[];
+  const settles=(sRes.data||[]).filter(x=>!outletScope||String(x.outlet||'').toUpperCase()===outletScope.toUpperCase()),items=iRes.data||[];
   // Link each live stock unit to its canonical sales transaction when creating settlement items.
   // Stock-unit.sale_id may be empty on legacy records; partner_capital_due is the canonical mapping.
   let capitalDueByUnit=new Map();
-  if(!isStockistUser){
+  if(!isStockistUser&&!isFacilitatorUser){
    const cdRes=await window.sb.from('partner_capital_due').select('stock_unit_id,sales_transaction_id,partner_name,outlet').in('partner_name',partners).limit(3000);
    if(cdRes.error)throw cdRes.error;
    (cdRes.data||[]).forEach(d=>{
@@ -4403,7 +4407,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const st=String(x.status||'').toUpperCase();const displayStatus=st==='RECEIVED'?'LUNAS':st;let actions='—';
    if(isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
    else if(isStockistUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
-   else if(!isStockistUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
+   else if(!isStockistUser&&!isFacilitatorUser&&!isFacilitatorUser&&st==='DRAFT') actions='<button type="button" data-request-confirm="'+safe(x.id)+'">Minta konfirmasi</button>';
    else if(st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
    else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-proof-wa="'+safe(x.id)+'" data-settlement-type="'+safe(x.settlement_type||'PROFIT_SHARING')+'">Konfirmasi transfer + foto WA</button>';
    else if(st==='TRANSFER_SENT') actions='<button type="button" data-proof-wa="'+safe(x.id)+'">Kirim ulang bukti foto WA</button>';

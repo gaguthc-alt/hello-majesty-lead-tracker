@@ -2260,44 +2260,68 @@ async function openTeamCommissionDetails(encodedName){
  }
 }
 async function openCommission(){
-  const monthStart=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'})();
-  const r=await sb.rpc('my_commission_summary',{p_month_start:monthStart});
-  if(r.error)return alert('Komisi error: '+r.error.message);
-  const d=r.data||{}, t=d.targets||{}, tm=d.team||{};
+  const now=new Date();
+  const currentStart=new Date(now.getFullYear(),now.getMonth(),1);
+  const previousStart=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+  const currentMonth=iso(currentStart),previousMonth=iso(previousStart);
   const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
   const roleFormula={
-    'Content Creator':'WA saya ÷ Target WA Outlet × 10% × Laba Aktual Outlet',
-    'CS Handover':'Handover saya ÷ Target Handover Outlet × 10% × Laba Aktual Outlet',
-    'CS Closing':'5% × Laba transaksi yang mencatat saya sebagai CS Closing',
-    'Sales':'10% × Laba Closing saya',
-    'Freelance Internal':'30% × Laba Closing saya',
-    'Hunter':'10% × Laba unit yang saya-hunt dan SOLD',
-    'Fasilitator':'WA Tim ÷ Target WA × Handover Tim ÷ Target Handover × Closing Tim ÷ Target Closing × 10% Laba'
+    'Content Creator':'Komisi berdasarkan kontribusi WA pribadi sesuai ketentuan target outlet.',
+    'CS Handover':'Komisi berdasarkan handover pribadi sesuai ketentuan target outlet.',
+    'CS Closing':'Komisi dari transaksi yang mencatat saya sebagai CS Closing.',
+    'Sales':'Komisi dari laba closing pribadi.',
+    'Freelance Internal':'Komisi dari closing pribadi sebagai Freelance Internal.',
+    'Hunter':'Komisi unit yang saya-hunt dan sudah SOLD.',
+    'Checker':'Komisi pemeriksaan unit yang terjual.',
+    'Fasilitator':'Komisi sesuai pencapaian peran Fasilitator.',
+    'Teknisi':'Komisi jasa dari pekerjaan yang saya tangani.'
   };
   $('mt').textContent='💰 Komisi Saya';
-  $('mb').innerHTML=
-    '<div class="box"><h3 style="margin-top:0">Periode '+new Date(d.month_start||monthStart).toLocaleDateString('id-ID',{month:'long',year:'numeric'})+'</h3>'+
-    '<div class="small">'+esc(d.name||'')+' • '+esc(d.outlet||'')+'</div>'+
-    '<div class="stats" style="margin-top:10px">'+
-      invStat('WA Tim',tm.wa)+' '+invStat('Handover Tim',tm.handover)+' '+invStat('Closing Tim',tm.closing)+
-    '</div>'+
-    '<div class="small" style="margin-top:8px">Laba Penjualan Tim: <b>'+rp(tm.profit)+'</b></div></div>'+
-    '<div class="box"><h3>Rincian Komisi per Peran</h3>'+
-    (d.roles||[]).map(x=>{
-      const detail=x.role==='Content Creator'?(x.actual+' / '+t.wa+' WA dari target outlet'):
-        x.role==='CS Handover'?(x.actual+' / '+t.handover+' handover dari target outlet'):
-        x.role==='CS Closing'?'Komisi dari transaksi yang mencatat saya sebagai CS Closing (5%)':
-        x.role==='Sales'?(rp(x.actual)+' laba closing • komisi 10%') :
-        x.role==='Freelance Internal'?(rp(x.actual)+' laba closing • komisi 30%') :
-        x.role==='Hunter'?'Profit unit Hunter yang SOLD':
-        'WA '+tm.wa+'/'+t.wa+' • Handover '+tm.handover+'/'+t.handover+' • Closing '+tm.closing+'/'+t.closing;
-      return '<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.role)+'</b><b>'+rp(x.commission)+'</b></div>'+
-        '<div class="small" style="margin-top:5px">'+esc(detail)+'</div>'+
-        '<div class="small" style="margin-top:5px">Rumus: '+esc(roleFormula[x.role]||'-')+'</div></div>';
-    }).join('')+
-    '</div>'+
-    '<div class="box" style="text-align:center"><div class="small">TOTAL KOMISI SAYA</div><div style="font-size:30px;font-weight:700;margin-top:5px">'+rp(d.total_commission)+'</div></div>';
+  $('mb').innerHTML='<div class="box"><div class="small">Menampilkan komisi milik akun yang sedang login. Data komisi anggota lain dan ringkasan kinerja tim tidak ditampilkan.</div>'+
+    '<div class="row" style="gap:8px;margin-top:12px"><button id="hmMyCommissionCurrent" class="primary" type="button" onclick="window.hmLoadMyCommission(\''+currentMonth+'\',\'current\')">Bulan Ini</button>'+
+    '<button id="hmMyCommissionPrevious" class="secondary" type="button" onclick="window.hmLoadMyCommission(\''+previousMonth+'\',\'previous\')">Bulan Sebelumnya</button></div></div>'+
+    '<div id="hmMyCommissionBody" style="margin-top:12px"><div class="box">⏳ Memuat komisi pribadi…</div></div>';
   $('modal').classList.remove('hidden');
+  window.hmLoadMyCommission=async function(monthStart,period){
+    const box=document.getElementById('hmMyCommissionBody');if(!box)return;
+    const currentBtn=document.getElementById('hmMyCommissionCurrent'),previousBtn=document.getElementById('hmMyCommissionPrevious');
+    if(currentBtn)currentBtn.className=period==='current'?'primary':'secondary';
+    if(previousBtn)previousBtn.className=period==='previous'?'primary':'secondary';
+    box.innerHTML='<div class="box">⏳ Memuat komisi pribadi…</div>';
+    try{
+      const client=window.sb||sb;
+      if(!client)throw new Error('Koneksi database belum siap.');
+      const {data,error}=await client.rpc('my_commission_summary',{p_month_start:monthStart});
+      if(error)throw error;
+      const d=data||{},roles=(d.roles||[]).filter(x=>Number(x.commission||0)!==0||Number(x.actual||0)!==0);
+      const monthLabel=new Date(monthStart+'T00:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+      const ownDetails=roles.map(x=>{
+        let detail='';
+        if(x.role==='Content Creator')detail='Aktivitas pribadi: '+Number(x.actual||0).toLocaleString('id-ID')+' WA masuk';
+        else if(x.role==='CS Handover')detail='Aktivitas pribadi: '+Number(x.actual||0).toLocaleString('id-ID')+' handover';
+        else if(x.role==='Sales')detail='Laba closing pribadi: '+rp(x.actual);
+        else if(x.role==='CS Closing')detail='Komisi transaksi pribadi sebagai CS Closing';
+        else if(x.role==='Hunter')detail='Komisi unit yang saya-hunt dan sudah terjual';
+        else if(x.role==='Checker')detail='Komisi pemeriksaan unit pribadi yang terjual';
+        else if(x.role==='Freelance Internal')detail='Komisi closing pribadi sebagai Freelance Internal';
+        else if(x.role==='Fasilitator')detail='Komisi pribadi sesuai peran Fasilitator';
+        else if(x.role==='Teknisi')detail='Pekerjaan jasa pribadi yang selesai';
+        return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><b>'+esc(x.role)+'</b><b>'+rp(x.commission)+'</b></div>'+
+          (detail?'<div class="small" style="margin-top:5px">'+esc(detail)+'</div>':'')+
+          '<div class="small" style="margin-top:5px;color:#667085">'+esc(roleFormula[x.role]||'Komisi pribadi')+'</div></div>';
+      }).join('');
+      box.innerHTML='<div class="box"><div class="small">PERIODE KOMISI</div><h3 style="margin:4px 0 8px">'+esc(monthLabel)+'</h3>'+
+        '<div style="font-weight:700">'+esc(d.name||'Pengguna')+'</div><div class="small">'+esc(d.outlet||'')+'</div></div>'+
+        '<div class="box"><h3 style="margin-top:0">Rincian Komisi Pribadi</h3>'+
+        (ownDetails||'<div class="small">Belum ada komisi pribadi pada periode ini.</div>')+'</div>'+
+        '<div class="box" style="text-align:center"><div class="small">TOTAL KOMISI SAYA</div><div style="font-size:30px;font-weight:800;margin-top:5px">'+rp(d.total_commission)+'</div></div>';
+    }catch(e){
+      console.error('[HM Komisi Saya]',e);
+      box.innerHTML='<div class="box" style="border:1px solid #fda29b;color:#b42318"><b>Komisi pribadi gagal dimuat.</b><div class="small" style="margin-top:6px">'+esc(e?.message||String(e))+'</div><button class="secondary" style="margin-top:10px" type="button" onclick="window.hmLoadMyCommission(\''+monthStart+'\',\''+period+'\')">↻ Coba Lagi</button></div>';
+    }
+  };
+  await window.hmLoadMyCommission(currentMonth,'current');
 }
 window.openCommission = openCommission;
 window.openTeamCommission = openTeamCommission;

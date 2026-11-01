@@ -22,6 +22,7 @@ function style(){if(document.getElementById('hm-stock-out-report-style'))return;
 @media(max-width:750px){#hmMenuPanelBody .hmso-filter{grid-template-columns:repeat(2,minmax(0,1fr))}#hmMenuPanelBody .hmso-stats{grid-template-columns:1fr}}
 @media(max-width:420px){#hmMenuPanelBody .hmso-filter{grid-template-columns:1fr}}
 `;document.head.appendChild(st);}
+window.hmStockOutOutletAccess=function(){const n=String(window.profile?.name||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(n==='IFA')return 'Majesty Plaza iPhone';if(n==='SAKA')return 'Majesty Refill Phone';return null;};
 window.openStockOutReport=async function(){
  const p=window.profile||{},role=String(p.role||p.team_role||p.position||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' '),outletProfile=String(p.outlet||'').trim();
  const stockist=role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL';
@@ -39,12 +40,12 @@ window.openStockOutReport=async function(){
  '<label>Tanggal Sampai<input id="hmsoTo" type="date" value="'+d+'"></label></div>'+
  '<div class="hmso-actions"><button class="success" type="button" onclick="window.loadStockOutReport()">↻ Muat Laporan</button><button class="secondary" type="button" onclick="window.resetStockOutReport()">Reset Filter</button><button class="secondary" type="button" onclick="window.exportStockOutReport()">⇩ Export CSV</button></div>'+
  '<div id="hmsoResult"><div class="box">Memuat laporan...</div></div>';
- if(stockist){const el=document.getElementById('hmsoPartner');el.value=ownPartner;el.disabled=true;}
+ if(stockist){const el=document.getElementById('hmsoPartner');el.value=ownPartner;el.disabled=true;}const outletAccess=window.hmStockOutOutletAccess();if(outletAccess){const el=document.getElementById('hmsoOutlet');el.innerHTML='<option value="'+outletAccess+'">'+outletAccess+'</option>';el.value=outletAccess;el.disabled=true;}
  await window.loadStockOutReport();
 };
 window.loadStockOutReport=async function(){
  const host=document.getElementById('hmsoResult'),sb=window.sb;if(!host||!sb)return;
- const status=document.getElementById('hmsoStatus').value,partner=document.getElementById('hmsoPartner').value,outlet=document.getElementById('hmsoOutlet').value,from=document.getElementById('hmsoFrom').value,to=document.getElementById('hmsoTo').value;
+ const outletAccess=window.hmStockOutOutletAccess?.()||null,outletSelect=document.getElementById('hmsoOutlet');if(outletAccess&&outletSelect){outletSelect.value=outletAccess;outletSelect.disabled=true;}const status=document.getElementById('hmsoStatus').value,partner=document.getElementById('hmsoPartner').value,outlet=outletAccess||(outletSelect?.value||'ALL'),from=document.getElementById('hmsoFrom').value,to=document.getElementById('hmsoTo').value;
  if(!from||!to||from>to){host.innerHTML='<div class="box">Periksa rentang tanggal.</div>';return;}
  const start=from+'T00:00:00+07:00',end=endExclusive(to)+'T00:00:00+07:00';
  host.innerHTML='<div class="box">Mengambil riwayat barang keluar...</div>';

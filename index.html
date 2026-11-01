@@ -3880,7 +3880,7 @@ function renderRoleHome(){
   // Ini hanya mengatur navigasi; tidak mengubah data, transaksi, atau hak akses database.
   const financeHiddenTitles=['Finance','Laporan Finance','Hutang & Piutang','Accounting','Konfirmasi Pencairan Finance'];
   if(financeHiddenTitles.includes(title))return;
-  const financeKeepTitles=['Kas & Bank','Payroll','Payroll & Komisi'];
+  const financeKeepTitles=['Kas & Bank','Komisi Tim'];
   if(stockistUser && !financeKeepTitles.includes(title))return;
   if(!cards.some(x=>x[1]===title))cards.push([icon,title,desc,fn]);
  };

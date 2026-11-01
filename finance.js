@@ -834,9 +834,15 @@ window.openFinanceSection=async function(section){
   }
   if(section==='payroll'){
     const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
-    if(!panel||!body)return;
+    if(!panel||!body)throw new Error('Panel Payroll belum siap. Muat ulang aplikasi lalu coba kembali.');
+    // Pastikan modal legacy tidak menutupi panel dan area isi benar-benar terlihat di mobile.
+    const legacyModal=document.getElementById('modal');
+    if(legacyModal){legacyModal.classList.add('hidden');legacyModal.style.display='none';}
     if(title)title.textContent='💳 Payroll & Komisi';
     panel.classList.remove('hidden');
+    body.classList.remove('hidden');
+    body.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;min-width:0!important;min-height:180px!important;height:auto!important;max-height:none!important;overflow:visible!important;flex:1 1 auto!important;padding:12px!important;box-sizing:border-box!important;background:#f8fafc!important;color:#24364b!important;';
+    body.innerHTML='<div id="hmPayrollLoading" style="display:block!important;visibility:visible!important;min-height:90px;padding:18px;border:1px solid #dbe3ed;border-radius:14px;background:#fff;color:#344054">⏳ Menyiapkan Payroll & Komisi…</div>';
     if(!window.hmPayrollSelectedMonthStart)window.hmPayrollSelectedMonthStart=hmPayrollMonthStart(0);
     const selectedPayrollMonth=window.hmPayrollSelectedMonthStart;
     const payrollHead=panel.querySelector('.hm-menu-panel-head');

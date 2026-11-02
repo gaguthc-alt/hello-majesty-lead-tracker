@@ -242,25 +242,51 @@
 
       const settlementWrap=document.createElement('section');
       settlementWrap.className='hm-partner-summary';
-      settlementWrap.innerHTML='<h3 style="margin-top:0">Settlement Sharing Profit</h3><p class="hm-partner-muted">Pengajuan dan pembayaran sharing 10% dilakukan terpisah dari settlement modal stok.</p><div id="hmProfitSettlementList">Memuat riwayat settlement...</div>';
+      settlementWrap.innerHTML='<h3 style="margin-top:0">Settlement Sharing Profit</h3><p class="hm-partner-muted">Settlement dihitung dan dibayarkan terpisah untuk setiap stockist, berdasarkan persentase perjanjian dan transaksi milik stockist tersebut.</p><div id="hmProfitSettlementList">Memuat riwayat settlement...</div>';
       content.appendChild(settlementWrap);
       const isStockist=role==='MITRA STOCKIST';
       const canCreate=isManagement;
+      const partnerSelect=document.createElement('select');
+      partnerSelect.id='hmProfitPartner';
+      partnerSelect.style.cssText='width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;margin:8px 0;background:#fff;color:#172033';
+      const outletSelect=content.querySelector('#hmPartnerCommissionOutlet');
+      function currentProfitPartner(){
+        if(isStockist)return String(profile.outlet||'').trim();
+        return partnerSelect.value;
+      }
+      function rebuildPartnerOptions(){
+        const outlet=outletSelect?.value||'';
+        const names=[...new Set(rows.filter(x=>!outlet||x.outlet===outlet).map(x=>x.partner_name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+        partnerSelect.innerHTML=names.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');
+      }
+      if(canCreate){
+        rebuildPartnerOptions();
+        const selectorLabel=document.createElement('label');selectorLabel.textContent='Pilih stockist penerima sharing profit';selectorLabel.style.fontWeight='700';
+        settlementWrap.insertBefore(selectorLabel,settlementWrap.querySelector('#hmProfitSettlementList'));
+        settlementWrap.insertBefore(partnerSelect,settlementWrap.querySelector('#hmProfitSettlementList'));
+        outletSelect?.addEventListener('change',()=>{rebuildPartnerOptions();refreshProfitSettlements().catch(e=>alert(e.message));});
+        partnerSelect.addEventListener('change',()=>refreshProfitSettlements().catch(e=>alert(e.message)));
+      }
       async function refreshProfitSettlements(){
         const target=settlementWrap.querySelector('#hmProfitSettlementList');
-        const q=await window.sb.from('partner_settlements').select('id,partner_name,outlet,amount,status,settlement_date,period_start,period_end,note,transfer_reference').eq('settlement_type','PROFIT_SHARING').eq('partner_name','Majesty Cell').eq('outlet','Majesty Refill Phone').order('created_at',{ascending:false}).limit(100);
+        const outlet=outletSelect?.value||'';
+        const partner=currentProfitPartner();
+        let query=window.sb.from('partner_settlements').select('id,partner_name,outlet,amount,status,settlement_date,period_start,period_end,note,transfer_reference').eq('settlement_type','PROFIT_SHARING').order('created_at',{ascending:false}).limit(100);
+        if(outlet)query=query.eq('outlet',outlet);
+        if(partner)query=query.eq('partner_name',partner);
+        const q=await query;
         if(q.error)throw q.error;
         const list=q.data||[];
-        target.innerHTML=(canCreate?'<button type="button" id="hmCreateProfitSettlement" style="padding:10px 14px;border:0;border-radius:9px;background:#175cd3;color:white;font-weight:700">Ajukan settlement bulan terpilih</button>':'')+
+        target.innerHTML=(canCreate?'<button type="button" id="hmCreateProfitSettlement" style="padding:10px 14px;border:0;border-radius:9px;background:#175cd3;color:white;font-weight:700">Ajukan settlement untuk stockist ini</button>':'')+
           (list.length?list.map(x=>{const st=String(x.status||'').toUpperCase();const period=x.period_start?new Date(x.period_start+'T00:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'}):'Periode tidak diketahui';let action='';
             if(isStockist&&st==='AWAITING_PARTNER_CONFIRMATION')action='<button type="button" data-profit-confirm="'+x.id+'" style="padding:8px 10px">Setujui nominal</button> <button type="button" data-profit-reject="'+x.id+'" style="padding:8px 10px">Minta koreksi</button>';
             else if(canCreate&&st==='DRAFT')action='<button type="button" data-profit-request="'+x.id+'" style="padding:8px 10px">Minta konfirmasi</button>';
             else if(canCreate&&st==='PARTNER_CONFIRMED')action='<button type="button" data-profit-transfer="'+x.id+'" style="padding:8px 10px">Catat transfer</button>';
             else if(isStockist&&st==='TRANSFER_SENT')action='<button type="button" data-profit-received="'+x.id+'" style="padding:8px 10px">Konfirmasi diterima</button>';
-            return '<div class="hm-partner-detail"><b>'+esc(period)+'</b><div>Nominal: <b>'+rp(x.amount)+'</b> • Status: <b>'+esc(st)+'</b></div>'+(x.transfer_reference?'<div>Referensi: '+esc(x.transfer_reference)+'</div>':'')+(x.note?'<div class="hm-partner-muted">'+esc(x.note)+'</div>':'')+'<div style="margin-top:8px">'+action+'</div></div>';
-          }).join(''):'<p class="hm-partner-muted">Belum ada settlement Sharing Profit.</p>');
+            return '<div class="hm-partner-detail"><b>'+esc(period)+' • '+esc(x.partner_name)+'</b><div class="hm-partner-muted">'+esc(x.outlet)+'</div><div>Nominal: <b>'+rp(x.amount)+'</b> • Status: <b>'+esc(st)+'</b></div>'+(x.transfer_reference?'<div>Referensi: '+esc(x.transfer_reference)+'</div>':'')+(x.note?'<div class="hm-partner-muted">'+esc(x.note)+'</div>':'')+'<div style="margin-top:8px">'+action+'</div></div>';
+          }).join(''):'<p class="hm-partner-muted">Belum ada settlement Sharing Profit untuk stockist ini.</p>');
         const create=target.querySelector('#hmCreateProfitSettlement');
-        if(create)create.onclick=async()=>{try{create.disabled=true;const month=content.querySelector('#hmPartnerCommissionMonth').value+'-01';const res=await window.sb.rpc('create_partner_profit_settlement',{p_period_start:month,p_settlement_date:new Date().toISOString().slice(0,10),p_note:'Sharing Profit 10% Majesty Cell - Refill'});if(res.error)throw res.error;alert('Pengajuan dibuat: '+rp(res.data?.amount||0));await refreshProfitSettlements();}catch(e){alert(e.message||'Gagal membuat settlement');create.disabled=false;}};
+        if(create)create.onclick=async()=>{try{create.disabled=true;const month=content.querySelector('#hmPartnerCommissionMonth').value+'-01';const selectedPartner=currentProfitPartner();const selectedOutlet=outletSelect?.value||'';if(!selectedPartner||!selectedOutlet)throw new Error('Selecione outlet dan stockist terlebih dahulu');const res=await window.sb.rpc('create_partner_profit_settlement',{p_partner_name:selectedPartner,p_outlet:selectedOutlet,p_period_start:month,p_settlement_date:new Date().toISOString().slice(0,10),p_note:'Sharing Profit - '+selectedPartner+' - '+selectedOutlet});if(res.error)throw res.error;alert('Pengajuan '+selectedPartner+' dibuat: '+rp(res.data?.amount||0));await refreshProfitSettlements();}catch(e){alert(e.message||'Gagal membuat settlement');create.disabled=false;}};
         target.querySelectorAll('[data-profit-request]').forEach(b=>b.onclick=async()=>{try{b.disabled=true;const r=await window.sb.rpc('request_partner_settlement_confirmation',{p_settlement_id:b.dataset.profitRequest});if(r.error)throw r.error;await refreshProfitSettlements();}catch(e){alert(e.message);b.disabled=false;}});
         target.querySelectorAll('[data-profit-confirm],[data-profit-reject]').forEach(b=>b.onclick=async()=>{const yes=b.hasAttribute('data-profit-confirm');const note=prompt(yes?'Catatan persetujuan (opsional)':'Alasan meminta koreksi');if(!yes&&!note)return;try{b.disabled=true;const r=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:yes?b.dataset.profitConfirm:b.dataset.profitReject,p_confirm:yes,p_note:note||null});if(r.error)throw r.error;await refreshProfitSettlements();}catch(e){alert(e.message);b.disabled=false;}});
         target.querySelectorAll('[data-profit-transfer]').forEach(b=>b.onclick=async()=>{const ref=prompt('Masukkan referensi transfer (wajib)');if(!ref)return;const note=prompt('Catatan transfer (opsional)')||'';try{b.disabled=true;const r=await window.sb.rpc('record_partner_settlement_transfer',{p_settlement_id:b.dataset.profitTransfer,p_reference:ref,p_proof_note:note});if(r.error)throw r.error;await refreshProfitSettlements();}catch(e){alert(e.message);b.disabled=false;}});

@@ -7311,12 +7311,8 @@ async function saveLead(){
       leads=[created,...(leads||[]).filter(l=>String(l?.lead_id||'')!==String(createdId))];
     }
 
-    // Tutup form segera setelah Supabase mengonfirmasi berhasil.
-    const mainPanel=document.getElementById('hmMenuPanel');
-    if(mainPanel){
-      mainPanel.classList.add('hidden');
-      mainPanel.style.removeProperty('display');
-    }
+    // Tutup hanya modal formulir; pertahankan menu aktif agar pengguna
+    // tetap berada di halaman kerja yang sedang dibuka.
     const leadModal=document.getElementById('modal');
     if(leadModal){
       leadModal.classList.add('hidden');
@@ -7325,8 +7321,8 @@ async function saveLead(){
 
     showHMToast('✅ Lead berhasil disimpan'+(createdId?' • '+createdId:''));
 
-    // Sinkronisasi tidak menghalangi respons UI.
-    loadLeads().catch(err=>console.error('[HM] Sync lead baru:',err));
+    // Ambil ulang data setelah commit dan biarkan modul aktif tetap terbuka.
+    await loadLeads();
   }catch(err){
     console.error('[HM] saveLead error:',err);
     alert('Lead gagal disimpan.\n\n'+String(err?.message||err));

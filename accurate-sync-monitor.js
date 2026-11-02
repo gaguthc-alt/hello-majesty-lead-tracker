@@ -292,6 +292,39 @@
     const count=document.getElementById('hm-accurate-map-visible-count');
     if(count) count.textContent=visible+' produk ditampilkan';
   };
+  window.hmCreateAccuratePhoneMaster=async function(productId,grade,color){
+    const suffix=String(grade||'none')+'-'+String(color||'none');
+    const msg=document.getElementById('hm-accurate-map-msg-'+productId+'-'+suffix);
+    const say=function(t,ok){if(msg){msg.textContent=t;msg.style.color=ok?'#15803d':'#b91c1c';}};
+    try{
+      if(!isFinanceAdmin()) throw new Error('Hanya Developer/Management yang dapat membuat master.');
+      const p=window.__hmAccurateMapProducts.find(function(x){return String(x.id)===String(productId)&&String(x.hm_grade||'')===String(grade||'')&&String(x.hm_color||'')===String(color||'');});
+      if(!p) throw new Error('Data produk tidak ditemukan. Buka ulang pemetaan.');
+      const category=String(p.category||'').toUpperCase(),isIphone=category.indexOf('IPHONE_')===0,isSecond=category.endsWith('_SECOND');
+      const parts=['HP '+(isSecond?'Second':'New'),String(p.product||'').trim()];
+      if(isIphone&&p.hm_color)parts.push(String(p.hm_color).trim());
+      if(p.variant)parts.push(String(p.variant).trim());
+      if(isIphone&&isSecond&&p.hm_grade)parts.push('Grade '+String(p.hm_grade).trim());
+      const name=parts.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+      if(!['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(category)||!p.product||!p.variant)throw new Error('Kategori, nama produk, atau varian belum lengkap.');
+      say('Memeriksa Accurate: '+name,true);
+      const response=await sb.functions.invoke('accurate-sync',{body:{action:'ensure_phone_item',category:category,name:name}});
+      if(response.error)throw response.error;
+      const result=response.data||{};
+      if(!result.ok||!result.item||!result.item.id)throw new Error(result.error||'ID master Accurate tidak diterima.');
+      const item=result.item;
+      let query=sb.from('stock_units').update({accurate_item_id:String(item.id),accurate_item_no:String(item.no||'')}).eq('product_id',productId).eq('outlet','Majesty Plaza iPhone').in('status',['READY','SOLD']);
+      if(isIphone){query=grade?query.eq('grade',grade):query.is('grade',null);query=color?query.eq('color',color):query.is('color',null);}
+      const saved=await query.select('id');
+      if(saved.error)throw saved.error;
+      if(!saved.data||!saved.data.length)throw new Error('Master tersedia, tetapi tidak ada unit stok yang berhasil dipetakan.');
+      p.accurate_item_id=String(item.id);p.accurate_item_no=String(item.no||'');
+      const select=document.getElementById('hm-accurate-map-'+productId+'-'+suffix);
+      if(select&&!Array.from(select.options).some(function(o){return String(o.value)===String(item.id);})){const opt=document.createElement('option');opt.value=String(item.id);opt.textContent=String(item.no||'(tanpa nomor)')+' — '+String(item.name||name);select.appendChild(opt);}
+      if(select)select.value=String(item.id);
+      say((result.created?'Master baru dibuat':'Master sudah ada')+' • '+String(item.no||'-')+' • '+saved.data.length+' unit terpetakan ✓',true);
+    }catch(e){console.error('[HM Accurate auto master]',e);say(e?.message||String(e),false);}
+  };
   window.hmOpenAccurateProductMapping=async function(){
     try{
       if(!isFinanceAdmin()) throw new Error('Pemetaan hanya untuk Developer/Management.');
@@ -348,7 +381,7 @@
         return '<div class="lead" data-hm-accurate-map-card="1" data-mapped="'+(isMapped?'1':'0')+'" data-search="'+esc(search)+'" style="margin-bottom:9px">'+
           '<div style="font-weight:800">'+esc(label)+'</div><div class="small" style="margin:3px 0 8px">Kategori: '+esc(p.category||'-')+' • Stok READY: '+esc(p.hm_ready_stock||0)+' unit</div>'+
           '<div class="small" style="margin-bottom:5px">'+(current?'Barang Accurate saat ini: '+esc(current.no)+' — '+esc(current.name):((p.accurate_item_no||p.accurate_item_id)?'Mapping tersimpan: '+esc(p.accurate_item_no||p.accurate_item_id)+' (tidak ditemukan dalam daftar saat ini)':'Belum dipetakan'))+'</div>'+
-          '<select id="hm-accurate-map-'+esc(p.id)+'-'+esc(p.hm_grade||'none')+'-'+esc(p.hm_color||'none')+'" style="width:100%;min-height:42px;padding:8px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827">'+optionsFor(p)+'</select>'+
+          '<div class="row" style="margin-top:8px;align-items:center"><button class="secondary" onclick="window.hmSaveAccurateProductMapping(\''+esc(p.id)+'\',\''+esc(p.hm_grade||'')+'\',\''+esc(p.hm_color||'')+'\')">💾 Simpan Mapping Manual</button><button onclick="window.hmCreateAccuratePhoneMaster(\''+esc(p.id)+'\',\''+esc(p.hm_grade||'')+'\',\''+esc(p.hm_color||'')+'\')">＋ Buat/Pakai Master Otomatis</button><span id="hm-accurate-map-msg-'+esc(p.id)+'-'+esc(p.hm_grade||'none')+'-'+esc(p.hm_color||'none')+'" class="small"></span></div>'+
           '<div class="row" style="margin-top:8px;align-items:center"><button class="secondary" onclick="window.hmSaveAccurateProductMapping(\''+esc(p.id)+'\',\''+esc(p.hm_grade||'')+'\',\''+esc(p.hm_color||'')+'\')">💾 Simpan Mapping Grade Ini</button><span id="hm-accurate-map-msg-'+esc(p.id)+'-'+esc(p.hm_grade||'none')+'-'+esc(p.hm_color||'none')+'" class="small"></span></div>'+
         '</div>';
       }).join('');

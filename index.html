@@ -4592,9 +4592,9 @@ window.hmOpenPartnerSettlementManagement=async function(){
     '<p style="margin:0 0 14px;color:#475467">Stockist: <b>'+safe(partner)+'</b><br>Outlet: '+safe(outlet)+'<br>Nominal: <b>'+safe(amount)+'</b></p>'+
     (isCapital?'<label style="display:block;margin:12px 0 5px;font-weight:600">Akun kas/bank sumber dana <span style="color:#b42318">*</span></label><select id="hmTransferCashAccount" style="box-sizing:border-box;width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:8px"><option value="">Pilih akun kas/bank</option>'+cashAccounts.map(a=>'<option value="'+safe(a.id)+'">'+safe((a.code?a.code+' — ':'')+a.name)+'</option>').join('')+'</select>':'')+'<label style="display:block;margin:12px 0 5px;font-weight:600">Referensi transfer (wajib)</label><input id="hmTransferProofRef" type="text" autocomplete="off" placeholder="Nomor referensi transfer" style="box-sizing:border-box;width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:8px">'+
     '<label style="display:block;margin:12px 0 5px;font-weight:600">Catatan transfer (opsional)</label><textarea id="hmTransferProofNote" rows="3" placeholder="Catatan singkat" style="box-sizing:border-box;width:100%;padding:11px;border:1px solid #d0d5dd;border-radius:8px;resize:vertical"></textarea>'+
-    '<label style="display:block;margin:12px 0 5px;font-weight:600">Foto bukti transfer <span style="color:#b42318">*</span></label><input id="hmTransferProofFile" type="file" accept="image/*" style="display:block;width:100%;padding:8px;border:1px dashed #98a2b3;border-radius:8px">'+
-    '<p style="font-size:12px;color:#667085;margin:8px 0 16px">Pilih foto terlebih dahulu. Foto dibagikan melalui WhatsApp jika browser mendukungnya; file tidak disimpan di database aplikasi.</p>'+
-    '<div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><button type="button" id="hmTransferProofCancel" style="padding:10px 14px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054">Batal</button><button type="button" id="hmTransferProofSend" style="padding:10px 14px;border:0;border-radius:8px;background:#175cd3;color:#fff;font-weight:600">Bagikan foto & catat transfer</button></div></section>';
+    '<label style="display:block;margin:12px 0 5px;font-weight:600">Foto bukti transfer (opsional)</label><input id="hmTransferProofFile" type="file" accept="image/*" style="display:block;width:100%;padding:8px;border:1px dashed #98a2b3;border-radius:8px">'+
+    '<p style="font-size:12px;color:#667085;margin:8px 0 16px">Foto boleh disertakan jika tersedia. Jika tidak ada foto, transfer tetap dapat dicatat dengan referensi dan catatan. Foto yang dipilih dibagikan melalui WhatsApp jika browser mendukungnya; file tidak disimpan di database aplikasi.</p>'+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><button type="button" id="hmTransferProofCancel" style="padding:10px 14px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054">Batal</button><button type="button" id="hmTransferProofSend" style="padding:10px 14px;border:0;border-radius:8px;background:#175cd3;color:#fff;font-weight:600">Bagikan & catat transfer</button></div></section>';
    document.body.appendChild(overlay);
    const closeDialog=()=>overlay.remove();
    overlay.querySelector('#hmTransferProofCancel').addEventListener('click',closeDialog);
@@ -4603,28 +4603,32 @@ window.hmOpenPartnerSettlementManagement=async function(){
     const sendBtn=overlay.querySelector('#hmTransferProofSend');
     const fileInput=overlay.querySelector('#hmTransferProofFile');
     const file=fileInput.files&&fileInput.files[0];
-    if(!file){alert('Pilih foto bukti transfer terlebih dahulu.');fileInput.focus();return;}
-    if(!file.type.startsWith('image/')){alert('Pilih file foto/gambar.');return;}
+    if(file&&!file.type.startsWith('image/')){alert('Pilih file foto/gambar.');return;}
     const ref=overlay.querySelector('#hmTransferProofRef').value.trim();
     const note=overlay.querySelector('#hmTransferProofNote').value.trim();
     const cashAccountId=overlay.querySelector('#hmTransferCashAccount')?.value||'';
     if(!ref){alert('Masukkan nomor referensi transfer terlebih dahulu.');overlay.querySelector('#hmTransferProofRef').focus();return;}
     if(isCapital&&!cashAccountId){alert('Pilih akun kas/bank sumber dana terlebih dahulu.');overlay.querySelector('#hmTransferCashAccount')?.focus();return;}
-    const msg='*KONFIRMASI TRANSFER SETTLEMENT — HELLO MAJESTY*\n\nYth. '+partner+', kami menginformasikan bahwa transfer settlement telah dilakukan. Mohon konfirmasi setelah dana benar-benar terlihat di rekening Anda.\n\n• Outlet: '+outlet+'\n• Tanggal: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n• Referensi transfer: '+(ref||'Tidak dicantumkan')+'\n'+(note?'• Catatan: '+note+'\n':'')+'\nBukti foto terlampir pada pesan ini. Mohon balas untuk mengonfirmasi penerimaan dana. Pesan ini bukan pengganti pengecekan saldo rekening.\n\nHello Majesty — Built on Trust';
+    const msg='*KONFIRMASI TRANSFER SETTLEMENT — HELLO MAJESTY*\n\nYth. '+partner+', kami menginformasikan bahwa transfer settlement telah dilakukan. Mohon konfirmasi setelah dana benar-benar terlihat di rekening Anda.\n\n• Outlet: '+outlet+'\n• Tanggal: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n• Referensi transfer: '+ref+'\n'+(note?'• Catatan: '+note+'\n':'')+(file?'\nBukti foto terlampir pada pesan ini.':'\nBukti foto tidak disertakan.')+' Mohon balas untuk mengonfirmasi penerimaan dana. Pesan ini bukan pengganti pengecekan saldo rekening.\n\nHello Majesty — Built on Trust';
     sendBtn.disabled=true;sendBtn.textContent='Memproses…';
     let shared=false;
     try{
-     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+     if(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
       await navigator.share({files:[file],title:'Bukti transfer settlement',text:msg});shared=true;
+     }else if(!file&&navigator.share){
+      await navigator.share({title:'Konfirmasi transfer settlement',text:msg});shared=true;
      }
     }catch(e){
-     if(e&&e.name==='AbortError'){sendBtn.disabled=false;sendBtn.textContent='Bagikan foto & catat transfer';return;}
-     console.warn('Share file unsupported:',e);
+     if(e&&e.name==='AbortError'){sendBtn.disabled=false;sendBtn.textContent='Bagikan & catat transfer';return;}
+     console.warn('Share unsupported:',e);
     }
     if(!shared){
      closeDialog();
      window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
-     if(!confirm('WhatsApp dibuka dengan pesan teks. Lampirkan foto yang dipilih dan kirim secara manual. Setelah foto benar-benar terkirim, tekan OK untuk mencatat transfer di aplikasi. Jika belum terkirim, tekan Cancel.'))return;
+     const confirmText=file
+      ?'WhatsApp dibuka dengan pesan teks. Lampirkan foto yang dipilih secara manual jika ingin menyertakannya. Setelah pesan benar-benar dikirim, tekan OK untuk mencatat transfer. Jika belum terkirim, tekan Cancel.'
+      :'WhatsApp dibuka dengan pesan teks tanpa foto. Setelah pesan benar-benar dikirim, tekan OK untuk mencatat transfer. Jika belum terkirim, tekan Cancel.';
+     if(!confirm(confirmText))return;
     }else{
      closeDialog();
     }

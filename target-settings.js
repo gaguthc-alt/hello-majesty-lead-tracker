@@ -66,8 +66,8 @@
     if(old.error)return alert('Gagal memeriksa target: '+old.error.message);
     const q=old.data?.id?await window.sb.from('monthly_outlet_targets').update(payload).eq('id',old.data.id):await window.sb.from('monthly_outlet_targets').insert(payload);
     if(q.error)return alert('Target gagal disimpan: '+q.error.message);
-    alert('Target '+outlet+' bulan '+month+' berhasil disimpan.');
-    await window.hmLoadTargets();
+    alert('Target '+outlet+' bulan '+month+' berhasil disimpan. Halaman akan dimuat ulang.');
+    window.location.reload();
   };
 
   function enforceVisibility(){

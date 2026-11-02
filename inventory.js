@@ -1391,17 +1391,36 @@ async function openSalesReport(){
  if(x.error)throw x.error;
  const rows=x.data||[];
  const stockIds=[...new Set(rows.map(r=>r.stock_unit_id).filter(Boolean))];
- let stocks=[],peopleMap={},productMap={},leadMap={};
+ let stocks=[],peopleMap={},productMap={},leadMap={},teamMembersMap={};
 
- // Data utama transaksi adalah wajib. Data produk/Sales/lead hanya pelengkap,
- // supaya satu query tambahan yang gagal tidak membuat laporan ikut gagal.
+ // Data utama transaksi adalah wajib. Data produk/Sales/lead/tim pendamping hanya pelengkap.
+ // Keterlibatan Sales diambil dari tabel transaksi yang sudah dipakai saat perhitungan komisi.
  try{
-   const [stockRes,peopleRes]=await Promise.all([
+   const transactionIds=rows.map(r=>r.id).filter(Boolean);
+   const [stockRes,peopleRes,teamRes]=await Promise.all([
      stockIds.length?sb.from('stock_units').select('id,product_id,color,imei_1,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
-     rows.length?sb.rpc('get_sales_report_people',{p_transaction_ids:rows.map(r=>r.id).filter(Boolean)}):Promise.resolve({data:[]})
+     transactionIds.length?sb.rpc('get_sales_report_people',{p_transaction_ids:transactionIds}):Promise.resolve({data:[]}),
+     transactionIds.length?sb.from('sales_transaction_team_members').select('sale_id,user_id').in('sale_id',transactionIds):Promise.resolve({data:[]})
    ]);
    if(!stockRes.error)stocks=stockRes.data||[];
    if(!peopleRes.error)peopleMap=Object.fromEntries((peopleRes.data||[]).map(p=>[p.transaction_id,p]));
+   if(!teamRes.error&&(teamRes.data||[]).length){
+     const memberIds=[...new Set(teamRes.data.map(m=>m.user_id).filter(Boolean))];
+     const memberNames=memberIds.length?await sb.rpc('get_team_profile_names',{p_user_ids:memberIds}):{data:[]};
+     const nameMap=Object.fromEntries((memberNames.data||[]).map(p=>[p.user_id,p.name]));
+     (teamRes.data||[]).forEach(m=>{
+       const name=nameMap[m.user_id];
+       if(name){
+         if(!teamMembersMap[m.sale_id])teamMembersMap[m.sale_id]=[];
+         teamMembersMap[m.sale_id].push(name);
+       }
+     });
+     Object.keys(teamMembersMap).forEach(id=>{
+       teamMembersMap[id]=[...new Set(teamMembersMap[id])].filter(name=>name!==peopleMap[id]?.sales_name);
+     });
+   }else if(teamRes.error){
+     console.warn('[HM] Sales report team members unavailable:',teamRes.error);
+   }
  }catch(e){console.warn('[HM] Sales report enrichment skipped:',e);}
 
  const productIds=[...new Set(stocks.map(s=>s.product_id).filter(Boolean))];
@@ -1428,7 +1447,8 @@ async function openSalesReport(){
      display_product:[st.product||pm.product||r.product_name||'Produk tidak ditemukan',st.variant||pm.variant].filter(Boolean).join(' — '),
      display_product_details:[st.color?'Warna: '+st.color:'',st.grade?'Grade: '+st.grade:'',st.battery_health?'BH: '+st.battery_health:'',st.imei_1?'IMEI akhir: '+String(st.imei_1).replace(/\D/g,'').slice(-4):''].filter(Boolean).join(' • '),
      display_cs:r.customer_source==='WALK-IN'?'Walk-In':(r.lead_id?(r.cs_closing||r.cs_pic||peopleMap[r.id]?.cs_name||lead?.cs||lead?.cs_claimed_by||'-'):(peopleMap[r.id]?.cs_name||r.cs_closing||lead?.cs||lead?.cs_claimed_by||'-')),
-     display_sales:peopleMap[r.id]?.sales_name||r.sales_closing||'-'
+     display_sales:peopleMap[r.id]?.sales_name||r.sales_closing||'-',
+     display_sales_invited:(teamMembersMap[r.id]||[]).join(', ')
    };
  });
  window.hmSalesReportOutlets=[...new Set(rows.map(r=>String(r.outlet||'').trim()).filter(Boolean))].sort();
@@ -1464,7 +1484,7 @@ function renderInventorySalesReport(){
  '<div class="row" style="margin:12px 0"><button class="'+(period==='TODAY'?'':'secondary')+'" onclick="showSalesReportPeriod(\'TODAY\')">📅 Hari Ini</button><button class="'+(period==='MONTH'?'':'secondary')+'" onclick="showSalesReportPeriod(\'MONTH\')">📆 Bulan Ini</button></div>'+
  '<div class="small">Outlet aktif: <b>'+esc(window.hmSalesReportOutlet==='ALL'?'Semua Outlet':window.hmSalesReportOutlet)+'</b></div>'+
  '<div class="stats" style="margin-top:8px">'+invStat('Omzet',x.total)+invStat('Laba',x.profit)+'</div>'+
- (x.rows.length?x.rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.display_product||'-')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div>'+(r.display_product_details?'<div class="small" style="margin-top:4px">🔎 '+esc(r.display_product_details)+'</div>':'')+'<div class="small">Outlet: <b>'+esc(r.outlet||'-')+'</b></div><div class="small">CS: <b>'+esc(r.display_cs||'-')+'</b> • Sales: <b>'+esc(r.display_sales||'-')+'</b></div><div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
+ (x.rows.length?x.rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.display_product||'-')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div>'+(r.display_product_details?'<div class="small" style="margin-top:4px">🔎 '+esc(r.display_product_details)+'</div>':'')+'<div class="small">Outlet: <b>'+esc(r.outlet||'-')+'</b></div><div class="small">CS: <b>'+esc(r.display_cs||'-')+'</b> • Sales: <b>'+esc(r.display_sales||'-')+'</b></div>'+(r.display_sales_invited?'<div class="small">🤝 Sales yang diajak: <b>'+esc(r.display_sales_invited)+'</b></div>':'')+'<div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
 }
 function changeSalesReportOutlet(outlet){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');

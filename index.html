@@ -2515,7 +2515,7 @@ async function start(u,authClient){
   // Permission tambahan tidak boleh menggagalkan dashboard Management.
   let p={};
   try{
-   const permRows=await fetchJson(SUPABASE_URL+'/rest/v1/team_permissions?name=eq.'+encodeURIComponent(profile.name)+'&outlet=eq.'+encodeURIComponent(profile.outlet)+'&active=eq.true&select=can_cs,can_sales,can_facilitator,can_content_creator,can_hunter&limit=1','Permission akun');
+   const permRows=await fetchJson(SUPABASE_URL+'/rest/v1/team_permissions?name=eq.'+encodeURIComponent(profile.name)+'&outlet=eq.'+encodeURIComponent(profile.outlet)+'&active=eq.true&select=can_cs,can_sales,can_facilitator,can_content_creator,can_hunter,can_checker&limit=1','Permission akun');
    p=Array.isArray(permRows)?(permRows[0]||{}):{};
   }catch(permErr){
    console.warn('[HM] Permission tambahan gagal dimuat; dashboard tetap dilanjutkan.',permErr);
@@ -2527,6 +2527,7 @@ async function start(u,authClient){
   if(p.can_sales)hmPermissionRoles.push('SALES');
   if(p.can_content_creator)hmPermissionRoles.push('CONTENT CREATOR');
   if(p.can_hunter)hmPermissionRoles.push('HUNTER');
+  if(p.can_checker)hmPermissionRoles.push('CHECKER');
   const displayRoles=getActiveRoles();
   const displayPosition=String(profile?.role||'').trim()|| (profile?.is_management?'Management':displayRoles.join(' + '));
   $('identity').textContent=profile.name+' • '+displayPosition+(profile.outlet?' • '+profile.outlet:'');

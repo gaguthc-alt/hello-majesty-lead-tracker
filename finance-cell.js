@@ -139,37 +139,89 @@ window.payPartnerProfitSettlement=async function(period){if(!confirm('Setor prof
 /* HM_STAGED_SETTLEMENT_UI_20261026 */
 window.openPartnerSettlementWorkflow=async function(){
  const p=window.profile||{},role=String(p.role||'').toUpperCase().replace(/[_-]+/g,' ').trim(),outlet=String(p.outlet||'').trim();
- const mg=!!p.is_management||role==='MANAGEMENT'||role==='BUSINESS LEADER',si=role==='MITRA STOCKIST'||role.startsWith('ADMIN FINANCE MAJESTY CELL');
- if(!mg&&!si){alert('Akses tidak diizinkan.');return;}
- const x=panel('Konfirmasi Settlement Mitra');x.b.innerHTML='<div class="small">Memuat...</div>';
+ const mg=!!p.is_management||role==='MANAGEMENT'||role==='BUSINESS LEADER'||role==='DIVISI';
+ const admin=role.startsWith('ADMIN FINANCE MAJESTY CELL')||role==='ADMIN FINANCE';
+ const fac=role==='FASILITATOR',si=role==='MITRA STOCKIST';
+ if(!mg&&!admin&&!fac&&!si){alert('Akses tidak diizinkan.');return;}
+ const x=panel('Settlement Mitra');x.b.innerHTML='<div class="small">Memuat settlement...</div>';
  const esc=v=>e(String(v??'')),money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
+ const outletOptions=fac?[outlet]:[outlet||'Majesty Plaza iPhone','Majesty Plaza iPhone','Majesty Refill Phone'];
+ const uniq=a=>[...new Set(a.filter(Boolean))];
+ const waCopy=async text=>{try{await navigator.clipboard.writeText(text);alert('Ringkasan draft disalin. Tempelkan ke grup WhatsApp settlement.');}catch(_){prompt('Salin pesan ini ke grup WhatsApp:',text);}};
  try{
-  let q=window.sb.from('partner_settlements').select('id,partner_name,outlet,settlement_type,settlement_date,amount,status,transfer_reference,note').order('created_at',{ascending:false}).limit(100);
-  const r=await q;if(r.error)throw r.error;let rows=r.data||[];
+  const list=await window.sb.from('partner_settlements').select('id,partner_name,outlet,settlement_type,settlement_date,amount,status,transfer_reference,transfer_proof_note,transfer_proof_path,received_note,created_at').order('created_at',{ascending:false}).limit(100);
+  if(list.error)throw list.error;
+  let rows=list.data||[];
   if(si)rows=rows.filter(v=>String(v.partner_name||'').trim().toLowerCase()===outlet.toLowerCase());
-  let summaryRows=[];try{const sr=await window.sb.rpc('partner_obligation_summary');if(!sr.error&&Array.isArray(sr.data))summaryRows=sr.data;}catch(_e){}
-  if(si)summaryRows=summaryRows.filter(v=>String(v.partner_name||'').trim().toLowerCase()===outlet.toLowerCase());
-  let cashAccounts=[];if(mg){const ca=await window.sb.from('accounting_accounts').select('id,code,name,account_type').eq('active',true).eq('account_type','ASSET').order('code');if(!ca.error)cashAccounts=ca.data||[];}
-  const cashOptions='<option value="">Pilih akun kas/bank sumber transfer</option>'+cashAccounts.map(a=>'<option value="'+esc(a.id)+'">'+esc(a.code)+' — '+esc(a.name)+'</option>').join('');
-  const summaryHtml=summaryRows.length?'<h3>Ringkasan kewajiban</h3>'+summaryRows.map(v=>'<div class="box" style="margin:8px 0"><b>'+esc(v.partner_name)+' • '+esc(v.outlet)+'</b><div>Modal belum diselesaikan: '+money(v.capital_due)+'</div><div>Profit sharing belum diselesaikan: '+money(v.profit_share_due)+'</div></div>').join(''):'';
-  const cards=rows.map(v=>{let a='';
-   if(mg&&['DRAFT','AWAITING_PARTNER_CONFIRMATION'].includes(v.status))a+='<button data-hms-req="'+v.id+'">Minta konfirmasi mitra</button>';
-   if(si&&v.status==='AWAITING_PARTNER_CONFIRMATION')a+='<button data-hms-ok="'+v.id+'">Konfirmasi nominal</button><button data-hms-no="'+v.id+'">Minta koreksi</button>';
-   if(mg&&v.status==='PARTNER_CONFIRMED'&&v.settlement_type==='CAPITAL')a+='<select data-hms-cash="'+v.id+'" style="min-width:240px;padding:10px;border:1px solid #94a3b8;border-radius:8px">'+cashOptions+'</select><input data-hms-ref="'+v.id+'" placeholder="Referensi transfer wajib"><input data-hms-proof="'+v.id+'" placeholder="Catatan bukti transfer"><button data-hms-send="'+v.id+'">Catat transfer + jurnal</button>';
-   else if(mg&&v.status==='PARTNER_CONFIRMED')a+='<div class="small">Pencatatan jurnal untuk profit sharing belum diaktifkan pada alur ini.</div>';
-   if(si&&v.status==='TRANSFER_SENT')a+='<input data-hms-note="'+v.id+'" placeholder="Catatan penerimaan"><button data-hms-recv="'+v.id+'">Konfirmasi dana diterima</button><button data-hms-miss="'+v.id+'">Dana belum diterima</button>';
-   return '<div class="box" style="margin:10px 0"><b>'+esc(v.partner_name)+' • '+esc(v.outlet)+'</b><div>'+money(v.amount)+' • '+esc(v.settlement_type)+'</div><div class="small">Status: '+esc(v.status)+' • '+esc(v.settlement_date||'-')+'</div>'+(v.transfer_reference?'<div class="small">Referensi: '+esc(v.transfer_reference)+'</div>':'')+(a?'<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">'+a+'</div>':'')+'</div>';
+  if(fac)rows=rows.filter(v=>String(v.outlet||'').trim().toLowerCase()===outlet.toLowerCase());
+  const summary=rows.map(async v=>{const it=await window.sb.from('partner_settlement_items').select('id').eq('settlement_id',v.id);return {...v,itemCount:(it.data||[]).length};});
+  const cards=await Promise.all(summary);
+  let createHtml='';
+  if(fac||mg){
+   createHtml='<div class="box"><h3>1. Buat draft pengajuan</h3><p class="small">Pilih barang SOLD yang belum masuk settlement. Barang boleh berasal dari tanggal penjualan berbeda.</p><label>Outlet</label><select id="hmSetOutlet">'+uniq(outletOptions).map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select><label>Mitra Stockist</label><select id="hmSetPartner"><option>Majesty Cell</option><option>Majesty Gadget</option><option>Majesty Store</option></select><button type="button" id="hmLoadSetItems">Muat barang SOLD</button><div id="hmSetEligible" style="margin-top:10px"></div><div id="hmSetTotal" class="box" style="margin-top:10px">Belum ada barang dipilih.</div><button type="button" id="hmCreateSetDraft" disabled>Buat draft & salin pesan WhatsApp</button></div>';
+  }
+  const historyHtml=cards.map(v=>{
+   let action='';
+   if((mg||admin)&&v.status==='DRAFT')action='<div class="small" style="margin:8px 0">Draft menunggu transfer oleh Management/Admin.</div><label>Referensi transfer</label><input data-set-ref="'+v.id+'" placeholder="Nomor/referensi transfer"><label>Catatan transfer</label><input data-set-note="'+v.id+'" placeholder="Opsional"><label>Bukti transfer</label><input data-set-file="'+v.id+'" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"><button data-set-transfer="'+v.id+'">Upload bukti & konfirmasi transfer</button>';
+   if(si&&v.status==='TRANSFER_SENT')action='<div class="small">Bukti transfer: '+(v.transfer_proof_path?'<a target="_blank" href="'+esc(window.sb.storage.from('partner-settlement-proofs').getPublicUrl(v.transfer_proof_path).data.publicUrl)+'">Lihat bukti</a>':'terlampir melalui grup WhatsApp')+'</div><input data-set-recv-note="'+v.id+'" placeholder="Catatan penerimaan (opsional)"><button data-set-recv="'+v.id+'">Konfirmasi dana diterima</button><button data-set-not-recv="'+v.id+'">Dana belum diterima</button>';
+   const statusLabel={DRAFT:'Draft — menunggu transfer',TRANSFER_SENT:'Menunggu penerimaan Stockist',PAID:'Selesai',RECEIVED:'Selesai',CANCELLED:'Dibatalkan',REJECTED:'Ditolak'}[v.status]||v.status;
+   return '<div class="box" style="margin:10px 0"><b>'+esc(v.partner_name)+' • '+esc(v.outlet)+'</b><div>'+money(v.amount)+' • '+Number(v.itemCount||0)+' unit</div><div class="small">Status: '+esc(statusLabel)+' • '+esc(v.settlement_date||'-')+'</div>'+(v.transfer_reference?'<div class="small">Referensi: '+esc(v.transfer_reference)+'</div>':'')+(v.transfer_proof_note?'<div class="small">'+esc(v.transfer_proof_note)+'</div>':'')+(action?'<div style="margin-top:10px">'+action+'</div>':'')+'</div>';
   }).join('');
-  x.b.innerHTML='<p>Alur konfirmasi terpisah: mitra menyetujui nominal → Management mencatat transfer → mitra memastikan dana masuk. Ini hanya memperbarui status; tidak membuat jurnal akuntansi.</p>'+summaryHtml+'<h3>Riwayat settlement</h3>'+(cards||'<div class="box">Belum ada settlement.</div>');
-  const reload=()=>window.openPartnerSettlementWorkflow();
-  x.b.querySelectorAll('[data-hms-req]').forEach(b=>b.onclick=async()=>{const z=await window.sb.rpc('request_partner_settlement_confirmation',{p_settlement_id:b.dataset.hmsReq});if(z.error)return alert(z.error.message);reload();});
-  x.b.querySelectorAll('[data-hms-ok]').forEach(b=>b.onclick=async()=>{if(!confirm('Nominal settlement sudah sesuai?'))return;const z=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:b.dataset.hmsOk,p_confirm:true,p_note:'Nominal dikonfirmasi melalui aplikasi'});if(z.error)return alert(z.error.message);reload();});
-  x.b.querySelectorAll('[data-hms-no]').forEach(b=>b.onclick=async()=>{const n=prompt('Alasan koreksi wajib diisi:');if(!n||!n.trim())return;const z=await window.sb.rpc('confirm_partner_settlement_obligation',{p_settlement_id:b.dataset.hmsNo,p_confirm:false,p_note:n.trim()});if(z.error)return alert(z.error.message);reload();});
-  x.b.querySelectorAll('[data-hms-send]').forEach(b=>b.onclick=async()=>{const id=b.dataset.hmsSend,ref=x.b.querySelector('[data-hms-ref="'+id+'"]').value.trim(),proof=x.b.querySelector('[data-hms-proof="'+id+'"]').value.trim(),cash=x.b.querySelector('[data-hms-cash="'+id+'"]')?.value;if(!cash)return alert('Pilih akun kas/bank yang benar-benar digunakan untuk transfer.');if(!ref)return alert('Referensi transfer wajib diisi.');if(!confirm('Pastikan transfer benar-benar sudah dikirim dari akun kas/bank yang dipilih. Sistem akan membuat jurnal pelunasan modal. Lanjutkan?'))return;const z=await window.sb.rpc('record_partner_settlement_transfer_with_account',{p_settlement_id:id,p_cash_account_id:cash,p_reference:ref,p_proof_note:proof||null});if(z.error)return alert(z.error.message);alert('Transfer tercatat dan jurnal dibuat.');reload();});
-  x.b.querySelectorAll('[data-hms-recv]').forEach(b=>b.onclick=async()=>{if(!confirm('Dana benar-benar sudah masuk?'))return;const id=b.dataset.hmsRecv,n=x.b.querySelector('[data-hms-note="'+id+'"]').value.trim(),z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:id,p_received:true,p_note:n||null});if(z.error)return alert(z.error.message);reload();});
-  x.b.querySelectorAll('[data-hms-miss]').forEach(b=>b.onclick=async()=>{const n=prompt('Alasan dana belum diterima:');if(!n||!n.trim())return;const z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:b.dataset.hmsMiss,p_received:false,p_note:n.trim()});if(z.error)return alert(z.error.message);reload();});
+  x.b.innerHTML=createHtml+'<h3>2. Riwayat & proses transfer</h3>'+(historyHtml||'<div class="box">Belum ada settlement.</div>');
+  const load=document.getElementById('hmLoadSetItems');
+  if(load)load.onclick=async()=>{
+   const o=document.getElementById('hmSetOutlet').value,partner=document.getElementById('hmSetPartner').value,host=document.getElementById('hmSetEligible');
+   host.innerHTML='<div class="small">Memuat barang SOLD...</div>';
+   try{
+    const q=await window.sb.rpc('partner_capital_due_detail',{p_outlet:o});if(q.error)throw q.error;
+    let items=(q.data||[]).filter(v=>v.stock_unit_id);
+    if(o==='Majesty Plaza iPhone'){
+     const h=await window.sb.from('partner_historical_stock_details').select('id,partner_name,outlet,product_name,condition,grade,color,storage_gb,cost,imei_1,sale_price,sold_at,settlement_id').eq('outlet',o).eq('partner_name',partner).eq('sold_status','SOLD').is('settlement_id',null).order('sold_at',{ascending:true});
+     if(h.error)throw h.error;
+     items=items.concat((h.data||[]).map(v=>({...v,historical_stock_detail_id:v.id,capital_due:v.cost,product_name:v.product_name,variant:v.storage_gb?String(v.storage_gb)+'GB':'',stock_unit_id:null})));
+    }
+    const existing=await window.sb.from('partner_settlement_items').select('stock_unit_id,historical_stock_detail_id,settlement_id');
+    if(existing.error)throw existing.error;
+    const used=new Set((existing.data||[]).flatMap(v=>[v.stock_unit_id,v.historical_stock_detail_id]).filter(Boolean).map(String));
+    const eligible=items.filter(v=>!used.has(String(v.stock_unit_id||v.historical_stock_detail_id))&&(!v.partner_name||String(v.partner_name).toLowerCase()===partner.toLowerCase()));
+    host.innerHTML=eligible.length?eligible.map((v,i)=>'<label style="display:block;padding:10px;border-bottom:1px solid #ddd"><input type="checkbox" class="hm-set-item" data-index="'+i+'" style="width:auto"> <b>'+esc(v.product_name||'Produk')+(v.variant?' — '+esc(v.variant):'')+'</b><br><span class="small">'+esc(v.color||'')+' • Modal '+money(v.capital_due||v.cost)+(v.battery_health!=null?' • BH '+Number(v.battery_health)+'%':'')+(v.imei_1?' • IMEI '+esc(v.imei_1):'')+(v.sold_at?' • '+new Date(v.sold_at).toLocaleDateString('id-ID'):'')+'</span></label>').join(''):'<div class="small">Tidak ada barang SOLD yang eligible untuk mitra/outlet ini.</div>';
+    window.__hmSettlementEligible=eligible;
+    const total=()=>{const chosen=[...host.querySelectorAll('.hm-set-item:checked')].map(el=>eligible[Number(el.dataset.index)]),sum=chosen.reduce((n,v)=>n+Number(v.capital_due||v.cost||0),0);document.getElementById('hmSetTotal').textContent=chosen.length+' unit dipilih • '+money(sum);document.getElementById('hmCreateSetDraft').disabled=!chosen.length;};
+    host.querySelectorAll('.hm-set-item').forEach(el=>el.onchange=total);total();
+   }catch(err){host.innerHTML='<div class="small">Gagal memuat: '+esc(err.message||err)+'</div>';}
+  };
+  const create=document.getElementById('hmCreateSetDraft');
+  if(create)create.onclick=async()=>{
+   const host=document.getElementById('hmSetEligible'),eligible=window.__hmSettlementEligible||[],chosen=[...host.querySelectorAll('.hm-set-item:checked')].map(el=>eligible[Number(el.dataset.index)]);
+   if(!chosen.length)return;
+   const o=document.getElementById('hmSetOutlet').value,partner=document.getElementById('hmSetPartner').value,amount=chosen.reduce((n,v)=>n+Number(v.capital_due||v.cost||0),0),user=await window.sb.auth.getUser();
+   if(user.error||!user.data.user)return alert('Sesi login tidak ditemukan.');
+   const header=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet:o,settlement_type:'CAPITAL',settlement_date:new Date().toISOString().slice(0,10),amount,status:'DRAFT',created_by:user.data.user.id,note:'Draft pengajuan barang SOLD; menunggu transfer Management/Admin.'}).select('id').single();
+   if(header.error)return alert('Gagal membuat draft: '+header.error.message);
+   const itemRows=chosen.map(v=>({settlement_id:header.data.id,stock_unit_id:v.stock_unit_id||null,historical_stock_detail_id:v.historical_stock_detail_id||null,capital_amount:Number(v.capital_due||v.cost||0),profit_amount:0,partner_profit_share:0}));
+   const ins=await window.sb.from('partner_settlement_items').insert(itemRows);
+   if(ins.error){await window.sb.from('partner_settlements').delete().eq('id',header.data.id);return alert('Draft belum tersimpan karena rincian gagal: '+ins.error.message);}
+   const msg='*PENGAJUAN DRAFT SETTLEMENT HELLO MAJESTY*\nMitra: '+partner+'\nOutlet: '+o+'\nJumlah unit: '+chosen.length+'\nTotal modal: '+money(amount)+'\nTanggal barang: sesuai rincian penjualan (lintas tanggal)\nStatus: DRAFT — menunggu Management/Admin melakukan transfer dan mengirim bukti.\nID: '+header.data.id;
+   await waCopy(msg);alert('Draft berhasil dibuat. Barang sudah dikunci agar tidak diajukan dua kali.');window.openPartnerSettlementWorkflow();
+  };
+  x.b.querySelectorAll('[data-set-transfer]').forEach(b=>b.onclick=async()=>{
+   const id=b.dataset.setTransfer,ref=x.b.querySelector('[data-set-ref="'+id+'"]').value.trim(),note=x.b.querySelector('[data-set-note="'+id+'"]').value.trim(),file=x.b.querySelector('[data-set-file="'+id+'"]').files?.[0];
+   if(!file)return alert('Bukti transfer wajib diunggah.');if(!ref)return alert('Isi referensi transfer.');
+   if(!confirm('Pastikan transfer sudah benar-benar dilakukan. Lanjutkan mengirim bukti dan mengubah status?'))return;
+   const path=id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+   const up=await window.sb.storage.from('partner-settlement-proofs').upload(path,file,{upsert:false,contentType:file.type});
+   if(up.error)return alert('Upload bukti gagal: '+up.error.message);
+   const upd=await window.sb.from('partner_settlements').update({status:'TRANSFER_SENT',transfer_sent_by:(await window.sb.auth.getUser()).data.user.id,transfer_sent_at:new Date().toISOString(),transfer_reference:ref,transfer_proof_note:note||'Bukti transfer diunggah melalui aplikasi.',transfer_proof_path:path}).eq('id',id).eq('status','DRAFT');
+   if(upd.error){await window.sb.storage.from('partner-settlement-proofs').remove([path]);return alert('Gagal mencatat transfer: '+upd.error.message);}
+   await waCopy(' *BUKTI TRANSFER SETTLEMENT HELLO MAJESTY*\nSettlement ID: '+id+'\nReferensi: '+ref+'\nBukti transfer telah diunggah di aplikasi. Mohon Stockist memeriksa dana masuk dan melakukan konfirmasi penerimaan.');
+   alert('Bukti transfer tersimpan. Status menunggu penerimaan Stockist.');window.openPartnerSettlementWorkflow();
+  });
+  x.b.querySelectorAll('[data-set-recv]').forEach(b=>b.onclick=async()=>{if(!confirm('Dana benar-benar sudah masuk ke rekening/kas Stockist?'))return;const id=b.dataset.setRecv,n=x.b.querySelector('[data-set-recv-note="'+id+'"]').value.trim(),z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:id,p_received:true,p_note:n||null});if(z.error)return alert(z.error.message);alert('Penerimaan Stockist tercatat.');window.openPartnerSettlementWorkflow();});
+  x.b.querySelectorAll('[data-set-not-recv]').forEach(b=>b.onclick=async()=>{const n=prompt('Alasan dana belum diterima:');if(!n||!n.trim())return;const z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:b.dataset.setNotRecv,p_received:false,p_note:n.trim()});if(z.error)return alert(z.error.message);window.openPartnerSettlementWorkflow();});
  }catch(err){x.b.textContent='Gagal memuat settlement: '+String(err?.message||err);}
 };
 
+/* HM_STAGED_SETTLEMENT_ENTRYPOINT */
+window.openPartnerSettlement=window.openPartnerSettlementWorkflow;
 /* HM_STAGED_SETTLEMENT_ENTRYPOINT */
 window.openPartnerSettlement=window.openPartnerSettlementWorkflow;

@@ -265,9 +265,10 @@ async function reviewInventoryReceive(stockId,action){
   waMessage=[action==='REJECT'?'❌ *BARANG MASUK DITOLAK*':'📝 *BARANG MASUK PERLU KOREKSI*','', 'ID stok: '+stockId,'Catatan: '+note].join(nl);
   alert(action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');
  }
+ // Perbarui daftar dan badge persetujuan setelah proses database berhasil.
+ closeModal();await renderInventory();
  const sendWA=confirm('Buka WhatsApp untuk mengirim pemberitahuan '+(action==='APPROVE'?'persetujuan':'hasil pemeriksaan')+'?');
  if(sendWA){window.location.href='https://wa.me/?text='+encodeURIComponent(waMessage);return;}
- closeModal();await renderInventory();
 }
 async function openMyClosings(){
   try{

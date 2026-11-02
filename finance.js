@@ -528,9 +528,14 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
     const salePrice=Number(document.getElementById('sap')?.value||0);
     const teamMemberIds=[...document.querySelectorAll('.closingSalesMember:checked')].map(x=>x.value);
     const pay=document.getElementById('salePayment');
-    const methodId=pay?.value;
-    const code=pay?.selectedOptions?.[0]?.dataset?.code;
-    if(!FIN_CODES.includes(String(code||'').toUpperCase())) return window.__hmOriginalSaveS(id);
+    const selectedCode=String(pay?.selectedOptions?.[0]?.dataset?.code||'').toUpperCase();
+    const provider=document.getElementById('payLaterProvider');
+    const providerCode=String(provider?.selectedOptions?.[0]?.dataset?.code||'').toUpperCase();
+    const isPayLaterFinance=selectedCode==='PAY_LATER'&&FIN_CODES.includes(providerCode);
+    const code=isPayLaterFinance?providerCode:selectedCode;
+    const methodId=isPayLaterFinance?provider?.value:pay?.value;
+    if(!FIN_CODES.includes(code)) return window.__hmOriginalSaveS(id);
+    if(!methodId)return alert('Provider finance wajib dipilih. Closing belum disimpan.');
     const fee=Math.max(Number(document.getElementById('financeEstimatedFee')?.value||0),0);
     const financeRequestedAmount=Math.max(Number(document.getElementById('financeRequestedAmount')?.value||0),0);
     const cashPayment=Math.max(Number(document.getElementById('financeCashPayment')?.value||0),0);

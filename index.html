@@ -6687,7 +6687,7 @@ async function claimFromLink(id){
      const nowMs=Date.now(),expiryMs=7*24*60*60*1000;
      const unresolved=(pending.data||[]).find(row=>{
        const resultCandidates=[row.sales_result,row.hasil,row.qualification_result].map(v=>String(v||'').trim().toUpperCase());
-       const hasReportedOutcome=resultCandidates.some(v=>['CLOSING','POTENSIAL','GAGAL'].includes(v));
+       const hasReportedOutcome=resultCandidates.some(v=>['CLOSING','POTENSIAL','GAGAL','LOST'].includes(v));
        const claimedAt=Date.parse(row.sales_claimed_at||row.updated_at||row.created_at||'');
        const stillWithinSevenDays=Number.isFinite(claimedAt)&&(nowMs-claimedAt)<=expiryMs;
        // Qualification result (for example GAGAL) is also a valid completed outcome.

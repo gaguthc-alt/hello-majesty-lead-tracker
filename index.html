@@ -6109,7 +6109,8 @@ async function openTargetSettings(){
  const monthNow=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
  const defaults=[
   {outlet:'Majesty Plaza iPhone',wa_target:300,qualified_target:175,closing_target:40,nominal_target:33000000},
-  {outlet:'Majesty Refill Phone',wa_target:200,qualified_target:50,closing_target:30,nominal_target:10000000}
+  {outlet:'Majesty Refill Phone',wa_target:200,qualified_target:50,closing_target:30,nominal_target:10000000},
+  {outlet:'Majesty Space',wa_target:0,qualified_target:0,closing_target:0,nominal_target:0,bonus_label:'',bonus_amount:0}
  ];
  $('mt').textContent='⚙️ Target Outlet Bulanan';
  $('mb').innerHTML='<div class="box"><div class="small">Atur target per outlet dan per bulan. Perubahan bulan tidak mengubah target bulan lain.</div><label>Bulan Target</label><input type="month" id="hmMonthlyTargetMonth" value="'+monthNow()+'" onchange="window.hmRenderMonthlyTargets()"><div id="hmMonthlyTargetList" style="margin-top:12px"><div class="small">Memuat target…</div></div></div>';
@@ -6137,7 +6138,7 @@ async function openTargetSettings(){
       '<div><label>Target Laba (Rp)</label><input type="number" min="0" step="1000" id="hmTprofit_'+i+'" value="'+v('nominal_target')+'"></div>'+
       '<div><label>Nama Reward</label><input id="hmTbonuslabel_'+i+'" value="'+esc(row.bonus_label||'')+'"></div>'+
       '<div><label>Nominal Reward (Rp)</label><input type="number" min="0" step="1000" id="hmTbonus_'+i+'" value="'+v('bonus_amount')+'"></div>'+
-     '</div><button class="success" style="width:100%;margin-top:10px" type="button" onclick="window.hmSaveMonthlyTarget('+i+')">💾 Simpan Target '+(i===0?'Plaza':'Refill')+'</button></div>';
+     '</div><button class="success" style="width:100%;margin-top:10px" type="button" onclick="window.hmSaveMonthlyTarget('+i+')">💾 Simpan Target '+esc(base.outlet)+'</button></div>';
    }).join('');
    window.hmSaveMonthlyTarget=async function(i){
     const monthValue=document.getElementById('hmMonthlyTargetMonth')?.value;
@@ -6169,7 +6170,8 @@ async function openTargetSettings(){
  await window.hmRenderMonthlyTargets();
 }
 async function saveTarget(outlet){
- return window.hmSaveMonthlyTarget?.(outlet==='Majesty Plaza iPhone'?0:1);
+ const idx=['Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space'].indexOf(outlet);
+ return idx>=0?window.hmSaveMonthlyTarget?.(idx):undefined;
 }
  // Expose modal actions globally for inline onclick handlers.
  window.openTargetSettings=openTargetSettings;

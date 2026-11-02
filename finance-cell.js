@@ -215,8 +215,8 @@ window.openPartnerSettlementWorkflow=async function(){
    const path=id+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
    const up=await window.sb.storage.from('partner-settlement-proofs').upload(path,file,{upsert:false,contentType:file.type});
    if(up.error)return alert('Upload bukti gagal: '+up.error.message);
-   const upd=await window.sb.from('partner_settlements').update({status:'TRANSFER_SENT',transfer_sent_by:(await window.sb.auth.getUser()).data.user.id,transfer_sent_at:new Date().toISOString(),transfer_reference:ref,transfer_proof_note:note||'Bukti transfer diunggah melalui aplikasi.',transfer_proof_path:path}).eq('id',id).eq('status','DRAFT');
-   if(upd.error){await window.sb.storage.from('partner-settlement-proofs').remove([path]);return alert('Gagal mencatat transfer: '+upd.error.message);}
+   const upd=await window.sb.from('partner_settlements').update({status:'TRANSFER_SENT',transfer_sent_by:(await window.sb.auth.getUser()).data.user.id,transfer_sent_at:new Date().toISOString(),transfer_reference:ref,transfer_proof_note:note||'Bukti transfer diunggah melalui aplikasi.',transfer_proof_path:path}).eq('id',id).eq('status','DRAFT').select('id').maybeSingle();
+   if(upd.error||!upd.data){await window.sb.storage.from('partner-settlement-proofs').remove([path]);return alert('Transfer belum tercatat. '+(upd.error?.message||'Settlement tidak ditemukan, status berubah, atau akun tidak memiliki izin.'));}
    await waCopy(' *BUKTI TRANSFER SETTLEMENT HELLO MAJESTY*\nSettlement ID: '+id+'\nReferensi: '+ref+'\nBukti transfer telah diunggah di aplikasi. Mohon Stockist memeriksa dana masuk dan melakukan konfirmasi penerimaan.');
    alert('Bukti transfer tersimpan. Status menunggu penerimaan Stockist.');window.openPartnerSettlementWorkflow();
   });

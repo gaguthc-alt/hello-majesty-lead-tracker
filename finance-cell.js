@@ -163,7 +163,7 @@ window.openPartnerSettlementWorkflow=async function(){
   const historyHtml=cards.map(v=>{
    let action='';
    if((mg||admin)&&v.status==='DRAFT')action='<div class="small" style="margin:8px 0">Draft menunggu transfer oleh Management/Admin.</div><label>Referensi transfer</label><input data-set-ref="'+v.id+'" placeholder="Nomor/referensi transfer"><label>Catatan transfer</label><input data-set-note="'+v.id+'" placeholder="Opsional"><label>Bukti transfer</label><input data-set-file="'+v.id+'" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"><button data-set-transfer="'+v.id+'">Upload bukti & konfirmasi transfer</button>';
-   if(si&&v.status==='TRANSFER_SENT')action='<div class="small">Bukti transfer: '+(v.transfer_proof_path?'<a target="_blank" href="'+esc(window.sb.storage.from('partner-settlement-proofs').getPublicUrl(v.transfer_proof_path).data.publicUrl)+'">Lihat bukti</a>':'terlampir melalui grup WhatsApp')+'</div><input data-set-recv-note="'+v.id+'" placeholder="Catatan penerimaan (opsional)"><button data-set-recv="'+v.id+'">Konfirmasi dana diterima</button><button data-set-not-recv="'+v.id+'">Dana belum diterima</button>';
+   if(si&&v.status==='TRANSFER_SENT')action='<div class="small">Bukti transfer: '+(v.transfer_proof_path?'<button type="button" data-set-proof="'+v.id+'">Lihat bukti transfer</button>':'terlampir melalui grup WhatsApp')+'</div><input data-set-recv-note="'+v.id+'" placeholder="Catatan penerimaan (opsional)"><button data-set-recv="'+v.id+'">Konfirmasi dana diterima</button><button data-set-not-recv="'+v.id+'">Dana belum diterima</button>';
    const statusLabel={DRAFT:'Draft — menunggu transfer',TRANSFER_SENT:'Menunggu penerimaan Stockist',PAID:'Selesai',RECEIVED:'Selesai',CANCELLED:'Dibatalkan',REJECTED:'Ditolak'}[v.status]||v.status;
    return '<div class="box" style="margin:10px 0"><b>'+esc(v.partner_name)+' • '+esc(v.outlet)+'</b><div>'+money(v.amount)+' • '+Number(v.itemCount||0)+' unit</div><div class="small">Status: '+esc(statusLabel)+' • '+esc(v.settlement_date||'-')+'</div>'+(v.transfer_reference?'<div class="small">Referensi: '+esc(v.transfer_reference)+'</div>':'')+(v.transfer_proof_note?'<div class="small">'+esc(v.transfer_proof_note)+'</div>':'')+(action?'<div style="margin-top:10px">'+action+'</div>':'')+'</div>';
   }).join('');
@@ -176,13 +176,17 @@ window.openPartnerSettlementWorkflow=async function(){
     const q=await window.sb.rpc('partner_capital_due_detail',{p_outlet:o});if(q.error)throw q.error;
     let items=(q.data||[]).filter(v=>v.stock_unit_id);
     if(o==='Majesty Plaza iPhone'){
-     const h=await window.sb.from('partner_historical_stock_details').select('id,partner_name,outlet,product_name,condition,grade,color,storage_gb,cost,imei_1,sale_price,sold_at,settlement_id').eq('outlet',o).eq('partner_name',partner).eq('sold_status','SOLD').is('settlement_id',null).order('sold_at',{ascending:true});
+     const h=await window.sb.from('partner_historical_stock_details').select('id,partner_name,outlet,product_name,condition,grade,color,storage_gb,cost,imei_1,sale_price,sold_at,settlement_id').eq('outlet',o).eq('partner_name',partner).eq('sold_status','SOLD').order('sold_at',{ascending:true});
      if(h.error)throw h.error;
      items=items.concat((h.data||[]).map(v=>({...v,historical_stock_detail_id:v.id,capital_due:v.cost,product_name:v.product_name,variant:v.storage_gb?String(v.storage_gb)+'GB':'',stock_unit_id:null})));
     }
     const existing=await window.sb.from('partner_settlement_items').select('stock_unit_id,historical_stock_detail_id,settlement_id');
     if(existing.error)throw existing.error;
-    const used=new Set((existing.data||[]).flatMap(v=>[v.stock_unit_id,v.historical_stock_detail_id]).filter(Boolean).map(String));
+    const linkedIds=[...new Set((existing.data||[]).map(v=>v.settlement_id).filter(Boolean))];
+    const linked=linkedIds.length?await window.sb.from('partner_settlements').select('id,status').in('id',linkedIds):{data:[],error:null};
+    if(linked.error)throw linked.error;
+    const activeSettlementIds=new Set((linked.data||[]).filter(v=>!['CANCELLED','REJECTED'].includes(String(v.status||'').toUpperCase())).map(v=>String(v.id)));
+    const used=new Set((existing.data||[]).filter(v=>activeSettlementIds.has(String(v.settlement_id))).flatMap(v=>[v.stock_unit_id,v.historical_stock_detail_id]).filter(Boolean).map(String));
     const eligible=items.filter(v=>!used.has(String(v.stock_unit_id||v.historical_stock_detail_id))&&(!v.partner_name||String(v.partner_name).toLowerCase()===partner.toLowerCase()));
     host.innerHTML=eligible.length?eligible.map((v,i)=>'<label style="display:block;padding:10px;border-bottom:1px solid #ddd"><input type="checkbox" class="hm-set-item" data-index="'+i+'" style="width:auto"> <b>'+esc(v.product_name||'Produk')+(v.variant?' — '+esc(v.variant):'')+'</b><br><span class="small">'+esc(v.color||'')+' • Modal '+money(v.capital_due||v.cost)+(v.battery_health!=null?' • BH '+Number(v.battery_health)+'%':'')+(v.imei_1?' • IMEI '+esc(v.imei_1):'')+(v.sold_at?' • '+new Date(v.sold_at).toLocaleDateString('id-ID'):'')+'</span></label>').join(''):'<div class="small">Tidak ada barang SOLD yang eligible untuk mitra/outlet ini.</div>';
     window.__hmSettlementEligible=eligible;
@@ -216,6 +220,7 @@ window.openPartnerSettlementWorkflow=async function(){
    await waCopy(' *BUKTI TRANSFER SETTLEMENT HELLO MAJESTY*\nSettlement ID: '+id+'\nReferensi: '+ref+'\nBukti transfer telah diunggah di aplikasi. Mohon Stockist memeriksa dana masuk dan melakukan konfirmasi penerimaan.');
    alert('Bukti transfer tersimpan. Status menunggu penerimaan Stockist.');window.openPartnerSettlementWorkflow();
   });
+  x.b.querySelectorAll('[data-set-proof]').forEach(b=>b.onclick=async()=>{const id=b.dataset.setProof,row=cards.find(v=>String(v.id)===String(id));if(!row?.transfer_proof_path)return alert('Path bukti transfer tidak ditemukan.');const signed=await window.sb.storage.from('partner-settlement-proofs').createSignedUrl(row.transfer_proof_path,300);if(signed.error)return alert('Bukti transfer tidak dapat dibuka: '+signed.error.message);window.open(signed.data.signedUrl,'_blank','noopener');});
   x.b.querySelectorAll('[data-set-recv]').forEach(b=>b.onclick=async()=>{if(!confirm('Dana benar-benar sudah masuk ke rekening/kas Stockist?'))return;const id=b.dataset.setRecv,n=x.b.querySelector('[data-set-recv-note="'+id+'"]').value.trim(),z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:id,p_received:true,p_note:n||null});if(z.error)return alert(z.error.message);alert('Penerimaan Stockist tercatat.');window.openPartnerSettlementWorkflow();});
   x.b.querySelectorAll('[data-set-not-recv]').forEach(b=>b.onclick=async()=>{const n=prompt('Alasan dana belum diterima:');if(!n||!n.trim())return;const z=await window.sb.rpc('confirm_partner_settlement_received',{p_settlement_id:b.dataset.setNotRecv,p_received:false,p_note:n.trim()});if(z.error)return alert(z.error.message);window.openPartnerSettlementWorkflow();});
  }catch(err){x.b.textContent='Gagal memuat settlement: '+String(err?.message||err);}

@@ -59,13 +59,30 @@
           }
         }catch(e){console.warn('[HM] read latest auth session',e);}
         if(!activeSession?.refresh_token)throw new Error('Sesi login sudah tidak tersedia. Silakan login kembali.');
-        const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{
-          method:'POST',
-          headers:{apikey:KEY,'Content-Type':'application/json'},
-          body:JSON.stringify({refresh_token:activeSession.refresh_token})
-        });
-        let data=null;try{data=await res.json();}catch(_e){}
-        if(!res.ok||!data?.access_token){
+        // Retry singkat dan timeout untuk jaringan mobile yang berpindah.
+        let res=null,data=null,lastNetworkError=null;
+        for(let attempt=0;attempt<2;attempt++){
+          const controller=new AbortController();
+          const timer=setTimeout(()=>controller.abort(),12000);
+          try{
+            res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{
+              method:'POST',
+              headers:{apikey:KEY,'Content-Type':'application/json'},
+              body:JSON.stringify({refresh_token:activeSession.refresh_token}),
+              signal:controller.signal,
+              cache:'no-store'
+            });
+            data=null;try{data=await res.json();}catch(_e){}
+            lastNetworkError=null;break;
+          }catch(networkError){
+            lastNetworkError=networkError;
+            if(attempt===0)await sleep(700);
+          }finally{clearTimeout(timer);}
+        }
+        if(lastNetworkError)throw new Error(lastNetworkError?.name==='AbortError'
+          ?'Pembaruan sesi terlalu lama. Periksa koneksi HP lalu tekan Coba lagi.'
+          :'Koneksi terputus saat memperbarui sesi. Periksa internet lalu tekan Coba lagi.');
+        if(!res?.ok||!data?.access_token){
           // Jika tab lain menang refresh lebih dahulu, gunakan sesi baru yang
           // sudah tersimpan, bukan langsung menganggap akun harus login ulang.
           try{
@@ -329,31 +346,13 @@
       return true;
     }catch(ex){
       console.warn('[HM] Auto restore session failed:',ex);
-      // Jangan melakukan fallback ke backup/sessionStorage.
-      // Jika sesi persisten gagal dipulihkan, pengguna harus login kembali.
-      try{
-        const fallback=JSON.parse(localStorage.getItem('hm_auth_session')||'null');
-        if(fallback?.access_token && fallback?.user){
-          activeSession={...fallback};
-          const sb=await getClient(fallback);
-          window.sb=sb;
-          const starter=await waitForAppStarter();
-          const loginPage=document.getElementById('login');
-          const appPage=document.getElementById('app');
-          const roleHome=document.getElementById('roleHome');
-          if(loginPage)loginPage.classList.add('hidden');
-          if(appPage)appPage.classList.remove('hidden');
-          if(roleHome)roleHome.classList.remove('hidden');
-          const startPromise=Promise.resolve().then(()=>starter(fallback.user,sb));
-          const startTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Dashboard tidak merespons dalam 12 detik saat memulihkan sesi tersimpan.')),12000));
-          Promise.race([startPromise,startTimeout]).catch(showRestoreBootError);
-          return true;
-        }
-      }catch(fallbackErr){
-        console.warn('[HM] Saved access-token fallback failed:',fallbackErr);
+      // Jangan menjalankan dashboard dengan access token lama setelah refresh gagal.
+      // Simpan sesi bila gangguan jaringan bersifat sementara agar bisa dicoba lagi.
+      const msg=String(ex?.message||ex);
+      const invalidRefresh=/invalid.*refresh|refresh.*(expired|revoked|not found)|refresh token.*invalid/i.test(msg);
+      if(invalidRefresh){
+        try{localStorage.removeItem('hm_auth_session');activeSession=null;}catch(_e){}
       }
-      // Jangan pernah meninggalkan layar kosong jika restore gagal.
-      // Kembalikan shell login secara eksplisit sebagai fallback terakhir.
       try{
         const loginPage=document.getElementById('login');
         const appPage=document.getElementById('app');
@@ -361,6 +360,10 @@
         if(loginPage)loginPage.classList.remove('hidden');
         if(appPage)appPage.classList.add('hidden');
         if(roleHome)roleHome.classList.add('hidden');
+        const err=el('loginErr');
+        if(err)err.textContent=invalidRefresh
+          ?'Sesi sudah dicabut atau kedaluwarsa. Silakan login kembali.'
+          :'Sesi belum dapat dipulihkan karena koneksi/server. Periksa internet lalu tekan LOGIN untuk mencoba lagi.';
       }catch(_e){}
       return false;
     }
@@ -383,6 +386,14 @@
   window.doLogin=doLogin;
   window.hmLoginClient=()=>getClient();
   window.hmRestoreLogin=restorePersistedSession;
+  // Sinkronkan rotasi refresh token antar-tab agar tidak memakai token lama.
+  window.addEventListener('storage',function(event){
+    if(event.key!=='hm_auth_session'||!event.newValue)return;
+    try{
+      const latest=JSON.parse(event.newValue);
+      if(latest?.access_token&&latest?.refresh_token)activeSession={...(activeSession||{}),...latest};
+    }catch(e){console.warn('[HM] session storage sync',e);}
+  });
   // Auto-restore the last authenticated session on page load.
   setTimeout(()=>restorePersistedSession(),500);
 

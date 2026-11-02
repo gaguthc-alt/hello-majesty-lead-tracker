@@ -38,7 +38,7 @@
     const r=await window.sb.from('monthly_outlet_targets').select('*').eq('month_start',ms).order('outlet');
     if(r.error){list.innerHTML='<div style="padding:14px;background:#fff1f0;color:#b42318;border-radius:10px">Gagal memuat target: '+esc(r.error.message)+'</div>';return;}
     const rows=r.data||[];
-    const known=['Majesty Plaza iPhone','Majesty Refill Phone'];
+    const known=['Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space'];
     const names=[...new Set([...known,...rows.map(x=>x.outlet)])];
     list.innerHTML=names.map((name,i)=>{
       const x=rows.find(a=>a.outlet===name)||{outlet:name,wa_target:0,qualified_target:0,closing_target:0,nominal_target:0,bonus_label:'Liburan',bonus_amount:0,active:true};
@@ -138,7 +138,7 @@
     const headings=[...document.querySelectorAll('h1,h2,h3,h4,h5,strong,b')];
     headings.forEach(heading=>{
       const headingText=String(heading.innerText||heading.textContent||'').replace(/\\s+/g,' ').trim();
-      if(!/^TARGET\\s+(Majesty Plaza iPhone|Majesty Refill Phone)$/i.test(headingText))return;
+      if(!/^TARGET\\s+(Majesty Plaza iPhone|Majesty Refill Phone|Majesty Space)$/i.test(headingText))return;
       let card=heading.parentElement;
       for(let i=0;i<7&&card;i++,card=card.parentElement){
         const text=card.innerText||card.textContent||'';

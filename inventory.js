@@ -649,7 +649,7 @@ async function openInventorySection(view){
  }catch(e){console.error('[HM] Inventory section error',e);alert(e?.message||e);}
 }
 async function refreshInventory(btn){if(btn?.disabled)return;try{if(btn){btn.disabled=true;btn.textContent='⏳ Loading...'}await renderInventory()}catch(e){console.error(e);alert('Refresh Product & Stock error: '+(e?.message||e))}finally{if(btn){btn.disabled=false;btn.textContent='↻ Refresh'}}}
-async function loadHunterDashboard(){const r=await sb.from('hunter_dashboard').select('*').order('total_commission',{ascending:false});if(r.error)throw r.error;hunterDashboard=r.data||[]}
+async function loadHunterDashboard(){const r=await sb.rpc('hunter_dashboard_rows');if(r.error)throw r.error;hunterDashboard=r.data||[]}
 function fmtRp(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}
 async function markHunterCommissionPaid(id){if(!profile?.is_management)return alert('Hanya Management yang dapat menandai pembayaran komisi Hunter.');const note=prompt('Catatan pembayaran (opsional):')||null;const r=await sb.rpc('mark_commission_paid',{p_kind:'hunter',p_sale_id:id,p_note:note});if(r.error)return alert(r.error.message);openHunterCommission()}
 async function markCheckerCommissionPaid(id){if(!profile?.is_management)return alert('Hanya Management yang dapat menandai pembayaran komisi Checker.');const note=prompt('Catatan pembayaran (opsional):')||null;const r=await sb.rpc('mark_commission_paid',{p_kind:'checker',p_sale_id:id,p_note:note});if(r.error)return alert(r.error.message);openCheckerCommission()}

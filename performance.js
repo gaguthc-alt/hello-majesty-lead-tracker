@@ -39,7 +39,8 @@
   async function getSales(mode){
     const start=monthStart(mode).toISOString();
     const end=monthEnd(mode).toISOString();
-    let q=sb.from('sales_transactions').select('id,outlet,sale_price,discount,gross_profit,sold_at');
+    const canViewProfit=!!profile?.is_management;
+    let q=sb.from('sales_transactions').select(canViewProfit?'id,outlet,sale_price,discount,gross_profit,sold_at':'id,outlet,sale_price,discount,sold_at');
     if(!profile?.is_management && profile?.outlet)q=q.eq('outlet',profile.outlet);
     const x=await q.gte('sold_at',start).lt('sold_at',end);
     if(x.error)throw x.error;
@@ -50,7 +51,7 @@
       if(!map[k])map[k]={units:0,omzet:0,profit:0};
       map[k].units++;
       map[k].omzet+=Number(r.sale_price||0)-Number(r.discount||0);
-      map[k].profit+=Number(r.gross_profit||0);
+      if(canViewProfit)map[k].profit+=Number(r.gross_profit||0);
     });
     return map;
   }
@@ -74,11 +75,11 @@
         '<div class="stat"><div class="small">🔍 Qualified</div><div class="num">'+fmt(qActual)+' / '+fmt(qTarget)+'</div><div class="small">'+pct(qActual,qTarget)+'%</div></div>'+
         '<div class="stat"><div class="small">🏆 Closing</div><div class="num">'+fmt(closingActual)+' / '+fmt(closingTarget)+'</div><div class="small">'+unitPct+'%</div></div>'+
       '</div>'+
-      '<div class="box" style="margin:8px 0 0;background:#f8fafc">'+
+      (profile?.is_management?'<div class="box" style="margin:8px 0 0;background:#f8fafc">'+
         '<div class="row" style="justify-content:space-between"><b>📈 Profit / Laba</b><b>Rp'+fmt(profitActual)+'</b></div>'+
         '<div class="small" style="margin-top:4px">Target Profit Rp'+fmt(profitTarget)+' • Pencapaian '+profitPct+'%</div>'+
         '<div class="small" style="margin-top:3px">Omzet: Rp'+fmt(s.omzet||0)+' • tidak digunakan untuk KPI nominal</div>'+
-      '</div>'+
+      '</div>':'')+
       '<div class="small" style="margin-top:7px">🎁 '+escP(o.bonus_label||'Bonus belum diatur')+(Number(o.bonus_amount||0)?' • Rp'+fmt(o.bonus_amount):'')+'</div>'+
     '</div>';
   }

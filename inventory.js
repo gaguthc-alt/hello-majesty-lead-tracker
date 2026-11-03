@@ -893,8 +893,7 @@ async function deleteStockPhoto(stockId,slot){
  if(!confirm('Hapus Foto '+slot+' dari unit ini?'))return;
  const paths=['jpg','jpeg','png','webp'].map(ext=>`${stockId}/foto-${slot}.${ext}`);
  const rm=await sb.storage.from('stock-photos').remove(paths);if(rm.error)return alert(rm.error.message);
- const data={};data['photo_'+slot]=null;data.updated_at=new Date().toISOString();
- const db=await sb.from('stock_units').update(data).eq('id',stockId);if(db.error)return alert(db.error.message);
+ const rpc=await sb.rpc('update_stock_photo',{p_stock_id:stockId,p_slot:Number(slot),p_photo_url:null});if(rpc.error)return alert(rpc.error.message);
  await renderInventory();openProductDetail(stockId);
 }
 function stockPhotoGallery(s,editable=false){

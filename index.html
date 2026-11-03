@@ -5795,6 +5795,27 @@ async function logout(){
   }catch(e){console.warn('[HM] logout cleanup',e);}
   location.reload();
 }
+async function hmReloadLeadDataPreservingView(reason='refresh'){
+ const activeMenu=String(window.hmActiveMainMenu||'');
+ const result=await sb.from('leads').select('*').order('created_at',{ascending:false});
+ if(result.error)throw result.error;
+ leads=result.data||[];
+ // Re-render hanya modul lead yang sedang aktif; menu, filter, dan halaman lain tetap dipertahankan.
+ if(activeMenu==='Lead Aktif'||activeMenu==='Data Lead'){
+  const root=document.getElementById('hmLeadTrackerRoot');
+  if(root)hmLeadTrackerApplyFilter();
+  else hmOpenLeadTracker();
+ }else if(activeMenu==='Lead Handover'){
+  hmOpenLeadHandover();
+ }else if(activeMenu==='Perlu Perhatian'){
+  if(typeof showNeedsAttention==='function')showNeedsAttention();
+ }else if(!activeMenu){
+  // Dashboard utama memang sedang aktif.
+  await render();
+ }
+ // Menu lain sengaja tidak disentuh: hanya state data diperbarui.
+ return {count:leads.length,reason,activeMenu};
+}
 async function loadLeads(){
  // Maintenance follow-up/arsip bersifat best-effort: kegagalan jaringan pada RPC
  // tidak boleh memblokir dashboard atau pembacaan lead yang sudah ada.
@@ -7339,7 +7360,7 @@ async function saveLead(){
 function editNeedFields(t,d){
  const v=k=>esc(d?.[k]??'');
  const opts=(arr,sel)=>arr.map(x=>'<option value="'+esc(x)+'"'+(x===sel?' selected':'')+'>'+esc(x)+'</option>').join('');
- return '<label>Kebutuhan</label><select id="e_need_type" onchange="renderEditNeedFields()">'+opts(['PEMBELIAN','SERVICE','TUKAR TAMBAH','KREDIT/CICILAN'],t)+'</select><div id="editNeedFields"></div>';
+ return '<label>Kebutuhan</label><select id="e_need_type" onchange="renderEditNeedFields()">'+opts(['PEMBELIAN','SERVICE','TUKAR TAMBAH','KREDIT/CICILAN','INFORMASI'],t)+'</select><div id="editNeedFields"></div>';
 }
 function renderEditNeedFields(){
  const l=window.hmEditingLead||{},t=$('e_need_type')?.value,d=l.initial_data||{},h=$('editNeedFields');if(!h)return;
@@ -7368,63 +7389,88 @@ function editLead(id){
  $('updateBtn').onclick=()=>updateLead(id);$('modal').classList.remove('hidden');renderEditNeedFields();
 }
 async function updateLead(id){
- const l=leads.find(x=>x.lead_id===id);if(!l)return;
- const d=buildEditInitialData(),t=$('e_need_type').value;let summary='';
- if(t==='PEMBELIAN')summary=d.product||'';else if(t==='SERVICE')summary=[d.device,d.model,d.complaint].filter(Boolean).join(' ');else if(t==='TUKAR TAMBAH')summary=[d.device,d.capacity,d.wanted_product].filter(Boolean).join(' → ');else if(t==='KREDIT/CICILAN')summary=d.product||'';else summary=d.information||'';
- const x=await sb.rpc('update_lead',{p_lead_id:id,p_data:{product:$('ep').value.trim()||d.product||d.wanted_product||null,need:summary||$('en').value.trim()||t,budget:$('eb').value.trim()||d.budget||d.dp_budget||d.price||null,preference:$('epr').value.trim()||d.preference||null,catatan:$('ec').value.trim()||null,need_type:t,initial_data:d}});
- if(x.error)return alert(x.error.message);delete window.hmEditingLead;closeModal();await loadLeads();
+ const l=(leads||[]).find(x=>String(x.lead_id)===String(id));if(!l)return;
+ const btn=document.getElementById('updateBtn');if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent='Menyimpan...';}
+ try{
+  const d=buildEditInitialData(),t=$('e_need_type')?.value||l.need_type||'INFORMASI';
+  let summary='';
+  if(t==='PEMBELIAN')summary=d.product||'';
+  else if(t==='SERVICE')summary=[d.device,d.model,d.complaint].filter(Boolean).join(' ');
+  else if(t==='TUKAR TAMBAH')summary=[d.device,d.capacity,d.wanted_product].filter(Boolean).join(' → ');
+  else if(t==='KREDIT/CICILAN')summary=d.product||'';
+  else summary=d.information||'';
+  const payload={
+   product:$('ep')?.value?.trim()||d.product||d.wanted_product||null,
+   need:summary||$('en')?.value?.trim()||t,
+   budget:$('eb')?.value?.trim()||d.budget||d.dp_budget||d.price||null,
+   preference:$('epr')?.value?.trim()||d.preference||null,
+   catatan:$('ec')?.value?.trim()||null,
+   need_type:t,
+   initial_data:d
+  };
+  const x=await sb.rpc('update_lead',{p_lead_id:id,p_data:payload});
+  if(x.error)throw x.error;
+  if(x.data){
+   const updated=Array.isArray(x.data)?x.data[0]:x.data;
+   if(updated){leads=(leads||[]).map(row=>String(row.lead_id)===String(id)?updated:row);}
+  }
+  delete window.hmEditingLead;
+  closeModal();
+  await hmReloadLeadDataPreservingView('edit');
+  showHMToast('✅ Perubahan lead berhasil disimpan');
+ }catch(e){
+  console.error('[HM] updateLead:',e);
+  alert('Perubahan lead gagal disimpan: '+String(e?.message||e));
+ }finally{
+  const current=document.getElementById('updateBtn');
+  if(current){current.disabled=false;current.textContent='Simpan Update';}
+ }
 }
-async function resetLead(id){if(!confirm('Reset lead ke AVAILABLE?'))return;const x=await sb.rpc('reset_lead',{p_lead_id:id});if(x.error)return alert(x.error.message);await loadLeads()}
+async function resetLead(id)
+async function resetLead(id){
+ if(!confirm('Reset lead ke AVAILABLE? Semua claim dan hasil follow-up akan dikosongkan.'))return;
+ try{
+  const x=await sb.rpc('reset_lead',{p_lead_id:id});
+  if(x.error)throw x.error;
+  await hmReloadLeadDataPreservingView('reset');
+  closeModal();
+  showHMToast('✅ Lead berhasil direset ke AVAILABLE');
+ }catch(e){
+  console.error('[HM] resetLead:',e);
+  alert('Reset lead gagal: '+String(e?.message||e));
+ }
+}
+function deleteLead(id)
 function deleteLead(id){
- const modal=document.getElementById('modal');
- if(modal)modal.style.display='';
- $('mt').textContent='🗑 Hapus';
- $('mb').innerHTML='<p>Yakin ingin menghapus lead ini?</p><button id="deleteBtn" class="danger">Hapus</button>';
+ const lead=(leads||[]).find(x=>String(x.lead_id)===String(id));
+ if(!lead)return alert('Lead tidak ditemukan. Muat ulang data lalu coba kembali.');
+ $('mt').textContent='🗑 Konfirmasi Hapus Lead';
+ $('mb').innerHTML='<div class="box"><b>Hapus lead '+esc(id)+'?</b><div class="small" style="margin-top:6px">Customer: '+esc(lead.customer||'-')+'<br>Outlet: '+esc(lead.outlet||'-')+'</div><p style="margin:12px 0">Data lead akan dihapus permanen dan tidak dapat dipulihkan.</p><button id="deleteBtn" class="danger" type="button">Lanjutkan Hapus Permanen</button> <button class="secondary" type="button" onclick="closeModal()">Batal</button></div>';
  $('deleteBtn').onclick=()=>confirmDelete(id);
  $('modal').classList.remove('hidden');
 }
 async function confirmDelete(id){
  const leadId=String(id||'').trim();
- const ok=confirm('Yakin ingin menghapus lead ini?');
- if(!ok)return;
+ if(!leadId)return;
  const btn=document.getElementById('deleteBtn');
+ if(btn?.disabled)return;
+ if(!confirm('KONFIRMASI TERAKHIR\n\nHapus permanen lead '+leadId+'? Tindakan ini tidak dapat dibatalkan.'))return;
  if(btn){btn.disabled=true;btn.textContent='Menghapus...';}
  try{
-  // Optimistic delete: kartu hilang SEGERA setelah konfirmasi, tanpa menunggu RPC/database.
-  document.querySelectorAll('[data-lead-id]').forEach(el=>{
-    if(String(el.getAttribute('data-lead-id')||'').trim()===leadId){
-      el.remove();
-    }
-  });
-  leads=(leads||[]).filter(l=>String(l?.lead_id||'').trim()!==leadId);
-
   const x=await sb.rpc('delete_lead',{p_lead_id:leadId,p_confirmation:'YA, HAPUS PERMANEN'});
   if(x.error)throw x.error;
-  // Tutup modul Lead Tracker secara paksa agar kartu yang baru dihapus
-  // tidak mungkin tetap terlihat di modal yang sedang terbuka.
-  const modal=document.getElementById('modal');
-  const mb=document.getElementById('mb');
-  if(mb)mb.innerHTML='';
-  if(modal){
-    modal.classList.add('hidden');
-    modal.style.display='';
-  }
-
-  // Buang dari state lokal dan render halaman utama tanpa menunggu database.
-  leads=(leads||[]).filter(l=>String(l?.lead_id||'').trim()!==leadId);
-  const leadHost=document.getElementById('leads');
-  if(leadHost)leadHost.innerHTML=leads.filter(viewerLead).filter(l=>['AVAILABLE','CS LOCK','QUALIFIED','HANDLE'].includes(l.status_lead)||l.qualification_result==='POTENSIAL'||l.sales_result==='POTENSIAL').map(card).join('')||'<div class="small">Tidak ada lead aktif.</div>';
-  render().catch(e=>console.error('[HM] Render setelah delete:',e));
-
-  // Sinkronisasi database berjalan di belakang.
-  loadLeads().catch(e=>console.error('[HM] Sinkronisasi setelah delete:',e));
+  if(x.data!==true)throw new Error('Lead tidak ditemukan atau sudah dihapus.');
+  leads=(leads||[]).filter(row=>String(row?.lead_id||'')!==leadId);
+  closeModal();
+  await hmReloadLeadDataPreservingView('delete');
+  showHMToast('🗑 Lead berhasil dihapus permanen');
  }catch(e){
-  // Jika database gagal, ambil ulang agar kartu yang dihapus secara optimistis kembali.
-  if(btn){btn.disabled=false;btn.textContent='Hapus';}
-  await loadLeads().catch(()=>{});
+  console.error('[HM] confirmDelete:',e);
+  if(btn){btn.disabled=false;btn.textContent='Lanjutkan Hapus Permanen';}
   alert('Hapus lead gagal: '+String(e?.message||e));
  }
 }
+function showTodayLeads()
 function showTodayLeads(){
  const todayStart=new Date();todayStart.setHours(0,0,0,0);
  const tomorrow=new Date(todayStart);tomorrow.setDate(tomorrow.getDate()+1);

@@ -1569,8 +1569,10 @@ async function saveSalesTransactionPrice(id){
   const result=await sb.rpc('update_sales_transaction_price',{p_sale_id:id,p_new_sale_price:price,p_note:note});
   if(result.error)throw result.error;
   const data=result.data||{};
+  const updatedPrice=Number(data.new_sale_price??price),updatedProfit=Number(data.new_profit??profit);
+  window.hmSalesReportRows=(window.hmSalesReportRows||[]).map(row=>String(row.id)===String(id)?{...row,sale_price:updatedPrice,gross_profit:updatedProfit}:row);
   closeModal();
-  await openSalesReport();
+  renderInventorySalesReport();
   alert('Harga transaksi berhasil diperbarui.\nHarga jual: Rp'+Number(data.new_sale_price??price).toLocaleString('id-ID')+'\nLaba baru: Rp'+Number(data.new_profit??profit).toLocaleString('id-ID')+'\n\nKomisi berbasis laba akan mengikuti perhitungan terbaru.'+(data.accurate_sync_status==='FAILED'?'\n\nCatatan: Sinkronisasi Accurate masih FAILED. Perbaiki mapping produk sebelum sinkronisasi ulang.':''));
  }catch(e){
   buttons.forEach(b=>b.disabled=false);

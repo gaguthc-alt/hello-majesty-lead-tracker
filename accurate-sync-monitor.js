@@ -333,7 +333,7 @@
         sb.from('product_master').select('id,category,product,variant,grade,accurate_item_id,accurate_item_no').eq('active',true).order('category').order('product'),
         sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no,status').in('status',['READY','SOLD']).eq('outlet','Majesty Plaza iPhone'),
         sb.functions.invoke('accurate-sync',{body:{action:'list_items'}}),
-        sb.from('sales_transactions').select('stock_unit_id').eq('outlet','Majesty Plaza iPhone').eq('accurate_sync_status','FAILED')
+        sb.rpc('accurate_failed_stock_ids')
       ]);
       if(results[0].error) throw results[0].error;
       if(results[1].error) throw results[1].error;

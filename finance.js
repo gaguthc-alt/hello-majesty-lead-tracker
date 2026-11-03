@@ -161,7 +161,7 @@ window.loadPartnerProfitSettlement=async function(){
   if(!p.is_management&&(role.includes('STOCKIST')||role.startsWith('ADMIN FINANCE MAJESTY CELL'))){alert('Rincian profit sharing tidak tersedia pada akun mitra stockist.');return;}
   const box=document.getElementById('partnerSettlementDetail');if(!box)return;
   const now=new Date(),start=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
-  const {data:r}=await sb.from('partner_profit_share_monthly').select('*').eq('outlet','Majesty Refill Phone').eq('partner_name','Majesty Cell').eq('period_start',start).maybeSingle();
+  const {data:r}=await sb.rpc('partner_profit_share_monthly_row',{p_outlet:'Majesty Refill Phone',p_partner:'Majesty Cell',p_period_start:start});
   const isMasked=String((window.profile||{}).name||'').trim().toLowerCase()==='saka'||String((window.profile||{}).role||'').trim().toUpperCase().replace(/_/g,' ')==='FASILITATOR';
   const gross=Number(r?.partner_profit_share||0);
   const {data:settlements}=await sb.from('partner_settlements').select('amount').eq('partner_name','Majesty Cell').eq('outlet','Majesty Refill Phone').eq('settlement_type','PROFIT_SHARING').eq('status','PAID').eq('period_start',start);

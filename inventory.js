@@ -1517,6 +1517,7 @@ function renderInventorySalesReport(){
  if(!body){const panel=$('inventoryPanel');if(!panel)return;panel.innerHTML='<div id="inventoryBody"></div>';body=$('inventoryBody');}
  const d=buildSalesReportData();
  const period=window.hmSalesReportPeriod||'TODAY',x=d[period==='MONTH'?'month':'today'];
+ const canViewProfit=!!profile?.is_management;
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const lockedOutlet=(role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL')&&profile?.outlet?String(profile.outlet):null;
  const outlets=window.hmSalesReportOutlets||[],available=lockedOutlet?[lockedOutlet]:['ALL',...outlets];
@@ -1525,8 +1526,8 @@ function renderInventorySalesReport(){
  '<label>Outlet</label><select id="hmSalesReportOutlet" '+(lockedOutlet?'disabled':'')+' onchange="changeSalesReportOutlet(this.value)">'+options+'</select>'+
  '<div class="row" style="margin:12px 0"><button class="'+(period==='TODAY'?'':'secondary')+'" onclick="showSalesReportPeriod(\'TODAY\')">📅 Hari Ini</button><button class="'+(period==='MONTH'?'':'secondary')+'" onclick="showSalesReportPeriod(\'MONTH\')">📆 Bulan Ini</button></div>'+
  '<div class="small">Outlet aktif: <b>'+esc(window.hmSalesReportOutlet==='ALL'?'Semua Outlet':window.hmSalesReportOutlet)+'</b></div>'+
- '<div class="stats" style="margin-top:8px">'+invStat('Omzet',x.total)+invStat('Laba',x.profit)+'</div>'+
- (x.rows.length?x.rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.display_product||'-')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div>'+(r.display_product_details?'<div class="small" style="margin-top:4px">🔎 '+esc(r.display_product_details)+'</div>':'')+'<div class="small">Outlet: <b>'+esc(r.outlet||'-')+'</b></div><div class="small">CS: <b>'+esc(r.display_cs||'-')+'</b> • Sales: <b>'+esc(r.display_sales||'-')+'</b></div>'+(r.display_sales_invited?'<div class="small">🤝 Sales yang diajak: <b>'+esc(r.display_sales_invited)+'</b></div>':'')+'<div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
+ '<div class="stats" style="margin-top:8px">'+invStat('Omzet',x.total)+(canViewProfit?invStat('Laba',x.profit):'')+'</div>'+
+ (x.rows.length?x.rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.display_product||'-')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div>'+(r.display_product_details?'<div class="small" style="margin-top:4px">🔎 '+esc(r.display_product_details)+'</div>':'')+'<div class="small">Outlet: <b>'+esc(r.outlet||'-')+'</b></div><div class="small">CS: <b>'+esc(r.display_cs||'-')+'</b> • Sales: <b>'+esc(r.display_sales||'-')+'</b></div>'+(r.display_sales_invited?'<div class="small">🤝 Sales yang diajak: <b>'+esc(r.display_sales_invited)+'</b></div>':'')+'<div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+(canViewProfit?' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID'):'')+'</div></div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
 }
 function changeSalesReportOutlet(outlet){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');

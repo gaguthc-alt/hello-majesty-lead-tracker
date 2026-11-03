@@ -1325,7 +1325,7 @@ async function saveStock(){
   alert(e?.message||e);
  }finally{
   window.hmSavingStock=false;
-  if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='Simpan Stock Ready';}
+  if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=source==='STOCKIST'?'Kirim untuk Persetujuan':'Simpan Stock Ready';}
  }
 
 }

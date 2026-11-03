@@ -58,11 +58,20 @@
   window.hmDoMutasi=async function(id){
     const to=document.getElementById('hmMutasiDefault')?.value||'';
     if(!to.trim())return;
+    const btn=[...document.querySelectorAll('#hmMenuPanelBody button')].find(b=>String(b.getAttribute('onclick')||'').includes("hmDoMutasi('"+id+"'"));
+    if(btn?.disabled)return;
     const note=prompt('Catatan mutasi (opsional):')||null;
-    const r=await sb.rpc('create_stock_transfer',{p_stock_unit_id:id,p_to_outlet:to.trim(),p_notes:note});
-    if(r.error)return alert('Mutasi gagal: '+r.error.message);
-    alert('Mutasi berhasil: '+(r.data?.transfer_no||'OK'));
-    await openMutasi();
+    if(btn){btn.disabled=true;btn.textContent='⏳ Memproses mutasi...';}
+    try{
+      const r=await sb.rpc('create_stock_transfer',{p_stock_unit_id:id,p_to_outlet:to.trim(),p_notes:note});
+      if(r.error)throw r.error;
+      alert('Mutasi berhasil: '+(r.data?.transfer_no||'OK'));
+      // Pertahankan tujuan mutasi dan panel yang sedang dibuka; cukup muat ulang daftar stok.
+      await window.hmReloadMutasi();
+    }catch(e){
+      alert('Mutasi gagal: '+(e?.message||e));
+      if(btn){btn.disabled=false;btn.textContent='🔄 Mutasikan ke '+to;}
+    }
   };
 
   async function openRiwayat(){

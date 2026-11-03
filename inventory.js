@@ -953,7 +953,599 @@ function stockCard(s){
  if(isSecond){
    details='<div style="margin-top:8px;font-size:13px;line-height:1.55">'+
      '<div><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'</div>'+
-     '<div style="margin-top:6px">'+(canViewProfit?'<div>Harga beli / Modal: <b>Rp'+Number(r.cost||0).toLocaleString('id-ID')+'</b></div>':'')+'<div>Harga jual: <b>Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+'</b>'+(Number(r.discount||0)>0?' <span class="small">(Diskon Rp'+Number(r.discount||0).toLocaleString('id-ID')+')</span>':'')+'</div>'+(canViewProfit?'<div>Laba: <b>Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</b></div>':'')+'</div>'+(profile?.is_management?'<button class="secondary" style="margin-top:8px" onclick="openSalesTransactionEdit(&quot;'+r.id+'&quot;)">✏️ Edit Transaksi</button>':'')+'</div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
+     '<div><b>Minus:</b> '+esc(s.minus||'-')+'</div>'+
+   '</div>';
+ }
+ const salePrice='<div style="margin-top:9px"><div style="font-size:12px;font-weight:600;color:#667085">Harga Jual</div><div style="font-size:21px;line-height:1.2;font-weight:800">Rp'+inventoryNumber(s.asking_price).toLocaleString('id-ID')+'</div></div>';
+ const cost=canViewCost?'<div class="small" style="margin-top:6px"><b>Harga Beli:</b> Rp'+inventoryNumber(s.cost).toLocaleString('id-ID')+'</div>':'';
+ return '<div class="lead" style="padding:14px;margin-bottom:10px">'+
+   '<div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px"><div style="display:flex;gap:10px;min-width:0"><div>'+photo+'</div><div><b style="font-size:18px;line-height:1.3">'+esc(title)+'</b></div></div><span class="badge">'+esc(s.status||'-')+'</span></div>'+
+   '<div class="small" style="margin-top:8px">📍 Outlet: <b>'+esc(s.outlet||'-')+'</b>'+(s.status==='SOLD'?' • Terjual '+new Date(s.sold_at).toLocaleDateString('id-ID'):'')+'</div>'+
+   '<div class="small" style="margin-top:6px;line-height:1.45">'+meta.join(' • ')+'</div>'+
+   '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
+   cost+details+salePrice+
+   '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
+   (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
+   (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
+   '</div></div>';
+}
+async function openSupplierReturn(id){
+ const s=inventoryStock.find(x=>x.id===id);
+ if(!s)return alert('Stock tidak ditemukan.');
+ if(s.status!=='READY')return alert('Hanya stock READY yang dapat diretur.');
+ const actorRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); if(!(actorRole==='FASILITATOR'||actorRole==='DIVISI'||inventoryCanFacilitator))return alert('Hanya Fasilitator atau Divisi yang dapat melakukan retur supplier.');
+ const label=[s.product,s.variant,s.color].filter(Boolean).join(' — ');
+ $('mt').textContent='↩️ Retur Supplier';
+ $('mb').innerHTML='<div class="notice"><b>Barang:</b> '+esc(label)+'<br><b>Outlet:</b> '+esc(s.outlet||'-')+'<br><b>IMEI:</b> '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+'</div>'+
+ '<label>Alasan Retur</label><textarea id="retReason" rows="3" placeholder="Contoh: Unit bermasalah / salah kirim / tidak sesuai kondisi"></textarea>'+
+ '<label>Penyelesaian dengan Supplier</label><select id="retSettlement"><option value="CREDIT_SUPPLIER">Potong Hutang Supplier</option><option value="REFUND_CASH">Uang Dikembalikan Supplier</option><option value="EXCHANGE">Tukar Barang</option><option value="PENDING">Menunggu Penyelesaian</option></select>'+
+ '<label>Catatan (opsional)</label><textarea id="retNotes" rows="2"></textarea>'+
+ '<button class="danger" onclick="confirmSupplierReturn(\''+String(id).replace(/'/g,"\\'")+'\')">↩️ Konfirmasi Retur</button>';
+ $('modal').classList.remove('hidden');
+}
+async function confirmSupplierReturn(id){
+ const reason=String($('retReason')?.value||'').trim();
+ if(!reason)return alert('Alasan retur wajib diisi.');
+ const settlement=$('retSettlement')?.value||'CREDIT_SUPPLIER';
+ const notes=String($('retNotes')?.value||'').trim()||null;
+ if(!confirm('Yakin barang ini dikembalikan ke supplier? Stock akan berubah menjadi RETURN dan tidak dapat dijual lagi.'))return;
+ const r=await sb.rpc('return_stock_to_supplier',{p_stock_id:id,p_reason:reason,p_settlement_type:settlement,p_actor_user_id:profile?.user_id||null,p_return_value:null,p_notes:notes});
+ if(r.error)return alert('Retur gagal: '+r.error.message);
+ alert('✅ Retur supplier berhasil dicatat.');
+ closeModal();
+ await renderInventory();
+}
+function openStockAI(id){
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ $('mt').textContent='🤖 Tanya AI — '+[s.product,s.variant,s.color].filter(Boolean).join(' — ');
+ $('mb').innerHTML='<div class="notice"><b>Produk:</b> '+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+'<br><b>Status:</b> '+esc(s.status||'-')+'<br><b>Harga Jual:</b> '+fmtRp(s.asking_price)+'</div><label>Pertanyaan</label><textarea id="stockAIQuestion" rows="4" placeholder="Contoh: Bagaimana cara menawarkan produk ini ke customer?"></textarea><div class="small" style="margin-top:6px">AI menggunakan Master Prompt Hello Majesty dan konteks produk ini. Harga beli/modal tidak dikirim untuk role yang tidak berwenang.</div><button id="stockAIAskBtn" class="success" style="margin-top:10px" onclick="askStockAI(' + JSON.stringify(s.id) + ')">🤖 Tanya AI</button><div id="stockAIAnswer" class="box hidden" style="white-space:pre-wrap;margin-top:12px"></div>';
+ $('modal').classList.remove('hidden');setTimeout(()=>$('stockAIQuestion')?.focus(),50);
+}
+async function askStockAI(id){
+ const q=String($('stockAIQuestion')?.value||'').trim();if(!q)return alert('Pertanyaan wajib diisi.');
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ const btn=$('stockAIAskBtn'),out=$('stockAIAnswer');if(btn)btn.disabled=true;if(out){out.classList.remove('hidden');out.textContent='AI sedang menganalisis produk...';}
+ const canViewCost=!!profile?.is_management||!!inventoryCanFacilitator;
+ const stock={id:s.id,category:s.category,product:s.product,variant:s.variant,color:s.color,grade:s.grade,battery_health:s.battery_health,condition:s.condition,completeness:s.completeness,minus:s.minus,status:s.status,asking_price:s.asking_price,outlet:s.outlet};
+ if(canViewCost){stock.cost=s.cost;stock.imei_1=s.imei_1;stock.imei_2=s.imei_2;}
+ try{
+  const x=await sb.functions.invoke('hello-majesty-ai',{body:{question:q,profile:{name:profile?.name||'',role:profile?.role||'',outlet:profile?.outlet||'',is_management:!!profile?.is_management},stock}});
+  if(x.error)throw x.error;
+  if(out)out.textContent=x.data?.answer||'AI tidak memberikan jawaban.';
+ }catch(e){if(out)out.textContent='AI belum dapat digunakan. Pastikan layanan AI sudah dikonfigurasi oleh Management.\n\n'+(e?.message||e)}
+ finally{if(btn)btn.disabled=false}
+}
+function canMarkStockSold(){ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); return !!profile?.is_management || !!inventoryCanFacilitator || role==='SALES' || role==='CS'; }
+async function cleanupSoldStockPhotos(stockId){
+ const paths=[];
+ ['jpg','jpeg','png','webp'].forEach(ext=>{
+  for(let slot=1;slot<=5;slot++)paths.push(stockId+'/foto-'+slot+'.'+ext);
+ });
+ const rm=await sb.storage.from('stock-photos').remove(paths);
+ if(rm.error)throw rm.error;
+ const db=await sb.from('stock_units').update({
+  photo_1:null,photo_2:null,photo_3:null,photo_4:null,photo_5:null,
+  updated_at:new Date().toISOString()
+ }).eq('id',stockId);
+ if(db.error)throw db.error;
+ return true;
+}
+async function markStockSold(id){
+ // SOLD tidak boleh melewati Form Hasil Sales/Closing dan persetujuan.
+ if(typeof openSellStock==='function') return openSellStock(id);
+ return alert('Form Closing belum siap. Silakan refresh aplikasi.');
+}
+function hmCanManageProductMaster(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return role==='DIVISI'||role==='DEVELOPER'||role==='DEVELOPER APLIKASI';}
+function hmCanCreateProductMaster(){return String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI';}
+function hmApplyProductMasterAccess(){const allowed=hmCanManageProductMaster();document.querySelectorAll('button,a,[role="button"]').forEach(el=>{const label=String(el.innerText||el.textContent||'').trim().toLowerCase();const action=String(el.getAttribute('onclick')||'').toLowerCase();if(label.includes('master produk')||action.includes('openproductmaster')){el.style.display=allowed?'':'none';el.hidden=!allowed;}});}
+function openProductMaster(){
+ if(!hmCanManageProductMaster())return alert('Master Produk hanya dapat diakses dan dikelola oleh Divisi.');
+ const canOpen=true;
+ const management=true;
+ $('mt').textContent='⚙️ Master Produk';
+ $('mb').innerHTML='<button class="success" onclick="openAddProduct()">＋ Tambah Produk</button><div style="margin-top:10px">'+inventoryProducts.map(p=>'<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><b>'+esc(masterProductLabel(p))+'</b><div class="small">'+invCategory(p.category)+'</div></div><div class="row"><button class="secondary" onclick="openEditProduct(\''+p.id+'\')">✏️ Edit</button>'+(management?'<button class="danger" onclick="deactivateProduct(\''+p.id+'\')">Hapus</button>':'')+'</div></div></div>').join('')+'</div>';
+ $('modal').classList.remove('hidden');
+}
+function isSecondMasterCategory(cat){return cat==='IPHONE_SECOND'}
+function openEditProduct(id){
+ if(!hmCanManageProductMaster())return alert('Master Produk hanya dapat dikelola oleh Divisi.');
+ const p=inventoryProducts.find(x=>x.id===id);if(!p)return;
+ $('mt').textContent='✏️ Edit Master Produk';
+ $('mb').innerHTML='<label>Kategori</label><select id="epmcat" required onchange="toggleEditProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option></select><label>Produk</label><input id="epmprod" required value="'+esc(String(p.product||'').replace(/\s+(NEW|SECOND)$/i,''))+'"><div id="epmcolorBox"><label>Warna</label><input id="epmcolor" value="'+esc(p.color||'')+'" placeholder="Contoh: Black, Purple, Midnight"></div><label>Varian / Storage</label><input id="epmvar" required value="'+esc(p.variant||'')+'" placeholder="Contoh: 128GB, 256GB"><div id="epmgradeBox"><label>Grade</label><select id="epmgrade"><option value="">Pilih Grade</option><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option></select></div><button class="success" onclick="saveEditProduct(\''+id+'\')">Simpan Perubahan</button>';
+ $('epmcat').value=p.category||'ANDROID_NEW';$('epmgrade').value=p.grade||'';toggleEditProductFields();$('modal').classList.remove('hidden');
+}
+function toggleEditProductFields(){
+ const cat=$('epmcat')?.value||'',color=$('epmcolor'),grade=$('epmgrade');
+ // Warna merupakan identitas varian produk; Grade hanya berlaku untuk kategori second.
+ const showColor=true;
+ const showGrade=isSecondMasterCategory(cat);
+ $('epmcolorBox')?.classList.toggle('hidden',!showColor);$('epmgradeBox')?.classList.toggle('hidden',!showGrade);
+ if(color)color.required=showColor;if(grade)grade.required=showGrade;
+}
+async function saveEditProduct(id){
+ if(!hmCanManageProductMaster())return alert('Master Produk hanya dapat dikelola oleh Divisi.');
+ const cat=$('epmcat').value,rawProduct=$('epmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('epmvar').value.trim();
+ const color=String($('epmcolor')?.value||'').trim(),showGrade=isSecondMasterCategory(cat),grade=showGrade?String($('epmgrade')?.value||'').trim():null;
+ if(!cat||!rawProduct||!color||!variant)return alert('Kategori, Produk, Warna, dan Varian / Storage wajib diisi.');
+ if(showGrade&&!grade)return alert('Grade wajib dipilih untuk kategori Second.');
+ const x=await sb.from('product_master').update({category:cat,product,variant,color,grade,updated_at:new Date().toISOString()}).eq('id',id);
+ if(x.error)return alert(x.error.message);closeModal();await renderInventory();
+}
+async function deactivateProduct(id){
+ if(!profile?.is_management)return alert('Akses Management diperlukan.');
+ const p=inventoryProducts.find(x=>x.id===id);if(!p)return;
+ const chk=await sb.from('stock_units').select('id',{count:'exact',head:true}).eq('product_id',id);
+ if(chk.error)return alert('Gagal mengecek stock: '+chk.error.message);
+ if((chk.count||0)>0){
+  return alert('Master Produk tidak bisa dihapus karena masih digunakan oleh '+chk.count+' stock unit. Selesaikan/pindahkan stock terlebih dahulu.');
+ }
+ if(!confirm('Hapus Master Produk "'+(p.product||'')+' '+(p.variant||'')+'"? Produk akan dinonaktifkan dan tidak dihapus dari histori.'))return;
+ const x=await sb.from('product_master').update({active:false,updated_at:new Date().toISOString()}).eq('id',id);
+ if(x.error)return alert(x.error.message);closeModal();await renderInventory();
+}
+function openAddProduct(){if(!hmCanCreateProductMaster())return alert('Hanya Divisi yang boleh membuat Master Produk.');$('mt').textContent='＋ Master Produk';$('mb').innerHTML='<label>Kategori</label><select id="pmcat" required onchange="toggleProductFields()"><option value="IPHONE_NEW">iPhone New</option><option value="IPHONE_SECOND">iPhone Second</option><option value="ANDROID_NEW">Android New</option><option value="ANDROID_SECOND">Android Second</option></select><label>Produk</label><input id="pmprod" required placeholder="Contoh: iPhone 17 Pro Max"><div id="pmcolorBox"><label>Warna</label><input id="pmcolor" placeholder="Contoh: Black, Natural Titanium, Lavender"></div><label>Varian / Storage</label><input id="pmvar" required placeholder="Contoh: 128GB, 256GB"><div id="pmgradeBox"><label>Grade</label><select id="pmgrade"><option value="">Pilih Grade</option><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option></select></div><button class="success" onclick="saveProduct()">Simpan Produk</button>';$('modal').classList.remove('hidden');toggleProductFields()}
+function toggleProductFields(){const cat=$('pmcat')?.value||'',color=$('pmcolor'),grade=$('pmgrade');const showColor=true,showGrade=isSecondMasterCategory(cat);$('pmcolorBox')?.classList.toggle('hidden',!showColor);$('pmgradeBox')?.classList.toggle('hidden',!showGrade);if(color)color.required=showColor;if(grade)grade.required=showGrade}
+async function saveProduct(){if(!hmCanCreateProductMaster())return alert('Hanya Divisi yang boleh membuat Master Produk.');const cat=$('pmcat').value,rawProduct=$('pmprod').value.trim(),product=rawProduct.replace(/\s+(NEW|SECOND)$/i,'')+(cat.includes('SECOND')?' SECOND':(cat.includes('NEW')?' NEW':'')),variant=$('pmvar').value.trim(),color=String($('pmcolor')?.value||'').trim(),showGrade=isSecondMasterCategory(cat),grade=showGrade?String($('pmgrade')?.value||'').trim():null;if(!cat||!rawProduct||!color||!variant)return alert('Kategori, Produk, Warna, dan Varian / Storage wajib diisi.');if(showGrade&&!grade)return alert('Grade wajib dipilih untuk kategori Second.');const x=await sb.from('product_master').insert({category:cat,product,variant,color,grade});if(x.error)return alert(x.error.message);closeModal();await renderInventory();openProductMaster()}
+function filterReceiveCategory(){
+ const cat=$('stcategory')?.value||'',sel=$('stprod'),search=$('stprodsearch');
+ if(!sel)return;
+ sel.disabled=!cat;
+ if(search)search.disabled=!cat;
+ sel.value='';
+ // Rebuild options instead of hiding <option>: native Android Chrome can leave
+ // hidden options unselectable/visually unavailable.
+ filterReceiveProducts();
+}
+function normalizeSearch(q){return String(q||'').toLowerCase().trim().replace(/\bip\s*(?=\d)/g,'iphone ').replace(/\biph\s*(?=\d)/g,'iphone ').replace(/\bpm\b/g,'pro max').replace(/\s+/g,' ')}
+function searchHaystack(value,q){
+ const hay=normalizeSearch(value),needle=normalizeSearch(q);if(!needle)return true;
+ if(hay.includes(needle)||hay.replace(/\s+/g,'').includes(needle.replace(/\s+/g,'')))return true;
+ // Pencarian per-kata: urutan bebas dan boleh hanya mengetik sebagian nama/varian/warna.
+ const hayTokens=hay.split(/[^a-z0-9]+/).filter(Boolean);
+ const queryTokens=needle.split(/[^a-z0-9]+/).filter(Boolean);
+ return queryTokens.every(token=>hayTokens.some(word=>word.startsWith(token)||(token.length>=3&&word.includes(token))));
+}
+async function filterReceiveProducts(){
+ const q=($('stprodsearch')?.value||'').trim();
+ const sel=$('stprod'),cat=String($('stcategory')?.value||'').trim().toUpperCase();
+ if(!sel)return;
+ const current=sel.value;
+ const categoryMatches=p=>{
+  const pc=receiveProductCategory(p);
+  if(pc===cat)return true;
+  const name=String(p?.product||'').trim().toUpperCase();
+  if(cat==='IPHONE_NEW')return /^IPHONE\\b/.test(name)&&/\\bNEW\\b/.test(name);
+  if(cat==='IPHONE_SECOND')return /^IPHONE\\b/.test(name)&&/\\bSECOND\\b/.test(name);
+  if(cat==='ANDROID_NEW')return /^(ANDROID|SAMSUNG|XIAOMI|OPPO|VIVO|REALME|HONOR|GOOGLE PIXEL|INFINIX|TECNO|ITEL)\\b/.test(name)&&/\\bNEW\\b/.test(name);
+  if(cat==='ANDROID_SECOND')return /^(ANDROID|SAMSUNG|XIAOMI|OPPO|VIVO|REALME|HONOR|GOOGLE PIXEL|INFINIX|TECNO|ITEL)\\b/.test(name)&&/\\bSECOND\\b/.test(name);
+  return false;
+ };
+ let matches=inventoryProducts.filter(p=>categoryMatches(p));
+ // If the in-memory catalogue is empty or category labels differ, fetch active master
+ // products directly and normalize them before rebuilding the native Android select.
+ if(cat&&matches.length===0){
+  const fetchedRows=[];
+  try{
+   const pageSize=500;
+   for(let offset=0; ; offset+=pageSize){
+    const page=await sb.from('product_master').select('*').eq('active',true).order('category').order('product').order('variant').order('color').order('grade').range(offset,offset+pageSize-1);
+    if(page.error)throw page.error;
+    const batch=page.data||[];fetchedRows.push(...batch);
+    if(batch.length<pageSize)break;
+   }
+   const byId=new Map(inventoryProducts.map(p=>[p.id,p]));
+   fetchedRows.forEach(p=>byId.set(p.id,p));
+   inventoryProducts=Array.from(byId.values());
+   matches=inventoryProducts.filter(p=>categoryMatches(p));
+  }catch(error){
+   console.error('[HM] Product list fallback failed:',error);
+   sel.innerHTML='<option value="">Produk gagal dimuat — coba tutup dan buka lagi</option>';
+   return;
+  }
+ }
+ matches=matches.filter(p=>{
+  const hay=[p.product,p.variant,p.color,p.category,invCategory(p.category)].join(' ');
+  return !q||searchHaystack(hay,q);
+ });
+ sel.innerHTML='<option value="">'+(matches.length?'Pilih produk...':'Tidak ada produk aktif pada kategori ini')+'</option>'+
+   matches.map(p=>'<option value="'+esc(p.id)+'">'+esc(masterProductLabel(p))+'</option>').join('');
+ sel.disabled=!cat;
+ if(current&&matches.some(p=>p.id===current))sel.value=current;
+ else if(q&&matches.length===1)sel.value=matches[0].id;
+ if(sel.value)sel.dispatchEvent(new Event('change',{bubbles:true}));
+ else toggleReceiveFields();
+}
+window.openReceiveStock=async function openReceiveStock(){
+ window.hmReceiveSelectedCheckers=[];
+ if(!canReceiveStock()){alert('Barang Masuk hanya dapat diakses Management, Fasilitator, dan Admin Finance Majesty Cell.');return;}
+ $('mt').textContent='📦 Barang Masuk';$('mb').innerHTML='<div class="box" style="text-align:center;padding:24px"><b>⏳ Menyiapkan formulir Barang Masuk…</b><div class="small" style="margin-top:8px">Sedang memuat daftar tim dan hak akses.</div></div>';$('modal').classList.remove('hidden');
+ try{
+ // Selalu ambil katalog master terbaru saat form dibuka agar produk yang baru dibuat/diaktifkan langsung tersedia.
+ // Ambil seluruh master aktif bertahap; satu request Supabase dapat terpotong batas maksimum baris.
+ const freshProductRows=[];
+ const receivePageSize=500;
+ for(let offset=0; ; offset+=receivePageSize){
+  const freshPage=await sb.from('product_master').select('*').eq('active',true).order('category').order('product').order('variant').order('color').order('grade').range(offset,offset+receivePageSize-1);
+  if(freshPage.error)throw freshPage.error;
+  const batch=freshPage.data||[];freshProductRows.push(...batch);
+  if(batch.length<receivePageSize)break;
+ }
+ inventoryProducts=freshProductRows;
+ const teamOptionsResult=await sb.rpc('get_inventory_receive_team_options',{p_outlet:profile?.is_management?null:(profile?.outlet||null)});if(teamOptionsResult.error)throw teamOptionsResult.error;
+ const teams={data:teamOptionsResult.data||[]};
+ const receiveCategories=[['IPHONE_NEW','iPhone New'],['IPHONE_SECOND','iPhone Second'],['ANDROID_NEW','Android New'],['ANDROID_SECOND','Android Second']];
+ const products='<option value="">Pilih produk setelah memilih kategori</option>'+inventoryProducts.map(p=>'<option value="'+p.id+'" data-category="'+esc(p.category||'')+'">'+esc(masterProductLabel(p))+'</option>').join('');
+ const selected=inventoryProducts.find(p=>p.id===$('stprod')?.value);
+ const selectedCategory=receiveProductCategory(selected);
+ const isIphoneNew=selectedCategory==='IPHONE_NEW',isIphoneSecond=selectedCategory==='IPHONE_SECOND',isAndroidNew=selectedCategory==='ANDROID_NEW';
+ const teamRows=teams.data||[]; const activeProfiles=teamRows; const mgmtIds=new Set(); const allowed=teamRows.filter(x=>x.can_hunter===true).map(x=>({name:x.name,outlet:x.outlet,can_hunter:true,active:true})); const normName=v=>String(v||'').trim().toLocaleLowerCase('id'); const normOutlet=v=>String(v||'').trim().toLocaleLowerCase('id').replace(/[^a-z0-9]/g,''); const plazaAliases=['majestyplazaiphone','plazaiphone','plaza']; const plazaAllowed=allowed; const directoryByName=new Map(teamRows.filter(t=>t.user_id&&t.name).map(t=>[normName(t.name),t])); const hunterById=new Map(); for(const t of [...activeProfiles,...teamRows]){const uid=String(t.user_id||'').trim(),name=String(t.name||t.full_name||t.display_name||'').trim(); if(!uid||!name||mgmtIds.has(uid)||t.is_management===true||String(t.is_management).toLowerCase()==='true')continue; const permitted=plazaAllowed.some(x=>normName(x.name)===normName(name)); if(!permitted)continue; const dir=directoryByName.get(normName(name)); const row={user_id:uid,name,outlet:t.outlet||dir?.outlet||'Majesty Plaza iPhone'}; if(!hunterById.has(uid))hunterById.set(uid,row);} const hunterRows=Array.from(hunterById.values()); /* Fallback hanya untuk anggota Plaza yang sudah ditetapkan sebelumnya; tidak mengubah transaksi atau komisi. */ const plazaHunterFallback=[{user_id:'66d416c6-107e-41ec-840c-2caa8349db93',name:'Aal',outlet:'Majesty Plaza iPhone'},{user_id:'f5b6b58b-cf10-4905-b0ca-bfd6be4f8cb4',name:'Ebi',outlet:'Majesty Plaza iPhone'},{user_id:'bac5277a-6a3f-4235-b386-db7cfe7d92d7',name:'Imas',outlet:'Majesty Plaza iPhone'},{user_id:'02fa3f73-2060-48fc-9b38-603b58185c3b',name:'Tyo',outlet:'Majesty Plaza iPhone'}]; for(const h of plazaHunterFallback){if(!hunterRows.some(t=>String(t.user_id||'')===h.user_id))hunterRows.push(h);} const hunters=hunterRows.map(t=>'<option value="'+esc(t.user_id)+'" data-hunter-outlet="'+esc(t.outlet||'')+'">'+esc(t.name)+'</option>').join('');
+ const isMgmt=!!profile?.is_management;const receiveRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const isStockist=receiveRole==='MITRA STOCKIST';const hunterOptions=hunters;
+ /* Checker dropdown: merge active team profiles and team directory because RLS/active flags can make team_profiles incomplete. Exclude management accounts and deduplicate by user_id. */
+ const checkerById=new Map();
+ for(const t of [...activeProfiles,...teamRows]){
+  const uid=String(t.user_id||'').trim();
+  const name=String(t.name||'').trim();
+  if(!uid||!name||t.is_management===true||mgmtIds.has(uid))continue;
+  if(!checkerById.has(uid))checkerById.set(uid,{user_id:uid,name,outlet:String(t.outlet||teamRows.find(y=>String(y.user_id||'')===uid)?.outlet||'').trim()});
+ }
+ const checkerOptionRows=Array.from(checkerById.values()).sort((a,b)=>a.name.localeCompare(b.name,'id')); window.hmReceiveCheckerOptions=checkerOptionRows; window.hmReceiveHunterOptions=hunterRows; const checkerOptions=checkerOptionRows.map(x=>'<option value="'+esc(x.user_id)+'">'+esc(x.name)+'</option>').join('');
+ $('mt').textContent='📦 Barang Masuk';
+ $('mb').innerHTML=(isStockist?'<div class="notice"><b>Pengajuan Barang Masuk Unit Bisnis</b><br>Barang akan berstatus <b>MENUNGGU PERSETUJUAN</b> dan baru menjadi Stock READY setelah disetujui.</div>':'')+((isMgmt||isStockist)?'<label>Barang Masuk Ke</label><select id="stoutlet" onchange="toggleHunterField();filterHunterOptions()">'+[...new Set(isStockist?[String(profile?.outlet||'').trim(),'Majesty Plaza iPhone','Majesty Refill Phone'].filter(Boolean):inventoryStock.map(s=>s.outlet).filter(Boolean).concat(['Majesty Cell','Majesty Gadget','Majesty Store','Majesty Plaza iPhone','Majesty Refill Phone']))].sort((a,b)=>a.localeCompare(b,'id')).map(o=>'<option value="'+esc(o)+'"'+(isStockist&&String(o).trim().toLowerCase()===String(profile?.outlet||'').trim().toLowerCase()?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select>':'<div class="small" style="margin-bottom:8px">📍 Barang masuk ke: <b>'+esc(profile?.outlet||'-')+'</b></div>')+
+ '<label>Kategori Barang</label><select id="stcategory" onchange="filterReceiveCategory()"><option value="">Pilih kategori dulu</option>'+receiveCategories.map(c=>'<option value="'+c[0]+'">'+c[1]+'</option>').join('')+'</select><label>Produk</label><input id="stprodsearch" disabled placeholder="Pilih kategori terlebih dahulu" oninput="filterReceiveProducts()"><select id="stprod" disabled onchange="toggleReceiveFields()">'+products+'</select><input id="stvariant" type="hidden"><input id="stcolor" type="hidden"><input id="stgrade" type="hidden">'+
+ '<div id="receiveSourceFields">'+(isStockist?'':'<label>Sumber Barang</label>')+''+(isStockist?'<input type="hidden" id="stsource" value="STOCKIST">':'<select id="stsource" onchange="toggleHunterField();togglePartnerFields()"><option value="MANAGEMENT">Management Stock / Stok Sendiri</option><option value="STOCKIST">Stockist (Majesty Cell / Gadget / Store)</option></select>')+'<div id="partnerBox" class="hidden"><label>Partner</label><select id="stpartner"'+(isStockist?' disabled':'')+'>'+Array.from(new Set(['Majesty Cell','Majesty Gadget','Majesty Store',String(profile?.outlet||'').trim()].filter(Boolean))).map(n=>'<option value="'+esc(n)+'"'+(String(profile?.outlet||'').trim()===n?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select><div class="small">Barang dari Unit Bisnis menunggu persetujuan sebelum menjadi Stock READY.</div></div><div id="hunterBox" class="hidden"><label>Pilih Hunter <span class="small">(centang satu atau beberapa nama)</span></label><div id="sthunterList" style="width:100%;max-height:180px;overflow-y:auto;padding:6px;border:1px solid #cbd5e1;border-radius:12px;background:#13243b;color:#fff;display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:6px;box-sizing:border-box">'+hunterRows.map(x=>'<label style="display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:flex-start !important;gap:10px;padding:6px 8px;border-radius:7px;background:#243b59;color:#ffffff !important;font-size:14px;font-weight:600;min-height:36px;width:100%;box-sizing:border-box;white-space:normal"><input type="checkbox" value="'+esc(x.user_id)+'" onchange="cacheReceiveCheckers()" style="width:22px !important;height:22px !important;min-width:22px;max-width:22px;flex:0 0 22px;margin:0;padding:0;accent-color:#22c55e"><span style="display:block !important;flex:1 1 auto;min-width:0;color:#ffffff !important;opacity:1 !important;white-space:normal;overflow-wrap:anywhere">'+esc(x.name)+'</span></label>').join('')+'</div><div class="small" style="margin-top:6px">Hunter terpilih: <span id="sthunterCount">0</span></div></div><div id="checkerBox" class="hidden"><label>Pilih Checker <span class="small">(centang satu atau beberapa nama)</span></label><div id="stcheckerList" style="width:100%;max-height:180px;overflow-y:auto;padding:6px;border:1px solid #cbd5e1;border-radius:12px;background:#13243b;color:#fff;display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:6px;box-sizing:border-box">'+checkerOptionRows.map(x=>'<label style="display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:flex-start !important;gap:10px;padding:6px 8px;border-radius:7px;background:#1c304b;color:#fff;font-size:14px;min-height:36px;width:100%;box-sizing:border-box;white-space:normal"><input type="checkbox" value="'+esc(x.user_id)+'" onchange="cacheReceiveCheckers()" style="width:22px !important;height:22px !important;min-width:22px;max-width:22px;flex:0 0 22px;margin:0;padding:0;accent-color:#22c55e"><span>'+esc(x.name)+'</span></label>').join('')+'</div><div class="small" style="margin-top:6px">Checker terpilih: <span id="stcheckerCount">0</span></div></div></div><div id="standardReceiveFields"><label>IMEI 1</label><input id="stimei1"><label>Kondisi</label><input id="stcondition" value="Mulus" placeholder="Contoh: 95% / Mulus"><label>Battery Health</label><input id="stbh" type="number" min="0" max="100" placeholder="89"><label>Kelengkapan</label><input id="stcomplete" value="Lengkap Unit Box Kabel" placeholder="Unit + Box + Cable"><label>Minus</label><textarea id="stminus">Tidak Ada Minus</textarea></div>'+
+ '<div id="iphoneNewFields" class="hidden"><label>IMEI 1</label><input id="stimei1new">'+(isStockist?'<label>Harga Setor</label>':'<label>Harga Beli</label>')+'<input id="stcostnew" type="number"><label>Harga Jual</label><input id="stpricenew" type="number">'+(isStockist?'':'<label>Supplier / Dealer (opsional)</label><input id="stsupplier" placeholder="Nama dealer / supplier">')+'<label>Catatan (opsional)</label><textarea id="stnotesnew"></textarea></div>'+
+ '<div id="iphoneSecondFields" class="hidden"><label>IMEI 1</label><input id="stimei1second"><label>Battery Health</label><input id="stbhsecond" type="number" min="0" max="100" placeholder="89"><label>Kondisi</label><input id="stconditionsecond" value="Mulus" placeholder="Contoh: Mulus / 95%"><label>Kelengkapan</label><input id="stcompletesecond" value="Lengkap Unit Box Kabel" placeholder="Unit + Box + Cable"><label>Minus (opsional)</label><textarea id="stminusseconde">Tidak Ada Minus</textarea>'+(isStockist?'<label>Harga Setor</label>':'<label>Harga Beli</label>')+'<input id="stcostsecond" type="number"><label>Harga Jual</label><input id="stpricesec" type="number">'+(isStockist?'':'<label>Supplier / Dealer (opsional)</label><input id="stsuppliersecond" placeholder="Nama dealer / supplier">')+'<label>Catatan (opsional)</label><textarea id="stnotessecond"></textarea></div>'+
+ '<div id="androidNewFields" class="hidden"><label>IMEI 1</label><input id="standroidimei1">'+(isStockist?'<label>Harga Setor</label>':'<label>Harga Beli</label>')+'<input id="standroidcost" type="number"><label>Harga Jual</label><input id="standroidprice" type="number">'+(isStockist?'':'<label>Supplier / Dealer (opsional)</label><input id="standroidsupplier" placeholder="Nama dealer / supplier">')+'<label>Catatan (opsional)</label><textarea id="standroidnotes"></textarea></div>'+
+ '<div id="androidSecondFields" class="hidden"><label>IMEI 1</label><input id="standroidsecondimei1"><label>Kondisi</label><input id="standroidsecondcondition" value="Mulus" placeholder="Contoh: Mulus / 90%"><label>Kelengkapan</label><input id="standroidsecondcomplete" value="Lengkap Unit Box Kabel" placeholder="Unit + Box + Cable"><label>Minus (opsional)</label><textarea id="standroidsecondminus">Tidak Ada Minus</textarea>'+(isStockist?'<label>Harga Setor</label>':'<label>Harga Beli</label>')+'<input id="standroidsecondcost" type="number"><label>Harga Jual</label><input id="standroidsecondprice" type="number">'+(isStockist?'':'<label>Supplier / Dealer (opsional)</label><input id="standroidsecondsupplier" placeholder="Nama dealer / supplier">')+'<label>Catatan (opsional)</label><textarea id="standroidsecondnotes"></textarea></div><div id="standardPriceFields">'+(isStockist?'<label>Harga Setor</label>':'<label>Harga Modal</label>')+'<input id="stcost" type="number"><label>Harga Jual</label><input id="stprice" type="number"><label>Referensi Barang Masuk</label><input id="stref" placeholder="Invoice / nota / kode hunter"><label>Catatan</label><textarea id="stnotes"></textarea></div><button id="saveStockBtn" class="success" type="button" onclick="saveStock()">'+(isStockist?'Kirim untuk Persetujuan':'Simpan Stock Ready')+'</button>';
+ toggleReceiveFields();
+  toggleHunterField();
+  togglePartnerFields();
+ $('modal').classList.remove('hidden');
+ if(receiveRole==='ADMIN FINANCE MAJESTY CELL'){if($('stsource')){$('stsource').value='STOCKIST';$('stsource').disabled=true;}if($('stpartner')){$('stpartner').value='Majesty Cell';$('stpartner').disabled=true;}togglePartnerFields();const saveBtn=$('mb').querySelector('button.success[onclick="saveStock()"]');if(saveBtn)saveBtn.textContent='Kirim untuk Persetujuan';$('mb').insertAdjacentHTML('afterbegin','<div class="notice"><b>Barang Masuk Majesty Cell</b><br>Setelah disimpan, barang akan <b>MENUNGGU PERSETUJUAN</b> Management/Facilitator sebelum menjadi Stock READY.</div><button class="secondary" style="margin-bottom:8px" onclick="openMyInventoryReceiveStatus()">📋 Status Pengajuan Saya</button>');}
+ filterHunterOptions();
+ }catch(ex){console.error('[HM] Barang Masuk gagal dimuat:',ex);$('mt').textContent='📦 Barang Masuk';$('mb').innerHTML='<div class="box"><b>Formulir Barang Masuk gagal dimuat.</b><div class="small" style="margin-top:8px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:12px" onclick="window.openReceiveStock()">Coba Lagi</button></div>';$('modal').classList.remove('hidden');}
+}
+function toggleReceiveFields(){
+ const p=inventoryProducts.find(x=>x.id===$('stprod')?.value);
+ const selectedCategory=String($('stcategory')?.value||'').trim();
+ const category=receiveProductCategory(p)||selectedCategory;
+ const isNew=category==='IPHONE_NEW',isSecond=category==='IPHONE_SECOND',isAndroidNew=category==='ANDROID_NEW',isAndroidSecond=category==='ANDROID_SECOND';
+ if($('stcategory') && p && $('stcategory').value!==category)$('stcategory').value=category;
+ if($('stvariant'))$('stvariant').value=p?.variant||'';if($('stcolor'))$('stcolor').value=p?.color||'';if($('stgrade'))$('stgrade').value=p?.grade?String(p.grade).replace(/^grade\s*/i,'').trim().toUpperCase():'';
+ const hasProduct=!!p;
+ const showNew=hasProduct&&isNew,showSecond=hasProduct&&isSecond,showAndroidNew=hasProduct&&isAndroidNew,showAndroidSecond=hasProduct&&isAndroidSecond;
+ // Setelah kategori dipilih, tetap tunggu produk. Field detail baru muncul setelah produk dipilih.
+ $('standardReceiveFields')?.classList.toggle('hidden',!hasProduct||isNew||isSecond||isAndroidNew||isAndroidSecond);
+ $('standardPriceFields')?.classList.toggle('hidden',!hasProduct||isNew||isSecond||isAndroidNew||isAndroidSecond);
+ $('iphoneNewFields')?.classList.toggle('hidden',!showNew);
+ $('iphoneSecondFields')?.classList.toggle('hidden',!showSecond);
+ $('androidNewFields')?.classList.toggle('hidden',!showAndroidNew);
+ $('androidSecondFields')?.classList.toggle('hidden',!showAndroidSecond);
+ const source=$('stsource');if(source)source.onchange=()=>{toggleHunterField();togglePartnerFields();};
+}
+async function hmCheckDuplicateImeis(imei1,imei2,excludeId){
+ const tokens=[...new Set([imei1,imei2].map(v=>String(v||'').trim()).filter(v=>/^(?:\d{15}|\d{32})$/.test(v)))];
+ for(const token of tokens){
+  let q=sb.from('stock_units').select('id,imei_1,imei_2,outlet').or('imei_1.eq.'+token+',imei_2.eq.'+token).limit(5);
+  if(excludeId)q=q.neq('id',excludeId);
+  const r=await q;
+  if(r.error)throw new Error('Gagal memeriksa IMEI duplikat: '+r.error.message);
+  if((r.data||[]).length)return {imei:token,stock:r.data[0]};
+ }
+ return null;
+}
+async function saveStock(){
+ const fieldValue=(id)=>$(id)?.value??'';
+ const source=$('stsource')?.value||'MANAGEMENT';
+ if(!canReceiveStock(source)){alert('Admin Finance Majesty Cell hanya dapat input Barang Masuk sumber Majesty Cell.');return;}
+ const receiveOutlet=inventoryReceiveOutlet();
+ const receiveRoleCheck=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ if(receiveRoleCheck==='MITRA STOCKIST'){
+  const allowedDestinations=[String(profile?.outlet||'').trim(),'Majesty Plaza iPhone','Majesty Refill Phone'].filter(Boolean).map(x=>x.toLowerCase());
+  if(!allowedDestinations.includes(String(receiveOutlet||'').trim().toLowerCase()))return alert('Unit Bisnis hanya dapat memasukkan barang ke unit sendiri, Majesty Plaza iPhone, atau Majesty Refill Phone.');
+ }
+ const hunters=selectedReceivePeople('sthunter');
+ const checkers=selectedReceivePeople('stchecker');
+ const hunter=hunters[0]||null,checker=checkers[0]||null;
+ const currentRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const partnerName=$('stpartner')?.value||(currentRole==='ADMIN FINANCE MAJESTY CELL'?'Majesty Cell':currentRole==='MITRA STOCKIST'?String(profile?.outlet||'').trim():null);
+ if(source==='STOCKIST'&&!partnerName)return alert('Unit Bisnis asal barang wajib dipilih.');
+ if(String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='ADMIN FINANCE MAJESTY CELL'&&source==='STOCKIST'&&partnerName!=='Majesty Cell')return alert('Admin Finance Majesty Cell hanya dapat menginput barang dari Majesty Cell.');
+ if(!receiveOutlet)return alert('Outlet tujuan barang masuk wajib dipilih.');
+
+ const selectedProduct=inventoryProducts.find(p=>p.id===$('stprod')?.value),selectedCategory=receiveProductCategory(selectedProduct),isIphoneNew=selectedCategory==='IPHONE_NEW',isIphoneSecond=selectedCategory==='IPHONE_SECOND',isAndroidNew=selectedCategory==='ANDROID_NEW',isAndroidSecond=selectedCategory==='ANDROID_SECOND';
+ let data;
+ if(isIphoneNew){
+  const imei1=fieldValue('stimei1new').trim(),cost=fieldValue('stcostnew'),price=fieldValue('stpricenew');
+  const color=String(selectedProduct?.color||'').trim();
+  if(!imei1||!color||cost===''||price==='')return alert('Untuk iPhone New, pastikan Master Produk memiliki warna, lalu isi IMEI 1, Harga Beli dan Harga Jual.');
+  data={product_id:fieldValue('stprod'),imei_1:imei1,imei_2:fieldValue('stimei2new').trim()||null,color,grade:null,condition:null,battery_health:null,completeness:null,minus:null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(cost),asking_price:Number(price),supplier:fieldValue('stsupplier').trim()||null,notes:fieldValue('stnotesnew').trim()||null,receipt_ref:null,received_source_note:source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
+ }else if(isIphoneSecond){
+  const imei1=fieldValue('stimei1second').trim(),color=String(selectedProduct?.color||'').trim(),grade=String(selectedProduct?.grade||'').replace(/^grade\s*/i,'').trim().toUpperCase(),bh=fieldValue('stbhsecond'),condition=fieldValue('stconditionsecond').trim(),complete=fieldValue('stcompletesecond').trim(),cost=fieldValue('stcostsecond'),price=fieldValue('stpricesec');
+  if(!imei1||!color||!grade||bh===''||!condition||!complete||cost===''||price==='')return alert('Untuk iPhone Second, IMEI 1, Warna, Grade, Battery Health, Kondisi, Kelengkapan, Harga Beli dan Harga Jual wajib diisi.');
+  data={product_id:fieldValue('stprod'),imei_1:imei1,imei_2:fieldValue('stimei2second').trim()||null,grade,condition,battery_health:Number(bh),color,completeness:complete,minus:fieldValue('stminusseconde').trim()||null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(cost),asking_price:Number(price),supplier:fieldValue('stsuppliersecond').trim()||null,notes:fieldValue('stnotessecond').trim()||null,receipt_ref:null,received_source_note:source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
+ }else if(isAndroidSecond){
+  const color=String(selectedProduct?.color||'').trim(),imei1=fieldValue('standroidsecondimei1').trim(),condition=fieldValue('standroidsecondcondition').trim(),complete=fieldValue('standroidsecondcomplete').trim(),cost=fieldValue('standroidsecondcost'),price=fieldValue('standroidsecondprice');
+  if(!color||!imei1||!condition||!complete||cost===''||price==='')return alert('Untuk Android Second, Warna, IMEI 1, Kondisi, Kelengkapan, Harga Beli dan Harga Jual wajib diisi.');
+  data={product_id:fieldValue('stprod'),color,imei_1:imei1,imei_2:fieldValue('standroidsecondimei2').trim()||null,grade:null,condition,battery_health:null,completeness:complete,minus:fieldValue('standroidsecondminus').trim()||null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(cost),asking_price:Number(price),supplier:fieldValue('standroidsecondsupplier').trim()||null,notes:fieldValue('standroidsecondnotes').trim()||null,receipt_ref:null,received_source_note:source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
+ }else if(isAndroidNew){
+  const color=String(selectedProduct?.color||'').trim(),imei1=fieldValue('standroidimei1').trim(),cost=fieldValue('standroidcost'),price=fieldValue('standroidprice');
+  if(!color||!imei1||cost===''||price==='')return alert('Untuk Android New, Warna, IMEI 1, Harga Beli dan Harga Jual wajib diisi.');
+  data={product_id:fieldValue('stprod'),color,imei_1:imei1,imei_2:fieldValue('standroidimei2').trim()||null,grade:null,condition:null,battery_health:null,completeness:null,minus:null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(cost),asking_price:Number(price),supplier:fieldValue('standroidsupplier').trim()||null,notes:fieldValue('standroidnotes').trim()||null,receipt_ref:null,received_source_note:source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
+ }else{
+  data={product_id:fieldValue('stprod'),imei_1:fieldValue('stimei1').trim()||null,imei_2:fieldValue('stimei2').trim()||null,grade:selectedProduct?.grade||null,color:String(selectedProduct?.color||'').trim()||null,condition:fieldValue('stcondition').trim()||null,battery_health:fieldValue('stbh')?Number(fieldValue('stbh')):null,completeness:fieldValue('stcomplete').trim()||null,minus:fieldValue('stminus').trim()||null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(fieldValue('stcost')||0),asking_price:Number(fieldValue('stprice')||0),notes:fieldValue('stnotes').trim()||null,receipt_ref:$('stref')?.value.trim()||null,received_source_note:source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
+ }
+ // Standar sumber stok: STOCKIST. Nama pemilik tetap disimpan terpisah di partner_name.
+ if(source==='STOCKIST'){
+  const stockistNames=['Majesty Cell','Majesty Gadget','Majesty Store'];
+  const selectedStockist=stockistNames.find(name=>name===String(partnerName||'').trim());
+  if(!selectedStockist)return alert('Pilih Unit Bisnis yang valid: Majesty Cell, Majesty Gadget, atau Majesty Store.');
+  data.source_type='STOCKIST';
+  data.partner_name=selectedStockist;
+  data.received_source_note=selectedStockist;
+  // Stockist harus masuk antrean persetujuan sejak insert, tidak pernah READY langsung.
+  data.status='PENDING_APPROVAL';
+ }
+
+ const saveBtn=document.getElementById('saveStockBtn');
+ if(window.hmSavingStock)return;
+ window.hmSavingStock=true;
+ if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ Menyimpan...';}
+ try{
+  const imei1=String(data.imei_1||'').trim(),imei2=String(data.imei_2||'').trim();
+  if(imei1&&!/^\d{15}$/.test(imei1))throw new Error('IMEI 1 harus 15 digit angka.');
+  if(imei2&&!/^(?:\d{15}|\d{32})$/.test(imei2))throw new Error('IMEI 2 harus 15 digit angka atau EID 32 digit.');
+  const duplicate=await hmCheckDuplicateImeis(imei1,imei2,null);
+  if(duplicate)throw new Error('IMEI/EID '+duplicate.imei+' sudah terdaftar pada stock lain. Barang masuk dibatalkan agar tidak tercatat ganda.');
+  const x=await sb.from('stock_units').insert(data).select('id').single();
+  if(x.error)throw new Error(x.error.message);
+  const stockId=x.data?.id;
+  if(!stockId)throw new Error('ID stock tidak dikembalikan oleh database.');
+  // Hanya stok dari Stockist yang wajib melalui persetujuan. Stok Management langsung READY.
+  if(source==='STOCKIST'){
+   const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
+   if(ap.error){
+    // Jika respons RPC bermasalah, cek dulu apakah pengajuan sebenarnya sudah tercatat.
+    const verify=await sb.from('inventory_receive_approvals').select('id,status').eq('stock_unit_id',stockId).maybeSingle();
+    if(!verify.data){
+     await sb.from('stock_units').delete().eq('id',stockId);
+     throw new Error('Barang masuk belum berhasil dikirim untuk persetujuan: '+ap.error.message);
+    }
+   }
+  }
+  closeModal();
+  if(source==='STOCKIST'){
+   const productRow=inventoryProducts.find(p=>String(p.id)===String(data.product_id))||{};
+   const productLabel=[productRow.product||data.product||'Produk',productRow.variant||data.variant,productRow.color||data.color].filter(Boolean).join(' — ');
+   const nl=String.fromCharCode(10);
+   const waMessage=['🔔 *PENGAJUAN PERSETUJUAN BARANG MASUK*','','Produk: '+productLabel,'IMEI: '+(data.imei_1||'-'),'IMEI 2/EID: '+(data.imei_2||'-'),'Modal: Rp '+Number(data.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(data.outlet||'-'),'Sumber: '+(data.partner_name||data.received_source_note||data.source_type||'-'),'Status: *MENUNGGU PERSETUJUAN*','','Mohon buka Hello Majesty → Persetujuan Barang Masuk untuk memeriksa dan menyetujui.'].join(nl);
+   alert('Barang Masuk berhasil diajukan. Status: MENUNGGU PERSETUJUAN.');
+   if(confirm('Buka WhatsApp untuk mengirim pengajuan Barang Masuk sekarang?'))window.location.href='https://wa.me/?text='+encodeURIComponent(waMessage);
+  }else{
+   alert('Barang Masuk berhasil disimpan. Status stock: READY.');
+  }
+  await renderInventory();
+ }catch(e){
+  alert(e?.message||e);
+ }finally{
+  window.hmSavingStock=false;
+  if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=source==='STOCKIST'?'Kirim untuk Persetujuan':'Simpan Stock Ready';}
+ }
+
+}
+async function openEditStockPhotos(id){if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres maksimal ±700 KB/foto • resolusi hingga 1600 px.</div>';$('modal').classList.remove('hidden')}
+function openEditStock(id){
+ if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ const c=s.category;
+ let f='<div class="small">'+esc(s.product)+' • '+esc(s.variant||'')+' • IMEI 1: '+esc(s.imei_1||'-')+'</div>';
+ const input=(label,id,value,type='text',extra='')=>'<label>'+label+'</label><input id="'+id+'" type="'+type+'" value="'+esc(value??'')+'" '+extra+'>';
+ const area=(label,id,value)=>'<label>'+label+'</label><textarea id="'+id+'">'+esc(value||'')+'</textarea>';
+ f+=input('IMEI 1','esimei1',s.imei_1||'','text','inputmode="numeric"');
+ f+=input('IMEI 2','esimei2',s.imei_2||'','text','inputmode="numeric"');
+ if(c==='IPHONE_NEW'){
+  f+=input('Warna','escolor',s.color||'');
+}else if(c==='IPHONE_SECOND'){
+  f+=input('Warna','escolor',s.color||'');
+  f+='<label>Grade</label><select id="esgrade"><option value="">-</option><option '+(s.grade==='A'?'selected':'')+'>A</option><option '+(s.grade==='B'?'selected':'')+'>B</option><option '+(s.grade==='C'?'selected':'')+'>C</option></select>';
+  f+=input('Kondisi','escondition',s.condition||'');
+  f+=input('Battery Health','esbh',s.battery_health??'','number','min="0" max="100"');
+  f+=input('Kelengkapan','escomplete',s.completeness||'');
+  f+=area('Minus','esminus',s.minus||'');
+ }else if(c==='ANDROID_SECOND'){
+  f+=input('Warna','escolor',s.color||'');
+  f+=input('Kondisi','escondition',s.condition||'');
+  f+=input('Kelengkapan','escomplete',s.completeness||'');
+  f+=area('Minus','esminus',s.minus||'');
+ }else if(c==='ANDROID_NEW'){
+  f+=input('Warna','escolor',s.color||'');
+ }else if(c==='STOCK_SECOND_MAJESTY_CELL'){
+  f+=input('Warna','escolor',s.color||'');
+  f+='<label>Grade</label><select id="esgrade"><option value="">-</option><option '+(s.grade==='A'?'selected':'')+'>A</option><option '+(s.grade==='B'?'selected':'')+'>B</option><option '+(s.grade==='C'?'selected':'')+'>C</option></select>';
+  f+=input('Kondisi','escondition',s.condition||'');
+  f+=input('Battery Health','esbh',s.battery_health??'','number','min="0" max="100"');
+  f+=input('Kelengkapan','escomplete',s.completeness||'');
+  f+=area('Minus','esminus',s.minus||'');
+ }
+ f+=input('Harga Beli','escost',s.cost??0,'number','min="0"');
+ f+=input('Harga Jual','esprice',s.asking_price??0,'number','min="0"');
+ f+=input('Supplier','essupplier',s.supplier||'');
+ f+=area('Catatan','esnotes',s.notes||'');
+ f+=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres maksimal ±700 KB/foto • resolusi hingga 1600 px.</div><button class="success" onclick="saveEditStock(\''+id+'\')">Simpan</button>';
+ $('mt').textContent='Edit Stock';$('mb').innerHTML=f;$('modal').classList.remove('hidden');
+}
+async function saveEditStock(id){
+ if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ const c=s.category;
+ const imei1=$('esimei1').value.trim(),imei2=$('esimei2').value.trim()||null;
+ if(imei1&&!/^\d{15}$/.test(imei1))return alert('IMEI 1 harus berupa 15 digit angka.');
+ if(imei2&&!/^(?:\d{15}|\d{32})$/.test(imei2))return alert('IMEI 2 harus 15 digit angka atau EID 32 digit.');
+ try{
+  const duplicate=await hmCheckDuplicateImeis(imei1,imei2,id);
+  if(duplicate)return alert('IMEI/EID '+duplicate.imei+' sudah terdaftar pada stock lain. Perubahan dibatalkan.');
+ }catch(e){return alert(e.message||e);}
+ const data={imei_1:imei1||null,imei_2:imei2,asking_price:Number($('esprice').value||0),cost:Number($('escost').value||0),supplier:$('essupplier').value.trim()||null,notes:$('esnotes').value.trim()||null,updated_at:new Date().toISOString()};
+ if(c==='IPHONE_NEW'){
+  data.color=$('escolor').value.trim()||null;
+}else if(c==='IPHONE_SECOND'){
+  data.color=$('escolor').value.trim()||null;
+  data.grade=$('esgrade').value||null;
+  data.condition=$('escondition').value.trim()||null;
+  data.battery_health=$('esbh').value!==''?Number($('esbh').value):null;
+  data.completeness=$('escomplete').value.trim()||null;
+  data.minus=$('esminus').value.trim()||null;
+ }else if(c==='ANDROID_SECOND'){
+  data.color=$('escolor').value.trim()||null;
+  data.condition=$('escondition').value.trim()||null;
+  data.completeness=$('escomplete').value.trim()||null;
+  data.minus=$('esminus').value.trim()||null;
+ }else if(c==='ANDROID_NEW'){
+  data.color=$('escolor').value.trim()||null;
+ }else if(c==='STOCK_SECOND_MAJESTY_CELL'){
+  data.color=$('escolor').value.trim()||null;
+  data.grade=$('esgrade').value||null;
+  data.condition=$('escondition').value.trim()||null;
+  data.battery_health=$('esbh').value!==''?Number($('esbh').value):null;
+  data.completeness=$('escomplete').value.trim()||null;
+  data.minus=$('esminus').value.trim()||null;
+ }
+ if(window.hmSavingEditStock)return;
+ const saveBtn=[...document.querySelectorAll('#mb button')].find(b=>String(b.getAttribute('onclick')||'').includes("saveEditStock('"+id+"'"));
+ window.hmSavingEditStock=true;
+ if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ Menyimpan...';}
+ try{
+  const changedFields=Object.keys(data).filter(key=>key!=='updated_at'&&JSON.stringify(s[key]??null)!==JSON.stringify(data[key]??null));
+  const x=await sb.from('stock_units').update(data).eq('id',id).select('id').maybeSingle();
+  if(x.error)throw x.error;
+  if(!x.data)throw new Error('Perubahan tidak tersimpan. Stok mungkin sudah berubah atau akses akun tidak mencukupi.');
+  let auditWarning='';
+  if(changedFields.length){
+   const audit=await sb.from('stock_movements').insert({
+    stock_unit_id:id,
+    movement_type:'EDIT',
+    from_status:s.status||null,
+    to_status:s.status||null,
+    actor_user_id:profile?.user_id||null,
+    note:'Edit stock: '+changedFields.join(', ')
+   });
+   if(audit.error){
+    console.error('[HM] Stock updated but edit history could not be saved:',audit.error);
+    auditWarning=' Data stock sudah berubah, tetapi histori edit belum berhasil dicatat: '+audit.error.message;
+   }
+  }
+  closeModal();
+  await renderInventory();
+  alert('Perubahan stock berhasil disimpan.'+auditWarning);
+ }catch(e){
+  alert('Gagal menyimpan perubahan stock: '+(e?.message||e));
+  if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='Simpan';}
+ }finally{
+  window.hmSavingEditStock=false;
+ }
+}async function openStockHistory(id){const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});if(x.error)return alert(x.error.message);$('mt').textContent='🧾 Histori Stock';$('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';$('modal').classList.remove('hidden')}
+function hmNormalizePhone(v){return String(v||'').replace(/[^0-9]/g,'').replace(/^0+/,'');}
+async function openSalesReport(){
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const isAdminFinance=role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL';
+ const x=await sb.rpc('get_sales_report_rows');
+ if(x.error)throw x.error;
+ const rows=Array.isArray(x.data)?x.data:[];
+ const stockIds=[...new Set(rows.map(r=>r.stock_unit_id).filter(Boolean))];
+ let stocks=[],peopleMap={},productMap={},leadMap={},teamMembersMap={};
+
+ // Data utama transaksi adalah wajib. Data produk/Sales/lead/tim pendamping hanya pelengkap.
+ // Keterlibatan Sales diambil dari tabel transaksi yang sudah dipakai saat perhitungan komisi.
+ try{
+   const transactionIds=rows.map(r=>r.id).filter(Boolean);
+   const [stockRes,peopleRes,teamRes]=await Promise.all([
+     stockIds.length?sb.from('stock_units').select('id,product_id,color,imei_1,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
+     transactionIds.length?sb.rpc('get_sales_report_people',{p_transaction_ids:transactionIds}):Promise.resolve({data:[]}),
+     transactionIds.length?sb.from('sales_transaction_team_members').select('sale_id,user_id').in('sale_id',transactionIds):Promise.resolve({data:[]})
+   ]);
+   if(!stockRes.error)stocks=stockRes.data||[];
+   if(!peopleRes.error)peopleMap=Object.fromEntries((peopleRes.data||[]).map(p=>[p.transaction_id,p]));
+   if(!teamRes.error&&(teamRes.data||[]).length){
+     const memberIds=[...new Set(teamRes.data.map(m=>m.user_id).filter(Boolean))];
+     const memberNames=memberIds.length?await sb.rpc('get_team_profile_names',{p_user_ids:memberIds}):{data:[]};
+     const nameMap=Object.fromEntries((memberNames.data||[]).map(p=>[p.user_id,p.name]));
+     (teamRes.data||[]).forEach(m=>{
+       const name=nameMap[m.user_id];
+       if(name){
+         if(!teamMembersMap[m.sale_id])teamMembersMap[m.sale_id]=[];
+         teamMembersMap[m.sale_id].push(name);
+       }
+     });
+     Object.keys(teamMembersMap).forEach(id=>{
+       teamMembersMap[id]=[...new Set(teamMembersMap[id])].filter(name=>name!==peopleMap[id]?.sales_name);
+     });
+   }else if(teamRes.error){
+     console.warn('[HM] Sales report team members unavailable:',teamRes.error);
+   }
+ }catch(e){console.warn('[HM] Sales report enrichment skipped:',e);}
+
+ const productIds=[...new Set(stocks.map(s=>s.product_id).filter(Boolean))];
+ if(productIds.length){
+   try{
+     const productRes=await sb.from('product_master').select('id,product,variant').in('id',productIds);
+     if(!productRes.error)productMap=Object.fromEntries((productRes.data||[]).map(p=>[p.id,p]));
+   }catch(e){console.warn('[HM] Product enrichment skipped:',e);}
+ }
+
+ const phones=[...new Set(rows.map(r=>hmNormalizePhone(r.customer_phone)).filter(Boolean))];
+ if(phones.length){
+   try{
+     const leadRes=await sb.from('leads').select('whatsapp,cs,cs_claimed_by,customer,updated_at').order('updated_at',{ascending:false}).limit(2000);
+     if(!leadRes.error)leadRes.data?.forEach(l=>{const p=hmNormalizePhone(l.whatsapp);if(p&&!leadMap[p])leadMap[p]=l;});
+   }catch(e){console.warn('[HM] Lead enrichment skipped:',e);}
+ }
+
+ const stockMap=Object.fromEntries(stocks.map(s=>[s.id,s]));
+ window.hmSalesReportRows=rows.map(r=>{
+   const st=stockMap[r.stock_unit_id]||{},pm=productMap[st.product_id]||{},lead=leadMap[hmNormalizePhone(r.customer_phone)]||null;
+   return {
+     ...r,
+     display_product:[st.product||pm.product||r.product_name||'Produk tidak ditemukan',st.variant||pm.variant].filter(Boolean).join(' — '),
+     display_product_details:[st.color?'Warna: '+st.color:'',st.grade?'Grade: '+st.grade:'',st.battery_health?'BH: '+st.battery_health:'',st.imei_1?'IMEI akhir: '+String(st.imei_1).replace(/\D/g,'').slice(-4):''].filter(Boolean).join(' • '),
+     display_cs:r.customer_source==='WALK-IN'?'Walk-In':(r.lead_id?(r.cs_closing||r.cs_pic||peopleMap[r.id]?.cs_name||lead?.cs||lead?.cs_claimed_by||'-'):(peopleMap[r.id]?.cs_name||r.cs_closing||lead?.cs||lead?.cs_claimed_by||'-')),
+     display_sales:peopleMap[r.id]?.sales_name||r.sales_closing||'-',
+     display_sales_invited:(teamMembersMap[r.id]||[]).join(', ')
+   };
+ });
+ window.hmSalesReportOutlets=[...new Set(rows.map(r=>String(r.outlet||'').trim()).filter(Boolean))].sort();
+ window.hmSalesReportOutlet=isAdminFinance&&profile?.outlet?profile.outlet:(window.hmSalesReportOutlet||'ALL');
+ if(window.hmSalesReportOutlet!=='ALL'&&!window.hmSalesReportOutlets.includes(window.hmSalesReportOutlet))window.hmSalesReportOutlet='ALL';
+ window.hmSalesReportPeriod=window.hmSalesReportPeriod||'MONTH';
+ inventoryView='sales';
+ const panel=$('inventoryPanel');if(panel)panel.classList.remove('hidden');
+ const btn=$('inventoryDashboardBtn');if(btn)btn.textContent='✖ Tutup Laporan Penjualan';
+ renderInventorySalesReport();
+}
+
+function buildSalesReportData(){
+ const rows=window.hmSalesReportRows||[],outlet=window.hmSalesReportOutlet||'ALL';
+ const filtered=outlet==='ALL'?rows:rows.filter(r=>String(r.outlet||'').trim()===outlet);
+ const now=new Date(),y=now.getFullYear(),m=now.getMonth();
+ const isToday=r=>{const z=new Date(r.sold_at);return z.getFullYear()===y&&z.getMonth()===m&&z.getDate()===now.getDate()};
+ const isMonth=r=>{const z=new Date(r.sold_at);return z.getFullYear()===y&&z.getMonth()===m};
+ const calc=list=>({rows:list,total:list.reduce((a,r)=>a+Number(r.sale_price||0)-Number(r.discount||0),0),profit:list.reduce((a,r)=>a+Number(r.gross_profit||0),0)});
+ return {today:calc(filtered.filter(isToday)),month:calc(filtered.filter(isMonth))};
+}
+function renderInventorySalesReport(){
+ let body=$('inventoryBody');
+ if(!body){const panel=$('inventoryPanel');if(!panel)return;panel.innerHTML='<div id="inventoryBody"></div>';body=$('inventoryBody');}
+ const d=buildSalesReportData();
+ const period=window.hmSalesReportPeriod||'TODAY',x=d[period==='MONTH'?'month':'today'];
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const canViewProfit=role!=='MITRA STOCKIST';
+ const lockedOutlet=(role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL')&&profile?.outlet?String(profile.outlet):null;
+ const outlets=window.hmSalesReportOutlets||[],available=lockedOutlet?[lockedOutlet]:['ALL',...outlets];
+ const options=available.map(o=>'<option value="'+esc(o)+'" '+(o===(window.hmSalesReportOutlet||'ALL')?'selected':'')+'>'+esc(o==='ALL'?'Semua Outlet':o)+'</option>').join('');
+ body.innerHTML='<div class="box"><h3 style="margin-top:0">📊 LAPORAN PENJUALAN</h3>'+
+ '<label>Outlet</label><select id="hmSalesReportOutlet" '+(lockedOutlet?'disabled':'')+' onchange="changeSalesReportOutlet(this.value)">'+options+'</select>'+
+ '<div class="row" style="margin:12px 0"><button class="'+(period==='TODAY'?'':'secondary')+'" onclick="showSalesReportPeriod(\'TODAY\')">📅 Hari Ini</button><button class="'+(period==='MONTH'?'':'secondary')+'" onclick="showSalesReportPeriod(\'MONTH\')">📆 Bulan Ini</button></div>'+
+ '<div class="small">Outlet aktif: <b>'+esc(window.hmSalesReportOutlet==='ALL'?'Semua Outlet':window.hmSalesReportOutlet)+'</b></div>'+
+ '<div class="stats" style="margin-top:8px">'+invStat('Omzet',x.total)+(canViewProfit?invStat('Laba',x.profit):'')+'</div>'+
+ (x.rows.length?x.rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.display_product||'-')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div>'+(r.display_product_details?'<div class="small" style="margin-top:4px">🔎 '+esc(r.display_product_details)+'</div>':'')+'<div class="small">Outlet: <b>'+esc(r.outlet||'-')+'</b></div><div class="small">CS: <b>'+esc(r.display_cs||'-')+'</b> • Sales: <b>'+esc(r.display_sales||'-')+'</b></div>'+(r.display_sales_invited?'<div class="small">🤝 Sales yang diajak: <b>'+esc(r.display_sales_invited)+'</b></div>':'')+'<div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Harga jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+(canViewProfit?' • Harga beli/Modal Rp'+Number(r.cost||0).toLocaleString('id-ID')+' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID'):'')+'</div>'+(profile?.is_management?'<button class="secondary" style="margin-top:8px" onclick="openSalesTransactionEdit(&quot;'+r.id+'&quot;)">✏️ Edit Transaksi</button>':'')+'</div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
 }
 async function openSalesTransactionEdit(id){
  if(!profile?.is_management)return alert('Hanya Management yang dapat mengedit transaksi penjualan.');

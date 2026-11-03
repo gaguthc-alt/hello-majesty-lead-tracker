@@ -1414,7 +1414,7 @@ async function saveEditStock(id){
  window.hmSavingEditStock=true;
  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ Menyimpan...';}
  try{
-  const changedFields=Object.keys(data).filter(key=>JSON.stringify(s[key]??null)!==JSON.stringify(data[key]??null));
+  const changedFields=Object.keys(data).filter(key=>key!=='updated_at'&&JSON.stringify(s[key]??null)!==JSON.stringify(data[key]??null));
   const x=await sb.from('stock_units').update(data).eq('id',id).select('id').maybeSingle();
   if(x.error)throw x.error;
   if(!x.data)throw new Error('Perubahan tidak tersimpan. Stok mungkin sudah berubah atau akses akun tidak mencukupi.');

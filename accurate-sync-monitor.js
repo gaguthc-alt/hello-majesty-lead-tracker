@@ -11,7 +11,7 @@
   function openModal(title,html){
     const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
     if(!mt||!mb||!modal) throw new Error('Panel belum siap.');
-    mt.textContent=title+' · Monitor r13'; mb.innerHTML=html; modal.classList.remove('hidden');
+    mt.textContent=title+' · Monitor r14'; mb.innerHTML=html; modal.classList.remove('hidden');
   }
   function financeFmt(v){return Math.round(Number(v||0)).toLocaleString('id-ID');}
   function normStatus(v){return String(v||'').trim().toUpperCase();}
@@ -139,7 +139,7 @@
 '<div style="display:block!important;color:#172033!important;-webkit-text-fill-color:#172033!important;font-weight:700">Harga jual: Rp'+financeFmt(info.sale_price)+' • Modal: Rp'+financeFmt(info.cost)+' • Laba: Rp'+financeFmt(info.gross_profit)+'</div>'+
 '<div class="hm-muted">ID: '+esc(x.sale_id||'-')+'</div>'+
 '<div style="display:block!important;color:#991b1b!important;-webkit-text-fill-color:#991b1b!important;margin-top:5px">Penyebab: '+esc(reason||syncFailureReason(x))+'</div>'+
-'<div style="display:block!important;color:#92400e!important;margin-top:10px;font-size:13px!important">⛔ Pemeriksaan saja — sinkronisasi ulang tidak dijalankan dari monitor ini.</div>';}).join('')||'')+
+'<div style="display:block!important;color:#92400e!important;margin-top:10px;font-size:13px!important">⛔ Pemeriksaan saja — sinkronisasi ulang tidak dijalankan dari monitor ini.</div></div>';}).join('')||'')+
       (records.filter(x=>normStatus(x.status)!=='SYNCED').map(x=>'<div class="lead hm-accurate-queue-card" style="background:#fff7f7!important;color:#172033!important;border:1px solid #fecaca!important"><div class="row" style="justify-content:space-between"><b>'+esc(x.entity_type||'Data Accurate')+'</b>'+statusBadge(x.status)+'</div><div class="small" style="margin-top:4px">Arah: '+esc(x.direction||'-')+' • ID lokal: '+esc(x.local_id||x.sale_id||'-')+' • No. Accurate: '+esc(x.accurate_no||x.accurate_id||'-')+'</div><div style="margin-top:7px;font-weight:700;color:#991b1b!important">Alasan / detail:</div><div class="small" style="margin-top:3px;color:#7f1d1d!important;white-space:pre-wrap;overflow-wrap:anywhere">'+esc(syncFailureReason(x))+'</div></div>').join('')||'')+
       (!conflicts.length&&!queue.some(x=>normStatus(x.status)!=='SYNCED')&&!records.some(x=>normStatus(x.status)!=='SYNCED')?'<div class="box"><b>🟢 Tidak ada data bermasalah.</b><div class="small">Sistem akan menampilkan masalah di sini jika terjadi kegagalan, keterlambatan, atau konflik.</div></div>':'')+
       '<div class="small" style="margin-top:10px">Catatan: konflik tidak ditimpa otomatis. Management menentukan sumber data yang benar.</div>'

@@ -446,11 +446,13 @@
         const label=[p.product,p.variant,p.hm_color||null,p.hm_grade?'Grade '+p.hm_grade:null].filter(Boolean).join(' • ');
         const search=[p.category,p.product,p.variant,p.hm_color,p.hm_grade,p.accurate_item_no,current&&current.name,current&&current.category].filter(Boolean).join(' ').toLowerCase();
         const isMapped=!!(p.accurate_item_id||p.accurate_item_no);
+        const suffix=String(p.hm_grade||'none')+'-'+String(p.hm_color||'none');
         return '<div class="lead" data-hm-accurate-map-card="1" data-mapped="'+(isMapped?'1':'0')+'" data-search="'+esc(search)+'" style="margin-bottom:9px">'+
           '<div style="font-weight:800">'+esc(label)+'</div><div class="small" style="margin:3px 0 8px">Kategori: '+esc(p.category||'-')+' • Stok READY: '+esc(p.hm_ready_stock||0)+' unit</div>'+
           '<div class="small" style="margin-bottom:5px">'+(current?'Barang Accurate saat ini: '+esc(current.no)+' — '+esc(current.name):((p.accurate_item_no||p.accurate_item_id)?'Mapping tersimpan: '+esc(p.accurate_item_no||p.accurate_item_id)+' (tidak ditemukan dalam daftar saat ini)':'Belum dipetakan'))+'</div>'+
-          '<div class="row" style="margin-top:8px;align-items:center"><button class="secondary" onclick="window.hmSaveAccurateProductMapping(\''+esc(p.id)+'\',\''+esc(p.hm_grade||'')+'\',\''+esc(p.hm_color||'')+'\')">💾 Simpan Mapping Manual</button><button onclick="window.hmCreateAccuratePhoneMaster(\''+esc(p.id)+'\',\''+esc(p.hm_grade||'')+'\',\''+esc(p.hm_color||'')+'\')">＋ Buat/Pakai Master Otomatis</button><span id="hm-accurate-map-msg-'+esc(p.id)+'-'+esc(p.hm_grade||'none')+'-'+esc(p.hm_color||'none')+'" class="small"></span></div>'+
-          '<div class="row" style="margin-top:8px;align-items:center"><button class="secondary" onclick="window.hmSaveAccurateProductMapping(\''+esc(p.id)+'\',\''+esc(p.hm_grade||'')+'\',\''+esc(p.hm_color||'')+'\')">💾 Simpan Mapping Grade Ini</button><span id="hm-accurate-map-msg-'+esc(p.id)+'-'+esc(p.hm_grade||'none')+'-'+esc(p.hm_color||'none')+'" class="small"></span></div>'+
+          '<label style="display:block;font-weight:700;margin:8px 0 5px">Pilih barang Accurate yang benar</label>'+
+          '<select id="hm-accurate-map-'+esc(p.id)+'-'+esc(suffix)+'" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827">'+optionsFor(p)+'</select>'+
+          '<div class="row" style="margin-top:8px;align-items:center"><button class="secondary" onclick="window.hmSaveAccurateProductMapping(\''+esc(p.id)+'\',\''+esc(p.hm_grade||'')+'\',\''+esc(p.hm_color||'')+'\')">💾 Simpan Mapping</button><button onclick="window.hmCreateAccuratePhoneMaster(\''+esc(p.id)+'\',\''+esc(p.hm_grade||'')+'\',\''+esc(p.hm_color||'')+'\')">＋ Buat/Pakai Master Otomatis</button><span id="hm-accurate-map-msg-'+esc(p.id)+'-'+esc(suffix)+'" class="small"></span></div>'+
         '</div>';
       }).join('');
       openModal('🧩 Pemetaan Produk Accurate',

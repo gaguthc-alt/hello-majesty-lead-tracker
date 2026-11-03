@@ -125,7 +125,7 @@ window.sharePartnerCapitalSelectionWhatsApp=async function(){
   const ids=checks.map(x=>x.dataset.sid).filter(Boolean);
   let sales=[];
   if(ids.length){
-    const {data,error}=await sb.from('sales_transactions').select('id,sale_price,finance_status,finance_requested_amount,finance_actual_disbursement,finance_cash_payment,finance_cashout_amount,finance_actual_fee').in('id',ids);
+    const detail=await sb.rpc('finance_sales_detail_rows',{p_ids:ids,p_pending_only:false});const data=detail.data||[];const error=detail.error;
     if(error){alert('Rincian finance gagal dimuat: '+error.message);return;}
     sales=data||[];
   }
@@ -205,7 +205,7 @@ window.loadPartnerSettlementDetail=async function(outlet){
   const txIds=[...new Set(units.map(r=>r.sales_transaction_id).filter(Boolean))];
   let financeByTx={};
   if(txIds.length){
-    const fr=await sb.from('sales_transactions').select('id,finance_status,finance_actual_disbursement,finance_requested_amount').in('id',txIds);
+    const fr=await sb.rpc('finance_sales_detail_rows',{p_ids:txIds,p_pending_only:false});
     if(fr.error){box.innerHTML='<div class="small">Gagal memuat pencairan finance: '+esc(fr.error.message)+'</div>';return;}
     (fr.data||[]).forEach(t=>{financeByTx[t.id]=t;});
   }
@@ -565,9 +565,8 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
     if(!p.is_management && String(p.role||'').toUpperCase()!=='ADMIN FINANCE' && String(p.role||'').toUpperCase()!=='ADMIN FINANCE MAJESTY CELL'){
       alert('Akses pencairan finance tidak diizinkan.'); return;
     }
-    const {data:rows,error}=await window.sb.from('sales_transactions')
-      .select('id,sold_at,sale_price,discount,finance_status,finance_requested_amount,finance_cash_payment,finance_cashout_amount,finance_estimated_fee,finance_estimated_disbursement,finance_actual_fee,finance_actual_disbursement,finance_disbursement_date,customer_name,finance_payment_method_id,outlet')
-      .eq('finance_status','PENDING').order('sold_at',{ascending:false});
+    const pendingResult=await window.sb.rpc('finance_sales_detail_rows',{p_ids:null,p_pending_only:true});
+    const rows=pendingResult.data||[],error=pendingResult.error;
     if(error)return alert(error.message);
     const ids=(rows||[]).map(r=>r.finance_payment_method_id).filter(Boolean);
     const pm=ids.length?await window.sb.from('payment_methods').select('id,code,name').in('id',ids):{data:[]};

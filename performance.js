@@ -40,18 +40,9 @@
     const start=monthStart(mode).toISOString();
     const end=monthEnd(mode).toISOString();
     const canViewProfit=!!profile?.is_management;
-    let rows=[];
-    if(canViewProfit){
-      const x=await sb.rpc('management_performance_sales',{p_start:start,p_end:end});
-      if(x.error)throw x.error;
-      rows=x.data||[];
-    }else{
-      let q=sb.from('sales_transactions').select('id,outlet,sale_price,discount,sold_at');
-      if(profile?.outlet)q=q.eq('outlet',profile.outlet);
-      const x=await q.gte('sold_at',start).lt('sold_at',end);
-      if(x.error)throw x.error;
-      rows=x.data||[];
-    }
+    const result=await sb.rpc('management_performance_sales',{p_start:start,p_end:end});
+    if(result.error)throw result.error;
+    const rows=result.data||[];
     const map={};
     rows.forEach(r=>{
       const k=r.outlet||'-';

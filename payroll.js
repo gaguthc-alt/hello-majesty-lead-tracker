@@ -175,9 +175,7 @@
 
   async function loadPartnerCommissionRows(){
     const sb=window.sb;if(!sb)throw new Error('Koneksi database belum siap.');
-    const q=await sb.from('partner_commission_payroll_view')
-      .select('id,sales_transaction_id,partner_name,outlet,sold_at,profit_basis,commission_rate,commission_amount,status,product_name,product_variant,color,condition,grade,battery_health,cost,sale_price,gross_profit')
-      .order('sold_at',{ascending:false});
+    const q=await sb.rpc('partner_commission_payroll_rows');
     if(q.error)throw q.error;
     return (q.data||[]).filter(x=>x.status!=='REVERSED');
   }

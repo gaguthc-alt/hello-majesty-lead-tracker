@@ -193,16 +193,14 @@ async function reviewUnifiedWalkin(id,kind,action){
  if(action==='APPROVE'){
    try{
      const table=kind==='STOCK'?'stock_sale_approvals':'walkin_sale_approvals';
-     const approval=await sb.from(table).select('stock_unit_id').eq('id',id).maybeSingle();
+     const approval=await sb.from(table).select('stock_unit_id,sale_id').eq('id',id).maybeSingle();
      const stockId=approval.data?.stock_unit_id;
      if(stockId){
-       const saleRow=await sb.from('sales_transactions')
-         .select('id,stock_units!sales_transactions_stock_unit_id_fkey(source_type,partner_name)')
-         .eq('stock_unit_id',stockId).maybeSingle();
-       const saleId=saleRow.data?.id||null;
+       const stockMeta=await sb.from('stock_units').select('source_type,partner_name').eq('id',stockId).maybeSingle();
+       const saleId=approval.data?.sale_id||null;
        if(saleId){
-         const stockSource=String(saleRow.data?.stock_units?.source_type||'').toUpperCase();
-         const partner=String(saleRow.data?.stock_units?.partner_name||'');
+         const stockSource=String(stockMeta.data?.source_type||'').toUpperCase();
+         const partner=String(stockMeta.data?.partner_name||'');
          const isStockistConsignment=stockSource==='STOCKIST' && /^(majesty cell|majesty gadget|majesty store)$/i.test(partner.trim());
          const sync=await sb.functions.invoke('accurate-sync',{body:{action:isStockistConsignment?'sync_consign_journal':'sync_sale',sale_id:saleId}});
          if(sync.error||!sync.data?.ok){

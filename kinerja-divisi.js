@@ -265,7 +265,7 @@ window.hmRefreshKinerjaDivisi=async function(){
  if(refreshBtn){refreshBtn.disabled=true;refreshBtn.textContent='Memperbarui data…';}
  hmKdAiLastFingerprint='';
  try{
-  const result=await (typeof sb!=='undefined' ? sb.rpc('kinerja_divisi_summary') : Promise.resolve(null));
+  const result=await (typeof sb!=='undefined' ? sb.rpc('kinerja_divisi_summary_scoped') : Promise.resolve(null));
   if(!result)throw new Error('Koneksi database belum siap.');
   if(result.error)throw result.error;
   const data=result.data||{};

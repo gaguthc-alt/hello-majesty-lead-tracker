@@ -1537,7 +1537,7 @@ function renderInventorySalesReport(){
  const period=window.hmSalesReportPeriod||'TODAY',x=d[period==='MONTH'?'month':'today'];
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const canViewProfit=role!=='MITRA STOCKIST';
- const lockedOutlet=(role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL')&&profile?.outlet?String(profile.outlet):null;
+ const lockedOutlet=null; // Tim internal dapat memilih semua outlet.
  const outlets=window.hmSalesReportOutlets||[],available=lockedOutlet?[lockedOutlet]:['ALL',...outlets];
  const options=available.map(o=>'<option value="'+esc(o)+'" '+(o===(window.hmSalesReportOutlet||'ALL')?'selected':'')+'>'+esc(o==='ALL'?'Semua Outlet':o)+'</option>').join('');
  body.innerHTML='<div class="box"><h3 style="margin-top:0">📊 LAPORAN PENJUALAN</h3>'+

@@ -1545,8 +1545,40 @@ function renderInventorySalesReport(){
  '<div class="row" style="margin:12px 0"><button class="'+(period==='TODAY'?'':'secondary')+'" onclick="showSalesReportPeriod(\'TODAY\')">📅 Hari Ini</button><button class="'+(period==='MONTH'?'':'secondary')+'" onclick="showSalesReportPeriod(\'MONTH\')">📆 Bulan Ini</button></div>'+
  '<div class="small">Outlet aktif: <b>'+esc(window.hmSalesReportOutlet==='ALL'?'Semua Outlet':window.hmSalesReportOutlet)+'</b></div>'+
  '<div class="stats" style="margin-top:8px">'+invStat('Omzet',x.total)+(canViewProfit?invStat('Laba',x.profit):'')+'</div>'+
- (x.rows.length?x.rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.display_product||'-')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div>'+(r.display_product_details?'<div class="small" style="margin-top:4px">🔎 '+esc(r.display_product_details)+'</div>':'')+'<div class="small">Outlet: <b>'+esc(r.outlet||'-')+'</b></div><div class="small">CS: <b>'+esc(r.display_cs||'-')+'</b> • Sales: <b>'+esc(r.display_sales||'-')+'</b></div>'+(r.display_sales_invited?'<div class="small">🤝 Sales yang diajak: <b>'+esc(r.display_sales_invited)+'</b></div>':'')+'<div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+(canViewProfit?' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID'):'')+'</div></div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
+ (x.rows.length?x.rows.map(r=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(r.display_product||'-')+'</b><span>'+new Date(r.sold_at).toLocaleDateString('id-ID')+'</span></div>'+(r.display_product_details?'<div class="small" style="margin-top:4px">🔎 '+esc(r.display_product_details)+'</div>':'')+'<div class="small">Outlet: <b>'+esc(r.outlet||'-')+'</b></div><div class="small">CS: <b>'+esc(r.display_cs||'-')+'</b> • Sales: <b>'+esc(r.display_sales||'-')+'</b></div>'+(r.display_sales_invited?'<div class="small">🤝 Sales yang diajak: <b>'+esc(r.display_sales_invited)+'</b></div>':'')+'<div class="small">Sumber: '+(r.customer_source==='WALK-IN'?'🚶 WALK-IN':'📱 DIGITAL')+'</div><div>Jual Rp'+(Number(r.sale_price||0)-Number(r.discount||0)).toLocaleString('id-ID')+(canViewProfit?' • Laba Rp'+Number(r.gross_profit||0).toLocaleString('id-ID'):'')+'</div>'+(profile?.is_management?'<button class="secondary" style="margin-top:8px" onclick="openSalesTransactionEdit(&quot;'+r.id+'&quot;)">✏️ Edit Transaksi</button>':'')+'</div>').join(''):'<p class="small">Belum ada penjualan pada periode ini.</p>')+'</div>';
 }
+async function openSalesTransactionEdit(id){
+ if(!profile?.is_management)return alert('Hanya Management yang dapat mengedit transaksi penjualan.');
+ const r=(window.hmSalesReportRows||[]).find(x=>String(x.id)===String(id));
+ if(!r)return alert('Data transaksi tidak ditemukan. Muat ulang Laporan Penjualan.');
+ $('mt').textContent='✏️ Edit Transaksi Penjualan';
+ $('mb').innerHTML='<div class="lead"><b>'+esc(r.display_product||'Produk')+'</b><div class="small">Outlet: '+esc(r.outlet||'-')+' • Tanggal: '+new Date(r.sold_at).toLocaleDateString('id-ID')+'</div><div class="small">Harga jual saat ini: <b>Rp'+Number(r.sale_price||0).toLocaleString('id-ID')+'</b></div><div class="small">Modal: Rp'+Number(r.cost||0).toLocaleString('id-ID')+' • Diskon: Rp'+Number(r.discount||0).toLocaleString('id-ID')+'</div><div class="small">Laba saat ini: Rp'+Number(r.gross_profit||0).toLocaleString('id-ID')+'</div></div><label>Harga jual baru (Rp)</label><input id="hmEditSalePrice" type="number" min="1" step="1" value="'+Number(r.sale_price||0)+'" style="width:100%;margin:6px 0 12px"><label>Catatan koreksi (opsional)</label><textarea id="hmEditSaleNote" rows="2" placeholder="Alasan perubahan harga" style="width:100%"></textarea><div class="notice" style="margin-top:10px">Laba dihitung ulang otomatis. Komisi Sales, CS Closing, Hunter, dan Checker yang berbasis laba mengikuti nilai terbaru. Modal dan diskon tidak diubah.</div><div class="row" style="justify-content:flex-end;margin-top:12px"><button class="secondary" onclick="closeModal()">Batal</button><button class="success" onclick="saveSalesTransactionPrice(&quot;'+r.id+'&quot;)">Simpan Perubahan</button></div>';
+ $('modal').classList.remove('hidden');
+}
+async function saveSalesTransactionPrice(id){
+ if(!profile?.is_management)return alert('Hanya Management yang dapat mengedit transaksi penjualan.');
+ const price=Number($('hmEditSalePrice')?.value);
+ if(!Number.isFinite(price)||price<=0)return alert('Masukkan harga jual yang valid.');
+ const r=(window.hmSalesReportRows||[]).find(x=>String(x.id)===String(id));
+ if(!r)return alert('Data transaksi tidak ditemukan.');
+ const profit=price-Number(r.discount||0)-Number(r.cost||0);
+ const note=$('hmEditSaleNote')?.value||null;
+ if(!confirm('Simpan harga jual Rp'+price.toLocaleString('id-ID')+'? Laba baru menjadi Rp'+profit.toLocaleString('id-ID')+'. Komisi berbasis laba akan diperbarui.'))return;
+ const buttons=[...document.querySelectorAll('#mb button')];buttons.forEach(b=>b.disabled=true);
+ try{
+  const result=await sb.rpc('update_sales_transaction_price',{p_sale_id:id,p_new_sale_price:price,p_note:note});
+  if(result.error)throw result.error;
+  const data=result.data||{};
+  closeModal();
+  await openSalesReport();
+  alert('Harga transaksi berhasil diperbarui.\nHarga jual: Rp'+Number(data.new_sale_price??price).toLocaleString('id-ID')+'\nLaba baru: Rp'+Number(data.new_profit??profit).toLocaleString('id-ID')+'\n\nKomisi berbasis laba akan mengikuti perhitungan terbaru.'+(data.accurate_sync_status==='FAILED'?'\n\nCatatan: Sinkronisasi Accurate masih FAILED. Perbaiki mapping produk sebelum sinkronisasi ulang.':''));
+ }catch(e){
+  buttons.forEach(b=>b.disabled=false);
+  alert('Gagal mengubah transaksi: '+(e?.message||e));
+ }
+}
+window.openSalesTransactionEdit=openSalesTransactionEdit;
+window.saveSalesTransactionPrice=saveSalesTransactionPrice;
 function changeSalesReportOutlet(outlet){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  if((role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL')&&profile?.outlet)return;

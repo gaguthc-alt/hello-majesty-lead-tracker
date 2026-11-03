@@ -1406,9 +1406,23 @@ async function saveEditStock(id){
   data.completeness=$('escomplete').value.trim()||null;
   data.minus=$('esminus').value.trim()||null;
  }
- const x=await sb.from('stock_units').update(data).eq('id',id);
- if(x.error)return alert(x.error.message);
- closeModal();await renderInventory();
+ if(window.hmSavingEditStock)return;
+ const saveBtn=[...document.querySelectorAll('#mb button')].find(b=>String(b.getAttribute('onclick')||'').includes("saveEditStock('"+id+"'"));
+ window.hmSavingEditStock=true;
+ if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ Menyimpan...';}
+ try{
+  const x=await sb.from('stock_units').update(data).eq('id',id).select('id').maybeSingle();
+  if(x.error)throw x.error;
+  if(!x.data)throw new Error('Perubahan tidak tersimpan. Stok mungkin sudah berubah atau akses akun tidak mencukupi.');
+  closeModal();
+  await renderInventory();
+  alert('Perubahan stock berhasil disimpan.');
+ }catch(e){
+  alert('Gagal menyimpan perubahan stock: '+(e?.message||e));
+  if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='Simpan';}
+ }finally{
+  window.hmSavingEditStock=false;
+ }
 }async function openStockHistory(id){const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});if(x.error)return alert(x.error.message);$('mt').textContent='🧾 Histori Stock';$('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';$('modal').classList.remove('hidden')}
 function hmNormalizePhone(v){return String(v||'').replace(/[^0-9]/g,'').replace(/^0+/,'');}
 async function openSalesReport(){

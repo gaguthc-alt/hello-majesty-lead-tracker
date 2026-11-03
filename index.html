@@ -4403,7 +4403,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
   // Stock-unit.sale_id may be empty on legacy records; partner_capital_due is the canonical mapping.
   let capitalDueByUnit=new Map();
   if(!isStockistUser){
-   const cdRes=await window.sb.from('partner_capital_due').select('stock_unit_id,sales_transaction_id,partner_name,outlet').in('partner_name',partners).limit(3000);
+   const cdRes=await window.sb.rpc('partner_capital_due_map',{p_partners:partners});
    if(cdRes.error)throw cdRes.error;
    (cdRes.data||[]).forEach(d=>{
     if(d.stock_unit_id&&d.sales_transaction_id&&!capitalDueByUnit.has(String(d.stock_unit_id)))capitalDueByUnit.set(String(d.stock_unit_id),d);

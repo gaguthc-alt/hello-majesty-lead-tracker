@@ -1302,14 +1302,16 @@ async function saveStock(){
   if(x.error)throw new Error(x.error.message);
   const stockId=x.data?.id;
   if(!stockId)throw new Error('ID stock tidak dikembalikan oleh database.');
-  // Setiap Barang Masuk wajib diajukan untuk persetujuan sebelum menjadi Stock READY.
-  const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
-  if(ap.error){
-   // Jika respons RPC bermasalah, cek dulu apakah pengajuan sebenarnya sudah tercatat.
-   const verify=await sb.from('inventory_receive_approvals').select('id,status').eq('stock_unit_id',stockId).maybeSingle();
-   if(!verify.data){
-    await sb.from('stock_units').delete().eq('id',stockId);
-    throw new Error('Barang masuk belum berhasil dikirim untuk persetujuan: '+ap.error.message);
+  // Hanya stok dari Stockist yang wajib melalui persetujuan. Stok Management langsung READY.
+  if(source==='STOCKIST'){
+   const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
+   if(ap.error){
+    // Jika respons RPC bermasalah, cek dulu apakah pengajuan sebenarnya sudah tercatat.
+    const verify=await sb.from('inventory_receive_approvals').select('id,status').eq('stock_unit_id',stockId).maybeSingle();
+    if(!verify.data){
+     await sb.from('stock_units').delete().eq('id',stockId);
+     throw new Error('Barang masuk belum berhasil dikirim untuk persetujuan: '+ap.error.message);
+    }
    }
   }
   closeModal();

@@ -7426,7 +7426,6 @@ async function updateLead(id){
   if(current){current.disabled=false;current.textContent='Simpan Update';}
  }
 }
-async function resetLead(id)
 async function resetLead(id){
  if(!confirm('Reset lead ke AVAILABLE? Semua claim dan hasil follow-up akan dikosongkan.'))return;
  try{
@@ -7440,7 +7439,6 @@ async function resetLead(id){
   alert('Reset lead gagal: '+String(e?.message||e));
  }
 }
-function deleteLead(id)
 function deleteLead(id){
  const lead=(leads||[]).find(x=>String(x.lead_id)===String(id));
  if(!lead)return alert('Lead tidak ditemukan. Muat ulang data lalu coba kembali.');
@@ -7470,7 +7468,6 @@ async function confirmDelete(id){
   alert('Hapus lead gagal: '+String(e?.message||e));
  }
 }
-function showTodayLeads()
 function showTodayLeads(){
  const todayStart=new Date();todayStart.setHours(0,0,0,0);
  const tomorrow=new Date(todayStart);tomorrow.setDate(tomorrow.getDate()+1);

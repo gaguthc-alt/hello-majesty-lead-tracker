@@ -1414,12 +1414,28 @@ async function saveEditStock(id){
  window.hmSavingEditStock=true;
  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ Menyimpan...';}
  try{
+  const changedFields=Object.keys(data).filter(key=>JSON.stringify(s[key]??null)!==JSON.stringify(data[key]??null));
   const x=await sb.from('stock_units').update(data).eq('id',id).select('id').maybeSingle();
   if(x.error)throw x.error;
   if(!x.data)throw new Error('Perubahan tidak tersimpan. Stok mungkin sudah berubah atau akses akun tidak mencukupi.');
+  let auditWarning='';
+  if(changedFields.length){
+   const audit=await sb.from('stock_movements').insert({
+    stock_unit_id:id,
+    movement_type:'EDIT',
+    from_status:s.status||null,
+    to_status:s.status||null,
+    actor_user_id:profile?.user_id||null,
+    note:'Edit stock: '+changedFields.join(', ')
+   });
+   if(audit.error){
+    console.error('[HM] Stock updated but edit history could not be saved:',audit.error);
+    auditWarning=' Data stock sudah berubah, tetapi histori edit belum berhasil dicatat: '+audit.error.message;
+   }
+  }
   closeModal();
   await renderInventory();
-  alert('Perubahan stock berhasil disimpan.');
+  alert('Perubahan stock berhasil disimpan.'+auditWarning);
  }catch(e){
   alert('Gagal menyimpan perubahan stock: '+(e?.message||e));
   if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='Simpan';}

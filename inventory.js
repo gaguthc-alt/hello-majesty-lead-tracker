@@ -224,8 +224,8 @@ async function reviewUnifiedWalkin(id,kind,action){
    alert(kind==='STOCK'?'Closing Stock ditolak.':'Walk-In ditolak.');
  }
  closeModal(); await renderInventory();
- // Refresh panel immediately: remove processed request without requiring close/reopen.
- await window.openWalkinApprovals();
+ // Refresh panel and both approval badges without navigating away from the active menu.
+ await Promise.allSettled([window.openWalkinApprovals(),loadWalkinApprovalCount()]);
  const panelBody=document.getElementById('hmMenuPanelBody');
  if(panelBody){
    const notice=document.createElement('div');
@@ -239,10 +239,13 @@ async function reviewUnifiedWalkin(id,kind,action){
 async function reviewWalkinSale(id,action){
  let note=null;
  if(action==='REJECT'){note=prompt('Alasan penolakan Walk-In:')||'';if(!note.trim())return alert('Alasan wajib diisi.');}
- const r=await sb.rpc('review_walkin_sale_approval',{p_approval_id:id,p_action:action,p_note:note});
- if(r.error)return alert('Verifikasi Walk-In gagal: '+r.error.message);
- alert(action==='APPROVE'?'Walk-In disetujui dan transaksi menjadi SOLD.':'Walk-In ditolak.');
- closeModal(); await renderInventory();
+ try{
+  const r=await sb.rpc('review_walkin_sale_approval',{p_approval_id:id,p_action:action,p_note:note});
+  if(r.error)throw r.error;
+  await Promise.allSettled([renderInventory(),loadWalkinApprovalCount()]);
+  if(typeof window.openWalkinApprovals==='function')await window.openWalkinApprovals();
+  alert(action==='APPROVE'?'Walk-In disetujui dan transaksi menjadi SOLD.':'Walk-In ditolak.');
+ }catch(e){alert('Verifikasi Walk-In gagal: '+String(e?.message||e));}
 }
 
 function canReceiveStock(source=null){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');if(!!profile?.is_management||inventoryCanFacilitator||role==='FASILITATOR')return true;if(role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL')return source===null||source==='STOCKIST';return false;}
@@ -251,25 +254,50 @@ function canReviewInventoryReceive(requesterRole,isCell,requestedBy,partnerName,
 async function loadInventoryApprovalCount(){const me=inventoryReviewerRole(),btn=document.getElementById('inventoryApprovalBtn');if(!btn)return;const roleAllowed=!!profile?.is_management||me==='DIVISI'||me==='DEVELOPER'||me==='DEVELOPER APLIKASI'||me==='FASILITATOR'||me==='MITRA STOCKIST'||me==='ADMIN FINANCE MAJESTY CELL';if(!profile?.user_id||!roleAllowed){btn.hidden=true;btn.style.display='none';return;}btn.hidden=false;btn.style.display='';const r=await sb.from('inventory_receive_approvals').select('id,stock_unit_id,requested_by').eq('status','PENDING');if(r.error)return;let rows=r.data||[];const management=!!profile?.is_management||['DIVISI','DEVELOPER','DEVELOPER APLIKASI'].includes(me);if(!management){const ids=rows.map(x=>x.stock_unit_id).filter(Boolean);const sr=ids.length?await sb.from('stock_units').select('id,outlet,source_type,partner_name').in('id',ids):{data:[],error:null};if(sr.error)return;const stocks=sr.data||[],myOutlet=String(profile?.outlet||'').trim().toUpperCase();rows=rows.filter(a=>{const st=stocks.find(x=>x.id===a.stock_unit_id)||{},cell=String(st.source_type||'').toUpperCase()==='STOCKIST'&&String(st.partner_name||'').trim().toUpperCase()==='MAJESTY CELL';if(me==='FASILITATOR')return String(st.outlet||'').trim().toUpperCase()===myOutlet&&String(a.requested_by||'')!==String(profile?.user_id||'');if(me==='MITRA STOCKIST'||me==='ADMIN FINANCE MAJESTY CELL')return cell;return false;});}btn.textContent='🔔 Persetujuan Barang Masuk'+(rows.length?' ('+rows.length+')':'');}
 window.openInventoryApprovals=async function(){const me=inventoryReviewerRole(); console.log('[HM] openInventoryApprovals loaded v20261029-cell-approval-fix-6');const canApprove=!!profile?.user_id;if(!canApprove)return alert('Profil pengguna belum siap. Silakan refresh aplikasi.');const a=await sb.from('inventory_receive_approvals').select('id,stock_unit_id,requested_by,requested_at,status,review_note').eq('status','PENDING').order('requested_at',{ascending:false});if(a.error)return alert(a.error.message);let rows=a.data||[];$('mt').textContent='🔔 Persetujuan Barang Masuk ('+rows.length+')';if(!rows.length){$('mb').innerHTML='<div class="box" style="text-align:center"><div style="font-size:28px">✅</div><b>Tidak ada Barang Masuk yang menunggu verifikasi.</b><div class="small" style="margin-top:6px">Semua pengajuan sudah diproses atau belum ada pengajuan baru.</div></div>';const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');if(panel&&body){if(title)title.textContent=$('mt').textContent;body.replaceChildren(...Array.from($('mb').childNodes));panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}else $('modal').classList.remove('hidden');return;}const ids=rows.map(x=>x.stock_unit_id);const s=await sb.from('stock_units').select('id,product_id,outlet,imei_1,cost,asking_price,partner_name,source_type,status').in('id',ids);if(s.error)return alert(s.error.message);const stocks=s.data||[];const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};const products=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));let u=await sb.rpc('get_inventory_receive_requester_profiles',{p_user_ids:rows.map(x=>x.requested_by).filter(Boolean)});if(u.error||!(u.data||[]).length){const fallback=await sb.from('team_profiles').select('user_id,name,role,outlet,is_management').in('user_id',rows.map(x=>x.requested_by).filter(Boolean));if(!fallback.error)u={data:fallback.data||[]};else console.warn('[HM] Nama pengaju barang masuk tidak dapat dimuat:',u.error||fallback.error);}const users=Object.fromEntries((u.data||[]).map(x=>[x.user_id,x]));rows=rows.filter(a=>{const st=stocks.find(x=>x.id===a.stock_unit_id)||{},rq=users[a.requested_by]||{},isCell=String(st.source_type||'').toUpperCase()==='STOCKIST'&&String(st.partner_name||'').trim().toUpperCase()==='MAJESTY CELL';return canReviewInventoryReceive(rq.role,isCell,a.requested_by,st.partner_name,st.outlet,rq.outlet,!!rq.is_management);});if(!rows.length){$('mt').textContent='🔔 Persetujuan Barang Masuk (0)';$('mb').innerHTML='<div class="box" style="text-align:center"><b>Tidak ada pengajuan yang memerlukan persetujuan akun ini.</b></div>';const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');if(panel&&body){if(title)title.textContent=$('mt').textContent;body.replaceChildren(...Array.from($('mb').childNodes));panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}else $('modal').classList.remove('hidden');return;} $('mb').innerHTML=rows.map((a,i)=>{const s=stocks.find(x=>x.id===a.stock_unit_id)||{},p=products[s.product_id]||{},rq=users[a.requested_by]||{},rqRole=String(rq.role||'').trim().toUpperCase().replace(/_/g,' '),isCell=String(s.source_type||'').toUpperCase()==='STOCKIST'&&String(s.partner_name||'').trim().toUpperCase()==='MAJESTY CELL',canReview=canReviewInventoryReceive(rqRole,isCell,a.requested_by,s.partner_name,s.outlet,rq.outlet,!!rq.is_management);return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(s.outlet||'-')+'</b><br>🕒 Diinput: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Diinput oleh: <b>'+esc(rq.name||'User')+'</b></div><div>IMEI: '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+' • Modal: <b>Rp'+Number(s.cost||0).toLocaleString('id-ID')+'</b> • Jual: Rp'+Number(s.asking_price||0).toLocaleString('id-ID')+'</div><div class="small">Partner: '+esc(s.partner_name||'-')+' • Status: MENUNGGU APPROVED</div>'+(canReview?'<div class="row" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="success" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'APPROVE\')">✓ Setujui & Masukkan ke Stock</button><button class="danger" onclick="reviewInventoryReceive(\''+a.stock_unit_id+'\',\'REJECT\')">✕ Tolak Barang Masuk</button></div>':'<div class="small" style="margin-top:8px;font-weight:700">⏳ Menunggu persetujuan Mitra atau Divisi.</div>')+'</div>';}).join('');const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');if(panel&&body){if(title)title.textContent=$('mt').textContent||'🔔 Persetujuan Barang Masuk';body.replaceChildren(...Array.from($('mb').childNodes));panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}else $('modal').classList.remove('hidden');}
 async function reviewInventoryReceive(stockId,action){
- const label=action==='APPROVE'?'Setujui':action==='REJECT'?'Tolak':'Minta koreksi';let note='';
- if(action!=='APPROVE'){note=prompt(label+' Barang Masuk. Catatan wajib diisi:')||'';if(!note.trim())return alert('Catatan wajib diisi.');}
- const r=await sb.rpc('review_inventory_receive',{p_stock_unit_id:stockId,p_action:action,p_note:note||null});if(r.error)return alert(r.error.message);
- const nl=String.fromCharCode(10);let waMessage='';
- if(action==='APPROVE'){
-  const q=await sb.from('stock_units').select('product_id,color,imei_1,imei_2,cost,outlet,partner_name,source_type').eq('id',stockId).maybeSingle();const s=q.data||{};
-  let productLabel=[s.product,s.variant,s.color].filter(Boolean).join(' — ');
-  if(!s.product&&s.product_id){const p=await sb.from('product_master').select('product,variant,color').eq('id',s.product_id).maybeSingle();if(p.data)productLabel=[p.data.product,p.data.variant,p.data.color].filter(Boolean).join(' — ');}
-  waMessage=['✅ *BARANG MASUK DISETUJUI*','', 'Produk: '+(productLabel||'-'),'IMEI: '+(s.imei_1||'-'),'IMEI 2/EID: '+(s.imei_2||'-'),'Modal: Rp '+Number(s.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(s.outlet||'-'),'Sumber: '+(s.partner_name||s.source_type||'-'),'Status: *STOCK READY*'].join(nl);
-  alert('Barang Masuk disetujui dan menjadi Stock READY.');
- }else{
-  waMessage=[action==='REJECT'?'❌ *BARANG MASUK DITOLAK*':'📝 *BARANG MASUK PERLU KOREKSI*','', 'ID stok: '+stockId,'Catatan: '+note].join(nl);
-  alert(action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');
+ const label=action==='APPROVE'?'Setujui':action==='REJECT'?'Tolak':'Minta koreksi';
+ let note='';
+ if(action!=='APPROVE'){
+  note=prompt(label+' Barang Masuk. Catatan wajib diisi:')||'';
+  if(!note.trim())return alert('Catatan wajib diisi.');
  }
- // Perbarui daftar dan badge persetujuan setelah proses database berhasil.
- closeModal();await renderInventory();
- const sendWA=confirm('Buka WhatsApp untuk mengirim pemberitahuan '+(action==='APPROVE'?'persetujuan':'hasil pemeriksaan')+'?');
- if(sendWA){window.location.href='https://wa.me/?text='+encodeURIComponent(waMessage);return;}
+ const buttons=[...document.querySelectorAll('button[onclick*="'+String(stockId)+'"]')];
+ buttons.forEach(btn=>{btn.disabled=true;btn.dataset.hmApprovalBusy='1';});
+ try{
+  const r=await sb.rpc('review_inventory_receive',{p_stock_unit_id:stockId,p_action:action,p_note:note||null});
+  if(r.error)throw r.error;
+  const nl=String.fromCharCode(10);let waMessage='';
+  if(action==='APPROVE'){
+   const q=await sb.from('stock_units').select('product_id,color,imei_1,imei_2,cost,outlet,partner_name,source_type').eq('id',stockId).maybeSingle();
+   if(q.error)console.warn('[HM] Detail barang disetujui tidak dapat dimuat:',q.error);
+   const st=q.data||{};
+   let productLabel='';
+   if(st.product_id){
+    const p=await sb.from('product_master').select('product,variant,color').eq('id',st.product_id).maybeSingle();
+    if(!p.error&&p.data)productLabel=[p.data.product,p.data.variant,st.color||p.data.color].filter(Boolean).join(' — ');
+   }
+   waMessage=['✅ *BARANG MASUK DISETUJUI*','', 'Produk: '+(productLabel||'Produk'),'IMEI: '+(st.imei_1||'-'),'IMEI 2/EID: '+(st.imei_2||'-'),'Modal: Rp '+Number(st.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(st.outlet||'-'),'Sumber: '+(st.partner_name||st.source_type||'-'),'Status: *STOCK READY*'].join(nl);
+  }else{
+   waMessage=[action==='REJECT'?'❌ *BARANG MASUK DITOLAK*':'📝 *BARANG MASUK PERLU KOREKSI*','', 'ID stok: '+stockId,'Catatan: '+note].join(nl);
+  }
+  // Segarkan data inventory, badge, dan daftar approval tanpa menutup panel menu aktif.
+  const jobs=[];
+  if(typeof renderInventory==='function')jobs.push(Promise.resolve().then(()=>renderInventory()));
+  if(typeof loadInventoryApprovalCount==='function')jobs.push(Promise.resolve().then(()=>loadInventoryApprovalCount()));
+  await Promise.allSettled(jobs);
+  if(typeof window.openInventoryApprovals==='function')await window.openInventoryApprovals();
+  alert(action==='APPROVE'?'Barang Masuk disetujui dan menjadi Stock READY.':action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');
+  const sendWA=confirm('Buka WhatsApp untuk mengirim pemberitahuan '+(action==='APPROVE'?'persetujuan':'hasil pemeriksaan')+'?');
+  if(sendWA)window.open('https://wa.me/?text='+encodeURIComponent(waMessage),'_blank');
+ }catch(e){
+  console.error('[HM] reviewInventoryReceive:',e);
+  alert('Persetujuan Barang Masuk gagal: '+String(e?.message||e));
+  if(typeof loadInventoryApprovalCount==='function')await loadInventoryApprovalCount().catch(()=>{});
+  if(typeof window.openInventoryApprovals==='function')await window.openInventoryApprovals().catch(()=>{});
+ }finally{
+  buttons.forEach(btn=>{btn.disabled=false;delete btn.dataset.hmApprovalBusy;});
+ }
 }
+
 async function openMyClosings(){
   try{
     if(!profile?.user_id)return alert('Profil belum siap. Silakan refresh aplikasi.');

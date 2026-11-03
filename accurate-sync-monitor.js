@@ -56,7 +56,33 @@
         rows=vals.length&&vals.every(v=>v&&typeof v==='object')?vals:[];
       }
       if(!Array.isArray(rows))rows=[];
-      console.info('[HM Accurate Monitor] detail RPC:',{requested:saleIds.length,received:rows.length});
+      // Fallback: read the same linked records directly for Management if the RPC returns no rows.
+      if(!rows.length){
+        const salesRes=await sb.from('sales_transactions')
+          .select('id,stock_unit_id,outlet,sold_at,sale_price,cost,discount,gross_profit,accurate_sync_status,finance_status,finance_notes,finance_requested_amount,finance_cash_payment,finance_cashout_amount,finance_estimated_fee,finance_actual_disbursement')
+          .in('id',saleIds);
+        if(salesRes.error)throw salesRes.error;
+        const sales=salesRes.data||[];
+        const stockIds=[...new Set(sales.map(x=>x.stock_unit_id).filter(Boolean))];
+        const stockRes=stockIds.length?await sb.from('stock_units')
+          .select('id,product_id,imei_1,imei_2,color,grade,battery_health,source_type,partner_name')
+          .in('id',stockIds):{data:[],error:null};
+        if(stockRes.error)throw stockRes.error;
+        const stocks=stockRes.data||[];
+        const productIds=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
+        const productRes=productIds.length?await sb.from('product_master')
+          .select('id,product,variant,category')
+          .in('id',productIds):{data:[],error:null};
+        if(productRes.error)throw productRes.error;
+        const stockById=Object.fromEntries(stocks.map(x=>[x.id,x]));
+        const productById=Object.fromEntries((productRes.data||[]).map(x=>[x.id,x]));
+        rows=sales.map(st=>{
+          const su=stockById[st.stock_unit_id]||{};
+          const pm=productById[su.product_id]||{};
+          return {...st,product:[pm.product,pm.variant].filter(Boolean).join(' '),color:su.color,grade:su.grade,battery_health:su.battery_health,serial:su.imei_1||su.imei_2||'',source_type:su.source_type,partner_name:su.partner_name};
+        });
+      }
+      console.info('[HM Accurate Monitor] detail RPC/fallback:',{requested:saleIds.length,received:rows.length});
       rows.forEach(s=>{
         const product=[s.product,s.color,s.grade?'Grade '+s.grade:null,s.battery_health!=null?'BH '+s.battery_health+'%':null].filter(Boolean).join(' • ');
         saleInfo[s.id]={

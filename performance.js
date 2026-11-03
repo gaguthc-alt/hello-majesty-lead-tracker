@@ -92,7 +92,7 @@
     let x=null,lastError=null;
     for(let attempt=0;attempt<3;attempt++){
       try{
-        x=await sb.rpc('team_lead_performance_report_by_outlet',{p_start:start,p_end:end});
+        x=await sb.rpc('team_lead_performance_report_by_outlet_scoped',{p_start:start,p_end:end});
         if(x.error)throw x.error;
         break;
       }catch(err){

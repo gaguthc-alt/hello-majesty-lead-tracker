@@ -316,7 +316,7 @@ async function openMyClosings(){
       sb.from('stock_sale_approvals').select('id,stock_unit_id,outlet,requested_by,team_member_ids,sale_price,status,requested_at,reviewed_at,review_note,sale_id').contains('team_member_ids',[uid]).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
       sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note').eq('requested_by',uid).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
       sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,sale_price,status,requested_at,reviewed_at,review_note,sale_id').contains('sales_user_ids',[uid]).gte('requested_at',monthStartISO).lt('requested_at',nextMonthISO).order('requested_at',{ascending:false}).limit(100),
-      sb.from('sales_transactions').select('id,stock_unit_id,outlet,sales_user_id,sales_closing,sold_at,sale_price,customer_name').eq('sales_closing',me).gte('sold_at',monthStartISO).lt('sold_at',nextMonthISO).order('sold_at',{ascending:false}).limit(100)
+      sb.rpc('sales_closing_rows',{p_start:monthStartISO,p_end:nextMonthISO})
     ]);
     const errors=[leadA,leadB,stockA,stockB,walkA,walkB,salesA].map(x=>x.error).filter(Boolean);
     if(errors.length)throw errors[0];

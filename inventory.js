@@ -1429,11 +1429,9 @@ function hmNormalizePhone(v){return String(v||'').replace(/[^0-9]/g,'').replace(
 async function openSalesReport(){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const isAdminFinance=role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL';
- let q=sb.from('sales_transactions').select('*').order('sold_at',{ascending:false});
- if(isAdminFinance&&profile?.outlet)q=q.eq('outlet',profile.outlet);
- const x=await q;
+ const x=await sb.rpc('get_sales_report_rows');
  if(x.error)throw x.error;
- const rows=x.data||[];
+ const rows=Array.isArray(x.data)?x.data:[];
  const stockIds=[...new Set(rows.map(r=>r.stock_unit_id).filter(Boolean))];
  let stocks=[],peopleMap={},productMap={},leadMap={},teamMembersMap={};
 

@@ -3908,7 +3908,7 @@ async function hmRenderHomePerformance(){
    const ownOutletTarget=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()===String(profile.outlet||'').trim().toLowerCase())||{};
    const outletTargets={claim_cs:Number(ownOutletTarget.wa_target||0),handover:Number(ownOutletTarget.qualified_target||0),cs_closing:Number(ownOutletTarget.closing_target||0),sales_closing:Number(ownOutletTarget.closing_target||0)};
    let outletSections='';
-   if(isManagement){
+   if(isManagement || (targetRows||[]).some(x=>String(x.outlet||'').trim().toLowerCase()==='majesty space')){
      /* Divisi/Management needs a breakdown for every outlet, even when an outlet has no active target row this month. */
      // Outlet breakdown Lead/Sales hanya untuk unit yang memang berfungsi sebagai kanal penjualan digital. Stockist murni tetap muncul di Inventory/Stockist, bukan sebagai outlet funnel.
      const isStockistOnlyLeadOutlet=name=>/^(majesty cell|majesty gadget|majesty store)$/i.test(String(name||'').trim());

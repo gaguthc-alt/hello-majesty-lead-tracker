@@ -3760,7 +3760,7 @@ async function hmBuildManagementMessage(){
          const kpis=[
            {key:'wa_masuk',actual:Number(wa.count||0),target:Number(t.wa_target||0)},
            {key:'handover',actual:Number(hand.count||0),target:Number(t.qualified_target||0)},
-           {key:'closing',actual:Number(close.count||0),target:Number(t.closing_target||0)}
+           {key:'closing',actual:(close.data||[]).filter(x=>String(x.outlet||'').toLowerCase()===String(outlet||'').toLowerCase()).length,target:Number(t.closing_target||0)}
          ].filter(x=>x.target>0);
          context.outlet_target_summary={outlet,day:dayNo,days_in_month:daysInMonth,kpis:kpis.map(x=>({...x,cumulative_target:Math.ceil(x.target*pace),monthly_target_reached:x.actual>=x.target,cumulative_target_reached:x.actual>=Math.ceil(x.target*pace)})),all_cumulative_targets_reached:kpis.length>0&&kpis.every(x=>x.actual>=Math.ceil(x.target*pace)),all_monthly_targets_reached:kpis.length>0&&kpis.every(x=>x.actual>=x.target)};
        }else context.data_limitations.push('realisasi target outlet belum dapat diverifikasi');

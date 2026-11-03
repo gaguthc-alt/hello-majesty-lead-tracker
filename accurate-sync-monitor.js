@@ -11,7 +11,7 @@
   function openModal(title,html){
     const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
     if(!mt||!mb||!modal) throw new Error('Panel belum siap.');
-    mt.textContent=title; mb.innerHTML=html; modal.classList.remove('hidden');
+    mt.textContent=title+' · Monitor r12'; mb.innerHTML=html; modal.classList.remove('hidden');
   }
   function financeFmt(v){return Math.round(Number(v||0)).toLocaleString('id-ID');}
   function normStatus(v){return String(v||'').trim().toUpperCase();}
@@ -56,11 +56,13 @@
         rows=vals.length&&vals.every(v=>v&&typeof v==='object')?vals:[];
       }
       if(!Array.isArray(rows))rows=[];
-      // Fallback: read the same linked records directly for Management if the RPC returns no rows.
-      if(!rows.length){
+      // Fallback: fill any missing transaction details, without replacing rows returned by the protected RPC.
+      const returnedSaleIds=new Set(rows.map(x=>String(x?.id||'')));
+      const missingSaleIds=saleIds.filter(id=>!returnedSaleIds.has(String(id)));
+      if(missingSaleIds.length){
         const salesRes=await sb.from('sales_transactions')
           .select('id,stock_unit_id,outlet,sold_at,sale_price,cost,discount,gross_profit,accurate_sync_status,finance_status,finance_notes,finance_requested_amount,finance_cash_payment,finance_cashout_amount,finance_estimated_fee,finance_actual_disbursement')
-          .in('id',saleIds);
+          .in('id',missingSaleIds);
         if(salesRes.error)throw salesRes.error;
         const sales=salesRes.data||[];
         const stockIds=[...new Set(sales.map(x=>x.stock_unit_id).filter(Boolean))];
@@ -76,11 +78,12 @@
         if(productRes.error)throw productRes.error;
         const stockById=Object.fromEntries(stocks.map(x=>[x.id,x]));
         const productById=Object.fromEntries((productRes.data||[]).map(x=>[x.id,x]));
-        rows=sales.map(st=>{
+        const fallbackRows=sales.map(st=>{
           const su=stockById[st.stock_unit_id]||{};
           const pm=productById[su.product_id]||{};
           return {...st,product:[pm.product,pm.variant].filter(Boolean).join(' '),color:su.color,grade:su.grade,battery_health:su.battery_health,serial:su.imei_1||su.imei_2||'',source_type:su.source_type,partner_name:su.partner_name};
         });
+        rows=[...rows,...fallbackRows];
       }
       console.info('[HM Accurate Monitor] detail RPC/fallback:',{requested:saleIds.length,received:rows.length});
       rows.forEach(s=>{

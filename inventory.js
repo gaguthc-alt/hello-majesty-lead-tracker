@@ -1313,12 +1313,16 @@ async function saveStock(){
    }
   }
   closeModal();
-  const productRow=inventoryProducts.find(p=>String(p.id)===String(data.product_id))||{};
-  const productLabel=[productRow.product||data.product||'Produk',productRow.variant||data.variant,productRow.color||data.color].filter(Boolean).join(' — ');
-  const nl=String.fromCharCode(10);
-  const waMessage=['🔔 *PENGAJUAN PERSETUJUAN BARANG MASUK*','','Produk: '+productLabel,'IMEI: '+(data.imei_1||'-'),'IMEI 2/EID: '+(data.imei_2||'-'),'Modal: Rp '+Number(data.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(data.outlet||'-'),'Sumber: '+(data.partner_name||data.received_source_note||data.source_type||'-'),'Status: *MENUNGGU PERSETUJUAN*','','Mohon buka Hello Majesty → Persetujuan Barang Masuk untuk memeriksa dan menyetujui.'].join(nl);
-  alert('Barang Masuk berhasil diajukan. Status: MENUNGGU PERSETUJUAN.');
-  if(confirm('Buka WhatsApp untuk mengirim pengajuan Barang Masuk sekarang?'))window.location.href='https://wa.me/?text='+encodeURIComponent(waMessage);
+  if(source==='STOCKIST'){
+   const productRow=inventoryProducts.find(p=>String(p.id)===String(data.product_id))||{};
+   const productLabel=[productRow.product||data.product||'Produk',productRow.variant||data.variant,productRow.color||data.color].filter(Boolean).join(' — ');
+   const nl=String.fromCharCode(10);
+   const waMessage=['🔔 *PENGAJUAN PERSETUJUAN BARANG MASUK*','','Produk: '+productLabel,'IMEI: '+(data.imei_1||'-'),'IMEI 2/EID: '+(data.imei_2||'-'),'Modal: Rp '+Number(data.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(data.outlet||'-'),'Sumber: '+(data.partner_name||data.received_source_note||data.source_type||'-'),'Status: *MENUNGGU PERSETUJUAN*','','Mohon buka Hello Majesty → Persetujuan Barang Masuk untuk memeriksa dan menyetujui.'].join(nl);
+   alert('Barang Masuk berhasil diajukan. Status: MENUNGGU PERSETUJUAN.');
+   if(confirm('Buka WhatsApp untuk mengirim pengajuan Barang Masuk sekarang?'))window.location.href='https://wa.me/?text='+encodeURIComponent(waMessage);
+  }else{
+   alert('Barang Masuk berhasil disimpan. Status stock: READY.');
+  }
   await renderInventory();
  }catch(e){
   alert(e?.message||e);

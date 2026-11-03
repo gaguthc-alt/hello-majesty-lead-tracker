@@ -1,6 +1,6 @@
 /* HELLO MAJESTY — Accurate Sync Monitor */
 (function(){
-  if(!document.getElementById('hm-accurate-queue-card-fix')){const st=document.createElement('style');st.id='hm-accurate-queue-card-fix';st.textContent='.hm-accurate-queue-card,.hm-accurate-queue-card *{color:#172033!important}.hm-accurate-queue-card .small{color:#475467!important}.hm-accurate-queue-card button{background:#344256!important;color:#fff!important;display:inline-block;width:auto;min-height:42px;font-size:14px;padding:10px 14px}.hm-accurate-queue-card .row{align-items:center;gap:8px;flex-wrap:wrap}';document.head.appendChild(st);}
+  if(!document.getElementById('hm-accurate-queue-card-fix')){const st=document.createElement('style');st.id='hm-accurate-queue-card-fix';st.textContent='.hm-accurate-queue-card,.hm-accurate-queue-card *{color:#172033!important;font-size:14px!important;line-height:1.5!important;visibility:visible!important;opacity:1!important}.hm-accurate-queue-card *{font-size:14px!important;line-height:1.5!important;visibility:visible!important;opacity:1!important}.hm-accurate-queue-card .small{color:#475467!important;font-size:12px!important}.hm-accurate-queue-card button{background:#344256!important;color:#fff!important;display:inline-block;width:auto;min-height:42px;font-size:14px;padding:10px 14px}.hm-accurate-queue-card .row{align-items:center;gap:8px;flex-wrap:wrap}';document.head.appendChild(st);}
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function isFinanceAdmin(){

@@ -155,7 +155,7 @@
     const body=document.getElementById('perfBody'); if(!body)return;
     body.innerHTML='<div class="small">⏳ Memuat detail '+escP(name)+'...</div>';
     try{
-      const x=await sb.rpc('team_lead_funnel_detail',{p_employee:name,p_role:role,p_start:monthStart(mode).toISOString(),p_end:monthEnd(mode).toISOString()});
+      const x=await sb.rpc('team_lead_funnel_detail_scoped',{p_employee:name,p_role:role,p_start:monthStart(mode).toISOString(),p_end:monthEnd(mode).toISOString()});
       if(x.error)throw x.error; const rows=x.data||[], counts={};
       rows.forEach(r=>counts[r.event_type]=(counts[r.event_type]||0)+1);
       let html='<div class="row" style="justify-content:space-between;align-items:center"><button class="secondary" type="button" onclick="window.perfShow(window.perfMyMode||\'month\')">← Kembali</button><b>👤 '+escP(name)+' • '+escP(role)+'</b></div>';

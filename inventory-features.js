@@ -98,10 +98,18 @@
     const status=document.getElementById('hmAdjStatus-'+id)?.value;
     const note=prompt('Alasan penyesuaian stok (wajib):')||'';
     if(!note.trim())return;
-    const r=await sb.rpc('adjust_stock_unit',{p_stock_unit_id:id,p_new_status:status,p_note:note.trim()});
-    if(r.error)return alert('Penyesuaian gagal: '+r.error.message);
-    alert('Penyesuaian stok berhasil disimpan.');
-    await openPenyesuaian();
+    const btn=[...document.querySelectorAll('#hmMenuPanelBody button')].find(b=>String(b.getAttribute('onclick')||'').includes("hmApplyAdjustment('"+id+"'"));
+    if(btn?.disabled)return;
+    if(btn){btn.disabled=true;btn.textContent='⏳ Menyimpan...';}
+    try{
+      const r=await sb.rpc('adjust_stock_unit',{p_stock_unit_id:id,p_new_status:status,p_note:note.trim()});
+      if(r.error)throw r.error;
+      alert('Penyesuaian stok berhasil disimpan.');
+      await openPenyesuaian();
+    }catch(e){
+      alert('Penyesuaian gagal: '+(e?.message||e));
+      if(btn){btn.disabled=false;btn.textContent='Simpan Penyesuaian';}
+    }
   };
 
   async function openOpname(){
@@ -135,9 +143,18 @@
   };
   window.hmCountOpname=async function(opnameId,stockId,present){
     const note=present?null:(prompt('Catatan barang tidak ditemukan:')||'');
-    const r=await sb.rpc('record_stock_opname_count',{p_opname_id:opnameId,p_stock_unit_id:stockId,p_counted_present:present,p_counted_status:null,p_note:note||null});
-    if(r.error)return alert('Gagal menyimpan hitungan: '+r.error.message);
-    await hmOpenOpname(opnameId);
+    if(!present&&!String(note||'').trim())return;
+    const buttons=[...document.querySelectorAll('#hmMenuPanelBody button')].filter(b=>String(b.getAttribute('onclick')||'').includes("hmCountOpname('"+opnameId+"','"+stockId+"'"));
+    if(buttons.some(b=>b.disabled))return;
+    buttons.forEach(b=>{b.disabled=true;b.textContent='⏳ Menyimpan...';});
+    try{
+      const r=await sb.rpc('record_stock_opname_count',{p_opname_id:opnameId,p_stock_unit_id:stockId,p_counted_present:present,p_counted_status:null,p_note:note||null});
+      if(r.error)throw r.error;
+      await hmOpenOpname(opnameId);
+    }catch(e){
+      alert('Gagal menyimpan hitungan: '+(e?.message||e));
+      buttons.forEach((b,i)=>{b.disabled=false;b.textContent=i===0?'✓ Barang Ada':'✕ Tidak Ada';});
+    }
   };
   window.hmShareOpname=async function(id){
     try{
@@ -163,9 +180,17 @@
   };
   window.hmPostOpname=async function(id){
     if(!confirm('POST Stock Opname? Setelah diposting, hasil akan menjadi penyesuaian stok.'))return;
-    const r=await sb.rpc('post_stock_opname',{p_opname_id:id,p_actor_user_id:window.profile?.user_id||null});
-    if(r.error)return alert('POST Stock Opname gagal: '+r.error.message);
-    alert('Stock Opname berhasil diposting. Penyesuaian: '+Number(r.data?.adjusted||0)+' unit.');
-    await hmOpenOpname(id);
+    const btn=[...document.querySelectorAll('#hmMenuPanelBody button')].find(b=>String(b.getAttribute('onclick')||'').includes("hmPostOpname('"+id+"'"));
+    if(btn?.disabled)return;
+    if(btn){btn.disabled=true;btn.textContent='⏳ Memposting...';}
+    try{
+      const r=await sb.rpc('post_stock_opname',{p_opname_id:id,p_actor_user_id:window.profile?.user_id||null});
+      if(r.error)throw r.error;
+      alert('Stock Opname berhasil diposting. Penyesuaian: '+Number(r.data?.adjusted||0)+' unit.');
+      await hmOpenOpname(id);
+    }catch(e){
+      alert('POST Stock Opname gagal: '+(e?.message||e));
+      if(btn){btn.disabled=false;btn.textContent='✓ POST Stock Opname';}
+    }
   };
 })();

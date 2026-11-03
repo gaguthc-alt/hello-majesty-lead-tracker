@@ -2096,7 +2096,7 @@ async function openTeamCommission(selectedMonthStart){
  const monthStart=/^\d{4}-\d{2}-01$/.test(String(selectedMonthStart||''))?String(selectedMonthStart):currentMonthStart;
  const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
  const [r,profitRes]=await Promise.all([
-   sb.rpc('management_team_commission_report_v2',{p_month_start:monthStart}),
+   sb.rpc('management_team_commission_report_v2_scoped',{p_month_start:monthStart}),
    sb.rpc('management_performance_sales',{p_start:new Date(monthStart).toISOString(),p_end:new Date(new Date(monthStart).setMonth(new Date(monthStart).getMonth()+1)).toISOString()})
  ]);
  if(r.error)throw new Error('Komisi Tim: '+r.error.message);
@@ -2199,8 +2199,8 @@ async function openTeamCommissionDetails(encodedName){
  const monthStart=window._teamCommissionMonthStart||(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'})();
  const rp=v=>'Rp'+Math.round(Number(v||0)).toLocaleString('id-ID');
  const [detailResult,reportResult]=await Promise.all([
-   sb.rpc('management_team_commission_details',{p_month_start:monthStart,p_team_name:name}),
-   sb.rpc('management_team_commission_report',{p_month_start:monthStart})
+   sb.rpc('management_team_commission_details_scoped',{p_month_start:monthStart,p_team_name:name}),
+   sb.rpc('management_team_commission_report_scoped',{p_month_start:monthStart})
  ]);
  if(detailResult.error)return alert('Rincian komisi error: '+detailResult.error.message);
  if(reportResult.error)return alert('Rekap komisi error: '+reportResult.error.message);

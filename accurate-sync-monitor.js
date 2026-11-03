@@ -41,15 +41,41 @@
     ]);
     if(q.error) throw q.error; if(r.error) throw r.error; if(c.error) throw c.error;
     const queue=q.data||[], records=r.data||[], conflicts=c.data||[];
-    // Enrich failed sale cards with product identity and finance state so the reason is actionable.
-    const saleIds=[...new Set(queue.filter(x=>x.status!=='SYNCED'&&x.sale_id).map(x=>x.sale_id))];
+    // Load transaction + product identity through a Management-only SECURITY DEFINER RPC.
+    const saleIds=[...new Set(queue.filter(x=>normStatus(x.status)!=='SYNCED'&&x.sale_id).map(x=>x.sale_id))];
     const saleInfo={};
     if(saleIds.length){
-      const sr=await sb.rpc('finance_sales_detail_rows',{p_ids:saleIds,p_pending_only:false});
+      const sr=await sb.rpc('accurate_sync_monitor_sale_details',{p_ids:saleIds});
       if(sr.error)throw sr.error;
-      const sales=Array.isArray(sr.data)?sr.data:[],saleMeta={};sales.forEach(x=>saleMeta[x.id]=x);const stockIds=[...new Set(sales.map(x=>x.stock_unit_id).filter(Boolean))],stockInfo={},methodIds=[...new Set(sales.map(x=>x.finance_payment_method_id).filter(Boolean))],methodInfo={};if(methodIds.length){const mr=await sb.from('payment_methods').select('id,name,code').in('id',methodIds);if(mr.error)throw mr.error;(mr.data||[]).forEach(m=>{methodInfo[m.id]={name:String(m.name||''),code:String(m.code||'').toUpperCase()};});}
-      if(stockIds.length){const ur=await sb.from('stock_units').select('id,product_id,grade,color,battery_health,source_type,partner_name,imei_1,imei_2').in('id',stockIds);if(ur.error)throw ur.error;const units=ur.data||[],productIds=[...new Set(units.map(x=>x.product_id).filter(Boolean))],products={};if(productIds.length){const pr=await sb.from('product_master').select('id,product,variant,category').in('id',productIds);if(pr.error)throw pr.error;(pr.data||[]).forEach(p=>products[p.id]=p);}units.forEach(u=>{const p=products[u.product_id]||{};stockInfo[u.id]={product:[p.product,p.variant,u.color,u.grade?'Grade '+u.grade:null,u.battery_health!=null?'BH '+u.battery_health+'%':null].filter(Boolean).join(' • ')||'Produk tidak diketahui',source_type:u.source_type,partner_name:u.partner_name,serial:u.imei_1||u.imei_2||''};});}
-      sales.forEach(s=>{const st=stockInfo[s.stock_unit_id]||{},pm=methodInfo[s.finance_payment_method_id]||{},meta=saleMeta[s.id]||{};saleInfo[s.id]={product:st.product||'Produk tidak diketahui',serial:st.serial||'',outlet:meta.outlet||'-',sold_at:meta.sold_at||null,sale_price:Number(meta.sale_price??s.sale_price??0),cost:Number(meta.cost||0),gross_profit:Number(meta.gross_profit||0),source_type:st.source_type,partner_name:st.partner_name,finance_status:s.finance_status,finance_provider_code:(['AKULAKU','KREDIVO','SPAYLATER'].includes(pm.code)?pm.code:(/AKULAKU/i.test(pm.name)?'AKULAKU':/KREDIVO/i.test(pm.name)?'KREDIVO':/SPAY/i.test(pm.name)?'SPAYLATER':'')),sale_price:Number(s.sale_price||0),discount:Number(s.discount||0),finance_requested_amount:Number(s.finance_requested_amount||0),finance_estimated_fee:Number(s.finance_estimated_fee||0),finance_actual_disbursement:Number(s.finance_actual_disbursement||0),finance_cash_payment:Number(s.finance_cash_payment||0),finance_cashout_amount:Number(s.finance_cashout_amount||0),finance_actual_fee:Number(s.finance_actual_fee||0),finance_notes:s.finance_notes,notes:s.notes};});
+      let rows=sr.data;
+      if(typeof rows==='string'){try{rows=JSON.parse(rows);}catch(_){rows=[];}}
+      if(!Array.isArray(rows)&&rows&&Array.isArray(rows.data))rows=rows.data;
+      if(!Array.isArray(rows))rows=[];
+      rows.forEach(s=>{
+        const product=[s.product,s.color,s.grade?'Grade '+s.grade:null,s.battery_health!=null?'BH '+s.battery_health+'%':null].filter(Boolean).join(' • ');
+        saleInfo[s.id]={
+          product:product||'Produk tidak diketahui',
+          serial:s.serial||'',
+          outlet:s.outlet||'-',
+          sold_at:s.sold_at||null,
+          sale_price:Number(s.sale_price||0),
+          cost:Number(s.cost||0),
+          discount:Number(s.discount||0),
+          gross_profit:Number(s.gross_profit||0),
+          source_type:s.source_type,
+          partner_name:s.partner_name,
+          finance_status:null,
+          finance_provider_code:'',
+          finance_requested_amount:0,
+          finance_estimated_fee:0,
+          finance_actual_disbursement:0,
+          finance_cash_payment:0,
+          finance_cashout_amount:0,
+          finance_actual_fee:0,
+          finance_notes:null,
+          notes:null
+        };
+      });
     }
     const failed=queue.filter(x=>normStatus(x.status)==='FAILED').length+records.filter(x=>normStatus(x.status)==='FAILED').length;
     const pending=queue.filter(x=>['PENDING','PROCESSING'].includes(normStatus(x.status))).length+records.filter(x=>['PENDING','PROCESSING'].includes(normStatus(x.status))).length;

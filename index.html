@@ -4629,7 +4629,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
     const cashAccountId=overlay.querySelector('#hmTransferCashAccount')?.value||'';
     if(!ref){alert('Masukkan nomor referensi transfer terlebih dahulu.');overlay.querySelector('#hmTransferProofRef').focus();return;}
     if(isCapital&&!cashAccountId){alert('Pilih akun kas/bank sumber dana terlebih dahulu.');overlay.querySelector('#hmTransferCashAccount')?.focus();return;}
-    const msg='*KONFIRMASI TRANSFER SETTLEMENT — HELLO MAJESTY*\n\nYth. '+partner+', kami menginformasikan bahwa transfer settlement telah dilakukan. Mohon konfirmasi setelah dana benar-benar terlihat di rekening Anda.\n\n• Outlet: '+outlet+'\n• Tanggal: '+date+'\n• Nominal: '+amount+'\n\n'+item+'\n• Referensi transfer: '+ref+'\n'+(note?'• Catatan: '+note+'\n':'')+(file?'\nBukti foto terlampir pada pesan ini.':'\nBukti foto tidak disertakan.')+' Mohon balas untuk mengonfirmasi penerimaan dana. Pesan ini bukan pengganti pengecekan saldo rekening.\n\nHello Majesty — Built on Trust';
+    const msg='*PEMBERITAHUAN TRANSFER SETTLEMENT*\n*HELLO MAJESTY*\n\nYth. '+partner+', kami informasikan bahwa pembayaran settlement telah ditransfer dengan rincian:\n\n• Outlet: '+outlet+'\n• Tanggal transfer: '+date+'\n• *Nominal transfer: '+amount+'*\n• Status: TRANSFER TELAH DILAKUKAN\n\nMohon periksa rekening penerima dan konfirmasikan penerimaan dana melalui aplikasi Hello Majesty.\n\nHello Majesty — Built on Trust';
     sendBtn.disabled=true;sendBtn.textContent='Memproses…';
     let shared=false;
     try{

@@ -1311,6 +1311,27 @@ async function saveStock(){
   const imei1=String(data.imei_1||'').trim(),imei2=String(data.imei_2||'').trim();
   if(imei1&&!/^\d{15}$/.test(imei1))throw new Error('IMEI 1 harus 15 digit angka.');
   if(imei2&&!/^(?:\d{15}|\d{32})$/.test(imei2))throw new Error('IMEI 2 harus 15 digit angka atau EID 32 digit.');
+  // Pastikan master item Accurate tersedia sebelum stock Management disimpan.
+  // Ini membuat trigger purchase-invoice menerima accurate_item_no yang valid.
+  if(source==='MANAGEMENT'){
+   if(!selectedProduct||!data.supplier_id||!data.accurate_vendor_no)throw new Error('Produk dan pemasok Accurate wajib dipilih.');
+   const cat=selectedCategory;
+   const isIphone=cat==='IPHONE_NEW'||cat==='IPHONE_SECOND';
+   const isSecond=cat==='IPHONE_SECOND'||cat==='ANDROID_SECOND';
+   const cleanProduct=String(selectedProduct.product||'').trim().replace(/\\s+(?:NEW|SECOND)$/i,'').trim();
+   const itemParts=['HP '+(isSecond?'Second':'New'),cleanProduct];
+   if(isIphone&&selectedProduct.color)itemParts.push(String(selectedProduct.color).trim());
+   if(selectedProduct.variant)itemParts.push(String(selectedProduct.variant).trim());
+   if(isIphone&&isSecond&&data.grade)itemParts.push('Grade '+String(data.grade).trim());
+   const itemName=itemParts.filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+   if(!['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(cat))throw new Error('Kategori produk belum didukung untuk master Accurate: '+cat);
+   const itemResponse=await sb.functions.invoke('accurate-sync',{body:{action:'ensure_phone_item',category:cat,name:itemName}});
+   if(itemResponse.error)throw itemResponse.error;
+   const itemResult=itemResponse.data||{};
+   if(!itemResult.ok||!itemResult.item?.id||!itemResult.item?.no)throw new Error(itemResult.error||'Master barang Accurate belum berhasil diverifikasi (ID/No kosong).');
+   data.accurate_item_id=String(itemResult.item.id);
+   data.accurate_item_no=String(itemResult.item.no);
+  }
   const duplicate=await hmCheckDuplicateImeis(imei1,imei2,null);
   if(duplicate)throw new Error('IMEI/EID '+duplicate.imei+' sudah terdaftar pada stock lain. Barang masuk dibatalkan agar tidak tercatat ganda.');
   const x=await sb.from('stock_units').insert(data).select('id').single();

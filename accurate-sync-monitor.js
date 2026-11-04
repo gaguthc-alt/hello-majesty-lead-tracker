@@ -438,7 +438,7 @@
       openModal('🧩 Pemetaan Produk Accurate','<div class="box"><b>⏳ Memuat produk Hello Majesty dan barang Accurate...</b><div class="small">Belum ada data yang diubah.</div></div>');
       const results=await Promise.all([
         sb.from('product_master').select('id,category,product,variant,grade,accurate_item_id,accurate_item_no').eq('active',true).order('category').order('product'),
-        sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no,status').in('status',['READY','SOLD']).eq('outlet','Majesty Plaza iPhone'),
+        sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no,status,outlet').in('status',['READY','SOLD']),
         sb.functions.invoke('accurate-sync',{body:{action:'list_items'}}),
         sb.rpc('accurate_failed_stock_ids'),
         sb.from('sales_transactions').select('stock_unit_id').eq('accurate_sync_status','FAILED').eq('outlet','Majesty Plaza iPhone').not('stock_unit_id','is',null)
@@ -451,13 +451,13 @@
       if(!data.ok) throw new Error(data.error||'Daftar barang Accurate gagal dimuat.');
       // Gabungkan hasil RPC dan query transaksi langsung agar stok SOLD yang gagal sinkron tetap dapat dipetakan.
       const failedStockIds=new Set([...(results[3].data||[]).map(function(s){return String(s.stock_unit_id||'');}),...(results[4].data||[]).map(function(s){return String(s.stock_unit_id||'');})].filter(Boolean));
-      let mappingUnits=(results[1].data||[]).filter(function(u){return String(u.status||'').toUpperCase()==='READY'||failedStockIds.has(String(u.id));});
+      let mappingUnits=(results[1].data||[]).filter(function(u){const status=String(u.status||'').toUpperCase();const isFailed=failedStockIds.has(String(u.id));const isPlazaReady=status==='READY'&&String(u.outlet||'').trim().toLowerCase()==='majesty plaza iphone';return isPlazaReady||isFailed;});
       // Fallback: fetch failed-sale stock units by ID directly. This protects SOLD units when the broad outlet/status query omits them.
       const missingFailedIds=Array.from(failedStockIds).filter(function(id){return !mappingUnits.some(function(u){return String(u.id)===String(id);});});
       if(missingFailedIds.length){
         const extra=await sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no,status').in('id',missingFailedIds);
         if(extra.error) console.warn('[HM Accurate mapping] Failed-sale fallback query:',extra.error);
-        else mappingUnits=mappingUnits.concat((extra.data||[]).filter(function(u){return String(u.status||'').toUpperCase()==='SOLD';}));
+        else mappingUnits=mappingUnits.concat((extra.data||[]));
       }
       const readyGroups={};
       mappingUnits.forEach(function(unit){

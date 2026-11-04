@@ -471,29 +471,23 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
     box.className='box';
     box.style.marginTop='10px';
     box.innerHTML='<b>🏦 Pembagian Finance</b>'+
-      '<div class="small" style="margin-top:4px">Finance dapat lebih besar dari harga HP jika ada tarik tunai customer.</div>'+
-      '<label>Nominal Finance</label><input id="financeRequestedAmount" type="number" min="0" step="1000" value="0" placeholder="Contoh: 4000000">'+
+      '<div class="small" style="margin-top:4px">Harga penjualan menjadi dasar pencairan Finance. Tarik tunai menambah nilai pencairan, sedangkan cash customer menguranginya. Biaya admin mengikuti pencairan aktual.</div>'+
       '<label>Cash Dibayar Customer</label><input id="financeCashPayment" type="number" min="0" step="1000" value="0" placeholder="Jika ada pembayaran cash">'+
-      '<label>Tarik Tunai Customer</label><input id="financeCashoutAmount" type="number" min="0" step="1000" value="0" placeholder="Contoh: 1000000">'+
+      '<label>Tarik Tunai Customer</label><input id="financeCashoutAmount" type="number" min="0" step="1000" value="0" placeholder="Jika ada tarik tunai">'+
       '<div id="financeSplitStatus" class="small" style="margin-top:7px"></div>'+
-      '<label>Estimasi Potongan Finance</label><input id="financeEstimatedFee" type="number" min="0" step="1000" value="0" placeholder="Contoh: 300000">'+
-      '<div id="financeEstimatedNet" class="small" style="margin-top:5px"></div>'+
       '<label>Catatan</label><input id="financeNotes" placeholder="Opsional">';
     pay.parentElement?.insertAdjacentElement('afterend',box);
     const update=()=>{
       const price=Number(document.getElementById('sap')?.value||0);
-      const fin=Number(document.getElementById('financeRequestedAmount')?.value||0);
       const cash=Number(document.getElementById('financeCashPayment')?.value||0);
       const cashout=Number(document.getElementById('financeCashoutAmount')?.value||0);
-      const fee=Math.max(Number(document.getElementById('financeEstimatedFee')?.value||0),0);
-      const balance=(fin+cash)-(price+cashout);
+      const receivable=price+cashout-cash;
       const status=document.getElementById('financeSplitStatus');
-      if(status)status.innerHTML=balance===0?'✅ Pembagian seimbang':'⚠️ Selisih Rp'+Math.abs(balance).toLocaleString('id-ID');
-      const net=Math.max(fin-fee,0);
-      const h=document.getElementById('financeEstimatedNet');
-      if(h)h.textContent='Estimasi dana bersih Finance: Rp'+net.toLocaleString('id-ID')+' • Menunggu Pencairan';
+      if(status) status.textContent=receivable<0
+        ? '⚠️ Cash customer melebihi harga penjualan + tarik tunai.'
+        : 'Piutang Finance: Rp'+receivable.toLocaleString('id-ID')+' • Menunggu pencairan aktual';
     };
-    ['financeRequestedAmount','financeCashPayment','financeCashoutAmount','financeEstimatedFee'].forEach(id=>document.getElementById(id)?.addEventListener('input',update));
+    ['financeCashPayment','financeCashoutAmount'].forEach(id=>document.getElementById(id)?.addEventListener('input',update));
     document.getElementById('sap')?.addEventListener('input',update);
     update();
   }
@@ -537,26 +531,21 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
     const methodId=isPayLaterFinance?provider?.value:pay?.value;
     if(!FIN_CODES.includes(code)) return window.__hmOriginalSaveS(id);
     if(!methodId)return alert('Provider finance wajib dipilih. Closing belum disimpan.');
-    const fee=Math.max(Number(document.getElementById('financeEstimatedFee')?.value||0),0);
-    const financeRequestedAmount=Math.max(Number(document.getElementById('financeRequestedAmount')?.value||0),0);
     const cashPayment=Math.max(Number(document.getElementById('financeCashPayment')?.value||0),0);
     const cashoutAmount=Math.max(Number(document.getElementById('financeCashoutAmount')?.value||0),0);
+    const financeRequestedAmount=salePrice+cashoutAmount-cashPayment;
     const notes=document.getElementById('financeNotes')?.value?.trim()||null;
     if(!stockId)return alert('Stock yang dijual wajib dipilih.');
     if(!salePrice)return alert('Harga Jual Aktual wajib diisi.');
-    if(!financeRequestedAmount)return alert('Nominal Finance wajib diisi.');
-    if(financeRequestedAmount-fee+cashPayment!==salePrice+cashoutAmount)
-      return alert('Pembagian belum seimbang. Finance setelah potongan + Cash harus sama dengan Harga HP + Tarik Tunai.');
-    if(fee>financeRequestedAmount)return alert('Estimasi potongan tidak boleh melebihi nominal Finance.');
+    if(financeRequestedAmount<0)return alert('Cash customer tidak boleh melebihi Harga Jual + Tarik Tunai.');
+    if(financeRequestedAmount===0)return alert('Nilai Piutang Finance adalah Rp0. Periksa kembali pembagian pembayaran.');
     const x=await window.sb.rpc('set_sales_closing_with_finance',{
       p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,
-      p_payment_method_id:methodId,p_estimated_fee:fee,p_notes:notes,
+      p_payment_method_id:methodId,p_estimated_fee:0,p_notes:notes,
       p_finance_requested_amount:financeRequestedAmount,p_cash_payment:cashPayment,p_cashout_amount:cashoutAmount
     });
     if(x.error)return alert('Closing Finance gagal: '+x.error.message);
-    alert(code+' tersimpan sebagai PIUTANG FINANCE. Nominal Finance Rp'+Number(financeRequestedAmount).toLocaleString('id-ID')+
-      (cashoutAmount?' • Tarik Tunai Rp'+Number(cashoutAmount).toLocaleString('id-ID'):'')+
-      '. Dana belum dianggap masuk sampai pencairan dicatat.');
+    alert(code+' tersimpan sebagai PIUTANG FINANCE Rp'+Number(financeRequestedAmount).toLocaleString('id-ID')+'. Nilai ini mengurangi kewajiban outlet setelah pencairan Finance dicatat. Biaya admin mengikuti nilai pencairan aktual.');
     if(typeof window.closeModal==='function') window.closeModal();
     if(typeof window.render==='function') await window.render();
   }

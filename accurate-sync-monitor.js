@@ -451,7 +451,14 @@
       if(!data.ok) throw new Error(data.error||'Daftar barang Accurate gagal dimuat.');
       // Gabungkan hasil RPC dan query transaksi langsung agar stok SOLD yang gagal sinkron tetap dapat dipetakan.
       const failedStockIds=new Set([...(results[3].data||[]).map(function(s){return String(s.stock_unit_id||'');}),...(results[4].data||[]).map(function(s){return String(s.stock_unit_id||'');})].filter(Boolean));
-      const mappingUnits=(results[1].data||[]).filter(function(u){return String(u.status||'').toUpperCase()==='READY'||failedStockIds.has(String(u.id));});
+      let mappingUnits=(results[1].data||[]).filter(function(u){return String(u.status||'').toUpperCase()==='READY'||failedStockIds.has(String(u.id));});
+      // Fallback: fetch failed-sale stock units by ID directly. This protects SOLD units when the broad outlet/status query omits them.
+      const missingFailedIds=Array.from(failedStockIds).filter(function(id){return !mappingUnits.some(function(u){return String(u.id)===String(id);});});
+      if(missingFailedIds.length){
+        const extra=await sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no,status').in('id',missingFailedIds);
+        if(extra.error) console.warn('[HM Accurate mapping] Failed-sale fallback query:',extra.error);
+        else mappingUnits=mappingUnits.concat((extra.data||[]).filter(function(u){return String(u.status||'').toUpperCase()==='SOLD';}));
+      }
       const readyGroups={};
       mappingUnits.forEach(function(unit){
         if(!unit.product_id) return;

@@ -85,6 +85,39 @@
         });
         rows=[...rows,...fallbackRows];
       }
+      // Enrich every SOLD row from its linked stock unit, not only rows missing from the RPC.
+      // Some RPC versions return the sale row but omit its product label; those rows must not
+      // be treated as complete merely because the sale id was returned.
+      const allStockIds=[...new Set(rows.map(x=>x.stock_unit_id).filter(Boolean))];
+      if(allStockIds.length){
+        const allStockRes=await sb.from('stock_units')
+          .select('id,product_id,imei_1,imei_2,color,grade,battery_health,source_type,partner_name')
+          .in('id',allStockIds);
+        if(allStockRes.error)throw allStockRes.error;
+        const allStocks=allStockRes.data||[];
+        const allProductIds=[...new Set(allStocks.map(x=>x.product_id).filter(Boolean))];
+        const allProductRes=allProductIds.length?await sb.from('product_master')
+          .select('id,product,variant,category')
+          .in('id',allProductIds):{data:[],error:null};
+        if(allProductRes.error)throw allProductRes.error;
+        const allStockById=Object.fromEntries(allStocks.map(x=>[x.id,x]));
+        const allProductById=Object.fromEntries((allProductRes.data||[]).map(x=>[x.id,x]));
+        rows=rows.map(row=>{
+          const su=allStockById[row.stock_unit_id]||{};
+          const pm=allProductById[su.product_id]||{};
+          const hasProduct=String(row.product||'').trim();
+          return {
+            ...row,
+            product:hasProduct||[pm.product,pm.variant].filter(Boolean).join(' '),
+            color:row.color??su.color,
+            grade:row.grade??su.grade,
+            battery_health:row.battery_health??su.battery_health,
+            serial:row.serial||su.imei_1||su.imei_2||'',
+            source_type:row.source_type??su.source_type,
+            partner_name:row.partner_name??su.partner_name
+          };
+        });
+      }
       console.info('[HM Accurate Monitor] detail RPC/fallback:',{requested:saleIds.length,received:rows.length});
       rows.forEach(s=>{
         const product=[s.product,s.color,s.grade?'Grade '+s.grade:null,s.battery_health!=null?'BH '+s.battery_health+'%':null].filter(Boolean).join(' • ');

@@ -440,16 +440,18 @@
         sb.from('product_master').select('id,category,product,variant,grade,accurate_item_id,accurate_item_no').eq('active',true).order('category').order('product'),
         sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no,status').in('status',['READY','SOLD']).eq('outlet','Majesty Plaza iPhone'),
         sb.functions.invoke('accurate-sync',{body:{action:'list_items'}}),
-        sb.rpc('accurate_failed_stock_ids')
+        sb.rpc('accurate_failed_stock_ids'),
+        sb.from('sales_transactions').select('stock_unit_id').eq('accurate_sync_status','FAILED').eq('outlet','Majesty Plaza iPhone').not('stock_unit_id','is',null)
       ]);
       if(results[0].error) throw results[0].error;
       if(results[1].error) throw results[1].error;
       if(results[2].error) throw results[2].error;
-      if(results[3].error) throw results[3].error;
+      if(results[3].error && results[4].error) throw results[3].error;
       const data=results[2].data||{};
       if(!data.ok) throw new Error(data.error||'Daftar barang Accurate gagal dimuat.');
-      const failedStockIds=new Set((results[3].data||[]).map(function(s){return String(s.stock_unit_id||'');}).filter(Boolean));
-      const mappingUnits=(results[1].data||[]).filter(function(u){return u.status==='READY'||failedStockIds.has(String(u.id));});
+      // Gabungkan hasil RPC dan query transaksi langsung agar stok SOLD yang gagal sinkron tetap dapat dipetakan.
+      const failedStockIds=new Set([...(results[3].data||[]).map(function(s){return String(s.stock_unit_id||'');}),...(results[4].data||[]).map(function(s){return String(s.stock_unit_id||'');})].filter(Boolean));
+      const mappingUnits=(results[1].data||[]).filter(function(u){return String(u.status||'').toUpperCase()==='READY'||failedStockIds.has(String(u.id));});
       const readyGroups={};
       mappingUnits.forEach(function(unit){
         if(!unit.product_id) return;
@@ -495,9 +497,9 @@
         '</div>';
       }).join('');
       openModal('🧩 Pemetaan Produk Accurate',
-        '<div class="box"><b>Mapping stok Plaza (non-Majesty Cell): '+mapped+' / '+products.length+'</b><div class="small">Tahap 1 hanya menampilkan kategori iPhone/Android New dan Second dengan stok READY di Majesty Plaza iPhone. Stok titipan/kategori Majesty Cell dikecualikan. Barang Accurate tersedia untuk dipilih: '+items.length+'.</div><div class="small" style="margin-top:6px">Stok pusat dan outlet lain tidak masuk tahap ini. Mapping produk yang tersembunyi tetap tersimpan. Tidak membuat barang baru, tidak mengubah stok, dan tidak mengirim transaksi.</div></div>'+
+        '<div class="box"><b>Mapping stok Plaza (non-Majesty Cell): '+mapped+' / '+products.length+'</b><div class="small">Menampilkan kategori iPhone/Android New dan Second dengan stok READY serta stok SOLD yang memiliki transaksi penjualan FAILED di Majesty Plaza iPhone. Stok titipan/kategori Majesty Cell dikecualikan. Barang Accurate tersedia untuk dipilih: '+items.length+'.</div><div class="small" style="margin-top:6px">Stok pusat dan outlet lain tidak masuk tahap ini. Mapping produk yang tersembunyi tetap tersimpan. Tidak membuat barang baru, tidak mengubah stok, dan tidak mengirim transaksi.</div></div>'+
         '<input id="hm-accurate-map-search" type="search" placeholder="Cari produk, varian, kategori..." oninput="window.hmFilterAccurateMappings(this.value)" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:12px;margin:10px 0">'+
-        '<div class="row" style="align-items:center;gap:10px;margin-bottom:8px"><select id="hm-accurate-map-status" onchange="window.hmFilterAccurateMappings()" style="flex:1;min-width:0;padding:11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827"><option value="UNMAPPED" selected>Belum mapping</option><option value="MAPPED">Sudah mapping</option><option value="ALL">Semua produk</option></select><span id="hm-accurate-map-visible-count" class="small">'+(products.length-mapped)+' produk ditampilkan</span></div>'+
+        '<div class="row" style="align-items:center;gap:10px;margin-bottom:8px"><select id="hm-accurate-map-status" onchange="window.hmFilterAccurateMappings()" style="flex:1;min-width:0;padding:11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827"><option value="ALL" selected>Semua produk</option><option value="UNMAPPED">Belum mapping</option><option value="MAPPED">Sudah mapping</option></select><span id="hm-accurate-map-visible-count" class="small">'+(products.length-mapped)+' produk ditampilkan</span></div>'+
         '<div style="max-height:55vh;overflow:auto;padding-right:3px">'+(cards||'<div class="box">Tidak ada produk aktif.</div>')+'</div>');
 
     }catch(e){

@@ -545,8 +545,8 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
     if(!stockId)return alert('Stock yang dijual wajib dipilih.');
     if(!salePrice)return alert('Harga Jual Aktual wajib diisi.');
     if(!financeRequestedAmount)return alert('Nominal Finance wajib diisi.');
-    if(financeRequestedAmount+cashPayment!==salePrice+cashoutAmount)
-      return alert('Pembagian belum seimbang. Finance + Cash harus sama dengan Harga HP + Tarik Tunai.');
+    if(financeRequestedAmount-fee+cashPayment!==salePrice+cashoutAmount)
+      return alert('Pembagian belum seimbang. Finance setelah potongan + Cash harus sama dengan Harga HP + Tarik Tunai.');
     if(fee>financeRequestedAmount)return alert('Estimasi potongan tidak boleh melebihi nominal Finance.');
     const x=await window.sb.rpc('set_sales_closing_with_finance',{
       p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,

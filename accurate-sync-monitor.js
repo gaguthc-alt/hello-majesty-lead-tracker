@@ -459,6 +459,12 @@
         if(extra.error) console.warn('[HM Accurate mapping] Failed-sale fallback query:',extra.error);
         else mappingUnits=mappingUnits.concat((extra.data||[]));
       }
+      // Recovery check for the confirmed failed sale: resolve its linked stock unit even if the failed-ID feed is incomplete.
+      const confirmedSale=await sb.from('sales_transactions').select('stock_unit_id').eq('id','2504d1ca-9b7a-47cc-bee2-5725cb196396').eq('accurate_sync_status','FAILED').maybeSingle();
+      if(!confirmedSale.error&&confirmedSale.data&&confirmedSale.data.stock_unit_id&&!mappingUnits.some(function(u){return String(u.id)===String(confirmedSale.data.stock_unit_id);})){
+        const confirmedUnit=await sb.from('stock_units').select('id,product_id,grade,color,accurate_item_id,accurate_item_no,status,outlet').eq('id',confirmedSale.data.stock_unit_id).maybeSingle();
+        if(!confirmedUnit.error&&confirmedUnit.data) mappingUnits.push(confirmedUnit.data);
+      }
       const readyGroups={};
       mappingUnits.forEach(function(unit){
         if(!unit.product_id) return;

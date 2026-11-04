@@ -389,7 +389,9 @@
     const statusEl=document.getElementById('hm-accurate-map-status');
     const status=String(statusEl?statusEl.value:'UNMAPPED');
     document.querySelectorAll('[data-hm-accurate-map-card]').forEach(function(card){
-      const matchesSearch=!q||String(card.getAttribute('data-search')||'').includes(q);
+      const searchText=(String(card.getAttribute('data-search')||'')+' '+String(card.textContent||'')).toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+      const normalizedQuery=q.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+      const matchesSearch=!normalizedQuery||searchText.includes(normalizedQuery);
       const mapped=card.getAttribute('data-mapped')==='1';
       const matchesStatus=status==='ALL'||(status==='MAPPED'&&mapped)||(status==='UNMAPPED'&&!mapped);
       card.style.display=matchesSearch&&matchesStatus?'':'none';

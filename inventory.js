@@ -1512,7 +1512,7 @@ async function openSalesReport(){
    };
  });
  window.hmSalesReportOutlets=[...new Set(rows.map(r=>String(r.outlet||'').trim()).filter(Boolean))].sort();
- window.hmSalesReportOutlet=isAdminFinance&&profile?.outlet?profile.outlet:(window.hmSalesReportOutlet||'ALL');
+ window.hmSalesReportOutlet=profile?.is_management?(window.hmSalesReportOutlet||'ALL'):(profile?.outlet||'ALL');
  if(window.hmSalesReportOutlet!=='ALL'&&!window.hmSalesReportOutlets.includes(window.hmSalesReportOutlet))window.hmSalesReportOutlet='ALL';
  window.hmSalesReportPeriod=window.hmSalesReportPeriod||'MONTH';
  inventoryView='sales';
@@ -1537,7 +1537,7 @@ function renderInventorySalesReport(){
  const period=window.hmSalesReportPeriod||'TODAY',x=d[period==='MONTH'?'month':'today'];
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const canViewProfit=role!=='MITRA STOCKIST';
- const lockedOutlet=null; // Tim internal dapat memilih semua outlet.
+ const lockedOutlet=profile?.is_management?null:(String(profile?.outlet||'').trim()||'ALL'); // Non-management hanya boleh melihat outlet profilnya.
  const outlets=window.hmSalesReportOutlets||[],available=lockedOutlet?[lockedOutlet]:['ALL',...outlets];
  const options=available.map(o=>'<option value="'+esc(o)+'" '+(o===(window.hmSalesReportOutlet||'ALL')?'selected':'')+'>'+esc(o==='ALL'?'Semua Outlet':o)+'</option>').join('');
  body.innerHTML='<div class="box"><h3 style="margin-top:0">📊 LAPORAN PENJUALAN</h3>'+

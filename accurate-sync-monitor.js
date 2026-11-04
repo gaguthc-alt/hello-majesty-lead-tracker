@@ -484,7 +484,7 @@
         const targetMaster=masters.find(function(p){return String(p.id)==='9a289e16-a5f5-4642-ac77-50281240c63d';});
         if(targetMaster) window.__hmAccurateMapProducts.push({...targetMaster,hm_ready_stock:0,hm_stock_unit_ids:['fe76f80d-7bb3-4d67-9a30-dc6fb51c8d37'],hm_grade:'B',hm_color:'Deep Purple',accurate_item_id:'',accurate_item_no:''});
       }
-      products.sort(function(a,b){return String(a.category).localeCompare(String(b.category))||String(a.product).localeCompare(String(b.product))||String(a.variant).localeCompare(String(b.variant))||String(a.hm_grade).localeCompare(String(b.hm_grade))||String(a.hm_color).localeCompare(String(b.hm_color));});
+      window.__hmAccurateMapProducts.sort(function(a,b){return String(a.category).localeCompare(String(b.category))||String(a.product).localeCompare(String(b.product))||String(a.variant).localeCompare(String(b.variant))||String(a.hm_grade).localeCompare(String(b.hm_grade))||String(a.hm_color).localeCompare(String(b.hm_color));});
       window.__hmAccurateMapItems=Array.isArray(data.items)?data.items.slice():[];
       window.__hmAccurateMapItems.sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''),'id',{numeric:true,sensitivity:'base'})||String(a.no||'').localeCompare(String(b.no||''),'id',{numeric:true,sensitivity:'base'});});
       const products=window.__hmAccurateMapProducts, items=window.__hmAccurateMapItems;

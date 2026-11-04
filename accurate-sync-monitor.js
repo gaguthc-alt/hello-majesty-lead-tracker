@@ -107,7 +107,7 @@
           const pm=allProductById[su.product_id]||{};
           const currentProduct=String(row.product||'').trim();
           const masterProduct=[pm.product,pm.variant].filter(Boolean).join(' ').trim();
-          const isPlaceholderProduct=!currentProduct||/^(produk|produk tidak diketahui|unknown|n\\/a)$/i.test(currentProduct);
+          const isPlaceholderProduct=!currentProduct||/^(produk|produk tidak diketahui|unknown)$/i.test(currentProduct);
           // Always prefer the linked master product. Older RPC responses may contain a
           // generic placeholder that is truthy, which previously prevented this fallback.
           const resolvedProduct=masterProduct||(isPlaceholderProduct?'':currentProduct);

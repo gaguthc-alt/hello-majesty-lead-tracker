@@ -203,17 +203,11 @@ window.loadPartnerSettlementDetail=async function(outlet){
   const {data:rows,error}=await sb.rpc('partner_capital_due_detail',{p_outlet:outlet});
   if(error){box.innerHTML='<div class="small">Gagal memuat rincian modal Cell: '+esc(String(error.message||error))+'</div>';return;}
   const units=rows||[];
-  const txIds=[...new Set(units.map(r=>r.sales_transaction_id).filter(Boolean))];
-  let financeByTx={};
-  if(txIds.length){
-    const fr=await sb.rpc('finance_sales_detail_rows',{p_ids:txIds,p_pending_only:false});
-    if(fr.error){box.innerHTML='<div class="small">Gagal memuat pencairan finance: '+esc(fr.error.message)+'</div>';return;}
-    (fr.data||[]).forEach(t=>{financeByTx[t.id]=t;});
-  }
+  // RPC capital_due already deducts sale_price for Majesty Cell; restore gross modal before rendering.
   const rowsForDisplay=units.map(r=>{
-    const tx=financeByTx[r.sales_transaction_id]||{};
-    const finance=String(tx.payment_received_by_outlet||'').trim().toLowerCase()==='majesty cell'?Number(tx.sale_price||r.sale_price||0):0;
-    const gross=Number(r.capital_due||0), net=gross-finance;
+    const isMajestyCell=String(r.partner_name||'').trim().toLowerCase()==='majesty cell';
+    const finance=isMajestyCell?Number(r.sale_price||0):0;
+    const gross=Number(r.capital_due||0)+finance, net=gross-finance;
     return {...r,_finance:finance,_gross:gross,_net:net};
   });
   box.innerHTML=rowsForDisplay.length

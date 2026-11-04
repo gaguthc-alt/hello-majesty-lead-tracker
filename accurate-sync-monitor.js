@@ -523,6 +523,17 @@
         '<div class="row" style="align-items:center;gap:10px;margin-bottom:8px"><select id="hm-accurate-map-status" onchange="window.hmFilterAccurateMappings()" style="flex:1;min-width:0;padding:11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#111827"><option value="ALL" selected>Semua produk</option><option value="UNMAPPED">Belum mapping</option><option value="MAPPED">Sudah mapping</option></select><span id="hm-accurate-map-visible-count" class="small">'+(products.length-mapped)+' produk ditampilkan</span></div>'+
         '<div style="max-height:55vh;overflow:auto;padding-right:3px">'+(cards||'<div class="box">Tidak ada produk aktif.</div>')+'</div>');
 
+      // Targeted recovery: automatically create-or-reuse the exact Accurate inventory master
+      // for the failed iPhone 14 Pro Max unit, then persist its mapping to matching Plaza stock.
+      // ensure_phone_item performs an exact-name duplicate check before creating anything.
+      const recoveryTarget=products.find(function(p){
+        return String(p.id)==='9a289e16-a5f5-4642-ac77-50281240c63d' &&
+          String(p.hm_grade||'')==='B' && String(p.hm_color||'')==='Deep Purple';
+      });
+      if(recoveryTarget && !(recoveryTarget.accurate_item_id||recoveryTarget.accurate_item_no)){
+        await window.hmCreateAccuratePhoneMaster(recoveryTarget.id,recoveryTarget.hm_grade,recoveryTarget.hm_color);
+      }
+
     }catch(e){
       console.error('[HM Accurate mapping]',e);
       openModal('🧩 Pemetaan Produk Accurate','<div class="danger box"><b>Gagal membuka pemetaan</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>');

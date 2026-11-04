@@ -770,7 +770,7 @@ function renderInventoryDashboardBody(){
  const now=new Date(),sameDay=d=>{const x=new Date(d||0);return x.getFullYear()===now.getFullYear()&&x.getMonth()===now.getMonth()&&x.getDate()===now.getDate()};
  const age=s=>Math.max(0,Math.floor((Date.now()-new Date(s.received_at||s.created_at).getTime())/86400000));
  const receivedToday=ready.filter(s=>sameDay(s.received_at||s.created_at)).length,old30=ready.filter(s=>age(s)>30).length,old60=ready.filter(s=>age(s)>60).length;
- const outlets=[...new Set(inventoryStock.map(s=>s.outlet).filter(Boolean))].sort();
+ const outlets=[...new Set(['Majesty Cell','Majesty Gadget','Majesty Store','Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space',...inventoryStock.map(s=>s.outlet).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'id'));
  const partners=[...new Set(inventoryStock.filter(s=>String(s.source_type||'').toUpperCase()==='STOCKIST').map(s=>String(s.partner_name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
  const cats=['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'];
  const byCategory=cats.map(cat=>{const a=ready.filter(s=>s.category===cat);return {cat,units:a.length,cost:a.reduce((x,s)=>x+inventoryNumber(s.cost),0),jual:a.reduce((x,s)=>x+inventoryNumber(s.asking_price),0)}}).filter(x=>x.units);

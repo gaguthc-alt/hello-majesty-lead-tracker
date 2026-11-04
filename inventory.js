@@ -1278,6 +1278,10 @@ async function saveStock(){
  }else{
   data={product_id:fieldValue('stprod'),imei_1:fieldValue('stimei1').trim()||null,imei_2:fieldValue('stimei2').trim()||null,grade:selectedProduct?.grade||null,color:String(selectedProduct?.color||'').trim()||null,condition:fieldValue('stcondition').trim()||null,battery_health:fieldValue('stbh')?Number(fieldValue('stbh')):null,completeness:fieldValue('stcomplete').trim()||null,minus:fieldValue('stminus').trim()||null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(fieldValue('stcost')||0),asking_price:Number(fieldValue('stprice')||0),notes:fieldValue('stnotes').trim()||null,receipt_ref:$('stref')?.value.trim()||null,received_source_note:source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
  }
+ // Stok MANAGEMENT wajib memilih pemasok yang berasal dari master Accurate.
+ if(source==='MANAGEMENT'){
+  if(!data.supplier_id||!data.accurate_vendor_no)return alert('Pilih pemasok dari master Accurate sebelum menyimpan Barang Masuk MANAGEMENT.');
+ }
  // Standar sumber stok: STOCKIST. Nama pemilik tetap disimpan terpisah di partner_name.
  if(source==='STOCKIST'){
   const stockistNames=['Majesty Cell','Majesty Gadget','Majesty Store'];

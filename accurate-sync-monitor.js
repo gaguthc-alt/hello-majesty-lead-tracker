@@ -402,7 +402,8 @@
       const p=window.__hmAccurateMapProducts.find(function(x){return String(x.id)===String(productId)&&String(x.hm_grade||'')===String(grade||'')&&String(x.hm_color||'')===String(color||'');});
       if(!p) throw new Error('Data produk tidak ditemukan. Buka ulang pemetaan.');
       const category=String(p.category||'').toUpperCase(),isIphone=category.indexOf('IPHONE_')===0,isSecond=category.endsWith('_SECOND');
-      const parts=['HP '+(isSecond?'Second':'New'),String(p.product||'').trim()];
+      const cleanProduct=String(p.product||'').trim().replace(/\\s+(?:NEW|SECOND)$/i,'').trim();
+      const parts=['HP '+(isSecond?'Second':'New'),cleanProduct];
       if(isIphone&&p.hm_color)parts.push(String(p.hm_color).trim());
       if(p.variant)parts.push(String(p.variant).trim());
       if(isIphone&&isSecond&&p.hm_grade)parts.push('Grade '+String(p.hm_grade).trim());

@@ -6545,6 +6545,7 @@ function card(l){
  const available=l.status_lead==='AVAILABLE';
  const canClaimCS=available&&!mg;
  const q=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK'&&!l.qualification_result;
+ const canRequalify=!mg&&l.cs_claimed_by===profile?.name&&l.status_lead==='CS LOCK'&&String(l.qualification_result||'').toUpperCase()==='POTENSIAL'&&!l.sales_claimed_by;
  const sh=!mg&&l.need_type!=='SERVICE'&&!l.sales_claimed_by&&['QUALIFIED','POTENSIAL'].includes(l.qualification_result)&&(l.cs_claimed_by===profile?.name||((!l.cs_claimed_by||l.sales_handover_at)&&window.hmCanSales));
  const sr=!mg&&l.sales_claimed_by===profile?.name&&(l.status_lead==='HANDLE'||(l.status_lead==='HASIL'&&String(l.sales_result||'').toUpperCase()==='POTENSIAL'));
  const isFac=!!window.hmCanFacilitator||String(profile?.role||'').toUpperCase()==='FACILITATOR';
@@ -6574,7 +6575,7 @@ function card(l){
  '</div>')+
  '<div class="row">'+
  (canClaimCS?'<button class="success" onclick="claimCS(\''+esc(l.lead_id)+'\')">Claim CS</button>':'')+
- (q?'<button type="button" class="success" onclick="window.qualify(\''+esc(l.lead_id)+'\')">✓ Qualification</button>':'')+
+ ((q||canRequalify)?'<button type="button" class="success" onclick="window.qualify(\''+esc(l.lead_id)+'\')">'+(canRequalify?'↻ Ubah Qualification':'✓ Qualification')+'</button>':'')+
  (sv?'<button class="success" onclick="handoverService(\''+esc(l.lead_id)+'\')">🔧 Handover ke Teknisi</button>':'')+
  (sh?'<button class="success" onclick="handoverSales(\''+esc(l.lead_id)+'\')">'+(l.sales_handover_at?'📲 Kirim Ulang ke WA':'🤝 Handover & Kirim ke WA')+'</button>':'')+
  (sr?'<button type="button" class="success" onclick="window.salesResult(\''+esc(l.lead_id)+'\')">Hasil Sales</button><button class="secondary" onclick="shareSalesClaim(\''+esc(l.lead_id)+'\')">📢 Kirim ke WA Group</button>':'')+
@@ -6598,7 +6599,8 @@ function qualify(id){
  const mt=$('mt'),mb=$('mb'),modal=$('modal');
  if(!mt||!mb||!modal){alert('Panel Qualification belum siap. Silakan buka Lead Aktif kembali.');return;}
  mt.textContent='Qualification CS';
- $('mb').innerHTML='<label>Hasil</label><select id="qr"><option value="">— Pilih —</option><option>QUALIFIED</option><option>POTENSIAL</option><option>GAGAL</option></select><div id="qob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="qreason" placeholder="Contoh: budget tidak cocok, tidak ada respons, memilih produk lain...">'+esc(l?.objection||'')+'</textarea></div><div id="qdb" class="hidden"><label>Tanggal Follow-up</label><input id="qd" type="date"></div><button id="saveQBtn" class="success">Simpan Qualification</button>';
+ $('mb').innerHTML='<label>Hasil</label><select id="qr"><option value="">— Pilih —</option><option value="QUALIFIED">QUALIFIED</option><option value="POTENSIAL">POTENSIAL</option><option value="GAGAL">GAGAL</option></select><div id="qob" class="hidden"><label>Keterangan kenapa gagal</label><textarea id="qreason" placeholder="Contoh: budget tidak cocok, tidak ada respons, memilih produk lain...">'+esc(l?.objection||'')+'</textarea></div><div id="qdb" class="hidden"><label>Tanggal Follow-up</label><input id="qd" type="date" value="'+esc(l?.cs_follow_up_date||'')+'"></div><button id="saveQBtn" class="success">Simpan Qualification</button>';
+ $('qr').value=String(l?.qualification_result||'');
  $('qr').onchange=()=>{$('qob').classList.toggle('hidden',$('qr').value!=='GAGAL');$('qdb').classList.toggle('hidden',$('qr').value!=='POTENSIAL')};
  $('saveQBtn').onclick=()=>saveQ(leadId);
  modal.classList.remove('hidden');

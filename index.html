@@ -4452,7 +4452,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const amount=receivedByMajestyCell
     ? Number(tx.sale_price||prev.salePrice||0)
     : (['COMPLETED','PAID'].includes(status)?Number(tx.finance_actual_disbursement||tx.finance_estimated_disbursement||0):0);
-   if(amount>0){prev.gross+=amount;prev.cashout+=Number(tx.finance_cashout_amount||0);prev.transactions.push(tx);}
+   if(amount>0){prev.gross+=amount;if(!receivedByMajestyCell)prev.cashout+=Number(tx.finance_cashout_amount||0);prev.transactions.push(tx);}
    financeByUnit.set(key,prev);
   });
   liveUnits.forEach(x=>{const fin=financeByUnit.get(String(x.id));x._salePrice=Number(fin?.salePrice||0);x._financeGross=Number(fin?.gross||0);x._financeCashout=Number(fin?.cashout||0);x._financeReceived=Math.max(0,x._financeGross-x._financeCashout);x._financeCashPayment=Number(fin?.cashPayment||0);x._financeApplied=x._financeGross;x._financeProvider=[...new Set((fin?.transactions||[]).map(tx=>financeMethodById.get(String(tx.finance_payment_method_id))).filter(Boolean))].join(' + ')||((fin?.transactions||[]).length?'Finance (metode belum tercatat)':'Tidak ada pencairan finance tercatat');x._settlementCost=Number(x.cost||0)-x._financeGross;});

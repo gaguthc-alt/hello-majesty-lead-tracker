@@ -212,8 +212,8 @@ window.loadPartnerSettlementDetail=async function(outlet){
   }
   const rowsForDisplay=units.map(r=>{
     const tx=financeByTx[r.sales_transaction_id]||{};
-    const finance=String(tx.payment_received_by_outlet||'').trim().toLowerCase()==='majesty cell'?Number(tx.finance_requested_amount||tx.sale_price||0):(['COMPLETED','PAID'].includes(String(tx.finance_status||'').toUpperCase())?Number(tx.finance_actual_disbursement||0):0);
-    const gross=Number(r.capital_due||0), net=Math.max(gross-finance,0);
+    const finance=String(tx.payment_received_by_outlet||'').trim().toLowerCase()==='majesty cell'&&['COMPLETED','PAID'].includes(String(tx.finance_status||'').toUpperCase())?Number(tx.finance_actual_disbursement||0):0;
+    const gross=Number(r.capital_due||0), net=gross-finance;
     return {...r,_finance:finance,_gross:gross,_net:net};
   });
   box.innerHTML=rowsForDisplay.length

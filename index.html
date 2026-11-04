@@ -4444,10 +4444,14 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const key=String(tx.stock_unit_id),prev=financeByUnit.get(key)||{gross:0,cashout:0,transactions:[],salePrice:0,cashPayment:0};
    prev.salePrice=Math.max(prev.salePrice,Number(tx.sale_price||0));prev.cashPayment+=Number(tx.finance_cash_payment||0);
    const status=String(tx.finance_status||'').toUpperCase();
-   if(['COMPLETED','PAID'].includes(status)){
-    const amount=Number(tx.finance_actual_disbursement||tx.finance_estimated_disbursement||0);
-    if(amount>0){prev.gross+=amount;prev.cashout+=Number(tx.finance_cashout_amount||0);prev.transactions.push(tx);}
-   }
+   const receiver=String(tx.payment_received_by_outlet||'').trim().toLowerCase();
+   // Dana finance yang diterima oleh Majesty Cell langsung mengurangi kewajiban modal mitra,
+   // walaupun status pencairan di provider masih PENDING.
+   const receivedByMajestyCell=receiver==='majesty cell';
+   const amount=receivedByMajestyCell
+    ? Number(tx.finance_requested_amount||tx.finance_actual_disbursement||tx.finance_estimated_disbursement||0)
+    : (['COMPLETED','PAID'].includes(status)?Number(tx.finance_actual_disbursement||tx.finance_estimated_disbursement||0):0);
+   if(amount>0){prev.gross+=amount;prev.cashout+=Number(tx.finance_cashout_amount||0);prev.transactions.push(tx);}
    financeByUnit.set(key,prev);
   });
   liveUnits.forEach(x=>{const fin=financeByUnit.get(String(x.id));x._salePrice=Number(fin?.salePrice||0);x._financeGross=Number(fin?.gross||0);x._financeCashout=Number(fin?.cashout||0);x._financeReceived=Math.max(0,x._financeGross-x._financeCashout);x._financeCashPayment=Number(fin?.cashPayment||0);x._financeApplied=x._financeGross;x._financeProvider=[...new Set((fin?.transactions||[]).map(tx=>financeMethodById.get(String(tx.finance_payment_method_id))).filter(Boolean))].join(' + ')||((fin?.transactions||[]).length?'Finance (metode belum tercatat)':'Tidak ada pencairan finance tercatat');x._settlementCost=Number(x.cost||0)-x._financeGross;});

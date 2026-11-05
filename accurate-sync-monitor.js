@@ -306,8 +306,11 @@
       const data=r.data||{};
       if(!data.ok) throw new Error(data.error||'Gagal membaca barang Accurate.');
       const items=Array.isArray(data.items)?data.items:[];
+      const checkedAt=new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'medium'});
+      const pagesRead=Number(data.pagesRead||0);
+      if(!pagesRead) throw new Error('Accurate tidak mengembalikan informasi halaman yang berhasil dibaca. Hasil tidak ditampilkan sebagai data terbaru.');
       openModal('📦 Barang Accurate — '+items.length+' item',
-        '<div class="box"><b>Berhasil membaca '+items.length+' barang.</b><div class="small">Database: Hello Majesty • hanya baca</div><div style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Buka Pemetaan Produk</button></div></div>'+
+        '<div class="box"><b>🟢 Berhasil mengambil master produk terbaru dari Accurate</b><div class="small" style="margin-top:6px">Jumlah produk: '+items.length+' • Halaman terbaca: '+pagesRead+'</div><div class="small">Diperiksa: '+esc(checkedAt)+' • Sumber: Accurate langsung • Mode: hanya baca</div><div class="small" style="margin-top:5px">Daftar ini adalah hasil pembacaan saat tombol ditekan, bukan salinan stok atau transaksi.</div><div style="margin-top:10px"><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Buka Pemetaan Produk</button></div></div>'+
         '<div style="max-height:55vh;overflow:auto;margin-top:10px">'+
         (items.map((x)=>'<div class="lead"><div><b>'+esc(x.no||'-')+'</b> — '+esc(x.name||'-')+'</div><div class="small">Kategori Accurate: '+esc(x.category||'Tanpa kategori')+' • Tipe: '+esc(x.itemType||'-')+'</div><div class="small">ID: '+esc(x.id||'-')+'</div></div>').join('')||'<div class="box">Tidak ada barang inventory yang ditemukan.</div>')+
         '</div>');

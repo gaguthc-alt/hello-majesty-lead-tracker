@@ -1311,26 +1311,11 @@ async function saveStock(){
   const imei1=String(data.imei_1||'').trim(),imei2=String(data.imei_2||'').trim();
   if(imei1&&!/^\d{15}$/.test(imei1))throw new Error('IMEI 1 harus 15 digit angka.');
   if(imei2&&!/^(?:\d{15}|\d{32})$/.test(imei2))throw new Error('IMEI 2 harus 15 digit angka atau EID 32 digit.');
-  // Pastikan master item Accurate tersedia sebelum stock Management disimpan.
-  // Ini membuat trigger purchase-invoice menerima accurate_item_no yang valid.
-  if(source==='MANAGEMENT'){
-   if(!selectedProduct||!data.supplier_id||!data.accurate_vendor_no)throw new Error('Produk dan pemasok Accurate wajib dipilih.');
-   const cat=selectedCategory;
-   const isIphone=cat==='IPHONE_NEW'||cat==='IPHONE_SECOND';
-   const isSecond=cat==='IPHONE_SECOND'||cat==='ANDROID_SECOND';
-   const cleanProduct=String(selectedProduct.product||'').trim().replace(/\\s+(?:NEW|SECOND)$/i,'').trim();
-   const itemParts=['HP '+(isSecond?'Second':'New'),cleanProduct];
-   if(isIphone&&selectedProduct.color)itemParts.push(String(selectedProduct.color).trim());
-   if(selectedProduct.variant)itemParts.push(String(selectedProduct.variant).trim());
-   if(isIphone&&isSecond&&data.grade)itemParts.push('Grade '+String(data.grade).trim());
-   const itemName=itemParts.filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
-   if(!['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(cat))throw new Error('Kategori produk belum didukung untuk master Accurate: '+cat);
-   const itemResponse=await sb.functions.invoke('accurate-sync',{body:{action:'ensure_phone_item',category:cat,name:itemName}});
-   if(itemResponse.error)throw itemResponse.error;
-   const itemResult=itemResponse.data||{};
-   if(!itemResult.ok||!itemResult.item?.id||!itemResult.item?.no)throw new Error(itemResult.error||'Master barang Accurate belum berhasil diverifikasi (ID/No kosong).');
-   data.accurate_item_id=String(itemResult.item.id);
-   data.accurate_item_no=String(itemResult.item.no);
+  // Accurate is a downstream integration: local stock receipt must never depend on it.
+  // The local product master already exists; Accurate item creation/mapping runs only after
+  // stock_units has committed successfully. Failure leaves the local stock and sync queue intact.
+  if(source==='MANAGEMENT'&&(!selectedProduct||!data.supplier_id||!data.accurate_vendor_no)){
+   throw new Error('Produk dan pemasok Accurate wajib dipilih untuk stok MANAGEMENT.');
   }
   const duplicate=await hmCheckDuplicateImeis(imei1,imei2,null);
   if(duplicate)throw new Error('IMEI/EID '+duplicate.imei+' sudah terdaftar pada stock lain. Barang masuk dibatalkan agar tidak tercatat ganda.');
@@ -1338,6 +1323,35 @@ async function saveStock(){
   if(x.error)throw new Error(x.error.message);
   const stockId=x.data?.id;
   if(!stockId)throw new Error('ID stock tidak dikembalikan oleh database.');
+  let accurateWarning='';
+  if(source==='MANAGEMENT'){
+   try{
+    const cat=selectedCategory;
+    const isIphone=cat==='IPHONE_NEW'||cat==='IPHONE_SECOND';
+    const isSecond=cat==='IPHONE_SECOND'||cat==='ANDROID_SECOND';
+    const cleanProduct=String(selectedProduct?.product||'').trim().replace(/\\s+(?:NEW|SECOND)$/i,'').trim();
+    const itemParts=['HP '+(isSecond?'Second':'New'),cleanProduct];
+    if(isIphone&&selectedProduct?.color)itemParts.push(String(selectedProduct.color).trim());
+    if(selectedProduct?.variant)itemParts.push(String(selectedProduct.variant).trim());
+    if(isIphone&&isSecond&&data.grade)itemParts.push('Grade '+String(data.grade).trim());
+    const itemName=itemParts.filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+    if(!['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(cat))throw new Error('Kategori produk Accurate belum didukung: '+cat);
+    const itemResponse=await sb.functions.invoke('accurate-sync',{body:{action:'ensure_phone_item',category:cat,name:itemName}});
+    if(itemResponse.error)throw itemResponse.error;
+    const itemResult=itemResponse.data||{};
+    if(!itemResult.ok||!itemResult.item?.id||!itemResult.item?.no)throw new Error(itemResult.error||'Master barang Accurate belum berhasil diverifikasi (ID/No kosong).');
+    const mapUpdate=await sb.from('stock_units').update({
+      accurate_item_id:String(itemResult.item.id),
+      accurate_item_no:String(itemResult.item.no),
+      accurate_purchase_sync_status:'PENDING',
+      accurate_purchase_last_error:null
+    }).eq('id',stockId);
+    if(mapUpdate.error)throw mapUpdate.error;
+   }catch(syncError){
+    accurateWarning=' Stok sudah tersimpan di Hello Majesty, tetapi sinkronisasi Accurate tertunda: '+(syncError?.message||String(syncError))+'. Silakan coba sinkronisasi ulang dari menu Accurate.';
+    console.error('[HM] Local stock saved; Accurate sync deferred:',stockId,syncError);
+   }
+  }
   // Hanya stok dari Stockist yang wajib melalui persetujuan. Stok Management langsung READY.
   if(source==='STOCKIST'){
    const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
@@ -1359,7 +1373,7 @@ async function saveStock(){
    alert('Barang Masuk berhasil diajukan. Status: MENUNGGU PERSETUJUAN.');
    if(confirm('Buka WhatsApp untuk mengirim pengajuan Barang Masuk sekarang?'))window.location.href='https://wa.me/?text='+encodeURIComponent(waMessage);
   }else{
-   alert('Barang Masuk berhasil disimpan. Status stock: READY.');
+   alert('Barang Masuk berhasil disimpan di Hello Majesty. Status stock: READY.'+accurateWarning);
   }
   await renderInventory();
  }catch(e){

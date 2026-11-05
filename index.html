@@ -3949,7 +3949,7 @@ async function hmRenderHomePerformance(){
      const spaceTotal={claim_cs:Number(sr?.total_claim_cs||0),handover:Number(sr?.total_handover||0),cs_closing:Number(sr?.total_cs_closing||0),sales_closing:Number(sr?.total_sales_closing||0)};
      const spaceTarget=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()==='majesty space')||{};
      const spaceTargets={claim_cs:Number(spaceTarget.wa_target||0),handover:Number(spaceTarget.qualified_target||0),cs_closing:Number(spaceTarget.closing_target||0),sales_closing:Number(spaceTarget.closing_target||0)};
-     spaceSection=section('PERFORMA TIM • MAJESTY SPACE',spaceTotal,'Tim Majesty Space • Sales, Hunter & Checker',spaceTargets);
+     spaceSection=section('PERFORMA TIM • HELLO MAJESTY',spaceTotal,'Tim Pusat Hello Majesty • Sales, Hunter & Checker',spaceTargets);
    }
    let personalSections='';
    if(!isManagement){
@@ -3962,7 +3962,7 @@ async function hmRenderHomePerformance(){
        if(mySpaceError)throw mySpaceError;
        const mr=Array.isArray(mySpaceData)?mySpaceData[0]:mySpaceData;
        const mySpace={claim_cs:Number(mr?.own_claim_cs||0),handover:Number(mr?.own_handover||0),cs_closing:Number(mr?.own_cs_closing||0),sales_closing:Number(mr?.own_sales_closing||0)};
-       personalSections+=section('PERFORMA SAYA • MAJESTY SPACE',mySpace,'Aktivitas pribadi di Majesty Space',null,false);
+       personalSections+=section('PERFORMA SAYA • HELLO MAJESTY',mySpace,'Aktivitas pribadi di pusat Hello Majesty',null,false);
      }
    }
    if(renderToken!==(window.__hmPerfRenderToken||0))return;

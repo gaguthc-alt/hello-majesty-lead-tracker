@@ -5966,10 +5966,17 @@ function viewerLead(l){
  if(isManagement||isDivisi||isDeveloper)return true;
  // Fasilitator hanya dapat melihat seluruh lead pada outlet yang ditugaskan.
  if(isFacilitator)return !!outlet&&norm(l?.outlet)===outlet;
- // Tim biasa hanya melihat lead yang tercatat sebagai PIC CS, Sales, atau Service.
- // Perbandingan nama dibuat tidak peka huruf besar/kecil agar PIC yang sama tidak terlewat.
+ // Tim biasa melihat lead yang menjadi PIC mereka. Sales Refill juga boleh melihat
+ // lead Majesty Space yang masih dapat di-claim; RLS tetap menjadi pagar akses database.
  if(!name)return false;
- return [l?.cs_claimed_by,l?.sales_claimed_by,l?.service_pic].some(owner=>norm(owner)===name);
+ if([l?.cs_claimed_by,l?.sales_claimed_by,l?.service_pic].some(owner=>norm(owner)===name))return true;
+ const isSales=!!window.hmCanSales||roles.includes('SALES')||role==='SALES';
+ const isRefill=outlet==='MAJESTY REFILL PHONE';
+ const isSpace=norm(l?.outlet)==='MAJESTY SPACE';
+ const result=norm(l?.sales_result||l?.hasil);
+ const claimable=!l?.sales_claimed_by&&['QUALIFIED','POTENSIAL'].includes(norm(l?.qualification_result))&&
+   (!l?.cs_claimed_by||!!l?.sales_handover_at);
+ return isSales&&isRefill&&isSpace&&claimable&& !['CLOSING','GAGAL','LOST'].includes(result);
 }
 async function render(){
  hmRenderLeadTodayMain();
@@ -6722,7 +6729,7 @@ async function claimFromLink(id){
  if(!isService && profile?.name && profile?.outlet && sb){
    const pending=await sb.from('leads')
      .select('lead_id,customer,sales_result,hasil,qualification_result,status_lead,archived_at,sales_claimed_at,updated_at,created_at')
-     .eq('outlet',profile.outlet)
+     .eq('outlet',l?.outlet||profile.outlet)
      .eq('sales_claimed_by',profile.name)
      .is('archived_at',null)
      .neq('lead_id',String(id))
@@ -6772,11 +6779,11 @@ async function salesResult(id){
  if(!mt||!mb||!modal)return alert('Panel Hasil Sales belum siap. Silakan buka Lead Aktif kembali.');
  if(!sb)return alert('Koneksi database belum siap. Silakan refresh aplikasi.');
 
- const st=await sb.from('stock_catalog').select('id,product,variant,color,asking_price,status,outlet').eq('outlet',profile.outlet).eq('status','READY').order('product').order('variant').order('color');
+ const st=await sb.from('stock_catalog').select('id,product,variant,color,asking_price,status,outlet').eq('outlet',l.outlet||profile.outlet).eq('status','READY').order('product').order('variant').order('color');
  await hmLoadBuybackProducts();
  if(st.error)return alert('Stock gagal dimuat: '+st.error.message);
  const rows=st.data||[];
- const salesRpc=await sb.rpc('get_outlet_sales_members',{p_outlet:profile.outlet});
+ const salesRpc=await sb.rpc('get_outlet_sales_members',{p_outlet:l.outlet||profile.outlet});
  const salesTeam=(salesRpc.error?[]:(salesRpc.data||[])).filter(x=>x.user_id!==profile?.user_id);
  const freelanceRole=window.hmStockClosingApprovalMode ? await sb.rpc('has_additional_role',{p_user_id:profile?.user_id,p_role:'FREELANCE_INTERNAL'}) : {data:false};
  const canFreelanceInternal=window.hmStockClosingApprovalMode && (String(profile?.role||'').trim().toUpperCase().replace(/\s+/g,'_')==='FREELANCE_INTERNAL' || (!freelanceRole.error && !!freelanceRole.data));

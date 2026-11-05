@@ -3952,7 +3952,7 @@ async function hmRenderHomePerformance(){
      const spaceTotal={claim_cs:Number(sr?.total_claim_cs||0),handover:Number(sr?.total_handover||0),cs_closing:Number(sr?.total_cs_closing||0),sales_closing:Number(sr?.total_sales_closing||0)};
      const spaceTarget=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()==='majesty space')||{};
      const spaceTargets={claim_cs:Number(spaceTarget.wa_target||0),handover:Number(spaceTarget.qualified_target||0),cs_closing:Number(spaceTarget.closing_target||0),sales_closing:Number(spaceTarget.closing_target||0)};
-     spaceSection=section('PERFORMA TIM • HELLO MAJESTY',spaceTotal,'Tim Pusat Hello Majesty • Sales, Hunter & Checker',spaceTargets);
+     spaceSection=section('PERFORMA TIM • HELLO MAJESTY',spaceTotal,'Tim Pusat • Sales, Hunter & Checker',spaceTargets);
    }
    let personalSections='';
    if(!isManagement){
@@ -4047,7 +4047,8 @@ function renderRoleHome(){
  const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI',developer=rawRole==='DEVELOPER APLIKASI',has=r=>roles.includes(r);
  const stockistUser=!mg&&!developer&&(has('MITRA STOCKIST')||roles.some(r=>String(r).includes('STOCKIST'))||rawRole.includes('STOCKIST'));
  const facilitator=has('FASILITATOR')||rawRole==='FASILITATOR'||!!window.hmCanFacilitator,sales=has('SALES')&&!stockistUser,cs=(has('CS')||has('CUSTOMER SERVICE')||rawRole.includes('CS')||rawRole.includes('CUSTOMER SERVICE'))&&!stockistUser,creator=has('CONTENT CREATOR')&&!stockistUser;
- const title=developer?'Developer Aplikasi':(mg?'Management':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty'));
+ const isRefillTeamMember=String(profile?.outlet||'').trim().toLowerCase()==='majesty refill phone'&&!mg&&!developer;
+ const title=developer?'Developer Aplikasi':(mg?'Management':(isRefillTeamMember?'Anggota Tim':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty')));
  const sub=mg?'Pusat kendali bisnis • seluruh outlet':(profile?.outlet||'Workspace sesuai peran aktif');
 
  // MENU UTAMA = hanya fungsi yang memang diberikan kepada akun/role.
@@ -5074,7 +5075,7 @@ window.hmRunStockistJournalReclass = async function(){
  const homePerformance=isAtmaditaStockistHome?'':'<section id="hmHomePerformance" class="hm-home-performance"><div class="hm-home-perf-title">📊 PERFORMA</div><div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>PERFORMA SAYA</b><span>Aktivitas akun ini</span></div></div><div class="hm-home-perf-grid"><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing</div><div class="hm-home-perf-value">0</div></div></div></div><div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>TOTAL</b><span>Memuat...</span></div></div><div class="hm-home-perf-grid"><div class="hm-home-perf-card"><div class="hm-home-perf-label">Claim CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Handover CS</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">CS Closing</div><div class="hm-home-perf-value">0</div></div><div class="hm-home-perf-card"><div class="hm-home-perf-label">Sales Closing</div><div class="hm-home-perf-value">0</div></div></div></div></section>';
 
 
- const roleText=roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>';
+ const roleText=isRefillTeamMember?'<span class="role-chip">Tim Operasional</span>':(roles.length?roles.map(r=>'<span class="role-chip">'+esc(r)+'</span>').join(' '):'<span class="role-chip">Belum ada peran operasional</span>');
  const canSeeDivisionControl=roles.includes('DIVISI')||rawRole==='DIVISI'||roles.includes('MANAGEMENT')||rawRole==='MANAGEMENT'||!!profile?.is_management;
  const divisionMenu=canSeeDivisionControl?'<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>🏛️ PUSAT KENDALI DIVISI & MANAGEMENT</span></div><div class="role-home-submenu">'+[
  ['📊','Kinerja Divisi','SELURUH MANAGEMENT · target, hasil, laba, kinerja outlet, prioritas lintas divisi, dan keputusan.','hmOpenKinerjaDivisi()'],

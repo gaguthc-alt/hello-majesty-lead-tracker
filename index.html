@@ -3949,7 +3949,7 @@ async function hmRenderHomePerformance(){
      const spaceTotal={claim_cs:Number(sr?.total_claim_cs||0),handover:Number(sr?.total_handover||0),cs_closing:Number(sr?.total_cs_closing||0),sales_closing:Number(sr?.total_sales_closing||0)};
      const spaceTarget=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()==='majesty space')||{};
      const spaceTargets={claim_cs:Number(spaceTarget.wa_target||0),handover:Number(spaceTarget.qualified_target||0),cs_closing:Number(spaceTarget.closing_target||0),sales_closing:Number(spaceTarget.closing_target||0)};
-     spaceSection=section('PERFORMA TIM • MAJESTY SPACE',spaceTotal,'Tim Majesty Refill Phone • Sales, Hunter & Checker',spaceTargets);
+     spaceSection=section('PERFORMA TIM • MAJESTY SPACE',spaceTotal,'Tim Majesty Space • Sales, Hunter & Checker',spaceTargets);
    }
    if(renderToken!==(window.__hmPerfRenderToken||0))return;
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+(isManagement?'':section('PERFORMA SAYA',own,'Aktivitas akun ini',null,false))+section(isManagement?'PERFORMA TIM • SELURUH OUTLET':'PERFORMA TIM • '+(profile.outlet||'-'),total,scopeLabel,isManagement?null:outletTargets)+spaceSection+(isManagement?outletSections:'');

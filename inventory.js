@@ -919,7 +919,7 @@ function receiveProductCategory(p){
 }
 function masterProductLabel(p){let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();let grade=String(p.grade||'').trim();product=product.replace(/\s+\d{1,4}\s*GB\b/ig,'').replace(/\s+Grade\s*([A-Z][+-]?)\b/ig,(_,g)=>{if(!grade)grade=g.toUpperCase();return '';}).replace(/\s+/g,' ').trim();const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();return [product,variant,p.color,grade?( /^grade\s/i.test(grade)?grade:'Grade '+grade):'',suffix].filter(Boolean).join(' — ')}
 function stockCard(s){
- const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',canViewCost=management||facilitator,ready=s.status==='READY',roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),sales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')),c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
+ const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),isOwnStockist=roleRaw==='MITRA STOCKIST'&&String(s.source_type||'').toUpperCase()==='STOCKIST'&&String(s.partner_name||'').trim()===String(profile?.outlet||'').trim(),canViewCost=management||facilitator||isOwnStockist,ready=s.status==='READY',sales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')),c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
  const rawTitle=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';
  const cleanProduct=rawTitle.replace(/\s+(NEW|SECOND)$/i,'').trim();
  const title=[cleanProduct,s.variant,s.color,suffix].filter(Boolean).join(' — ');
@@ -946,8 +946,18 @@ function stockCard(s){
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
    (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
-   (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
+   (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')(management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\\''+s.id+'\\')">Edit</button>':'')+(isOwnStockist&&ready?'<button class="danger" onclick="withdrawStockistStock(\\''+s.id+'\\')">Keluar dari READY</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
+}
+async function withdrawStockistStock(id){
+ const s=inventoryStock.find(x=>String(x.id)===String(id));
+ if(!s||s.status!=='READY')return alert('Hanya stok READY milik sendiri yang dapat dikeluarkan.');
+ if(!confirm('Keluarkan stok ini dari READY? Stok tidak akan dihitung sebagai SOLD dan tidak ada kolom alasan.'))return;
+ const r=await sb.rpc('hm_stockist_withdraw_owned_stock',{p_stock_unit_id:id});
+ if(r.error)return alert('Gagal mengeluarkan stok: '+r.error.message);
+ alert('Stok berhasil dikeluarkan dari READY.');
+ await loadInventoryData();
+ renderInventoryBody();
 }
 async function openSupplierReturn(id){
  const s=inventoryStock.find(x=>x.id===id);

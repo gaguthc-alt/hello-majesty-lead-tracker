@@ -403,40 +403,23 @@ async function renderStandaloneHunterStock(){
  const section=document.getElementById('hunterStockSection'),panel=document.getElementById('hunterStockPanel');
  if(!section||!panel)return;
  section.classList.remove('hidden');section.setAttribute('aria-hidden','false');
- panel.className='box';
- panel.innerHTML='<div class="small">⏳ Memuat Stock Hunter & Checker...</div>';
+ panel.className='box';panel.innerHTML='<div class="small">⏳ Memuat Stock Hunter & Checker...</div>';
  try{
-  const [hunterResult,checkerResult]=await Promise.all([
-   sb.rpc('get_hunter_stock_catalog'),
-   sb.rpc('get_checker_stock_catalog')
-  ]);
-  if(hunterResult.error)throw hunterResult.error;
-  if(checkerResult.error)throw checkerResult.error;
-  const assignedStockById=new Map();
-  for(const x of (hunterResult.data||[]))assignedStockById.set(x.id,{...x,hm_source_type:'MANAGEMENT'});
-  for(const x of (checkerResult.data||[])){const previous=assignedStockById.get(x.id)||{};assignedStockById.set(x.id,{...previous,...x,hm_source_type:'MANAGEMENT'});}
-  const rows=[...assignedStockById.values()].sort((a,b)=>new Date(b.received_at||0)-new Date(a.received_at||0));
-  // Attribution comes from the SECURITY DEFINER catalog RPCs. Do not re-query stock_units
-  // here: its RLS intentionally limits ordinary team members to their own assignments.
-  const checkerByStock={};
-  (hunterResult.data||[]).forEach(x=>{
-   checkerByStock[x.id]={...(checkerByStock[x.id]||{}),hunters:x.hunter_name||''};
-  });
-  (checkerResult.data||[]).forEach(x=>{
-   checkerByStock[x.id]={...(checkerByStock[x.id]||{}),checkers:x.hunter_name||''};
-  });
-  // Stock Hunter & Checker hanya menampilkan unit yang memiliki minimal satu penanggung jawab.
-  const displayRows=rows.filter(x=>{const a=checkerByStock[x.id]||{};return !!(String(a.hunters||'').trim()||String(a.checkers||'').trim());});
+  // Satu RPC mengembalikan semua anggota dari kolom legacy dan multi-anggota.
+  // SECURITY DEFINER membatasi hasil berdasarkan penugasan user, Management, atau Fasilitator outlet.
+  const result=await sb.rpc('get_hunter_checker_stock_catalog');
+  if(result.error)throw result.error;
+  const rows=result.data||[];
+  const displayRows=rows.filter(x=>String(x.hunter_names||'').trim()||String(x.checker_names||'').trim());
   panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧑‍💼 STOCK HUNTER & CHECKER</h2><div class="small">Daftar unit Hunter dan Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneHunterStock()">↻ Refresh</button></div>'+
    '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#e8f1ff;color:#174ea6;font-weight:700">🏹 Hunter · Komisi 10%</span><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#f3e8ff;color:#6b21a8;font-weight:700">🔎 Checker · Komisi 5%</span></div>'+
-   '<div class="small" style="margin-top:10px">Persentase ditampilkan sebagai informasi sumber komisi. Komisi baru dialokasikan saat unit benar-benar terjual. Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
+   '<div class="small" style="margin-top:10px">Semua anggota yang tercatat pada unit ditampilkan. Komisi baru dialokasikan saat unit benar-benar terjual. Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
    (displayRows.length?'<div style="margin-top:12px">'+displayRows.map((x,i)=>{
       const photos=[x.photo_1,x.photo_2,x.photo_3,x.photo_4,x.photo_5].filter(Boolean);
       const img=photos[0]?'<img src="'+esc(photos[0])+'" alt="Foto '+esc(x.product||'Produk')+'" style="width:100%;max-height:190px;object-fit:contain;border-radius:10px;background:#f3f4f6;margin-bottom:8px">':'';
       const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;
-      const assigned=checkerByStock[x.id]||{};
-      const hunterNames=String(assigned.hunters||'').trim();
-      const checkerNames=String(assigned.checkers||'').trim();
+      const hunterNames=String(x.hunter_names||'').trim();
+      const checkerNames=String(x.checker_names||'').trim();
       const isHunter=!!hunterNames,isChecker=!!checkerNames;
       return '<div class="lead" style="margin-bottom:12px">'+img+
        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px">'+(isHunter?'<span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#e8f1ff;color:#174ea6">🏹 HUNTER · KOMISI 10%</span>':'')+(isChecker?'<span style="display:inline-block;padding:5px 8px;border-radius:8px;font-size:12px;font-weight:800;background:#f3e8ff;color:#6b21a8">🔎 CHECKER · KOMISI 5%</span>':'')+'</div>'+
@@ -459,14 +442,11 @@ async function renderStandaloneCheckerStock(){
  section.classList.remove('hidden');section.setAttribute('aria-hidden','false');
  panel.className='box';panel.innerHTML='<div class="small">⏳ Memuat Stock Checker...</div>';
  try{
-  const [r,hunterR]=await Promise.all([sb.rpc('get_checker_stock_catalog'),sb.rpc('get_hunter_stock_catalog')]);
-  if(r.error)throw r.error;if(hunterR.error)throw hunterR.error;
-  const rows=r.data||[];
-  const hunterMap=Object.fromEntries((hunterR.data||[]).map(x=>[x.id,x.hunter_name||'']));
-  // Checker RPC returns the checker assignment in hunter_user_id/hunter_name fields.
-  const checkerRows=rows.filter(x=>String(x.hunter_name||'').trim());
-  panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧾 STOCK CHECKER</h2><div class="small">Barang dari Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneCheckerStock()">↻ Refresh</button></div><div class="small" style="margin-top:10px">Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
-  (checkerRows.length?'<div style="margin-top:12px">'+checkerRows.map((x,i)=>{const photos=[x.photo_1,x.photo_2,x.photo_3,x.photo_4,x.photo_5].filter(Boolean);const img=photos[0]?'<img src="'+esc(photos[0])+'" alt="Foto '+esc(x.product||'Produk')+'" style="width:100%;max-height:190px;object-fit:contain;border-radius:10px;background:#f3f4f6;margin-bottom:8px">':'';const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;const hunters=[hunterMap[x.id]].filter(Boolean);const checkers=[x.hunter_name].filter(Boolean);return '<div class="lead" style="margin-bottom:12px">'+img+'<b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b><div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div><div class="small">🏹 Hunter: <b>'+esc(hunters.join(', ')||'-')+'</b></div><div class="small">🧾 Checker: <b>'+esc(checkers.join(', ')||x.hunter_name||'-')+'</b></div><div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div><div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div><div class="small" style="margin-top:5px">🟢 READY — belum laku</div></div>';}).join('')+'</div>':'<div class="box" style="text-align:center;margin-top:12px"><b>Belum ada Stock Checker yang menunggu closing.</b><div class="small" style="margin-top:5px">Saat unit Checker terjual, unit otomatis tidak muncul lagi di daftar ini.</div></div>');
+  const r=await sb.rpc('get_hunter_checker_stock_catalog');
+  if(r.error)throw r.error;
+  const rows=(r.data||[]).filter(x=>String(x.checker_names||'').trim());
+  panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧾 STOCK CHECKER</h2><div class="small">Barang dari Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneCheckerStock()">↻ Refresh</button></div><div class="small" style="margin-top:10px">Semua anggota Checker dan Hunter yang tercatat pada unit ditampilkan. Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
+  (rows.length?'<div style="margin-top:12px">'+rows.map((x,i)=>{const photos=[x.photo_1,x.photo_2,x.photo_3,x.photo_4,x.photo_5].filter(Boolean);const img=photos[0]?'<img src="'+esc(photos[0])+'" alt="Foto '+esc(x.product||'Produk')+'" style="width:100%;max-height:190px;object-fit:contain;border-radius:10px;background:#f3f4f6;margin-bottom:8px">':'';const age=x.received_at?Math.max(0,Math.floor((Date.now()-new Date(x.received_at).getTime())/86400000)):null;return '<div class="lead" style="margin-bottom:12px">'+img+'<b>'+String(i+1).padStart(2,'0')+'. '+esc(x.product||'Produk')+(x.variant?' — '+esc(x.variant):'')+'</b><div class="small">'+esc(x.color||'-')+(x.grade?' • Grade '+esc(x.grade):'')+(x.battery_health!=null?' • BH '+esc(x.battery_health)+'%':'')+'</div><div class="small">🏹 Hunter: <b>'+esc(x.hunter_names||'-')+'</b></div><div class="small">🔎 Checker: <b>'+esc(x.checker_names||'-')+'</b></div><div style="margin-top:5px">Harga jual: <b>Rp'+Number(x.asking_price||0).toLocaleString('id-ID')+'</b></div><div class="small">📍 '+esc(x.outlet||'-')+(age!==null?' • '+age+' hari di stock':'')+'</div><div class="small" style="margin-top:5px">🟢 READY — belum laku</div></div>';}).join('')+'</div>':'<div class="box" style="text-align:center;margin-top:12px"><b>Belum ada Stock Checker yang menunggu closing.</b><div class="small" style="margin-top:5px">Saat unit Checker terjual, unit otomatis tidak muncul lagi di daftar ini.</div></div>');
  }catch(e){console.error('[HM] Stock Checker error',e);panel.innerHTML='<div class="box" style="color:#b42318"><b>Stock Checker gagal dimuat.</b><div style="margin-top:6px">'+esc(e?.message||e)+'</div></div>';}
 }
 async function openCheckerStock(){

@@ -243,7 +243,10 @@
     const shareButton=document.getElementById('perfShare');
     const originalLabel=shareButton?.textContent||'📲 Share ke WhatsApp';
     if(shareButton){shareButton.disabled=true;shareButton.textContent='⏳ Menyiapkan laporan...';}
+    let waWindow=null;
     try{
+    // Buka tab WhatsApp saat masih berada dalam event klik agar tidak diblokir browser mobile.
+    waWindow=window.open('about:blank','_blank');
     const [monthRows,todayRows]=await Promise.all([getFunnel('month'),getFunnel('today')]);
     const normalize=source=>source.map(r=>({
       name:String(r.employee_name||'-'),outlet:String(r.outlet||r.outlet_name||'-'),
@@ -297,8 +300,10 @@
     });
     message+='📊 *TOTAL SEMUA OUTLET — BULAN INI*'+NL+metrics(sum(month))+NL+
       '━━━━━━━━━━━━━━'+NL+'*Hello Majesty*'+NL+'*Management System*'+NL+'*Built on Trust*';
-    window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank','noopener');
+    const waUrl='https://wa.me/?text='+encodeURIComponent(message);
+    if(waWindow){waWindow.location.href=waUrl;}else{window.location.href=waUrl;}
     }catch(err){
+      try{if(waWindow&&!waWindow.closed)waWindow.close();}catch(_e){}
       console.error('[HM] Share performance report failed',err);
       const body=document.getElementById('perfBody');
       if(body)body.innerHTML='<div class="lead"><b>Gagal menyiapkan laporan WhatsApp</b><div class="small" style="margin-top:6px;color:#b91c1c">'+escP(err?.message||err||'Koneksi ke database gagal')+'</div><button class="secondary" type="button" style="margin-top:10px" onclick="window.perfShow(window.perfMyMode||\'month\')">↻ Coba Lagi</button></div>';

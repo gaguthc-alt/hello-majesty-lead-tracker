@@ -1376,8 +1376,7 @@ async function saveStock(){
 }
 async function openEditStockPhotos(id){if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres maksimal ±700 KB/foto • resolusi hingga 1600 px.</div>';$('modal').classList.remove('hidden')}
 function openEditStock(id){
- if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
- const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),ownStockist=role==='MITRA STOCKIST'&&s.source_type==='STOCKIST'&&String(s.partner_name||'').trim()===String(profile?.outlet||'').trim();if(!(profile?.is_management||inventoryCanFacilitator||ownStockist))return alert('Akses Management, Facilitator, atau pemilik stockist diperlukan.');
  const c=s.category;
  let f='<div class="small">'+esc(s.product)+' • '+esc(s.variant||'')+' • IMEI 1: '+esc(s.imei_1||'-')+'</div>';
  const input=(label,id,value,type='text',extra='')=>'<label>'+label+'</label><input id="'+id+'" type="'+type+'" value="'+esc(value??'')+'" '+extra+'>';
@@ -1416,8 +1415,7 @@ function openEditStock(id){
  $('mt').textContent='Edit Stock';$('mb').innerHTML=f;$('modal').classList.remove('hidden');
 }
 async function saveEditStock(id){
- if(!(profile?.is_management||inventoryCanFacilitator))return alert('Akses Management atau Facilitator diperlukan.');
- const s=inventoryStock.find(x=>x.id===id);if(!s)return;
+ const s=inventoryStock.find(x=>x.id===id);if(!s)return;const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),ownStockist=role==='MITRA STOCKIST'&&s.source_type==='STOCKIST'&&String(s.partner_name||'').trim()===String(profile?.outlet||'').trim();if(!(profile?.is_management||inventoryCanFacilitator||ownStockist))return alert('Akses Management, Facilitator, atau pemilik stockist diperlukan.');
  const c=s.category;
  const imei1=$('esimei1').value.trim(),imei2=$('esimei2').value.trim()||null;
  if(imei1&&!/^\d{15}$/.test(imei1))return alert('IMEI 1 harus berupa 15 digit angka.');
@@ -1450,6 +1448,20 @@ async function saveEditStock(id){
   data.battery_health=$('esbh').value!==''?Number($('esbh').value):null;
   data.completeness=$('escomplete').value.trim()||null;
   data.minus=$('esminus').value.trim()||null;
+ }
+ if(ownStockist){
+  const changes={cost:Number($('escost').value||0),asking_price:Number($('esprice').value||0)};
+  if($('escolor'))changes.color=$('escolor').value.trim();
+  if($('esgrade'))changes.grade=$('esgrade').value;
+  if($('escondition'))changes.condition=$('escondition').value.trim();
+  if($('esbh'))changes.battery_health=$('esbh').value===''?null:Number($('esbh').value);
+  if($('escomplete'))changes.completeness=$('escomplete').value.trim();
+  if($('esminus'))changes.minus=$('esminus').value.trim();
+  if($('esnotes'))changes.notes=$('esnotes').value.trim();
+  const saved=await sb.rpc('hm_stockist_update_owned_stock',{p_stock_unit_id:id,p_changes:changes});
+  if(saved.error)return alert('Gagal menyimpan stok: '+saved.error.message);
+  alert('Modal dan detail stok milik sendiri berhasil diperbarui.');
+  $('modal').classList.add('hidden');await renderInventory();return;
  }
  if(window.hmSavingEditStock)return;
  const saveBtn=[...document.querySelectorAll('#mb button')].find(b=>String(b.getAttribute('onclick')||'').includes("saveEditStock('"+id+"'"));

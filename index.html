@@ -3934,7 +3934,7 @@ async function hmRenderHomePerformance(){
        const targets={claim_cs:Number(t.wa_target||0),handover:Number(t.qualified_target||0),cs_closing:Number(t.closing_target||0),sales_closing:Number(t.closing_target||0)};
        const isHelloMajestyCenter=String(outlet).trim().toLowerCase()==='majesty space';
        const displayOutlet=isHelloMajestyCenter?'HELLO MAJESTY':outlet;
-       const displaySubtitle=isHelloMajestyCenter?'Tim Pusat • Lokasi stok: Majesty Space':'Realisasi / Target';
+       const displaySubtitle='Realisasi / Target';
        const metric=(label,key)=>'<div class="hm-home-perf-card"><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+actual[key].toLocaleString('id-ID')+' <span style="font-size:12px;color:#667085;font-weight:600">/ '+targets[key].toLocaleString('id-ID')+'</span></div><div class="small" style="margin-top:3px">'+(targets[key]>0?Math.round(actual[key]/targets[key]*100)+'%':'—')+'</div></div>';
        return '<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+escH(displayOutlet)+'</b><span>'+escH(displaySubtitle)+'</span></div></div><div class="hm-home-perf-grid">'+metric('Claim CS','claim_cs')+metric('Handover CS','handover')+metric('Sales Closing','sales_closing')+'</div></div>';
      }));

@@ -33,7 +33,7 @@ async function loadInventoryData(){
   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
   const isPartnerFinance=role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL';
   const isDeveloper=hmRole==='DEVELOPER APLIKASI'||hmRole==='DEVELOPER';
-  const stockView=(profile?.is_management||isDeveloper)?'stock_management':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog');
+  const stockView=(profile?.is_management||isDeveloper)?'stock_management':(role==='MITRA STOCKIST'?'stockist_inventory':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog'));
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
   if(!profile?.is_management && profile?.outlet && !isPartnerFinance) stockQuery=stockQuery.eq('outlet',profile.outlet);
   // product_master may exceed the API's per-request row cap. Fetch in pages so later models (iPhone 14+) are not silently omitted.

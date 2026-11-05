@@ -974,7 +974,7 @@ function stockCard(s){
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
    (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
-   (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(isOwnStockist&&ready?'<button class="danger" onclick="withdrawStockistStock(\''+s.id+'\')">Keluar dari READY</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
+   (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(isOwnStockist&&ready?'<button class="danger" onclick="withdrawStockistStock(\''+s.id+'\')">Keluar dari READY</button>':'')+(ready&&(isOwnStockist||management||facilitator)?'<button class="secondary" onclick="hmRequestStockTransfer(\''+s.id+'\')">⇄ Ajukan Mutasi</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
 }
 async function withdrawStockistStock(id){

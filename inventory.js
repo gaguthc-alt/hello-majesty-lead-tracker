@@ -946,7 +946,7 @@ function stockCard(s){
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
    (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
-   (management||facilitator?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')(management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\\''+s.id+'\\')">Edit</button>':'')+(isOwnStockist&&ready?'<button class="danger" onclick="withdrawStockistStock(\\''+s.id+'\\')">Keluar dari READY</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
+   (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(isOwnStockist&&ready?'<button class="danger" onclick="withdrawStockistStock(\''+s.id+'\')">Keluar dari READY</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
    '</div></div>';
 }
 async function withdrawStockistStock(id){
@@ -1381,8 +1381,10 @@ function openEditStock(id){
  let f='<div class="small">'+esc(s.product)+' • '+esc(s.variant||'')+' • IMEI 1: '+esc(s.imei_1||'-')+'</div>';
  const input=(label,id,value,type='text',extra='')=>'<label>'+label+'</label><input id="'+id+'" type="'+type+'" value="'+esc(value??'')+'" '+extra+'>';
  const area=(label,id,value)=>'<label>'+label+'</label><textarea id="'+id+'">'+esc(value||'')+'</textarea>';
- f+=input('IMEI 1','esimei1',s.imei_1||'','text','inputmode="numeric"');
- f+=input('IMEI 2','esimei2',s.imei_2||'','text','inputmode="numeric"');
+ if(!ownStockist){
+  f+=input('IMEI 1','esimei1',s.imei_1||'','text','inputmode="numeric"');
+  f+=input('IMEI 2','esimei2',s.imei_2||'','text','inputmode="numeric"');
+ }
  if(c==='IPHONE_NEW'){
   f+=input('Warna','escolor',s.color||'');
 }else if(c==='IPHONE_SECOND'){
@@ -1417,6 +1419,16 @@ function openEditStock(id){
 async function saveEditStock(id){
  const s=inventoryStock.find(x=>x.id===id);if(!s)return;const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),ownStockist=role==='MITRA STOCKIST'&&s.source_type==='STOCKIST'&&String(s.partner_name||'').trim()===String(profile?.outlet||'').trim();if(!(profile?.is_management||inventoryCanFacilitator||ownStockist))return alert('Akses Management, Facilitator, atau pemilik stockist diperlukan.');
  const c=s.category;
+ if(ownStockist){
+  const get=id=>document.getElementById(id);
+  const changes={cost:Number(get('escost')?.value||0),asking_price:Number(get('esprice')?.value||0)};
+  for(const [key,id] of [['color','escolor'],['grade','esgrade'],['condition','escondition'],['completeness','escomplete'],['minus','esminus'],['notes','esnotes']])if(get(id))changes[key]=get(id).value.trim();
+  if(get('esbh'))changes.battery_health=get('esbh').value===''?null:Number(get('esbh').value);
+  const saved=await sb.rpc('hm_stockist_update_owned_stock',{p_stock_unit_id:id,p_changes:changes});
+  if(saved.error)return alert('Gagal menyimpan stok: '+saved.error.message);
+  alert('Detail dan harga stok milik sendiri berhasil diperbarui.');
+  $('modal').classList.add('hidden');await loadInventoryData();renderInventoryBody();return;
+ }
  const imei1=$('esimei1').value.trim(),imei2=$('esimei2').value.trim()||null;
  if(imei1&&!/^\d{15}$/.test(imei1))return alert('IMEI 1 harus berupa 15 digit angka.');
  if(imei2&&!/^(?:\d{15}|\d{32})$/.test(imei2))return alert('IMEI 2 harus 15 digit angka atau EID 32 digit.');

@@ -5122,6 +5122,28 @@ window.hmRunStockistJournalReclass = async function(){
        });
        return;
      }
+     // STOCKIST RECEIVE: route kartu Ajukan Barang Masuk secara eksplisit dari handler tombol.
+     if(title==='Ajukan Barang Masuk Unit Bisnis'){
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       const openStockistReceive=async()=>{
+         if(typeof window.openReceiveStock!=='function') await hmLoadModule('inventory');
+         if(typeof window.openReceiveStock!=='function') throw new Error('Modul Inventory termuat, tetapi fungsi Barang Masuk tidak ditemukan.');
+         await window.openReceiveStock();
+       };
+       void openStockistReceive().catch(ex=>{
+         console.error('[HM] Ajukan Barang Masuk Unit Bisnis gagal:',ex);
+         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),titleEl=document.getElementById('hmMenuPanelTitle');
+         if(panel&&body){
+           if(titleEl)titleEl.textContent='⚠️ Ajukan Barang Masuk Unit Bisnis';
+           body.innerHTML='<div class="box" style="color:#b42318"><b>Ajukan Barang Masuk gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:10px" onclick="location.reload()">Muat ulang aplikasi</button></div>';
+           panel.classList.remove('hidden');
+           panel.scrollIntoView({behavior:'smooth',block:'start'});
+         }else alert('Ajukan Barang Masuk gagal dibuka: '+(ex?.message||ex));
+       });
+       return;
+     }
      // APPROVAL MENU: samakan jalur Barang Masuk dengan Walk-In.
      // Loader Inventory dipanggil bila fungsi belum tersedia, lalu panel inline dibuka oleh modul yang sama.
      if(title==='Persetujuan Barang Masuk'){

@@ -22,7 +22,7 @@
     if(!window.sb) throw new Error('Koneksi database belum siap.');
     const x=await window.sb.rpc('management_team_commission_report_v3',{p_month_start:monthStart()});
     if(x.error) throw x.error;
-    // Rekap Komisi Tim hanya mencakup dua outlet operasional internal.
+    // Rekap Komisi Tim mencakup Plaza, Refill, dan kelompok operasional Hello Majesty.
     // Stockist (Majesty Cell, Majesty Gadget, Majesty Store) tidak masuk
     // kartu budget, rincian anggota, maupun total komisi tim.
     const internalOutlets=new Set(['majesty plaza iphone','majesty refill phone','hello majesty']);

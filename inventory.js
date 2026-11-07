@@ -35,7 +35,7 @@ async function loadInventoryData(){
   const isDeveloper=hmRole==='DEVELOPER APLIKASI'||hmRole==='DEVELOPER';
   const stockView=(profile?.is_management||isDeveloper)?'stock_management':(role==='MITRA STOCKIST'?'stockist_inventory':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog'));
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
-  if(!profile?.is_management && profile?.outlet && !isPartnerFinance) stockQuery=stockQuery.eq('outlet',profile.outlet);
+  // Jangan filter berdasarkan outlet profil di client: tim lintas outlet harus dapat melihat stock pool yang diizinkan. RLS pada stock_units (melalui security_invoker view) menjadi satu-satunya penentu baris yang boleh terlihat; akses Majesty Plaza tetap tertutup oleh unit_access_rules.
   // product_master may exceed the API's per-request row cap. Fetch in pages so later models (iPhone 14+) are not silently omitted.
   const productRows=[];
   const productPageSize=500;

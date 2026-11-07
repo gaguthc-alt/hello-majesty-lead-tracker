@@ -37,9 +37,10 @@
     if(!window.sb){list.innerHTML='<div style="padding:14px;background:#fff1f0;color:#b42318;border-radius:10px">Koneksi database belum siap. Muat ulang halaman lalu coba kembali.</div>';return;}
     const r=await window.sb.from('monthly_outlet_targets').select('*').eq('month_start',ms).order('outlet');
     if(r.error){list.innerHTML='<div style="padding:14px;background:#fff1f0;color:#b42318;border-radius:10px">Gagal memuat target: '+esc(r.error.message)+'</div>';return;}
-    const rows=r.data||[];
-    const known=['Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space'];
-    const names=[...new Set([...known,...rows.map(x=>x.outlet)])];
+    const rows=(r.data||[]).filter(x=>x.active===true);
+    // Majesty Space adalah lokasi persediaan, bukan outlet operasional bertarget.
+    const known=['Majesty Plaza iPhone','Majesty Refill Phone'];
+    const names=[...new Set([...known,...rows.map(x=>x.outlet).filter(x=>!/^Majesty Space$/i.test(String(x||'').trim()))])];
     list.innerHTML=names.map((name,i)=>{
       const x=rows.find(a=>a.outlet===name)||{outlet:name,wa_target:0,qualified_target:0,closing_target:0,nominal_target:0,bonus_label:'Liburan',bonus_amount:0,active:true};
       return '<div class="lead" style="margin-top:10px"><b>🏪 '+esc(name)+'</b><div class="small">Target bulanan • '+esc(m)+'</div><div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px">'+

@@ -767,7 +767,7 @@ window.openFinanceSection=async function(section){
         const cr=await window.sb.rpc('management_team_commission_report_v2',{p_month_start:startDate});
         if(!cr.error){
           // Komisi Tim hanya untuk outlet operasional internal; mitra stockist tidak masuk rekap.
-          const internalCommissionOutlets=['Majesty Plaza iPhone','Majesty Refill Phone'];
+          const internalCommissionOutlets=['Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space','Hello Majesty'];
           commissionRows=(Array.isArray(cr.data)?cr.data:[]).filter(row=>
             internalCommissionOutlets.includes(String(row.outlet||'').trim())
           );

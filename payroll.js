@@ -25,7 +25,7 @@
     // Rekap Komisi Tim hanya mencakup dua outlet operasional internal.
     // Stockist (Majesty Cell, Majesty Gadget, Majesty Store) tidak masuk
     // kartu budget, rincian anggota, maupun total komisi tim.
-    const internalOutlets=new Set(['majesty plaza iphone','majesty refill phone']);
+    const internalOutlets=new Set(['majesty plaza iphone','majesty refill phone','hello majesty']);
     return (Array.isArray(x.data)?x.data:[]).filter(r=>
       internalOutlets.has(String(r.outlet||'').trim().toLowerCase())
     );

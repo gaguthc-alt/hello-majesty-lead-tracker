@@ -790,6 +790,7 @@ window.openFinanceSection=async function(section){
       let rewardRows=[];
       try{
         let rq=window.sb.from('monthly_outlet_targets').select('outlet,closing_target,closing_actual,bonus_label,bonus_amount').eq('month_start',startDate);
+        rq=rq.neq('outlet','Majesty Space');
         if(profile?.outlet && !profile?.is_management)rq=rq.eq('outlet',profile.outlet);
         const rr=await rq;
         if(rr.error)throw rr.error;

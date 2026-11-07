@@ -6819,7 +6819,11 @@ async function salesResult(id){
  if(!mt||!mb||!modal)return alert('Panel Hasil Sales belum siap. Silakan buka Lead Aktif kembali.');
  if(!sb)return alert('Koneksi database belum siap. Silakan refresh aplikasi.');
 
- const st=await sb.from('stock_catalog').select('id,product,variant,color,asking_price,status,outlet').eq('outlet',l.outlet||profile.outlet).eq('status','READY').order('product').order('variant').order('color');
+ // Walk-In dari kartu stock memilih seluruh unit READY yang memang diizinkan RLS/unit_access_rules.
+ // Lead biasa tetap dibatasi pada outlet lead.
+ let stockQuery=sb.from('stock_catalog').select('id,product,variant,color,asking_price,status,outlet').eq('status','READY');
+ if(!window.hmStockClosingApprovalMode) stockQuery=stockQuery.eq('outlet',l.outlet||profile.outlet);
+ const st=await stockQuery.order('product').order('variant').order('color');
  await hmLoadBuybackProducts();
  if(st.error)return alert('Stock gagal dimuat: '+st.error.message);
  const rows=st.data||[];

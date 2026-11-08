@@ -66,7 +66,7 @@ async function loadInventoryData(){
   // Ambil hanya kolom foto dan merge ke hasil view agar Detail Produk/Card selalu menampilkan foto.
   if(inventoryStock.length){
     const ids=inventoryStock.map(x=>x.id).filter(Boolean);
-    const photos=await sb.from('stock_units').select('id,partner_name,photo_1,photo_2,photo_3,photo_4,photo_5').in('id',ids);
+    const photos=await sb.from('stock_units').select('id,source_type,partner_name,photo_1,photo_2,photo_3,photo_4,photo_5').in('id',ids);
     if(!photos.error){
       const byId=Object.fromEntries((photos.data||[]).map(x=>[x.id,x]));
       inventoryStock=inventoryStock.map(x=>({...x,...(byId[x.id]||{})}));

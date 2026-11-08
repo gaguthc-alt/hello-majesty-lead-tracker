@@ -1013,7 +1013,7 @@ function openStockOut(id){
  const actorRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const isFacilitator=actorRole==='FASILITATOR'||inventoryCanFacilitator;
  const ownStockist=actorRole==='MITRA STOCKIST'&&String(s.partner_name||'').trim().toLowerCase()===String(profile?.outlet||'').trim().toLowerCase();
- const canManage=!!(profile?.is_management||management);
+ const canManage=!!profile?.is_management;
  if(!(canManage||isFacilitator||ownStockist))return alert('Akses Stock Keluar tidak tersedia untuk akun ini.');
  if(String(s.source_type||'').toUpperCase()!=='STOCKIST'&&!canManage)return alert('Stock Keluar hanya berlaku untuk stok milik stockist.');
  const label=[s.product,s.variant,s.color,s.grade?'Grade '+s.grade:''].filter(Boolean).join(' — ');

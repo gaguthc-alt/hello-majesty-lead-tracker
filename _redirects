@@ -1,2 +1,5 @@
-/katalog /katalog-plaza.html 200
-/katalog/ /katalog-plaza.html 200
+/katalog /katalog-hello-majesty.html 200
+/katalog/ /katalog-hello-majesty.html 200
+/katalog-plaza.html /katalog/ 301
+/katalog-plaza/ /katalog/ 301
+/katalog-refill/ /katalog/ 301

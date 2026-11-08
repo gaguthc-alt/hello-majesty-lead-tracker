@@ -1,9 +1,11 @@
 function hasContentCreatorAccess(){const r=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||r==='CONTENT CREATOR'||!!inventoryCanContentCreator;}
-function canEditStockPhotos(s){
+function isOwnedStockistUnit(s){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- const ownStockist=role==='MITRA STOCKIST'&&s?.source_type==='STOCKIST'&&String(s?.partner_name||'').trim().toLowerCase()===String(profile?.outlet||'').trim().toLowerCase();
- return hasContentCreatorAccess()||!!profile?.is_management||ownStockist;
+ const norm=v=>String(v||'').trim().replace(/\\s+/g,' ').toLowerCase();
+ const ownOutlet=norm(profile?.outlet), stockPartner=norm(s?.partner_name);
+ return role==='MITRA STOCKIST'&&String(s?.source_type||'').trim().toUpperCase()==='STOCKIST'&&!!ownOutlet&&!!stockPartner&&stockPartner===ownOutlet;
 }
+function canEditStockPhotos(s){return hasContentCreatorAccess()||!!profile?.is_management||isOwnedStockistUnit(s);}
 /* HM_INVENTORY_STABLE_20260930_ANDROID_SECOND_3 */
 /* Hello Majesty Inventory & Hunter */
 let inventoryProducts=[], inventoryStock=[], inventoryView='stock';
@@ -952,7 +954,7 @@ function receiveProductCategory(p){
 }
 function masterProductLabel(p){let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();let grade=String(p.grade||'').trim();product=product.replace(/\s+\d{1,4}\s*GB\b/ig,'').replace(/\s+Grade\s*([A-Z][+-]?)\b/ig,(_,g)=>{if(!grade)grade=g.toUpperCase();return '';}).replace(/\s+/g,' ').trim();const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();return [product,variant,p.color,grade?( /^grade\s/i.test(grade)?grade:'Grade '+grade):'',suffix].filter(Boolean).join(' — ')}
 function stockCard(s){
- const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),isOwnStockist=roleRaw==='MITRA STOCKIST'&&String(s.source_type||'').toUpperCase()==='STOCKIST'&&String(s.partner_name||'').trim()===String(profile?.outlet||'').trim(),canViewCost=management||facilitator||isOwnStockist,ready=s.status==='READY',sales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')),c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
+ const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),isOwnStockist=isOwnedStockistUnit(s),canViewCost=management||facilitator||isOwnStockist,ready=s.status==='READY',sales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')),c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
  const rawTitle=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';
  const cleanProduct=rawTitle.replace(/\s+(NEW|SECOND)$/i,'').trim();
  const title=[cleanProduct,s.variant,s.color,suffix].filter(Boolean).join(' — ');
@@ -979,7 +981,7 @@ function stockCard(s){
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
    (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
-   (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(isOwnStockist&&ready?'<button class="danger" onclick="withdrawStockistStock(\''+s.id+'\')">Keluar dari READY</button>':'')+(ready&&(isOwnStockist||management||facilitator)?'<button class="secondary" onclick="hmRequestStockTransfer(\''+s.id+'\')">⇄ Ajukan Mutasi</button>':'')+(management||contentCreator?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto</button>':'')+
+   (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(isOwnStockist&&ready?'<button class="danger" onclick="withdrawStockistStock(\''+s.id+'\')">Keluar dari READY</button>':'')+(ready&&(isOwnStockist||management||facilitator)?'<button class="secondary" onclick="hmRequestStockTransfer(\''+s.id+'\')">⇄ Ajukan Mutasi</button>':'')+(management||contentCreator||isOwnStockist?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto Unit</button>':'')+
    '</div></div>';
 }
 async function withdrawStockistStock(id){

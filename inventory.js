@@ -1,7 +1,7 @@
 function hasContentCreatorAccess(){const r=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||r==='CONTENT CREATOR'||!!inventoryCanContentCreator;}
 function isOwnedStockistUnit(s){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- const norm=v=>String(v||'').trim().replace(/\\s+/g,' ').toLowerCase();
+ const norm=v=>String(v||'').trim().replace(/\s+/g,' ').toLowerCase();
  const ownOutlet=norm(profile?.outlet), stockPartner=norm(s?.partner_name);
  return role==='MITRA STOCKIST'&&String(s?.source_type||'').trim().toUpperCase()==='STOCKIST'&&!!ownOutlet&&!!stockPartner&&stockPartner===ownOutlet;
 }

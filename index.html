@@ -4216,8 +4216,8 @@ function renderRoleHome(){
  // Fungsi Hunter, Checker, dan Teknisi adalah role tambahan yang berdiri sendiri.
  // Menu operasional bersama tidak boleh hilang hanya karena role utama akun bukan SALES.
  if(!mg && !stockistUser && (hunter || checker || technician)){
-   add('📦','Product & Stock','Stok READY yang dapat ditawarkan sesuai penugasan','openInventorySection(\\'stock\\')');
-   add('📊','Laporan Penjualan','Hasil penjualan yang menjadi ruang kerja tim','openInventorySection(\\'sales\\')');
+   add('📦','Product & Stock','Stok READY yang dapat ditawarkan sesuai penugasan','openInventorySection(\'stock\')');
+   add('📊','Laporan Penjualan','Hasil penjualan yang menjadi ruang kerja tim','openInventorySection(\'sales\')');
    add('💰','Komisi Saya','Komisi pribadi berdasarkan seluruh peran aktif','openCommission()');
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
    add('🤖','Tanya AI','Bantuan operasional Hello Majesty','openAI()');
@@ -4226,7 +4226,7 @@ function renderRoleHome(){
    add('🧑‍💼','Stock Hunter & Checker','Pantau unit READY dengan penugasan Hunter dan Checker','openHunterStock()');
  }
  if(!mg && !stockistUser && technician){
-   add('🛠️','Antrian Teknisi','Akses pekerjaan operasional dan stok sesuai penugasan','openInventorySection(\\'stock\\')');
+   add('🛠️','Antrian Teknisi','Akses pekerjaan operasional dan stok sesuai penugasan','openInventorySection(\'stock\')');
  }
  if(!mg && !stockistUser && sales && !cs){
    // Sales tetap memperoleh akses ke daftar lead hasil handover tanpa membuka fungsi CS.

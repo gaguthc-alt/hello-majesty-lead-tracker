@@ -1297,7 +1297,7 @@ function toggleReceiveFields(){
 async function hmCheckDuplicateImeis(imei1,imei2,excludeId){
  const tokens=[...new Set([imei1,imei2].map(v=>String(v||'').trim()).filter(v=>/^(?:\d{15}|\d{32})$/.test(v)))];
  for(const token of tokens){
-  let q=sb.from('stock_units').select('id,imei_1,imei_2,outlet').or('imei_1.eq.'+token+',imei_2.eq.'+token).limit(5);
+  let q=sb.from('stock_units').select('id,imei_1,imei_2,outlet,status').or('imei_1.eq.'+token+',imei_2.eq.'+token).in('status',['READY','RESERVED']).limit(5);
   if(excludeId)q=q.neq('id',excludeId);
   const r=await q;
   if(r.error)throw new Error('Gagal memeriksa IMEI duplikat: '+r.error.message);

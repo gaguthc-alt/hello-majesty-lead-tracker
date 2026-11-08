@@ -1004,16 +1004,35 @@ function stockCard(s){
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
    (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
-   (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(isOwnStockist&&ready?'<button class="danger" onclick="withdrawStockistStock(\''+s.id+'\')">Keluar dari READY</button>':'')+(ready&&(isOwnStockist||management||facilitator)?'<button class="secondary" onclick="hmRequestStockTransfer(\''+s.id+'\')">⇄ Ajukan Mutasi</button>':'')+(management||contentCreator||isOwnStockist?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto Unit</button>':'')+
+   (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(ready&&String(s.source_type||'').toUpperCase()==='STOCKIST'&&(isOwnStockist||management||facilitator)?'<button class="danger" onclick="openStockOut(\\''+s.id+'\\')">📤 Stock Keluar</button>':'')+(ready&&(isOwnStockist||management||facilitator)?'<button class="secondary" onclick="hmRequestStockTransfer(\''+s.id+'\')">⇄ Ajukan Mutasi</button>':'')+(management||contentCreator||isOwnStockist?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto Unit</button>':'')+
    '</div></div>';
 }
-async function withdrawStockistStock(id){
+function openStockOut(id){
  const s=inventoryStock.find(x=>String(x.id)===String(id));
- if(!s||s.status!=='READY')return alert('Hanya stok READY milik sendiri yang dapat dikeluarkan.');
- if(!confirm('Keluarkan stok ini dari READY? Stok tidak akan dihitung sebagai SOLD dan tidak ada kolom alasan.'))return;
- const r=await sb.rpc('hm_stockist_withdraw_owned_stock',{p_stock_unit_id:id});
- if(r.error)return alert('Gagal mengeluarkan stok: '+r.error.message);
- alert('Stok berhasil dikeluarkan dari READY.');
+ if(!s||s.status!=='READY')return alert('Hanya stok READY yang dapat dikeluarkan.');
+ const actorRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const isFacilitator=actorRole==='FASILITATOR'||inventoryCanFacilitator;
+ const ownStockist=actorRole==='MITRA STOCKIST'&&String(s.partner_name||'').trim().toLowerCase()===String(profile?.outlet||'').trim().toLowerCase();
+ const canManage=!!(profile?.is_management||management);
+ if(!(canManage||isFacilitator||ownStockist))return alert('Akses Stock Keluar tidak tersedia untuk akun ini.');
+ if(String(s.source_type||'').toUpperCase()!=='STOCKIST'&&!canManage)return alert('Stock Keluar hanya berlaku untuk stok milik stockist.');
+ const label=[s.product,s.variant,s.color,s.grade?'Grade '+s.grade:''].filter(Boolean).join(' — ');
+ $('mt').textContent='📤 Stock Keluar';
+ $('mb').innerHTML='<div class="notice"><b>Barang:</b> '+esc(label)+'<br><b>Pemilik stok:</b> '+esc(s.partner_name||'-')+'<br><b>Outlet:</b> '+esc(s.outlet||'-')+'<br><b>Status:</b> READY</div>'+
+ '<label>Alasan Stock Keluar</label><select id="stockOutReason"><option value="">Pilih alasan</option><option value="DAMAGED">Rusak</option><option value="SOLD_OUTSIDE_HELLO">Terjual di luar Hello Majesty</option></select>'+
+ '<label>Catatan (opsional)</label><textarea id="stockOutNote" rows="2" placeholder="Tambahkan keterangan kondisi atau transaksi bila perlu"></textarea>'+
+ '<button class="danger" onclick="confirmStockOut(\\''+String(id).replace(/'/g,"\\\\'")+'\\')">📤 Konfirmasi Stock Keluar</button>';
+ $('modal').classList.remove('hidden');
+}
+async function confirmStockOut(id){
+ const reason=String($('stockOutReason')?.value||'').trim();
+ const note=String($('stockOutNote')?.value||'').trim();
+ if(!reason)return alert('Pilih alasan Stock Keluar terlebih dahulu.');
+ if(!confirm('Konfirmasi Stock Keluar? Status unit akan berubah dari READY menjadi OUT, bukan SOLD.'))return;
+ const r=await sb.rpc('mark_partner_stock_out',{p_stock_id:id,p_reason:reason,p_note:note||null});
+ if(r.error)return alert('Gagal Stock Keluar: '+r.error.message);
+ alert('Stock Keluar berhasil dicatat. Status unit sekarang OUT.');
+ $('modal').classList.add('hidden');
  await loadInventoryData();
  renderInventoryBody();
 }

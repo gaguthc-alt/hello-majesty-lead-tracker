@@ -832,40 +832,30 @@ function productShareText(s){const nl=String.fromCharCode(10),c=s.category;let r
 
 async function shareProduct(s){
  const text=productShareText(s),urls=stockPhotoUrls(s);
- // Safari/iOS sering mengirim file gambar tetapi mengabaikan properti text pada Web Share API.
- const isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent||'');
- if(isSafari&&navigator.share){
-  let copyPromise=Promise.resolve(false);
-  try{if(navigator.clipboard?.writeText)copyPromise=navigator.clipboard.writeText(text).then(()=>true).catch(()=>false)}catch(e){}
-  try{
-   const files=[];
-   for(let i=0;i<urls.length;i++){const r=await fetch(urls[i]);if(!r.ok)continue;const b=await r.blob();files.push(new File([b],`foto-${i+1}.webp`,{type:b.type||'image/webp'}))}
-   if(files.length&&navigator.canShare?.({files})){
-    await navigator.share({files});
-    const copied=await copyPromise;
-    alert(copied?'Foto sudah dibagikan. Deskripsi produk sudah disalin — tempelkan di kolom pesan WhatsApp.':'Foto sudah dibagikan. Salin deskripsi produk dari tombol Salin Deskripsi pada detail unit.');
-    return;
-   }
-   // Tanpa foto, gunakan Web Share API agar Safari membuka menu berbagi
-   // dan pengguna dapat langsung memilih WhatsApp dengan deskripsi terisi.
-   if(!urls.length){
-    await navigator.share({text});
-    return;
-   }
-   const copied=await copyPromise;
-   if(copied){alert('Deskripsi produk sudah disalin. Tempelkan di kolom pesan WhatsApp.');return}
-  }catch(e){if(e?.name==='AbortError')return;console.warn('[HM] Safari share fallback:',e)}
- }
  if(navigator.share){
   try{
    const files=[];
-   for(let i=0;i<urls.length;i++){const r=await fetch(urls[i]);if(!r.ok)continue;const b=await r.blob();files.push(new File([b],`foto-${i+1}.webp`,{type:b.type||'image/webp'}))}
-   if(files.length&&navigator.canShare?.({files})){await navigator.share({text,files});return}
-   await navigator.share({text});return;
-  }catch(e){if(e?.name==='AbortError')return}
+   for(let i=0;i<urls.length;i++){
+    const r=await fetch(urls[i]);
+    if(!r.ok)continue;
+    const b=await r.blob();
+    files.push(new File([b],`foto-${i+1}.${b.type==='image/png'?'png':'jpg'}`,{type:b.type||'image/jpeg'}));
+   }
+   // Foto dan deskripsi dikirim dalam SATU payload share.
+   // Jika tidak ada foto, hanya deskripsi yang dibagikan.
+   if(files.length&&navigator.canShare?.({files})){
+    await navigator.share({title:'Info Produk Hello Majesty',text,files});
+    return;
+   }
+   await navigator.share({title:'Info Produk Hello Majesty',text});
+   return;
+  }catch(e){
+   if(e?.name==='AbortError')return;
+   console.warn('[HM] Share failed:',e);
+  }
  }
  try{await navigator.clipboard?.writeText(text)}catch(e){}
- alert(urls.length?'Info produk disalin. Foto tersedia di Detail Produk.':'Info produk sudah disalin. Silakan paste ke WhatsApp customer.');
+ alert('Deskripsi produk sudah disalin. Browser ini tidak mendukung berbagi foto langsung; silakan gunakan fitur bagikan dari perangkat.');
 }
 function stockPhotoUrls(s){return [s?.photo_1,s?.photo_2,s?.photo_3,s?.photo_4,s?.photo_5].filter(Boolean)}
 async function prepareStockPhoto(file){

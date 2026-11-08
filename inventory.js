@@ -832,19 +832,28 @@ function productShareText(s){const nl=String.fromCharCode(10),c=s.category;let r
 
 async function shareProduct(s){
  const text=productShareText(s),urls=stockPhotoUrls(s);
+ // Mulai salin deskripsi segera saat tombol ditekan (sebelum operasi async
+ // lain), agar izin clipboard browser masih berada dalam konteks interaksi.
+ const clipboardPromise=navigator.clipboard?.writeText(text)
+  .then(()=>true).catch(()=>false) || Promise.resolve(false);
  if(navigator.share){
   try{
    const files=[];
    for(let i=0;i<urls.length;i++){
-    const r=await fetch(urls[i]);
-    if(!r.ok)continue;
-    const b=await r.blob();
-    files.push(new File([b],`foto-${i+1}.${b.type==='image/png'?'png':'jpg'}`,{type:b.type||'image/jpeg'}));
+    const response=await fetch(urls[i]);
+    if(!response.ok)continue;
+    const blob=await response.blob();
+    files.push(new File([blob],`foto-${i+1}.${blob.type==='image/png'?'png':'jpg'}`,{type:blob.type||'image/jpeg'}));
    }
-   // Foto dan deskripsi dikirim dalam SATU payload share.
-   // Jika tidak ada foto, hanya deskripsi yang dibagikan.
-   if(files.length&&navigator.canShare?.({files})){
-    await navigator.share({title:'Info Produk Hello Majesty',text,files});
+   if(files.length){
+    if(navigator.canShare?.({files})){
+     await navigator.share({title:'Info Produk Hello Majesty',text,files});
+     // Deskripsi sudah berada di clipboard; bila WhatsApp tidak menerima
+     // caption dari Web Share, pengguna cukup Paste di kolom pesan.
+     return;
+    }
+    await clipboardPromise;
+    alert('Browser ini belum mendukung berbagi foto dan deskripsi sekaligus. Deskripsi sudah disalin; silakan bagikan foto melalui perangkat.');
     return;
    }
    await navigator.share({title:'Info Produk Hello Majesty',text});
@@ -854,8 +863,14 @@ async function shareProduct(s){
    console.warn('[HM] Share failed:',e);
   }
  }
- try{await navigator.clipboard?.writeText(text)}catch(e){}
- alert('Deskripsi produk sudah disalin. Browser ini tidak mendukung berbagi foto langsung; silakan gunakan fitur bagikan dari perangkat.');
+ const copied=await clipboardPromise;
+ if(copied){
+  alert(urls.length
+   ?'Deskripsi produk sudah disalin. Browser tidak mendukung berbagi foto langsung; silakan bagikan foto, lalu tempelkan deskripsi di WhatsApp.'
+   :'Deskripsi produk sudah disalin. Tempelkan di WhatsApp.');
+ }else{
+  window.prompt('Salin deskripsi produk berikut:',text);
+ }
 }
 function stockPhotoUrls(s){return [s?.photo_1,s?.photo_2,s?.photo_3,s?.photo_4,s?.photo_5].filter(Boolean)}
 async function prepareStockPhoto(file){

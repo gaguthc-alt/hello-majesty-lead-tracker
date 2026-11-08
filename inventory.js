@@ -203,6 +203,7 @@ async function reviewUnifiedWalkin(id,kind,action){
      const approval=await sb.from(table).select('stock_unit_id,sale_id').eq('id',id).maybeSingle();
      const stockId=approval.data?.stock_unit_id;
      if(stockId){
+       await cleanupTerminalStockPhotos(stockId);
        const stockMeta=await sb.from('stock_units').select('source_type,partner_name').eq('id',stockId).maybeSingle();
        const saleId=approval.data?.sale_id||null;
        if(saleId){
@@ -247,6 +248,10 @@ async function reviewWalkinSale(id,action){
  try{
   const r=await sb.rpc('review_walkin_sale_approval',{p_approval_id:id,p_action:action,p_note:note});
   if(r.error)throw r.error;
+  if(action==='APPROVE'){
+   const approved=await sb.from('walkin_sale_approvals').select('stock_unit_id').eq('id',id).maybeSingle();
+   if(approved.data?.stock_unit_id)await cleanupTerminalStockPhotos(approved.data.stock_unit_id);
+  }
   await Promise.allSettled([renderInventory(),loadWalkinApprovalCount()]);
   if(typeof window.openWalkinApprovals==='function')await window.openWalkinApprovals();
   alert(action==='APPROVE'?'Walk-In disetujui dan transaksi menjadi SOLD.':'Walk-In ditolak.');
@@ -1024,6 +1029,19 @@ function openStockOut(id){
  '<button class="danger" onclick="confirmStockOut(\''+String(id)+'\')">📤 Konfirmasi Stock Keluar</button>';
  $('modal').classList.remove('hidden');
 }
+async function cleanupTerminalStockPhotos(stockId){
+ if(!stockId)return {ok:false,skipped:true};
+ try{
+  const result=await sb.functions.invoke('cleanup-stock-photos',{body:{stock_unit_id:stockId}});
+  if(result.error)throw result.error;
+  if(result.data?.ok)console.info('[HM] Foto stock terminal dibersihkan:',result.data);
+  else if(result.data?.skipped)console.info('[HM] Foto dipertahankan:',result.data.reason);
+  return result.data||{ok:false};
+ }catch(error){
+  console.warn('[HM] Pembersihan foto stock gagal; status transaksi tetap tersimpan:',error);
+  return {ok:false,error};
+ }
+}
 async function confirmStockOut(id){
  const reason=String($('stockOutReason')?.value||'').trim();
  const note=String($('stockOutNote')?.value||'').trim();
@@ -1031,6 +1049,7 @@ async function confirmStockOut(id){
  if(!confirm('Konfirmasi Stock Keluar? Status unit akan berubah dari READY menjadi OUT, bukan SOLD.'))return;
  const r=await sb.rpc('mark_partner_stock_out',{p_stock_id:id,p_reason:reason,p_note:note||null});
  if(r.error)return alert('Gagal Stock Keluar: '+r.error.message);
+ await cleanupTerminalStockPhotos(id);
  alert('Stock Keluar berhasil dicatat. Status unit sekarang OUT.');
  $('modal').classList.add('hidden');
  await loadInventoryData();

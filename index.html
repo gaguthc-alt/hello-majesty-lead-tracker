@@ -2521,7 +2521,7 @@ async function start(u,authClient){
   // Permission tambahan tidak boleh menggagalkan dashboard Management.
   let p={};
   try{
-   const permRows=await fetchJson(SUPABASE_URL+'/rest/v1/team_permissions?name=eq.'+encodeURIComponent(profile.name)+'&outlet=eq.'+encodeURIComponent(profile.outlet)+'&active=eq.true&select=can_cs,can_sales,can_facilitator,can_content_creator,can_hunter,can_checker&limit=1','Permission akun');
+   const permRows=await fetchJson(SUPABASE_URL+'/rest/v1/team_permissions?name=eq.'+encodeURIComponent(profile.name)+'&outlet=eq.'+encodeURIComponent(profile.outlet)+'&active=eq.true&select=can_cs,can_sales,can_facilitator,can_content_creator,can_hunter,can_checker,can_technician&limit=1','Permission akun');
    p=Array.isArray(permRows)?(permRows[0]||{}):{};
   }catch(permErr){
    console.warn('[HM] Permission tambahan gagal dimuat; dashboard tetap dilanjutkan.',permErr);
@@ -2534,6 +2534,7 @@ async function start(u,authClient){
   if(p.can_content_creator)hmPermissionRoles.push('CONTENT CREATOR');
   if(p.can_hunter)hmPermissionRoles.push('HUNTER');
   if(p.can_checker)hmPermissionRoles.push('CHECKER');
+  if(p.can_technician)hmPermissionRoles.push('TECHNICIAN');
   const displayRoles=getActiveRoles();
   const displayPosition=String(profile?.role||'').trim()|| (profile?.is_management?'Management':displayRoles.join(' + '));
   $('identity').textContent=profile.name+' • '+displayPosition+(profile.outlet?' • '+profile.outlet:'');
@@ -4046,7 +4047,7 @@ function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI',developer=rawRole==='DEVELOPER APLIKASI',has=r=>roles.includes(r);
  const stockistUser=!mg&&!developer&&(has('MITRA STOCKIST')||roles.some(r=>String(r).includes('STOCKIST'))||rawRole.includes('STOCKIST'));
- const facilitator=has('FASILITATOR')||rawRole==='FASILITATOR'||!!window.hmCanFacilitator,sales=has('SALES')&&!stockistUser,cs=(has('CS')||has('CUSTOMER SERVICE')||rawRole.includes('CS')||rawRole.includes('CUSTOMER SERVICE'))&&!stockistUser,creator=has('CONTENT CREATOR')&&!stockistUser;
+ const facilitator=has('FASILITATOR')||rawRole==='FASILITATOR'||!!window.hmCanFacilitator,sales=has('SALES')&&!stockistUser,cs=(has('CS')||has('CUSTOMER SERVICE')||rawRole.includes('CS')||rawRole.includes('CUSTOMER SERVICE'))&&!stockistUser,creator=has('CONTENT CREATOR')&&!stockistUser,hunter=has('HUNTER')||rawRole==='HUNTER',checker=has('CHECKER')||rawRole==='CHECKER',technician=has('TECHNICIAN')||has('TEKNISI')||rawRole==='TECHNICIAN'||rawRole==='TEKNISI';
  const isRefillTeamMember=String(profile?.outlet||'').trim().toLowerCase()==='majesty refill phone'&&!mg&&!developer;
  const title=developer?'Developer Aplikasi':(mg?'Management':(isRefillTeamMember?'Anggota Tim':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty')));
  const sub=mg?'Pusat kendali bisnis • seluruh outlet':(profile?.outlet||'Workspace sesuai peran aktif');
@@ -4212,6 +4213,21 @@ function renderRoleHome(){
 
  // CS dan SALES adalah fungsi operasional, bukan harus menjadi role utama.
  // Siapa pun yang memiliki salah satu fungsi ini mendapatkan menu kerja yang sama.
+ // Fungsi Hunter, Checker, dan Teknisi adalah role tambahan yang berdiri sendiri.
+ // Menu operasional bersama tidak boleh hilang hanya karena role utama akun bukan SALES.
+ if(!mg && !stockistUser && (hunter || checker || technician)){
+   add('📦','Product & Stock','Stok READY yang dapat ditawarkan sesuai penugasan','openInventorySection(\\'stock\\')');
+   add('📊','Laporan Penjualan','Hasil penjualan yang menjadi ruang kerja tim','openInventorySection(\\'sales\\')');
+   add('💰','Komisi Saya','Komisi pribadi berdasarkan seluruh peran aktif','openCommission()');
+   add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
+   add('🤖','Tanya AI','Bantuan operasional Hello Majesty','openAI()');
+ }
+ if(!mg && !stockistUser && (hunter || checker)){
+   add('🧑‍💼','Stock Hunter & Checker','Pantau unit READY dengan penugasan Hunter dan Checker','openHunterStock()');
+ }
+ if(!mg && !stockistUser && technician){
+   add('🛠️','Antrian Teknisi','Akses pekerjaan operasional dan stok sesuai penugasan','openInventorySection(\\'stock\\')');
+ }
  if(!mg && !stockistUser && sales && !cs){
    // Sales tetap memperoleh akses ke daftar lead hasil handover tanpa membuka fungsi CS.
    add('🤝','Lead Handover','Qualified/Potensial yang diserahkan CS dan siap diklaim Sales','hmOpenLeadHandover()');
@@ -4238,7 +4254,7 @@ function renderRoleHome(){
 
  // Ensure core Inventory actions have backing cards so the grouped menu renderer
  // can safely resolve their action handlers.
- const inventoryHunterAccess=has('HUNTER')||rawRole==='HUNTER'||facilitator||cs;
+ const inventoryHunterAccess=hunter||checker||facilitator||cs;
  const inventoryAccess=!!profile?.user_id;
  const inventoryAllAccess=inventoryAccess;
  const inventoryIsManagementLevel=mg||developer||roles.includes('DIVISI')||rawRole==='DIVISI';

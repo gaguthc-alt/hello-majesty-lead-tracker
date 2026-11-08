@@ -832,29 +832,23 @@ function productShareText(s){const nl=String.fromCharCode(10),c=s.category;let r
 
 async function shareProduct(s){
  const text=productShareText(s),urls=stockPhotoUrls(s);
- // Mulai salin deskripsi segera saat tombol ditekan (sebelum operasi async
- // lain), agar izin clipboard browser masih berada dalam konteks interaksi.
+ // Web Share pada beberapa target (terutama WhatsApp) mengabaikan EXTRA_TEXT
+ // jika beberapa foto dikirim sekaligus. Kirim satu foto utama + teks dalam
+ // satu payload agar caption ikut terbawa; produk tanpa foto mengirim teks saja.
  const clipboardPromise=navigator.clipboard?.writeText(text)
   .then(()=>true).catch(()=>false) || Promise.resolve(false);
  if(navigator.share){
   try{
-   const files=[];
-   for(let i=0;i<urls.length;i++){
-    const response=await fetch(urls[i]);
-    if(!response.ok)continue;
+   if(urls.length){
+    const response=await fetch(urls[0]);
+    if(!response.ok)throw new Error('Foto utama produk tidak dapat diunduh.');
     const blob=await response.blob();
-    files.push(new File([blob],`foto-${i+1}.${blob.type==='image/png'?'png':'jpg'}`,{type:blob.type||'image/jpeg'}));
-   }
-   if(files.length){
-    if(navigator.canShare?.({files})){
-     await navigator.share({title:'Info Produk Hello Majesty',text,files});
-     // Deskripsi sudah berada di clipboard; bila WhatsApp tidak menerima
-     // caption dari Web Share, pengguna cukup Paste di kolom pesan.
+    const file=new File([blob],`foto-produk.${blob.type==='image/png'?'png':'jpg'}`,{type:blob.type||'image/jpeg'});
+    if(!navigator.canShare||navigator.canShare({files:[file]})){
+     await navigator.share({title:'Info Produk Hello Majesty',text,files:[file]});
      return;
     }
-    await clipboardPromise;
-    alert('Browser ini belum mendukung berbagi foto dan deskripsi sekaligus. Deskripsi sudah disalin; silakan bagikan foto melalui perangkat.');
-    return;
+    throw new Error('Browser tidak mendukung berbagi foto.');
    }
    await navigator.share({title:'Info Produk Hello Majesty',text});
    return;
@@ -863,13 +857,11 @@ async function shareProduct(s){
    console.warn('[HM] Share failed:',e);
   }
  }
- const copied=await clipboardPromise;
- if(copied){
-  alert(urls.length
-   ?'Deskripsi produk sudah disalin. Browser tidak mendukung berbagi foto langsung; silakan bagikan foto, lalu tempelkan deskripsi di WhatsApp.'
-   :'Deskripsi produk sudah disalin. Tempelkan di WhatsApp.');
+ await clipboardPromise;
+ if(urls.length){
+  alert('Browser ini tidak mendukung pengiriman foto dan caption dalam satu proses. Silakan gunakan Chrome atau Safari versi terbaru.');
  }else{
-  window.prompt('Salin deskripsi produk berikut:',text);
+  alert('Deskripsi produk sudah disiapkan untuk dibagikan.');
  }
 }
 function stockPhotoUrls(s){return [s?.photo_1,s?.photo_2,s?.photo_3,s?.photo_4,s?.photo_5].filter(Boolean)}

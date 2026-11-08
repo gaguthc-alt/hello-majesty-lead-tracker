@@ -1004,7 +1004,7 @@ function stockCard(s){
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
    (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
-   (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(ready&&String(s.source_type||'').toUpperCase()==='STOCKIST'&&(isOwnStockist||management||facilitator)?'<button class="danger" onclick="openStockOut(\\''+s.id+'\\')">📤 Stock Keluar</button>':'')+(ready&&(isOwnStockist||management||facilitator)?'<button class="secondary" onclick="hmRequestStockTransfer(\''+s.id+'\')">⇄ Ajukan Mutasi</button>':'')+(management||contentCreator||isOwnStockist?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto Unit</button>':'')+
+   (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(ready&&String(s.source_type||'').toUpperCase()==='STOCKIST'&&(isOwnStockist||management||facilitator)?'<button class="danger" onclick="openStockOut(\''+s.id+'\')">📤 Stock Keluar</button>':'')+(ready&&(isOwnStockist||management||facilitator)?'<button class="secondary" onclick="hmRequestStockTransfer(\''+s.id+'\')">⇄ Ajukan Mutasi</button>':'')+(management||contentCreator||isOwnStockist?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto Unit</button>':'')+
    '</div></div>';
 }
 function openStockOut(id){
@@ -1021,7 +1021,7 @@ function openStockOut(id){
  $('mb').innerHTML='<div class="notice"><b>Barang:</b> '+esc(label)+'<br><b>Pemilik stok:</b> '+esc(s.partner_name||'-')+'<br><b>Outlet:</b> '+esc(s.outlet||'-')+'<br><b>Status:</b> READY</div>'+
  '<label>Alasan Stock Keluar</label><select id="stockOutReason"><option value="">Pilih alasan</option><option value="DAMAGED">Rusak</option><option value="SOLD_OUTSIDE_HELLO">Terjual di luar Hello Majesty</option></select>'+
  '<label>Catatan (opsional)</label><textarea id="stockOutNote" rows="2" placeholder="Tambahkan keterangan kondisi atau transaksi bila perlu"></textarea>'+
- '<button class="danger" onclick="confirmStockOut(\\''+String(id).replace(/'/g,"\\\\'")+'\\')">📤 Konfirmasi Stock Keluar</button>';
+ '<button class="danger" onclick="confirmStockOut(\''+String(id)+'\')">📤 Konfirmasi Stock Keluar</button>';
  $('modal').classList.remove('hidden');
 }
 async function confirmStockOut(id){
@@ -1849,5 +1849,7 @@ window.hmApplyProductMasterAccess=hmApplyProductMasterAccess;
 window.openInventorySection=openInventorySection;
 window.renderInventory=renderInventory;
 window.openSalesReport=openSalesReport;
+window.openStockOut=openStockOut;
+window.confirmStockOut=confirmStockOut;
 
 setInterval(hmRestoreStockCardActions,1500);

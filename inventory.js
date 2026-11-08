@@ -832,37 +832,39 @@ function productShareText(s){const nl=String.fromCharCode(10),c=s.category;let r
 
 async function shareProduct(s){
  const text=productShareText(s),urls=stockPhotoUrls(s);
- // Web Share pada beberapa target (terutama WhatsApp) mengabaikan EXTRA_TEXT
- // jika beberapa foto dikirim sekaligus. Kirim satu foto utama + teks dalam
- // satu payload agar caption ikut terbawa; produk tanpa foto mengirim teks saja.
  const clipboardPromise=navigator.clipboard?.writeText(text)
   .then(()=>true).catch(()=>false) || Promise.resolve(false);
  if(navigator.share){
   try{
    if(urls.length){
-    const response=await fetch(urls[0]);
-    if(!response.ok)throw new Error('Foto utama produk tidak dapat diunduh.');
-    const blob=await response.blob();
-    const file=new File([blob],`foto-produk.${blob.type==='image/png'?'png':'jpg'}`,{type:blob.type||'image/jpeg'});
-    if(!navigator.canShare||navigator.canShare({files:[file]})){
-     await navigator.share({title:'Info Produk Hello Majesty',text,files:[file]});
+    const files=[];
+    for(let i=0;i<urls.length;i++){
+     const response=await fetch(urls[i]);
+     if(!response.ok)throw new Error(`Foto produk ke-${i+1} tidak dapat diunduh.`);
+     const blob=await response.blob();
+     const ext=blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':'jpg';
+     files.push(new File([blob],`foto-produk-${i+1}.${ext}`,{type:blob.type||'image/jpeg'}));
+    }
+    if(!navigator.canShare||navigator.canShare({files})){
+     await navigator.share({title:'Info Produk Hello Majesty',text,files});
      return;
     }
-    throw new Error('Browser tidak mendukung berbagi foto.');
+    throw new Error('Browser tidak mendukung berbagi beberapa foto sekaligus.');
    }
    await navigator.share({title:'Info Produk Hello Majesty',text});
    return;
   }catch(e){
    if(e?.name==='AbortError')return;
    console.warn('[HM] Share failed:',e);
+   await clipboardPromise;
+   alert('Foto dan deskripsi belum dapat dibagikan sekaligus oleh browser ini. Silakan coba browser yang mendukung berbagi beberapa foto.');
+   return;
   }
  }
  await clipboardPromise;
- if(urls.length){
-  alert('Browser ini tidak mendukung pengiriman foto dan caption dalam satu proses. Silakan gunakan Chrome atau Safari versi terbaru.');
- }else{
-  alert('Deskripsi produk sudah disiapkan untuk dibagikan.');
- }
+ alert(urls.length
+  ?'Browser ini tidak mendukung fitur berbagi foto. Silakan gunakan Chrome atau Safari versi terbaru.'
+  :'Deskripsi produk sudah disiapkan untuk dibagikan.');
 }
 function stockPhotoUrls(s){return [s?.photo_1,s?.photo_2,s?.photo_3,s?.photo_4,s?.photo_5].filter(Boolean)}
 async function prepareStockPhoto(file){

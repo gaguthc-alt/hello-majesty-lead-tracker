@@ -1,4 +1,9 @@
 function hasContentCreatorAccess(){const r=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||r==='CONTENT CREATOR'||!!inventoryCanContentCreator;}
+function canEditStockPhotos(s){
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const ownStockist=role==='MITRA STOCKIST'&&s?.source_type==='STOCKIST'&&String(s?.partner_name||'').trim().toLowerCase()===String(profile?.outlet||'').trim().toLowerCase();
+ return hasContentCreatorAccess()||!!profile?.is_management||ownStockist;
+}
 /* HM_INVENTORY_STABLE_20260930_ANDROID_SECOND_3 */
 /* Hello Majesty Inventory & Hunter */
 let inventoryProducts=[], inventoryStock=[], inventoryView='stock';
@@ -866,7 +871,7 @@ async function prepareStockPhoto(file){
  return {blob,ext:'jpg',contentType:'image/jpeg'};
 }
 async function uploadStockPhoto(stockId,slot,file){
- if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
+ const stock=inventoryStock.find(x=>x.id===stockId);if(!canEditStockPhotos(stock))return alert('Foto hanya dapat diedit pemilik stockist atau tim yang berwenang.');
  if(!file)return;
  try{
   const btn=document.activeElement;
@@ -895,7 +900,7 @@ async function uploadStockPhoto(stockId,slot,file){
  }
 }
 async function deleteStockPhoto(stockId,slot){
- if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');
+ const stock=inventoryStock.find(x=>x.id===stockId);if(!canEditStockPhotos(stock))return alert('Foto hanya dapat diedit pemilik stockist atau tim yang berwenang.');
  if(!confirm('Hapus Foto '+slot+' dari unit ini?'))return;
  const paths=['jpg','jpeg','png','webp'].map(ext=>`${stockId}/foto-${slot}.${ext}`);
  const rm=await sb.storage.from('stock-photos').remove(paths);if(rm.error)return alert(rm.error.message);
@@ -1402,7 +1407,7 @@ async function saveStock(){
  }
 
 }
-async function openEditStockPhotos(id){if(!hasContentCreatorAccess())return alert('Akses Management atau Content Creator diperlukan.');const s=inventoryStock.find(x=>x.id===id);if(!s)return;$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres maksimal ±700 KB/foto • resolusi hingga 1600 px.</div>';$('modal').classList.remove('hidden')}
+async function openEditStockPhotos(id){const s=inventoryStock.find(x=>x.id===id);if(!s)return;if(!canEditStockPhotos(s))return alert('Foto hanya dapat diedit pemilik stockist atau tim yang berwenang.');$('mt').textContent='📷 Edit Foto Unit';$('mb').innerHTML=stockPhotoGallery(s,true)+'<div class="small" style="margin-top:8px">Maksimal 5 foto • otomatis dikompres maksimal ±700 KB/foto • resolusi hingga 1600 px.</div>';$('modal').classList.remove('hidden')}
 function openEditStock(id){
  const s=inventoryStock.find(x=>x.id===id);if(!s)return;const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),ownStockist=role==='MITRA STOCKIST'&&s.source_type==='STOCKIST'&&String(s.partner_name||'').trim()===String(profile?.outlet||'').trim();if(!(profile?.is_management||inventoryCanFacilitator||ownStockist))return alert('Akses Management, Facilitator, atau pemilik stockist diperlukan.');
  const c=s.category;

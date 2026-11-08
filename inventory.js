@@ -846,8 +846,14 @@ async function shareProduct(s){
     alert(copied?'Foto sudah dibagikan. Deskripsi produk sudah disalin — tempelkan di kolom pesan WhatsApp.':'Foto sudah dibagikan. Salin deskripsi produk dari tombol Salin Deskripsi pada detail unit.');
     return;
    }
+   // Tanpa foto, gunakan Web Share API agar Safari membuka menu berbagi
+   // dan pengguna dapat langsung memilih WhatsApp dengan deskripsi terisi.
+   if(!urls.length){
+    await navigator.share({text});
+    return;
+   }
    const copied=await copyPromise;
-   if(copied){alert('Deskripsi produk sudah disalin. Tempelkan di WhatsApp.');return}
+   if(copied){alert('Deskripsi produk sudah disalin. Tempelkan di kolom pesan WhatsApp.');return}
   }catch(e){if(e?.name==='AbortError')return;console.warn('[HM] Safari share fallback:',e)}
  }
  if(navigator.share){

@@ -4130,7 +4130,9 @@ function renderRoleHome(){
    add('💳','Konfirmasi Pencairan Finance','Catat dana finance/paylater yang benar-benar masuk','window.openFinanceDisbursement()');
    add('💰','Komisi Saya','Komisi pribadi bulan ini & sebelumnya','openCommission()');
  }else if(sales){
-   add('👥','Lead Tracker','Lead tanggung jawab','hmOpenLeadTracker()');
+   add('👥','Lead Tracker','Lead yang menjadi tanggung jawab dan siap diklaim Sales','hmOpenLeadTracker()');
+   add('🤝','Lead Handover','Daftar lead qualified yang diserahkan CS untuk diklaim Sales','hmOpenLeadHandover()');
+   add('🔎','Pencarian Lead','Cari lead berdasarkan ID, nama, WhatsApp, kebutuhan, outlet, atau status','openLeadSearch()');
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');
    add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');
    add('📋','Closing Saya','Semua closing saya: Lead, Walk-In & Closing Stock','openMyClosings()');
@@ -4210,6 +4212,11 @@ function renderRoleHome(){
 
  // CS dan SALES adalah fungsi operasional, bukan harus menjadi role utama.
  // Siapa pun yang memiliki salah satu fungsi ini mendapatkan menu kerja yang sama.
+ if(!mg && !stockistUser && sales && !cs){
+   // Sales tetap memperoleh akses ke daftar lead hasil handover tanpa membuka fungsi CS.
+   add('🤝','Lead Handover','Qualified/Potensial yang diserahkan CS dan siap diklaim Sales','hmOpenLeadHandover()');
+   add('🔎','Pencarian Lead','Cari lead berdasarkan ID, nama, WhatsApp, kebutuhan, outlet, atau status','openLeadSearch()');
+ }
  if(!mg && !stockistUser && (cs || sales)){
    if(cs)add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('👥','Lead Tracker','Lead & follow-up customer','hmOpenLeadTracker()');

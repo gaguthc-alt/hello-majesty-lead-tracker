@@ -832,6 +832,24 @@ function productShareText(s){const nl=String.fromCharCode(10),c=s.category;let r
 
 async function shareProduct(s){
  const text=productShareText(s),urls=stockPhotoUrls(s);
+ // Safari/iOS sering mengirim file gambar tetapi mengabaikan properti text pada Web Share API.
+ const isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent||'');
+ if(isSafari&&navigator.share){
+  let copyPromise=Promise.resolve(false);
+  try{if(navigator.clipboard?.writeText)copyPromise=navigator.clipboard.writeText(text).then(()=>true).catch(()=>false)}catch(e){}
+  try{
+   const files=[];
+   for(let i=0;i<urls.length;i++){const r=await fetch(urls[i]);if(!r.ok)continue;const b=await r.blob();files.push(new File([b],`foto-${i+1}.webp`,{type:b.type||'image/webp'}))}
+   if(files.length&&navigator.canShare?.({files})){
+    await navigator.share({files});
+    const copied=await copyPromise;
+    alert(copied?'Foto sudah dibagikan. Deskripsi produk sudah disalin — tempelkan di kolom pesan WhatsApp.':'Foto sudah dibagikan. Salin deskripsi produk dari tombol Salin Deskripsi pada detail unit.');
+    return;
+   }
+   const copied=await copyPromise;
+   if(copied){alert('Deskripsi produk sudah disalin. Tempelkan di WhatsApp.');return}
+  }catch(e){if(e?.name==='AbortError')return;console.warn('[HM] Safari share fallback:',e)}
+ }
  if(navigator.share){
   try{
    const files=[];

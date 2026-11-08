@@ -6235,7 +6235,7 @@ async function openTargetSettings(){
  const defaults=[
   {outlet:'Majesty Plaza iPhone',wa_target:300,qualified_target:175,closing_target:40,nominal_target:33000000},
   {outlet:'Majesty Refill Phone',wa_target:200,qualified_target:50,closing_target:30,nominal_target:10000000},
-  {outlet:'Majesty Space',wa_target:0,qualified_target:0,closing_target:0,nominal_target:0,bonus_label:'',bonus_amount:0}
+  {outlet:'Hello Majesty',wa_target:200,qualified_target:100,closing_target:25,nominal_target:0,bonus_label:'',bonus_amount:0}
  ];
  $('mt').textContent='⚙️ Target Outlet Bulanan';
  $('mb').innerHTML='<div class="box"><div class="small">Atur target per outlet dan per bulan. Perubahan bulan tidak mengubah target bulan lain.</div><label>Bulan Target</label><input type="month" id="hmMonthlyTargetMonth" value="'+monthNow()+'" onchange="window.hmRenderMonthlyTargets()"><div id="hmMonthlyTargetList" style="margin-top:12px"><div class="small">Memuat target…</div></div></div>';
@@ -6295,7 +6295,7 @@ async function openTargetSettings(){
  await window.hmRenderMonthlyTargets();
 }
 async function saveTarget(outlet){
- const idx=['Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space'].indexOf(outlet);
+ const idx=['Majesty Plaza iPhone','Majesty Refill Phone','Hello Majesty'].indexOf(outlet);
  return idx>=0?window.hmSaveMonthlyTarget?.(idx):undefined;
 }
  // Expose modal actions globally for inline onclick handlers.

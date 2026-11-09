@@ -4445,7 +4445,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
  const partners=isStockistUser?[stockistName]:['Majesty Cell','Majesty Gadget','Majesty Store'];
- const outlets=outletScope?[outletScope]:['Majesty Plaza iPhone','Majesty Refill Phone'];
+ const outlets=outletScope?[outletScope]:['Majesty Plaza iPhone','Majesty Refill Phone','Majesty Cell'];
  if(!window.sb||!p||!b||!t){alert('Panel atau koneksi database belum siap. Refresh lalu coba lagi.');return;}
  t.textContent='🤝 Penyelesaian Pembayaran Antarunit';p.classList.remove('hidden');
  b.innerHTML='<div class="box">Memuat unit SOLD dan riwayat settlement…</div>';

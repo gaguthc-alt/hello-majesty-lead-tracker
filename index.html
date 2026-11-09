@@ -22,7 +22,7 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
   },true);
 })();
-</script><meta name="hm-build" content="20261101-dashboard-network-retry-fix-1"><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
+</script><meta name="hm-build" content="20261109-settlement-correction-reject-1"><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* HM GLOBAL CHAT WATCH — keeps CS notifications alive on the main dashboard */
 (function(){
 'use strict';
@@ -4453,7 +4453,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
   const [uRes,hRes,sRes,iRes]=await Promise.all([
    window.sb.from('stock_units').select('id,partner_name,supplier,outlet,imei_1,cost,status,sold_at,product_master(product,variant,category)').eq('status','SOLD').order('sold_at',{ascending:false}).limit(1500),
    window.sb.from('partner_historical_stock_details').select('id,partner_name,outlet,product_name,condition,grade,color,storage_gb,cost,sold_status,imei_1,settlement_id,settled_at,created_at').in('partner_name',partners).eq('sold_status','SOLD').order('created_at',{ascending:false}).limit(3000),
-   window.sb.from('partner_settlements').select('id,partner_name,outlet,settlement_type,settlement_date,amount,note,status,created_at,requested_confirmation_at,partner_confirmed_by,partner_confirmed_at,transfer_sent_by,transfer_sent_at,transfer_reference,transfer_proof_note,received_confirmed_by,received_confirmed_at,received_note').in('partner_name',partners).order('created_at',{ascending:false}).limit(300),
+   window.sb.from('partner_settlements').select('id,partner_name,outlet,settlement_type,settlement_date,amount,note,status,created_at,requested_confirmation_at,rejection_note,rejected_by,rejected_at,partner_confirmed_by,partner_confirmed_at,transfer_sent_by,transfer_sent_at,transfer_reference,transfer_proof_note,received_confirmed_by,received_confirmed_at,received_note').in('partner_name',partners).order('created_at',{ascending:false}).limit(300),
    window.sb.from('partner_settlement_items').select('id,settlement_id,stock_unit_id,historical_stock_detail_id,sales_transaction_id,capital_amount,profit_amount,partner_profit_share').limit(3000)
   ]);
   if(uRes.error)throw uRes.error;if(hRes.error)throw hRes.error;if(sRes.error)throw sRes.error;if(iRes.error)throw iRes.error;
@@ -4491,18 +4491,13 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const key=String(tx.stock_unit_id),prev=financeByUnit.get(key)||{gross:0,cashout:0,transactions:[],salePrice:0,cashPayment:0};
    prev.salePrice=Math.max(prev.salePrice,Number(tx.sale_price||0));prev.cashPayment+=Number(tx.finance_cash_payment||0);
    const status=String(tx.finance_status||'').toUpperCase();
-   const receiver=String(tx.payment_received_by_outlet||'').trim().toLowerCase();
-   // Dana finance yang diterima oleh Majesty Cell langsung mengurangi kewajiban modal mitra,
-   // walaupun status pencairan di provider masih PENDING.
-   const receivedByMajestyCell=receiver==='majesty cell';
-   // Aturan Majesty Cell: pengurang modal selalu harga jual, bukan nominal pengajuan/pencairan/biaya Finance.
-   const amount=receivedByMajestyCell
-    ? Number(tx.sale_price||prev.salePrice||0)
-    : (['COMPLETED','PAID'].includes(status)?Number(tx.finance_actual_disbursement||tx.finance_estimated_disbursement||0):0);
-   if(amount>0){prev.gross+=amount;if(!receivedByMajestyCell)prev.cashout+=Number(tx.finance_cashout_amount||0);prev.transactions.push(tx);}
+   // Hanya pencairan aktual yang sudah PAID/COMPLETED yang boleh mengurangi modal stockist.
+   // Nominal pengajuan Finance yang masih PENDING tidak dianggap uang diterima.
+   const amount=['COMPLETED','PAID'].includes(status)?Number(tx.finance_actual_disbursement||0):0;
+   if(amount>0){prev.gross+=amount;prev.cashout+=Number(tx.finance_cashout_amount||0);prev.transactions.push(tx);}
    financeByUnit.set(key,prev);
   });
-  liveUnits.forEach(x=>{const fin=financeByUnit.get(String(x.id));x._salePrice=Number(fin?.salePrice||0);x._financeGross=Number(fin?.gross||0);x._financeCashout=Number(fin?.cashout||0);x._financeReceived=Math.max(0,x._financeGross-x._financeCashout);x._financeCashPayment=Number(fin?.cashPayment||0);x._financeApplied=x._financeGross;x._financeProvider=[...new Set((fin?.transactions||[]).map(tx=>financeMethodById.get(String(tx.finance_payment_method_id))).filter(Boolean))].join(' + ')||((fin?.transactions||[]).length?'Finance (metode belum tercatat)':'Tidak ada pencairan finance tercatat');x._settlementCost=Number(x.cost||0)-x._financeGross;});
+  liveUnits.forEach(x=>{const fin=financeByUnit.get(String(x.id));x._salePrice=Number(fin?.salePrice||0);x._financeGross=Number(fin?.gross||0);x._financeCashout=Number(fin?.cashout||0);x._financeReceived=Math.max(0,x._financeGross-x._financeCashout);x._financeCashPayment=Number(fin?.cashPayment||0);x._financeApplied=x._financeReceived;x._financeProvider=[...new Set((fin?.transactions||[]).map(tx=>financeMethodById.get(String(tx.finance_payment_method_id))).filter(Boolean))].join(' + ')||((fin?.transactions||[]).length?'Finance (metode belum tercatat)':'Tidak ada pencairan finance tercatat');x._settlementCost=Number(x.cost||0)-x._financeGross;});
   historicalUnits.forEach(x=>{x._financeGross=0;x._financeCashout=0;x._financeReceived=0;x._financeApplied=0;x._settlementCost=Number(x.cost||0);});
   const settlementById=new Map(settles.map(x=>[String(x.id),x]));
   const allocated=new Set();
@@ -4520,8 +4515,8 @@ window.hmOpenPartnerSettlementManagement=async function(){
    const productDetails=its.map((it,index)=>{const u=units.find(z=>String(z.id)===String(it.stock_unit_id))||units.find(z=>String(z.id)===String(it.historical_stock_detail_id));if(!u)return (index+1)+'. Detail unit belum tersedia';const name=productName(u);const category=u.product_master?.category||u.category||'';const hasFinance=Number(u._financeGross||0)>0&&!!u._financeProvider&&u._financeProvider!=='Tidak ada pencairan finance tercatat';const detail=[name,category&&category!==name?category:null,u.condition?'Kondisi '+u.condition:null,u.grade?'Grade '+u.grade:null,u.color?'Warna '+u.color:null,u.storage_gb?u.storage_gb+'GB':null,u.imei_1?'IMEI '+u.imei_1:null,'Nominal penjualan: '+money(u._salePrice||0),'Modal / harga setor: '+money(u.cost||0),hasFinance?'Finance ('+u._financeProvider+'): '+money(u._financeGross)+'\n   Tunai: '+money(u._financeCashPayment||0)+'\n   Tarik tunai pelanggan: '+money(u._financeCashout||0):null,'Settlement bersih: '+money(u._settlementCost??u.cost??0)].filter(Boolean);return (index+1)+'. '+[...new Set(detail)].join('\n   ');}).join('\n\n');
    const settlementUnits=its.map(it=>units.find(z=>String(z.id)===String(it.stock_unit_id))||units.find(z=>String(z.id)===String(it.historical_stock_detail_id))).filter(Boolean);
    const totalSaleValue=settlementUnits.reduce((sum,u)=>sum+Number(u._salePrice||0),0);
-   const totalFinanceValue=settlementUnits.reduce((sum,u)=>sum= sum+(Number(u._financeGross||0)>0&&u._financeProvider&&u._financeProvider!=='Tidak ada pencairan finance tercatat'?Number(u._financeGross||0):0),0);
-   const productSummary='RINGKASAN TOTAL\nTotal nilai penjualan: '+money(totalSaleValue)+'\nTotal pengurang modal (harga jual): '+money(totalFinanceValue)+'\nTotal kewajiban settlement: '+money(x.amount||0)+'\n\nRINCIAN PRODUK\n'+productDetails;
+   const totalFinanceValue=settlementUnits.reduce((sum,u)=>sum+(Number(u._financeReceived||0)>0?Number(u._financeReceived||0):0),0);
+   const productSummary='RINGKASAN TOTAL\nTotal nilai penjualan: '+money(totalSaleValue)+'\nTotal pengurang modal (Finance bersih benar-benar diterima): '+money(totalFinanceValue)+'\nTotal kewajiban settlement: '+money(x.amount||0)+'\n\nRINCIAN PRODUK\n'+productDetails;
    const st=String(x.status||'').toUpperCase();const displayStatus=st==='RECEIVED'?'LUNAS':st;let actions='—';
    if(isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-obligation-confirm="'+safe(x.id)+'">Setujui nominal</button> <button type="button" class="secondary" data-obligation-reject="'+safe(x.id)+'">Minta koreksi</button>';
    else if(isStockistUser&&st==='TRANSFER_SENT') actions='<button type="button" data-received-confirm-wa="'+safe(x.id)+'">Konfirmasi uang diterima + WA</button> <button type="button" class="secondary" data-received-reject="'+safe(x.id)+'">Belum masuk</button>';
@@ -4529,7 +4524,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    else if(!isStockistUser&&st==='AWAITING_PARTNER_CONFIRMATION') actions='<button type="button" data-send-confirm-wa="'+safe(x.id)+'">Kirim WhatsApp</button>';
    else if(!isStockistUser&&st==='PARTNER_CONFIRMED') actions='<button type="button" data-transfer-proof-wa="'+safe(x.id)+'" data-settlement-type="'+safe(x.settlement_type||'PROFIT_SHARING')+'">Konfirmasi transfer + foto WA</button>';
    else if(!isStockistUser&&st==='TRANSFER_SENT') actions='<button type="button" data-proof-wa="'+safe(x.id)+'">Kirim ulang bukti foto WA</button>';
-   const details=[x.transfer_reference?'Ref transfer: '+x.transfer_reference:'',x.transfer_proof_note||'',x.received_note||''].filter(Boolean).join(' • ');
+   const details=[x.rejection_note?'Alasan penolakan: '+x.rejection_note:'',x.transfer_reference?'Ref transfer: '+x.transfer_reference:'',x.transfer_proof_note||'',x.received_note||''].filter(Boolean).join(' • ');
    actions+='<button type="button" class="secondary" style="margin-top:5px" data-hm-settlement-pdf="1" data-settlement-type="'+safe(x.settlement_type||'')+'" data-partner="'+safe(x.partner_name||'')+'" data-outlet="'+safe(x.outlet||'')+'" data-date="'+safe(x.settlement_date||'')+'" data-amount="'+Number(x.amount||0)+'" data-status="'+safe(displayStatus)+'" data-detail="'+safe(productSummary+(details?'\n\n'+details:''))+'" onclick="window.hmPrintSettlementDocument(this)">📄 PDF / Cetak</button>';
    const detailId='hm-settle-detail-'+String(x.id).replace(/[^a-zA-Z0-9_-]/g,'');
    const compactSummary='<div style="font-weight:700">'+its.length+' produk / unit</div><div class="small" style="margin-top:4px">Penjualan: '+money(totalSaleValue)+'<br>Finance: '+money(totalFinanceValue)+'<br>Kewajiban: '+money(x.amount||0)+'</div><button type="button" class="secondary" style="margin-top:8px" onclick="(function(b){var d=document.getElementById(\''+detailId+'\');if(!d)return;d.hidden=!d.hidden;b.textContent=d.hidden?\'Rincian\':\'Tutup rincian\';})(this)">Rincian</button><div id="'+detailId+'" hidden style="margin-top:10px;padding:12px;border:1px solid #34465f;border-radius:10px;background:#0d1d32;color:#f8fafc;white-space:pre-line;line-height:1.55">'+safe(productSummary||x.note||'—')+(details?'\n\n'+safe(details):'')+'</div>';

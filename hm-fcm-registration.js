@@ -125,7 +125,7 @@
     if (panel || !document.body) return;
     panel = document.createElement('aside');
     panel.setAttribute('aria-live', 'polite');
-    panel.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:999990;width:min(390px,calc(100vw - 32px));box-sizing:border-box;background:#10243a;color:#fff;border:1px solid #b68b38;border-radius:16px;padding:14px 15px;box-shadow:0 12px 34px #0005;font:13px system-ui;display:none';
+    panel.style.cssText = 'position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom, 0px) + 92px);z-index:2147483000;width:min(390px,calc(100vw - 32px));max-height:42vh;overflow:auto;box-sizing:border-box;background:#10243a;color:#fff;border:1px solid #b68b38;border-radius:16px;padding:14px 15px;box-shadow:0 12px 34px #0008;font:13px/1.45 system-ui;display:none;visibility:visible;opacity:1;';
     panel.innerHTML = '<div style="font-weight:800;margin-bottom:5px">🔔 Notifikasi Hello Majesty</div><div data-message style="line-height:1.5;margin-bottom:11px"></div><button type="button" style="border:0;border-radius:999px;padding:10px 14px;color:#111827;font-weight:800;cursor:pointer"></button><button type="button" data-dismiss style="float:right;background:transparent;color:#cbd5e1;border:0;padding:9px;cursor:pointer">Nanti</button>';
     actionButton = panel.querySelector('button');
     panel.querySelector('[data-dismiss]').onclick = () => { panel.style.display = 'none'; };
@@ -133,14 +133,15 @@
   }
   async function checkLogin() {
     if (!panel || busy) return;
-    const app = document.getElementById('app');
-    // The login section is hidden by the app's own login controller using inline styles,
-    // not necessarily the .hidden class. The authenticated workspace is the reliable gate.
-    if (!app || app.classList.contains('hidden')) {
-      panel.style.display = 'none'; currentUserId = null; registeredUserId = null; return;
-    }
+    // Jangan bergantung pada class #app: beberapa layout mobile menampilkan dashboard
+    // melalui roleHome sementara #app masih berstatus hidden.
     const auth = await authContext();
-    if (!auth) return;
+    if (!auth) {
+      const loginPage = document.getElementById('login');
+      const loginVisible = loginPage && !loginPage.classList.contains('hidden') && getComputedStyle(loginPage).display !== 'none';
+      if (loginVisible) { panel.style.display = 'none'; currentUserId = null; registeredUserId = null; }
+      return;
+    }
     currentUserId = auth.user.id;
     if (registeredUserId === currentUserId) return;
     panel.style.display = 'block';
@@ -159,7 +160,13 @@
     checkLogin();
     window.addEventListener('hm-auth-ready', checkLogin);
     window.addEventListener('focus', checkLogin);
-    setInterval(checkLogin, 4000);
+    window.addEventListener('pageshow', checkLogin);
+    window.addEventListener('storage', checkLogin);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) checkLogin(); });
+    // Recheck after login UI changes; covers mobile layouts that do not emit auth events.
+    const observer = new MutationObserver(() => checkLogin());
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+    setInterval(checkLogin, 5000);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
   else start();

@@ -165,7 +165,7 @@
       '<div class="stat"><div class="small">🔴 Gagal</div><div class="num">'+failed+'</div></div>'+
       '<div class="stat"><div class="small">🟠 Konflik</div><div class="num">'+conflicts.length+'</div></div></div>'+
       '<div class="box" style="margin-top:12px"><b>ℹ️ Sinkronisasi otomatis</b><div class="small" style="margin-top:5px">Transaksi normal diproses melalui alur sinkronisasi aplikasi. Gunakan alat pemeriksaan di bawah hanya bila ada data gagal, tertunda, atau konflik. Jurnal konsinyasi lama yang sudah tercatat tidak perlu dikirim ulang.</div></div>' +
-      '<h3 style="margin-top:16px">🛠️ Alat pemeriksaan lanjutan</h3><div class="small">Gunakan alat ini hanya saat ada transaksi atau data yang perlu diperiksa.</div><div class="row" style="margin-top:8px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Muat Ulang Monitor</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button></div>'+
+      '<h3 style="margin-top:16px">🛠️ Alat pemeriksaan lanjutan</h3><div class="small">Gunakan alat ini hanya saat ada transaksi atau data yang perlu diperiksa.</div><div class="row" style="margin-top:8px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Muat Ulang Monitor</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button><button class="secondary" onclick="window.hmOpenAccuratePurchaseQueue()">🧾 Antrean Sync Pembelian</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak ('+queue.filter(x=>['FAILED','PENDING','PROCESSING','CONFLICT'].includes(normStatus(x.status))).length+')</h3>'+
       (records.filter(x=>normStatus(x.status)==='FAILED').map(x=>'<div class="lead hm-accurate-queue-card" style="background:#fff1f2!important;color:#172033!important;border:2px solid #f87171!important"><b style="color:#991b1b!important">🔴 KEGAGALAN CATATAN SINKRONISASI</b><div class="small" style="margin-top:5px">Jenis data: '+esc(x.entity_type||x.direction||'Belum tercatat')+' • ID lokal: '+esc(x.local_id||x.sale_id||x.id||'-')+' • ID Accurate: '+esc(x.accurate_no||x.accurate_id||'-')+'</div><div style="font-weight:700;margin-top:7px">Alasan kegagalan:</div><div style="white-space:pre-wrap;overflow-wrap:anywhere;color:#7f1d1d!important">'+esc(syncFailureReason(x))+'</div><div class="small" style="margin-top:5px">Terakhir diperbarui: '+esc(x.updated_at||x.created_at||'-')+'</div></div>').join('')||'')+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
@@ -572,6 +572,65 @@
       console.error('[HM Accurate mapping save]',e);
       say(e?.message||String(e),false);
     }
+  };
+
+
+  window.hmOpenAccuratePurchaseQueue=async function(){
+    try{
+      if(!isFinanceAdmin()) throw new Error('Akses hanya untuk Developer/Management/Finance Admin.');
+      openModal('🧾 Antrean Sync Pembelian','<div class="box">Memuat pembelian yang perlu dipetakan...</div>');
+      const [stockRes,masterRes,itemRes]=await Promise.all([
+        sb.from('stock_units').select('id,product_id,imei_1,imei_2,outlet,supplier,cost,status,accurate_item_id,accurate_item_no,accurate_purchase_sync_status,accurate_purchase_last_error,accurate_purchase_invoice_id,accurate_purchase_invoice_no,product_master!stock_units_product_id_fkey(category,product,variant,color,grade)').eq('accurate_purchase_sync_status','FAILED').is('accurate_purchase_invoice_id',null).order('received_at',{ascending:false}).limit(100),
+        sb.from('product_master').select('id,category,product,variant,accurate_item_id,accurate_item_no').eq('active',true),
+        sb.functions.invoke('accurate-sync',{body:{action:'list_items'}})
+      ]);
+      if(stockRes.error) throw stockRes.error;
+      if(masterRes.error) throw masterRes.error;
+      if(itemRes.error) throw itemRes.error;
+      const units=stockRes.data||[], masters=masterRes.data||[], data=itemRes.data||{};
+      if(!data.ok) throw new Error(data.error||'Daftar item Accurate gagal dimuat.');
+      const items=Array.isArray(data.items)?data.items:[];
+      window.__hmPurchaseQueue=units; window.__hmPurchaseItems=items;
+      const cards=units.map(function(u){
+        const p=u.product_master||{}, label=[p.product,p.variant,u.color||p.color,u.grade||p.grade?'Grade '+(u.grade||p.grade):null].filter(Boolean).join(' ');
+        const current=items.find(x=>(u.accurate_item_id&&String(x.id)===String(u.accurate_item_id))||(u.accurate_item_no&&String(x.no)===String(u.accurate_item_no)));
+        const opts='<option value="">— Pilih item Accurate —</option>'+items.map(x=>'<option value="'+esc(x.id)+'"'+(current&&String(current.id)===String(x.id)?' selected':'')+'>'+esc(x.no||'-')+' — '+esc(x.name||'-')+'</option>').join('');
+        return '<div class="lead" style="margin:10px 0"><b>'+esc(label||'Produk tidak diketahui')+'</b><div class="small">IMEI: '+esc(u.imei_1||u.imei_2||'-')+' • Supplier: '+esc(u.supplier||'-')+' • Outlet: '+esc(u.outlet||'-')+'</div><div class="small">Modal: Rp'+financeFmt(u.cost)+' • Status stok: '+esc(u.status)+' • '+statusBadge(u.accurate_purchase_sync_status)+'</div><div class="small" style="color:#b91c1c;margin:5px 0">'+esc(u.accurate_purchase_last_error||'Perlu mapping item Accurate')+'</div><label>Mapping master Accurate</label><select id="hm-purchase-map-'+esc(u.id)+'" style="width:100%;padding:10px">'+opts+'</select><div class="row" style="margin-top:8px"><button class="secondary" onclick="window.hmSavePurchaseMapping(\''+esc(u.id)+'\')">Simpan Mapping</button><button onclick="window.hmSyncPurchaseUnit(\''+esc(u.id)+'\')">Sync Pembelian</button></div><div id="hm-purchase-msg-'+esc(u.id)+'" class="small"></div></div>';
+      }).join('');
+      openModal('🧾 Antrean Sync Pembelian','<div class="box"><b>'+units.length+' pembelian gagal menunggu tindakan</b><div class="small">Mapping yang sudah cocok dapat langsung dipakai. Jika belum cocok, pilih item Accurate yang benar. Jika item belum tersedia, buat master terlebih dahulu melalui Accurate, lalu muat ulang daftar item. Tidak ada master duplikat yang dibuat otomatis.</div></div>'+(cards||'<div class="box">Tidak ada pembelian gagal yang menunggu pemetaan.</div>')+'<button class="secondary" onclick="window.hmOpenAccuratePurchaseQueue()">🔄 Muat Ulang Antrean Pembelian</button>');
+    }catch(e){console.error('[HM purchase queue]',e);openModal('🧾 Antrean Sync Pembelian','<div class="danger box">'+esc(e?.message||e)+'</div>');}
+  };
+  window.hmSavePurchaseMapping=async function(stockId){
+    const msg=document.getElementById('hm-purchase-msg-'+stockId), select=document.getElementById('hm-purchase-map-'+stockId);
+    try{
+      if(!isFinanceAdmin()) throw new Error('Akses mapping ditolak.');
+      if(!select||!select.value) throw new Error('Pilih item Accurate terlebih dahulu.');
+      const item=(window.__hmPurchaseItems||[]).find(x=>String(x.id)===String(select.value));
+      if(!item) throw new Error('Item Accurate tidak ditemukan.');
+      const saved=await sb.from('stock_units').update({accurate_item_id:String(item.id),accurate_item_no:String(item.no||'')}).eq('id',stockId).select('id').single();
+      if(saved.error) throw saved.error;
+      if(msg) msg.textContent='Mapping tersimpan: '+String(item.no||'-')+' — '+String(item.name||'');
+    }catch(e){if(msg)msg.textContent=e?.message||String(e);}
+  };
+  window.hmSyncPurchaseUnit=async function(stockId){
+    const msg=document.getElementById('hm-purchase-msg-'+stockId);
+    try{
+      if(!isFinanceAdmin()) throw new Error('Akses sync ditolak.');
+      const u=(window.__hmPurchaseQueue||[]).find(x=>String(x.id)===String(stockId));
+      if(!u) throw new Error('Unit pembelian tidak ditemukan. Muat ulang antrean.');
+      const select=document.getElementById('hm-purchase-map-'+stockId);
+      if(select&&select.value) await window.hmSavePurchaseMapping(stockId);
+      const latest=await sb.from('stock_units').select('accurate_item_id,accurate_item_no').eq('id',stockId).single();
+      if(latest.error) throw latest.error;
+      if(!latest.data.accurate_item_id&&!latest.data.accurate_item_no) throw new Error('Mapping master belum tersedia.');
+      if(msg)msg.textContent='Mengirim faktur pembelian...';
+      const result=await sb.functions.invoke('accurate-management-purchase-sync',{body:{stock_unit_id:stockId}});
+      if(result.error) throw result.error;
+      const d=result.data||{};
+      if(!d.ok) throw new Error(d.error||'Sinkronisasi pembelian gagal.');
+      if(msg)msg.textContent=d.already_synced?'Faktur sudah tersinkron sebelumnya.':'Berhasil sync • Faktur '+String(d.invoice?.number||'-');
+      setTimeout(window.hmOpenAccuratePurchaseQueue,1200);
+    }catch(e){console.error('[HM purchase sync]',e);if(msg)msg.textContent=e?.message||String(e);}
   };
 
   window.hmOpenAccurateSyncMonitor=async function(){

@@ -15,7 +15,7 @@
     messagingSenderId: '439732318734',
     appId: '1:439732318734:web:8be113b4cffd3be37425f'
   };
-  let busy = false, panel, actionButton, currentUserId = null, registeredUserId = null;
+  let busy = false, panel, actionButton, currentUserId = null, registeredUserId = null, dismissedUserId = null;
 
   async function authContext() {
     if (typeof window.hmAccessToken !== 'function') return null;
@@ -128,7 +128,7 @@
     panel.style.cssText = 'position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom, 0px) + 92px);z-index:2147483000;width:min(390px,calc(100vw - 32px));max-height:42vh;overflow:auto;box-sizing:border-box;background:#10243a;color:#fff;border:1px solid #b68b38;border-radius:16px;padding:14px 15px;box-shadow:0 12px 34px #0008;font:13px/1.45 system-ui;display:none;visibility:visible;opacity:1;';
     panel.innerHTML = '<div style="font-weight:800;margin-bottom:5px">🔔 Notifikasi Hello Majesty</div><div data-message style="line-height:1.5;margin-bottom:11px"></div><button type="button" style="border:0;border-radius:999px;padding:10px 14px;color:#111827;font-weight:800;cursor:pointer"></button><button type="button" data-dismiss style="float:right;background:transparent;color:#cbd5e1;border:0;padding:9px;cursor:pointer">Nanti</button>';
     actionButton = panel.querySelector('button');
-    panel.querySelector('[data-dismiss]').onclick = () => { panel.style.display = 'none'; };
+    panel.querySelector('[data-dismiss]').onclick = () => { dismissedUserId = currentUserId; panel.style.display = 'none'; };
     document.body.appendChild(panel);
   }
   async function checkLogin() {
@@ -143,7 +143,7 @@
       return;
     }
     currentUserId = auth.user.id;
-    if (registeredUserId === currentUserId) return;
+    if (registeredUserId === currentUserId || dismissedUserId === currentUserId) return;
     panel.style.display = 'block';
     if (!('Notification' in window)) {
       setPanel('Browser ini tidak mendukung notifikasi web.', 'Tidak tersedia', null);
@@ -165,7 +165,7 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) checkLogin(); });
     // Recheck after login UI changes; covers mobile layouts that do not emit auth events.
     const observer = new MutationObserver(() => checkLogin());
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     setInterval(checkLogin, 5000);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });

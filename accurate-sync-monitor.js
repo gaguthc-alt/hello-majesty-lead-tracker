@@ -580,7 +580,7 @@
       if(!isFinanceAdmin()) throw new Error('Akses hanya untuk Developer/Management/Finance Admin.');
       openModal('🧾 Antrean Sync Pembelian','<div class="box">Memuat pembelian yang perlu dipetakan...</div>');
       const [stockRes,masterRes,itemRes]=await Promise.all([
-        sb.from('stock_units').select('id,product_id,imei_1,imei_2,outlet,supplier,cost,status,accurate_item_id,accurate_item_no,accurate_purchase_sync_status,accurate_purchase_last_error,accurate_purchase_invoice_id,accurate_purchase_invoice_no,product_master!stock_units_product_id_fkey(category,product,variant,color,grade)').eq('accurate_purchase_sync_status','FAILED').is('accurate_purchase_invoice_id',null).order('received_at',{ascending:false}).limit(100),
+        sb.from('stock_units').select('id,product_id,imei_1,imei_2,outlet,supplier,cost,status,accurate_item_id,accurate_item_no,accurate_purchase_sync_status,accurate_purchase_last_error,accurate_purchase_invoice_id,accurate_purchase_invoice_no,product_master!stock_units_product_id_fkey(category,product,variant,color,grade,accurate_item_id,accurate_item_no)').eq('accurate_purchase_sync_status','FAILED').is('accurate_purchase_invoice_id',null).order('received_at',{ascending:false}).limit(100),
         sb.from('product_master').select('id,category,product,variant,accurate_item_id,accurate_item_no').eq('active',true),
         sb.functions.invoke('accurate-sync',{body:{action:'list_items'}})
       ]);
@@ -598,6 +598,36 @@
         return '<div class="lead" style="margin:10px 0"><b>'+esc(label||'Produk tidak diketahui')+'</b><div class="small">IMEI: '+esc(u.imei_1||u.imei_2||'-')+' • Supplier: '+esc(u.supplier||'-')+' • Outlet: '+esc(u.outlet||'-')+'</div><div class="small">Modal: Rp'+financeFmt(u.cost)+' • Status stok: '+esc(u.status)+' • '+statusBadge(u.accurate_purchase_sync_status)+'</div><div class="small" style="color:#b91c1c;margin:5px 0">'+esc(u.accurate_purchase_last_error||'Perlu mapping item Accurate')+'</div><label>Mapping master Accurate</label><select id="hm-purchase-map-'+esc(u.id)+'" style="width:100%;padding:10px">'+opts+'</select><div class="row" style="margin-top:8px"><button class="secondary" onclick="window.hmSavePurchaseMapping(\''+esc(u.id)+'\')">Simpan Mapping</button><button onclick="window.hmSyncPurchaseUnit(\''+esc(u.id)+'\')">Sync Pembelian</button></div><div id="hm-purchase-msg-'+esc(u.id)+'" class="small"></div></div>';
       }).join('');
       openModal('🧾 Antrean Sync Pembelian','<div class="box"><b>'+units.length+' pembelian gagal menunggu tindakan</b><div class="small">Mapping yang sudah cocok dapat langsung dipakai. Jika belum cocok, pilih item Accurate yang benar. Jika item belum tersedia, buat master terlebih dahulu melalui Accurate, lalu muat ulang daftar item. Tidak ada master duplikat yang dibuat otomatis.</div></div>'+(cards||'<div class="box">Tidak ada pembelian gagal yang menunggu pemetaan.</div>')+'<button class="secondary" onclick="window.hmOpenAccuratePurchaseQueue()">🔄 Muat Ulang Antrean Pembelian</button>');
+      // Auto-sync only when the product master already carries an explicit Accurate
+      // mapping and the mapped id + item number both resolve to the same live item.
+      // The backend performs its own product validation and duplicate-invoice guard.
+      const autoCandidates=units.filter(function(u){
+        const p=u.product_master||{};
+        const id=String(p.accurate_item_id||u.accurate_item_id||'');
+        const no=String(p.accurate_item_no||u.accurate_item_no||'');
+        if(!id||!no) return false;
+        const byId=items.find(x=>String(x.id)===id);
+        const byNo=items.find(x=>String(x.no)===no);
+        return !!byId && !!byNo && String(byId.id)===String(byNo.id);
+      }).slice(0,10);
+      for(const u of autoCandidates){
+        const p=u.product_master||{};
+        const id=String(p.accurate_item_id||u.accurate_item_id||'');
+        const no=String(p.accurate_item_no||u.accurate_item_no||'');
+        if(String(u.accurate_item_id||'')!==id || String(u.accurate_item_no||'')!==no){
+          const mapped=await sb.from('stock_units').update({accurate_item_id:id,accurate_item_no:no}).eq('id',u.id);
+          if(mapped.error) continue;
+        }
+        const msg=document.getElementById('hm-purchase-msg-'+u.id);
+        if(msg) msg.textContent='Mapping master sudah cocok. Menjalankan sync otomatis...';
+        try{
+          const sync=await sb.functions.invoke('accurate-management-purchase-sync',{body:{stock_unit_id:u.id}});
+          if(sync.error) throw sync.error;
+          const d=sync.data||{};
+          if(!d.ok) throw new Error(d.error||'Sync otomatis belum berhasil.');
+          if(msg) msg.textContent=d.already_synced?'Sudah tersinkron sebelumnya.':'Sync otomatis berhasil • Faktur '+String(d.invoice?.number||'-');
+        }catch(e){if(msg)msg.textContent='Auto-sync ditahan: '+String(e?.message||e);}
+      }
     }catch(e){console.error('[HM purchase queue]',e);openModal('🧾 Antrean Sync Pembelian','<div class="danger box">'+esc(e?.message||e)+'</div>');}
   };
   window.hmSavePurchaseMapping=async function(stockId){

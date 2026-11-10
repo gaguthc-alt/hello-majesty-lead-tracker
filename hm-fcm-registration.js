@@ -1,4 +1,4 @@
-/* Hello Majesty: opt-in FCM device registration. */
+/* Hello Majesty: per-device FCM registration, prompted after login. */
 (function () {
   'use strict';
   if (window.__hmFcmRegistrationLoaded) return;
@@ -15,13 +15,19 @@
     messagingSenderId: '439732318734',
     appId: '1:439732318734:web:8be113b4cffd3be37425f'
   };
-  let busy = false;
+  let busy = false, panel, actionButton, currentUserId = null, registeredUserId = null;
 
-  function session() {
-    try {
-      const s = JSON.parse(localStorage.getItem('hm_auth_session') || 'null');
-      return s && s.access_token && s.user && s.user.id ? s : null;
-    } catch (_) { return null; }
+  async function authContext() {
+    if (typeof window.hmAccessToken !== 'function') return null;
+    let accessToken;
+    try { accessToken = await window.hmAccessToken(); } catch (_) { return null; }
+    if (!accessToken) return null;
+    const response = await fetch(SUPABASE_URL + '/auth/v1/user', {
+      headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + accessToken }
+    });
+    if (!response.ok) return null;
+    const user = await response.json();
+    return user && user.id ? { accessToken, user } : null;
   }
   function platform() {
     const ua = navigator.userAgent || '';
@@ -31,8 +37,7 @@
     return 'unknown';
   }
   async function sha256(value) {
-    const bytes = new TextEncoder().encode(value);
-    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
     return Array.from(new Uint8Array(digest)).map(x => x.toString(16).padStart(2, '0')).join('');
   }
   function loadScript(src) {
@@ -55,15 +60,15 @@
     }
     return firebase.messaging();
   }
-  async function saveToken(token, s) {
+  async function saveToken(token, auth) {
     if (!window.supabase || !window.supabase.createClient) throw new Error('Library Supabase belum siap.');
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      accessToken: async () => s.access_token,
+      accessToken: async () => auth.accessToken,
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
     });
     const endpointHash = await sha256(token);
     const result = await client.from('hm_push_subscriptions').upsert({
-      user_id: s.user.id,
+      user_id: auth.user.id,
       endpoint_hash: endpointHash,
       fcm_token: token,
       platform: platform(),
@@ -73,53 +78,87 @@
     }, { onConflict: 'user_id,endpoint_hash' });
     if (result.error) throw result.error;
   }
-  async function activate() {
+  function setPanel(message, buttonText, handler, success) {
+    if (!panel) return;
+    panel.querySelector('[data-message]').textContent = message;
+    actionButton.textContent = buttonText;
+    actionButton.disabled = false;
+    actionButton.onclick = handler || null;
+    if (success) {
+      actionButton.disabled = true;
+      actionButton.textContent = '✓ Aktif';
+      actionButton.style.background = '#166534';
+    } else {
+      actionButton.style.background = '#b68b38';
+    }
+  }
+  async function registerDevice(auth) {
     if (busy) return;
     busy = true;
-    button.disabled = true;
-    button.textContent = 'Mengaktifkan…';
+    actionButton.disabled = true;
+    actionButton.textContent = 'Mengaktifkan…';
     try {
-      const s = session();
-      if (!s) throw new Error('Silakan login terlebih dahulu ke Hello Majesty.');
       if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-        throw new Error('Browser ini belum mendukung notifikasi web.');
+        throw new Error('Browser/perangkat ini belum mendukung notifikasi web.');
       }
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') throw new Error('Izin notifikasi belum diberikan di browser.');
+      const permission = Notification.permission === 'granted'
+        ? 'granted' : await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setPanel('Izin notifikasi belum diberikan. Aktifkan izin situs Hello Majesty di pengaturan browser.', 'Coba lagi', () => registerDevice(auth));
+        return;
+      }
       const sw = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       await navigator.serviceWorker.ready;
       const messaging = await firebaseMessaging();
       const token = await messaging.getToken({ vapidKey: VAPID_PUBLIC_KEY, serviceWorkerRegistration: sw });
-      if (!token) throw new Error('Firebase belum memberikan token perangkat. Periksa izin notifikasi dan coba lagi.');
-      await saveToken(token, s);
-      button.textContent = '✓ Notifikasi perangkat aktif';
-      button.style.background = '#166534';
-      button.title = 'Perangkat ini sudah terdaftar untuk menerima notifikasi Hello Majesty.';
+      if (!token) throw new Error('Firebase belum memberikan token perangkat. Coba lagi.');
+      await saveToken(token, auth);
+      registeredUserId = auth.user.id;
+      setPanel('Perangkat ini sudah terdaftar dan siap menerima notifikasi Hello Majesty.', '✓ Notifikasi aktif', null, true);
       window.dispatchEvent(new CustomEvent('hm-fcm-device-registered'));
     } catch (error) {
       console.error('[HM FCM registration]', error);
-      button.textContent = '🔔 Aktifkan notifikasi';
-      alert('Notifikasi belum berhasil diaktifkan. ' + (error && error.message ? error.message : String(error)));
-    } finally {
-      busy = false;
-      if (button.textContent !== '✓ Notifikasi perangkat aktif') button.disabled = false;
-    }
+      setPanel('Aktivasi belum berhasil: ' + (error && error.message ? error.message : String(error)), 'Coba lagi', () => registerDevice(auth));
+    } finally { busy = false; }
   }
-
-  let button;
   function mount() {
-    if (button || !document.body) return;
-    button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = '🔔 Aktifkan notifikasi';
-    button.setAttribute('aria-label', 'Aktifkan notifikasi Hello Majesty pada perangkat ini');
-    button.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:999990;background:#b68b38;color:#111827;border:0;border-radius:999px;padding:12px 17px;font:700 13px system-ui;box-shadow:0 8px 24px rgba(0,0,0,.24);cursor:pointer';
-    button.addEventListener('click', activate);
-    document.body.appendChild(button);
-    if (Notification.permission === 'granted' && session()) {
-      button.title = 'Izin browser sudah aktif. Klik untuk mendaftarkan perangkat ke Hello Majesty.';
+    if (panel || !document.body) return;
+    panel = document.createElement('aside');
+    panel.setAttribute('aria-live', 'polite');
+    panel.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:999990;width:min(390px,calc(100vw - 32px));box-sizing:border-box;background:#10243a;color:#fff;border:1px solid #b68b38;border-radius:16px;padding:14px 15px;box-shadow:0 12px 34px #0005;font:13px system-ui;display:none';
+    panel.innerHTML = '<div style="font-weight:800;margin-bottom:5px">🔔 Notifikasi Hello Majesty</div><div data-message style="line-height:1.5;margin-bottom:11px"></div><button type="button" style="border:0;border-radius:999px;padding:10px 14px;color:#111827;font-weight:800;cursor:pointer"></button><button type="button" data-dismiss style="float:right;background:transparent;color:#cbd5e1;border:0;padding:9px;cursor:pointer">Nanti</button>';
+    actionButton = panel.querySelector('button');
+    panel.querySelector('[data-dismiss]').onclick = () => { panel.style.display = 'none'; };
+    document.body.appendChild(panel);
+  }
+  async function checkLogin() {
+    if (!panel || busy) return;
+    const app = document.getElementById('app'), login = document.getElementById('login');
+    if (!app || app.classList.contains('hidden') || (login && !login.classList.contains('hidden'))) {
+      panel.style.display = 'none'; currentUserId = null; registeredUserId = null; return;
+    }
+    const auth = await authContext();
+    if (!auth) return;
+    currentUserId = auth.user.id;
+    if (registeredUserId === currentUserId) return;
+    panel.style.display = 'block';
+    if (!('Notification' in window)) {
+      setPanel('Browser ini tidak mendukung notifikasi web.', 'Tidak tersedia', null);
+    } else if (Notification.permission === 'granted') {
+      setPanel('Izin browser sudah aktif. Hubungkan perangkat ini ke akun Hello Majesty.', 'Aktifkan perangkat', () => registerDevice(auth));
+    } else if (Notification.permission === 'denied') {
+      setPanel('Izin notifikasi pernah ditolak. Ubah izin situs ini menjadi Izinkan melalui pengaturan browser, lalu coba lagi.', 'Coba lagi', () => registerDevice(auth));
+    } else {
+      setPanel('Aktifkan sekali pada perangkat ini agar pemberitahuan lead dan tugas tim dapat masuk meski dashboard tidak sedang dibuka.', 'Izinkan notifikasi', () => registerDevice(auth));
     }
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true });
-  else mount();
+  function start() {
+    mount();
+    checkLogin();
+    window.addEventListener('hm-auth-ready', checkLogin);
+    window.addEventListener('focus', checkLogin);
+    setInterval(checkLogin, 4000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+  else start();
 })();

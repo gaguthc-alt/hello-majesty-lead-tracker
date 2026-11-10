@@ -8,7 +8,7 @@
   const SUPABASE_KEY = 'sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
   const VAPID_PUBLIC_KEY = 'BD_8aEumdug4XayvBGQMkEH74wKzm70XbgaOJfseNazaB3jdxnZvP64Sz8J1j1bIGtPtBB1PrjlRB9yXw-rbIc4';
   const FIREBASE_CONFIG = {
-    apiKey: 'AIzaSyDaDCr1AvQCOSuwiTIV-bSpH3-4SU1RVtRP8',
+    apiKey: 'AIzaSyDaDCr1AvQCOSuwiTIV-bSp-4SU1RVtRP8',
     authDomain: 'hello-majesty-notification.firebaseapp.com',
     projectId: 'hello-majesty-notification',
     storageBucket: 'hello-majesty-notification.firebasestorage.app',

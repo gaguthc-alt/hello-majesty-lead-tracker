@@ -314,8 +314,9 @@ async function reviewInventoryReceive(stockId,action){
   if(typeof window.openInventoryApprovals==='function')await window.openInventoryApprovals();
   alert(action==='APPROVE'?'Barang Masuk disetujui dan menjadi Stock READY.':action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');
   if(sendWA){
-   if(waTab&&!waTab.closed)waTab.location.href='https://wa.me/?text='+encodeURIComponent(waMessage);
-   else alert('WhatsApp tidak dapat dibuka otomatis oleh browser. Izinkan pop-up untuk situs Hello Majesty, lalu coba lagi.');
+   const waUrl='https://wa.me/?text='+encodeURIComponent(waMessage);
+   if(waTab&&!waTab.closed)waTab.location.href=waUrl;
+   else window.location.href=waUrl;
   }
  }catch(e){
   if(waTab&&!waTab.closed)waTab.close();

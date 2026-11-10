@@ -285,6 +285,9 @@ async function reviewInventoryReceive(stockId,action){
   note=prompt(label+' Barang Masuk. Catatan wajib diisi:')||'';
   if(!note.trim())return alert('Catatan wajib diisi.');
  }
+ // Buka tab kosong selagi gesture klik masih aktif; URL WhatsApp diisi setelah status berhasil disimpan.
+ const sendWA=confirm('Barang Masuk '+(action==='APPROVE'?'disetujui':action==='REJECT'?'ditolak':'dikembalikan untuk koreksi')+'.\n\nKirim pemberitahuan hasil pemeriksaan ke WhatsApp?');
+ const waTab=sendWA?window.open('about:blank','_blank'):null;
  const buttons=[...document.querySelectorAll('button[onclick*="'+String(stockId)+'"]')];
  buttons.forEach(btn=>{btn.disabled=true;btn.dataset.hmApprovalBusy='1';});
  try{
@@ -300,20 +303,22 @@ async function reviewInventoryReceive(stockId,action){
     const p=await sb.from('product_master').select('product,variant,color').eq('id',st.product_id).maybeSingle();
     if(!p.error&&p.data)productLabel=[p.data.product,p.data.variant,st.color||p.data.color].filter(Boolean).join(' — ');
    }
-   waMessage=['✅ *BARANG MASUK DISETUJUI*','', 'Produk: '+(productLabel||'Produk'),'IMEI: '+(st.imei_1||'-'),'IMEI 2/EID: '+(st.imei_2||'-'),'Modal: Rp '+Number(st.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(st.outlet||'-'),'Sumber: '+(st.partner_name||st.source_type||'-'),'Status: *STOCK READY*'].join(nl);
+   waMessage=['✅ *BARANG MASUK DISETUJUI*','', 'Produk: '+(productLabel||'Produk'),'IMEI: '+(st.imei_1||'-'),'IMEI 2/EID: '+(st.imei_2||'-'),'Modal: Rp '+Number(st.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(st.outlet||'-'),'Sumber: '+(st.partner_name||st.source_type||'-'),'Status: *STOCK READY*','','— *HELLO MAJESTY*','_Built on Trust._'].join(nl);
   }else{
-   waMessage=[action==='REJECT'?'❌ *BARANG MASUK DITOLAK*':'📝 *BARANG MASUK PERLU KOREKSI*','', 'ID stok: '+stockId,'Catatan: '+note].join(nl);
+   waMessage=[action==='REJECT'?'❌ *BARANG MASUK DITOLAK*':'📝 *BARANG MASUK PERLU KOREKSI*','', 'ID stok: '+stockId,'Catatan: '+note,'','','— *HELLO MAJESTY*','_Built on Trust._'].join(nl);
   }
-  // Segarkan data inventory, badge, dan daftar approval tanpa menutup panel menu aktif.
   const jobs=[];
   if(typeof renderInventory==='function')jobs.push(Promise.resolve().then(()=>renderInventory()));
   if(typeof loadInventoryApprovalCount==='function')jobs.push(Promise.resolve().then(()=>loadInventoryApprovalCount()));
   await Promise.allSettled(jobs);
   if(typeof window.openInventoryApprovals==='function')await window.openInventoryApprovals();
   alert(action==='APPROVE'?'Barang Masuk disetujui dan menjadi Stock READY.':action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');
-  const sendWA=confirm('Buka WhatsApp untuk mengirim pemberitahuan '+(action==='APPROVE'?'persetujuan':'hasil pemeriksaan')+'?');
-  if(sendWA)window.open('https://wa.me/?text='+encodeURIComponent(waMessage),'_blank');
+  if(sendWA){
+   if(waTab&&!waTab.closed)waTab.location.href='https://wa.me/?text='+encodeURIComponent(waMessage);
+   else alert('WhatsApp tidak dapat dibuka otomatis oleh browser. Izinkan pop-up untuk situs Hello Majesty, lalu coba lagi.');
+  }
  }catch(e){
+  if(waTab&&!waTab.closed)waTab.close();
   console.error('[HM] reviewInventoryReceive:',e);
   alert('Persetujuan Barang Masuk gagal: '+String(e?.message||e));
   if(typeof loadInventoryApprovalCount==='function')await loadInventoryApprovalCount().catch(()=>{});
@@ -322,7 +327,6 @@ async function reviewInventoryReceive(stockId,action){
   buttons.forEach(btn=>{btn.disabled=false;delete btn.dataset.hmApprovalBusy;});
  }
 }
-
 async function openMyClosings(){
   try{
     if(!profile?.user_id)return alert('Profil belum siap. Silakan refresh aplikasi.');

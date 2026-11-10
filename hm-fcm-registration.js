@@ -133,8 +133,10 @@
   }
   async function checkLogin() {
     if (!panel || busy) return;
-    const app = document.getElementById('app'), login = document.getElementById('login');
-    if (!app || app.classList.contains('hidden') || (login && !login.classList.contains('hidden'))) {
+    const app = document.getElementById('app');
+    // The login section is hidden by the app's own login controller using inline styles,
+    // not necessarily the .hidden class. The authenticated workspace is the reliable gate.
+    if (!app || app.classList.contains('hidden')) {
       panel.style.display = 'none'; currentUserId = null; registeredUserId = null; return;
     }
     const auth = await authContext();

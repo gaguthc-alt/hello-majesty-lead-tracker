@@ -198,9 +198,10 @@ async function reviewUnifiedWalkin(id,kind,action){
      console.warn('[HM] RPC returned error but requested approval status is already saved:',r.error);
    }
    const table=kind==='STOCK'?'stock_sale_approvals':'walkin_sale_approvals';
-   const approval=await sb.from(table).select('stock_unit_id,sale_id,sale_price').eq('id',id).maybeSingle();
+   const approval=await sb.from(table).select('stock_unit_id,sale_id,sale_price,requested_by').eq('id',id).maybeSingle();
    const stockId=approval.data?.stock_unit_id;
    let st={},productLabel='Produk',requesterName='Sales';
+   if(approval.data?.requested_by){const person=await sb.rpc('get_team_profile_names',{p_user_ids:[approval.data.requested_by]});if(!person.error&&person.data?.[0]?.name)requesterName=person.data[0].name;}
    if(stockId){
      const stockRes=await sb.from('stock_units').select('product_id,product,variant,color,imei_1,outlet,cost,source_type,partner_name').eq('id',stockId).maybeSingle();
      st=stockRes.data||{};

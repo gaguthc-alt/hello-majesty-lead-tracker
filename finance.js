@@ -540,6 +540,19 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
       p_finance_requested_amount:financeRequestedAmount,p_cash_payment:cashPayment,p_cashout_amount:cashoutAmount
     });
     if(x.error){if(waTab&&!waTab.closed)waTab.close();return alert('Closing Finance gagal: '+x.error.message);}
+    // Accurate tetap otomatis; hasil sync dicatat untuk Management tanpa mengganggu tim Sales.
+    try{
+      const saleId=x.data?.sale_id||x.data?.sale?.sale_id||null;
+      if(saleId){
+        const stockMeta=await window.sb.from('stock_units').select('source_type,partner_name').eq('id',stockId).maybeSingle();
+        const source=String(stockMeta.data?.source_type||'').toUpperCase();
+        const partner=String(stockMeta.data?.partner_name||'');
+        const isConsignment=source==='MAJESTY_CELL'&&/majesty cell/i.test(partner);
+        const sync=await window.sb.functions.invoke('accurate-sync',{body:{action:isConsignment?'sync_consign_journal':'sync_sale',sale_id:saleId}});
+        if(sync.error||!sync.data?.ok)console.warn('[HM Accurate] Finance closing tersimpan; sync otomatis belum berhasil. Periksa Accurate Sync Monitor:',sync.error||sync.data);
+        else console.info('[HM Accurate] Finance closing berhasil disinkronkan:',sync.data);
+      }else console.warn('[HM Accurate] Finance closing tersimpan, sale_id tidak ditemukan. Periksa Accurate Sync Monitor.');
+    }catch(syncError){console.warn('[HM Accurate] Finance closing tersimpan; sync otomatis terkendala, tanpa notifikasi tim:',syncError);}
     alert(code+' tersimpan sebagai PIUTANG FINANCE Rp'+Number(financeRequestedAmount).toLocaleString('id-ID')+'. Nilai ini mengurangi kewajiban outlet setelah pencairan Finance dicatat. Biaya admin mengikuti nilai pencairan aktual.');
     await window.hmSendClosingWhatsApp?.(waTab,id,stockId,salePrice,code+' / Piutang Finance Rp'+Number(financeRequestedAmount).toLocaleString('id-ID'));
     if(typeof window.closeModal==='function') window.closeModal();

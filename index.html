@@ -7180,8 +7180,9 @@ window.hmSendClosingWhatsApp=async function(tab,leadId,stockId,salePrice,payment
   ];
   const url='https://wa.me/?text='+encodeURIComponent(lines.join(String.fromCharCode(10)));
   if(tab&&!tab.closed){tab.location.href=url;return true;}
-  alert('Closing sudah tersimpan. Browser memblokir tab WhatsApp. Izinkan pop-up untuk Hello Majesty lalu kirim ulang notifikasi dari transaksi.');
-  return false;
+  // Fallback mobile: gunakan tab aktif agar deep link diteruskan ke aplikasi WhatsApp.
+  window.location.href=url;
+  return true;
  }catch(e){
   console.warn('[HM WA] Pesan Closing tidak dapat disiapkan:',e);
   if(tab&&!tab.closed)tab.close();

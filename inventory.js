@@ -184,64 +184,79 @@ async function reviewUnifiedWalkin(id,kind,action){
    note=prompt(kind==='STOCK'?'Alasan penolakan Closing Stock:':'Alasan penolakan Walk-In:')||'';
    if(!note.trim())return alert('Alasan wajib diisi.');
  }
+ // Siapkan tab WhatsApp saat gesture klik masih aktif agar Chrome Android tidak memblokir pop-up setelah proses async.
+ const sendWA=confirm((kind==='STOCK'?'Closing Stock':'Walk-In')+(action==='APPROVE'?' sudah disetujui.':' sudah ditolak.')+'\n\nKirim pemberitahuan hasil proses ke WhatsApp?');
+ const waTab=sendWA?window.open('about:blank','_blank'):null;
  const rpcName=kind==='STOCK'?'review_stock_sale_approval':'review_walkin_sale_approval';
- const r=await sb.rpc(rpcName,{p_approval_id:id,p_action:action,p_note:note});
- if(r.error){
-   // RPC bisa timeout/terputus setelah transaksi database sebenarnya sudah berhasil.
-   // Verifikasi status akhir sebelum menampilkan pesan gagal agar tidak terjadi false failure.
-   const table=kind==='STOCK'?'stock_sale_approvals':'walkin_sale_approvals';
-   const verify=await sb.from(table).select('status').eq('id',id).maybeSingle();
-   if(String(verify?.data?.status||'').toUpperCase()==='APPROVED'){
-     console.warn('[HM] RPC returned error but approval is already APPROVED:',r.error);
-   }else{
-     return alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+r.error.message);
-   }
- }
- if(action==='APPROVE'){
-   try{
+ try{
+   const r=await sb.rpc(rpcName,{p_approval_id:id,p_action:action,p_note:note});
+   if(r.error){
      const table=kind==='STOCK'?'stock_sale_approvals':'walkin_sale_approvals';
-     const approval=await sb.from(table).select('stock_unit_id,sale_id').eq('id',id).maybeSingle();
-     const stockId=approval.data?.stock_unit_id;
-     if(stockId){
+     const verify=await sb.from(table).select('status').eq('id',id).maybeSingle();
+     const finalStatus=String(verify?.data?.status||'').toUpperCase();
+     if(finalStatus!==(action==='APPROVE'?'APPROVED':'REJECTED')) throw r.error;
+     console.warn('[HM] RPC returned error but requested approval status is already saved:',r.error);
+   }
+   const table=kind==='STOCK'?'stock_sale_approvals':'walkin_sale_approvals';
+   const approval=await sb.from(table).select('stock_unit_id,sale_id,sale_price').eq('id',id).maybeSingle();
+   const stockId=approval.data?.stock_unit_id;
+   let st={},productLabel='Produk',requesterName='Sales';
+   if(stockId){
+     const stockRes=await sb.from('stock_units').select('product_id,product,variant,color,imei_1,outlet,cost,source_type,partner_name').eq('id',stockId).maybeSingle();
+     st=stockRes.data||{};
+     if(st.product)productLabel=[st.product,st.variant,st.color].filter(Boolean).join(' — ');
+     else if(st.product_id){
+       const p=await sb.from('product_master').select('product,variant,color').eq('id',st.product_id).maybeSingle();
+       if(!p.error&&p.data)productLabel=[p.data.product,p.data.variant,st.color||p.data.color].filter(Boolean).join(' — ');
+     }
+     if(action==='APPROVE'){
        await cleanupTerminalStockPhotos(stockId);
-       const stockMeta=await sb.from('stock_units').select('source_type,partner_name').eq('id',stockId).maybeSingle();
        const saleId=approval.data?.sale_id||null;
        if(saleId){
-         const stockSource=String(stockMeta.data?.source_type||'').toUpperCase();
-         const partner=String(stockMeta.data?.partner_name||'');
+         const stockSource=String(st.source_type||'').toUpperCase();
+         const partner=String(st.partner_name||'');
          const isStockistConsignment=stockSource==='STOCKIST' && /^(majesty cell|majesty gadget|majesty store)$/i.test(partner.trim());
          const sync=await sb.functions.invoke('accurate-sync',{body:{action:isStockistConsignment?'sync_consign_journal':'sync_sale',sale_id:saleId}});
          if(sync.error||!sync.data?.ok){
            console.warn('[HM Accurate] Approved Walk-In sync not confirmed:',sync.error||sync.data);
            alert('Transaksi sudah disetujui, tetapi sinkronisasi Accurate belum terkonfirmasi. Periksa Accurate Sync Monitor sebelum mencoba ulang.');
-         }else{
-           console.info('[HM Accurate] Approved Walk-In synced:',sync.data);
-         }
+         }else console.info('[HM Accurate] Approved Walk-In synced:',sync.data);
        }
      }
-   }catch(e){
-     console.warn('[HM Accurate] Approved Walk-In sync trigger error:',e);
-     alert('Transaksi sudah disetujui, tetapi sinkronisasi Accurate belum terkonfirmasi. Periksa Accurate Sync Monitor sebelum mencoba ulang.');
    }
-   const msg=['✅ *WALK-IN DISETUJUI*','','Transaksi Walk-In sudah disetujui dan status menjadi *SOLD*.','','Silakan cek detail transaksi di aplikasi *Hello Majesty*.','','— *HELLO MAJESTY*','_Built on Trust._'].join(String.fromCharCode(10));
-   const sendWA=confirm((kind==='STOCK'?'Closing Stock':'Walk-In')+' sudah disetujui dan menjadi SOLD.\\n\\nKirim konfirmasi hasil persetujuan ke WhatsApp?');
-   if(sendWA)window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
- }else{
-   alert(kind==='STOCK'?'Closing Stock ditolak.':'Walk-In ditolak.');
- }
- closeModal(); await renderInventory();
- // Refresh panel and both approval badges without navigating away from the active menu.
- await Promise.allSettled([window.openWalkinApprovals(),loadWalkinApprovalCount()]);
- const panelBody=document.getElementById('hmMenuPanelBody');
- if(panelBody){
-   const notice=document.createElement('div');
-   notice.className='box';
-   notice.style.cssText='margin-bottom:12px;border:1px solid #86efac;background:#f0fdf4;color:#166534';
-   notice.innerHTML=action==='APPROVE'?'✅ <b>DISETUJUI</b><div class="small" style="margin-top:4px">Transaksi berhasil disetujui dan menjadi SOLD. Pengajuan sudah dihapus dari daftar menunggu.</div>':'🔴 <b>DITOLAK</b><div class="small" style="margin-top:4px">Pengajuan sudah diproses dan dihapus dari daftar menunggu.</div>';
-   panelBody.prepend(notice);
+   const msg=[
+     action==='APPROVE'?'✅ *PENJUALAN DISETUJUI*':'❌ *PENGAJUAN PENJUALAN DITOLAK*',
+     '',
+     'Jenis: '+(kind==='STOCK'?'Closing Stock Siap Jual':'Walk-In'),
+     'Produk: '+productLabel,
+     'Outlet: '+(st.outlet||'-'),
+     'Sales: '+(requesterName),
+     'Harga: Rp'+Number(approval.data?.sale_price||0).toLocaleString('id-ID'),
+     'Status: *'+(action==='APPROVE'?'SOLD':'DITOLAK')+'*',
+     ...(action==='REJECT'?['Catatan: '+note]:[]),
+     '',
+     '— *HELLO MAJESTY*',
+     '_Built on Trust._'
+   ].join(String.fromCharCode(10));
+   closeModal(); await renderInventory();
+   await Promise.allSettled([window.openWalkinApprovals(),loadWalkinApprovalCount()]);
+   const panelBody=document.getElementById('hmMenuPanelBody');
+   if(panelBody){
+     const notice=document.createElement('div');
+     notice.className='box';
+     notice.style.cssText='margin-bottom:12px;border:1px solid '+(action==='APPROVE'?'#86efac':'#fda29b')+';background:'+(action==='APPROVE'?'#f0fdf4':'#fef3f2')+';color:'+(action==='APPROVE'?'#166534':'#b42318');
+     notice.innerHTML=action==='APPROVE'?'✅ <b>DISETUJUI</b><div class="small" style="margin-top:4px">Transaksi berhasil disetujui dan menjadi SOLD. Pengajuan sudah dihapus dari daftar menunggu.</div>':'🔴 <b>DITOLAK</b><div class="small" style="margin-top:4px">Pengajuan sudah diproses dan dihapus dari daftar menunggu.</div>';
+     panelBody.prepend(notice);
+   }
+   if(sendWA){
+     if(waTab&&!waTab.closed)waTab.location.href='https://wa.me/?text='+encodeURIComponent(msg);
+     else alert('WhatsApp tidak dapat dibuka otomatis oleh browser. Izinkan pop-up untuk situs Hello Majesty, lalu coba lagi.');
+   }
+ }catch(e){
+   if(waTab&&!waTab.closed)waTab.close();
+   alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+String(e?.message||e));
  }
 }
-
 async function reviewWalkinSale(id,action){
  let note=null;
  if(action==='REJECT'){note=prompt('Alasan penolakan Walk-In:')||'';if(!note.trim())return alert('Alasan wajib diisi.');}

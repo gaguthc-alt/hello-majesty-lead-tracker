@@ -7242,7 +7242,27 @@ async function saveS(id){
      p_payment_account_id:paymentAccount,p_payment_method_id:paymentMethod,p_pay_now:payNow
    });
    if(x.error){if(waTab&&!waTab.closed)waTab.close();return alert('Closing gagal: '+x.error.message);}
-   // Accurate sync ditangani Management secara terpisah melalui Accurate Sync Monitor.
+   // Accurate tetap disinkronkan otomatis. Hasil sync hanya dicatat untuk Management/monitor, tanpa notifikasi kepada tim.
+   try{
+     const saleId=x.data?.sale_id||x.data?.sale?.sale_id||null;
+     if(saleId){
+       const stockMeta=await sb.from('stock_units').select('source_type,partner_name').eq('id',stockId).maybeSingle();
+       const stockSource=String(stockMeta.data?.source_type||'').toUpperCase();
+       const partner=String(stockMeta.data?.partner_name||'');
+       const isMajestyCellConsignment=stockSource==='MAJESTY_CELL' && /majesty cell/i.test(partner);
+       const action=isMajestyCellConsignment?'sync_consign_journal':'sync_sale';
+       const sync=await sb.functions.invoke('accurate-sync',{body:{action,sale_id:saleId}});
+       if(sync.error||!sync.data?.ok){
+         console.warn('[HM Accurate] Lead closing tersimpan; sync otomatis belum berhasil. Management dapat memeriksa Accurate Sync Monitor:',sync.error||sync.data);
+       }else{
+         console.info('[HM Accurate] Lead closing berhasil disinkronkan:',sync.data);
+       }
+     }else{
+       console.warn('[HM Accurate] Lead closing tersimpan, tetapi sale_id tidak ditemukan pada respons RPC. Periksa Accurate Sync Monitor.');
+     }
+   }catch(syncError){
+     console.warn('[HM Accurate] Lead closing tersimpan; sync otomatis mengalami kendala. Tidak ada notifikasi ke tim:',syncError);
+   }
    try{
      if(typeof cleanupSoldStockPhotos==='function')await cleanupSoldStockPhotos(stockId);
    }catch(e){

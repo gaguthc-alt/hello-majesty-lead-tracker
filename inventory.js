@@ -185,7 +185,7 @@ async function reviewUnifiedWalkin(id,kind,action){
    if(!note.trim())return alert('Alasan wajib diisi.');
  }
  // Siapkan tab WhatsApp saat gesture klik masih aktif agar Chrome Android tidak memblokir pop-up setelah proses async.
- const sendWA=confirm((kind==='STOCK'?'Closing Stock':'Walk-In')+(action==='APPROVE'?' sudah disetujui.':' sudah ditolak.')+'\n\nKirim pemberitahuan hasil proses ke WhatsApp?');
+ const sendWA=confirm('Proses '+(kind==='STOCK'?'Closing Stock':'Walk-In')+(action==='APPROVE'?' untuk disetujui':' untuk ditolak')+'.\n\nJika berhasil, buka WhatsApp untuk mengirim pemberitahuan?');
  const waTab=sendWA?window.open('about:blank','_blank'):null;
  const rpcName=kind==='STOCK'?'review_stock_sale_approval':'review_walkin_sale_approval';
  try{
@@ -287,7 +287,7 @@ async function reviewInventoryReceive(stockId,action){
   if(!note.trim())return alert('Catatan wajib diisi.');
  }
  // Buka tab kosong selagi gesture klik masih aktif; URL WhatsApp diisi setelah status berhasil disimpan.
- const sendWA=confirm('Barang Masuk '+(action==='APPROVE'?'disetujui':action==='REJECT'?'ditolak':'dikembalikan untuk koreksi')+'.\n\nKirim pemberitahuan hasil pemeriksaan ke WhatsApp?');
+ const sendWA=confirm('Lanjutkan '+label.toLowerCase()+' Barang Masuk?\n\nJika berhasil, buka WhatsApp untuk mengirim pemberitahuan?');
  const waTab=sendWA?window.open('about:blank','_blank'):null;
  const buttons=[...document.querySelectorAll('button[onclick*="'+String(stockId)+'"]')];
  buttons.forEach(btn=>{btn.disabled=true;btn.dataset.hmApprovalBusy='1';});

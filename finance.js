@@ -533,13 +533,15 @@ if(!sb||(!p.is_management&&!['FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJEST
     if(!salePrice)return alert('Harga Jual Aktual wajib diisi.');
     if(financeRequestedAmount<0)return alert('Cash customer tidak boleh melebihi Harga Jual + Tarik Tunai.');
     if(financeRequestedAmount===0)return alert('Nilai Piutang Finance adalah Rp0. Periksa kembali pembagian pembayaran.');
+    const waTab=window.hmPrepareClosingWhatsApp?.()||null;
     const x=await window.sb.rpc('set_sales_closing_with_finance',{
       p_lead_id:id,p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,
       p_payment_method_id:methodId,p_estimated_fee:0,p_notes:notes,
       p_finance_requested_amount:financeRequestedAmount,p_cash_payment:cashPayment,p_cashout_amount:cashoutAmount
     });
-    if(x.error)return alert('Closing Finance gagal: '+x.error.message);
+    if(x.error){if(waTab&&!waTab.closed)waTab.close();return alert('Closing Finance gagal: '+x.error.message);}
     alert(code+' tersimpan sebagai PIUTANG FINANCE Rp'+Number(financeRequestedAmount).toLocaleString('id-ID')+'. Nilai ini mengurangi kewajiban outlet setelah pencairan Finance dicatat. Biaya admin mengikuti nilai pencairan aktual.');
+    await window.hmSendClosingWhatsApp?.(waTab,id,stockId,salePrice,code+' / Piutang Finance Rp'+Number(financeRequestedAmount).toLocaleString('id-ID'));
     if(typeof window.closeModal==='function') window.closeModal();
     if(typeof window.render==='function') await window.render();
   }

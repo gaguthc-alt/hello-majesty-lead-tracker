@@ -7242,29 +7242,7 @@ async function saveS(id){
      p_payment_account_id:paymentAccount,p_payment_method_id:paymentMethod,p_pay_now:payNow
    });
    if(x.error){if(waTab&&!waTab.closed)waTab.close();return alert('Closing gagal: '+x.error.message);}
-   try{
-     const saleId=x.data?.sale_id||x.data?.sale?.sale_id||null;
-     const stockMeta=await sb.from('stock_units').select('source_type,partner_name').eq('id',stockId).maybeSingle();
-     if(saleId){
-       const stockSource=String(stockMeta.data?.source_type||'').toUpperCase();
-       const partner=String(stockMeta.data?.partner_name||'');
-       const isMajestyCellConsignment=stockSource==='MAJESTY_CELL' && /majesty cell/i.test(partner);
-       const action=isMajestyCellConsignment?'sync_consign_journal':'sync_sale';
-       const sync=await sb.functions.invoke('accurate-sync',{body:{action,sale_id:saleId}});
-       if(sync.error){
-         console.warn('[HM Accurate] Sync error:',sync.error);
-         alert('Closing berhasil, tetapi sinkronisasi Accurate belum terkonfirmasi. Transaksi tetap tersimpan di Hello Majesty. Periksa Accurate Sync Monitor sebelum mencoba ulang.');
-       }else if(sync.data?.ok){
-         console.info('[HM Accurate] Sync berhasil:',sync.data);
-       }else{
-         console.warn('[HM Accurate] Sync belum berhasil:',sync.data);
-         alert('Closing berhasil, tetapi sinkronisasi Accurate belum berhasil: '+String(sync.data?.error||'respons belum terkonfirmasi')+'. Transaksi tetap tersimpan. Periksa Accurate Sync Monitor sebelum mencoba ulang.');
-       }
-     }
-   }catch(e){
-     console.warn('[HM Accurate] Sync trigger error:',e);
-     alert('Closing berhasil, tetapi pemanggilan sinkronisasi Accurate belum terkonfirmasi. Transaksi tetap tersimpan. Periksa Accurate Sync Monitor sebelum mencoba ulang.');
-   }
+   // Accurate sync ditangani Management secara terpisah melalui Accurate Sync Monitor.
    try{
      if(typeof cleanupSoldStockPhotos==='function')await cleanupSoldStockPhotos(stockId);
    }catch(e){

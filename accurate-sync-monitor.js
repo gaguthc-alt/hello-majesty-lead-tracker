@@ -601,28 +601,39 @@
       // Auto-sync only when the product master already carries an explicit Accurate
       // mapping and the mapped id + item number both resolve to the same live item.
       // The backend performs its own product validation and duplicate-invoice guard.
+      const canonicalName=function(u){
+        const p=u.product_master||{}, category=String(p.category||'').toUpperCase();
+        const raw=String(p.product||'').trim(), base=raw.replace(/\\s+(NEW|SECOND)\\s*$/i,'').trim();
+        const variant=String(p.variant||'').trim(), color=String(u.color||p.color||'').trim();
+        const grade=String(u.grade||p.grade||'').replace(/^grade\\s*/i,'').trim();
+        if(category==='IPHONE_SECOND' && /^iphone\\s+/i.test(base)) return ['HP Second Iphone',base.replace(/^iphone\\s*/i,''),'SECOND',color,variant,grade?'Grade '+grade:''].filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+        if(category==='IPHONE_NEW' && /^iphone\\s+/i.test(base)) return ['HP New Iphone',base.replace(/^iphone\\s*/i,''),color,variant.replace(/GB$/i,'')].filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+        if(category==='ANDROID_SECOND'||category==='ANDROID_NEW') return [category==='ANDROID_NEW'?'HP New':'HP Second',base.replace(/^HP\\s+/i,'').replace(/\\s+(NEW|SECOND)\\s*$/i,''),category==='ANDROID_NEW'?'NEW':'SECOND',variant].filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+        return '';
+      };
       const autoCandidates=units.filter(function(u){
         const p=u.product_master||{};
-        const id=String(p.accurate_item_id||u.accurate_item_id||'');
-        const no=String(p.accurate_item_no||u.accurate_item_no||'');
+        const id=String(p.accurate_item_id||u.accurate_item_id||''), no=String(p.accurate_item_no||u.accurate_item_no||'');
         if(!id||!no) return false;
-        const byId=items.find(x=>String(x.id)===id);
-        const byNo=items.find(x=>String(x.no)===no);
-        return !!byId && !!byNo && String(byId.id)===String(byNo.id);
+        const byId=items.find(x=>String(x.id)===id), byNo=items.find(x=>String(x.no)===no);
+        const expected=canonicalName(u);
+        return !!byId && !!byNo && String(byId.id)===String(byNo.id) && !!expected && String(byNo.name||'').replace(/\\s+/g,' ').trim().toLocaleLowerCase('id-ID')===expected.toLocaleLowerCase('id-ID');
       }).slice(0,10);
       for(const u of autoCandidates){
-        const p=u.product_master||{};
-        const id=String(p.accurate_item_id||u.accurate_item_id||'');
-        const no=String(p.accurate_item_no||u.accurate_item_no||'');
+        const p=u.product_master||{}, id=String(p.accurate_item_id||u.accurate_item_id||''), no=String(p.accurate_item_no||u.accurate_item_no||'');
         if(String(u.accurate_item_id||'')!==id || String(u.accurate_item_no||'')!==no){
           const mapped=await sb.from('stock_units').update({accurate_item_id:id,accurate_item_no:no}).eq('id',u.id);
           if(mapped.error) continue;
         }
         const msg=document.getElementById('hm-purchase-msg-'+u.id);
-        if(msg) msg.textContent='Mapping master sudah cocok. Menjalankan sync otomatis...';
+        if(msg) msg.textContent='Nama dan kode master cocok. Menjalankan sync otomatis...';
         try{
           const sync=await sb.functions.invoke('accurate-management-purchase-sync',{body:{stock_unit_id:u.id}});
-          if(sync.error) throw sync.error;
+          if(sync.error){
+            let detail='';
+            try{const ctx=sync.error.context;const payload=ctx&&typeof ctx.json==='function'?await ctx.json():null;detail=payload?.error||payload?.message||'';}catch(_){}
+            throw new Error(detail||sync.error.message||'Permintaan sync ditolak backend.');
+          }
           const d=sync.data||{};
           if(!d.ok) throw new Error(d.error||'Sync otomatis belum berhasil.');
           if(msg) msg.textContent=d.already_synced?'Sudah tersinkron sebelumnya.':'Sync otomatis berhasil • Faktur '+String(d.invoice?.number||'-');

@@ -639,15 +639,7 @@
       if(!item) throw new Error('Item Accurate tidak ditemukan.');
       const saved=await sb.from('stock_units').update({accurate_item_id:String(item.id),accurate_item_no:String(item.no||'')}).eq('id',stockId).select('id').single();
       if(saved.error) throw saved.error;
-      if(msg) msg.textContent='Mapping tersimpan: '+String(item.no||'-')+' — '+String(item.name||'')+'. Memulai sync otomatis...';
-      // Mapping is persisted first; the purchase-sync backend validates the product
-      // against Accurate and its idempotency record before creating/recovering an invoice.
-      const sync=await sb.functions.invoke('accurate-management-purchase-sync',{body:{stock_unit_id:stockId}});
-      if(sync.error) throw sync.error;
-      const data=sync.data||{};
-      if(!data.ok) throw new Error(data.error||'Mapping tersimpan, tetapi sync otomatis belum berhasil.');
-      if(msg) msg.textContent=data.already_synced?'Mapping tersimpan • Faktur sudah tersinkron.':'Mapping tersimpan • Sync otomatis berhasil: Faktur '+String(data.invoice?.number||'-'); 
-      setTimeout(window.hmOpenAccuratePurchaseQueue,1200);
+      if(msg) msg.textContent='Mapping tersimpan: '+String(item.no||'-')+' — '+String(item.name||'')+'. Periksa kecocokan master, lalu tekan Sync Pembelian.';
     }catch(e){if(msg)msg.textContent=e?.message||String(e);}
   };
   window.hmSyncPurchaseUnit=async function(stockId){

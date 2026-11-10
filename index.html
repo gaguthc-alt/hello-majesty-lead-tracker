@@ -7152,6 +7152,43 @@ async function submitStockClosingApproval(id){
  if(typeof renderInventory==='function')await renderInventory();
 }
 
+// Notifikasi WhatsApp Closing Lead: tab disiapkan pada gesture klik, tetapi baru diarahkan setelah transaksi terkonfirmasi tersimpan.
+window.hmPrepareClosingWhatsApp=function(){
+ try{return window.open('about:blank','_blank');}catch(e){console.warn('[HM WA] Tab WhatsApp tidak dapat disiapkan:',e);return null;}
+};
+window.hmSendClosingWhatsApp=async function(tab,leadId,stockId,salePrice,paymentLabel){
+ try{
+  const lead=(leads||[]).find(x=>String(x.lead_id)===String(leadId))||{};
+  const stockResult=await sb.from('stock_units').select('product,variant,color,outlet').eq('id',stockId).maybeSingle();
+  const stock=stockResult.data||{};
+  const product=[stock.product,stock.variant,stock.color].filter(Boolean).join(' — ')||'Produk';
+  const team=[...document.querySelectorAll('.closingSalesMember:checked')].map(x=>x.closest('label')?.innerText?.trim()).filter(Boolean);
+  const lines=[
+   '✅ *CLOSING LEAD BERHASIL*','',
+   'Customer: '+(lead.customer||'-'),
+   'Produk: '+product,
+   'Outlet: '+(stock.outlet||lead.outlet||profile?.outlet||'-'),
+   'Sales: '+(profile?.name||'-'),
+   ...(team.length?['Tim Sales: '+team.join(', ')]:[]),
+   'Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),
+   'Pembayaran: '+(paymentLabel||'Sesuai transaksi'),
+   'Status: *CLOSING TERCATAT*',
+   '',
+   'Transaksi sudah berhasil disimpan di Hello Majesty.',
+   '',
+   '— *HELLO MAJESTY*','_Built on Trust._'
+  ];
+  const url='https://wa.me/?text='+encodeURIComponent(lines.join(String.fromCharCode(10)));
+  if(tab&&!tab.closed){tab.location.href=url;return true;}
+  alert('Closing sudah tersimpan. Browser memblokir tab WhatsApp. Izinkan pop-up untuk Hello Majesty lalu kirim ulang notifikasi dari transaksi.');
+  return false;
+ }catch(e){
+  console.warn('[HM WA] Pesan Closing tidak dapat disiapkan:',e);
+  if(tab&&!tab.closed)tab.close();
+  alert('Closing sudah tersimpan, tetapi pesan WhatsApp belum dapat disiapkan. Silakan cek koneksi lalu kirim ulang dari transaksi.');
+  return false;
+ }
+};
 async function saveS(id){
  if(window.hmStockClosingApprovalMode)return submitStockClosingApproval(id);
  const leadId=String(id||'').trim();
@@ -7197,12 +7234,14 @@ async function saveS(id){
    if(paymentMode==='PAY_LATER'&&!$('payLaterProvider')?.value)return alert('Untuk Pay Later, wajib pilih provider.');
    if(payNow&&!paymentAccount)return alert(paymentMode==='PAY_LATER'?'Untuk Pay Later/Finance, wajib pilih rekening Bank penerima dana.':'Untuk pembayaran ini, wajib pilih Kas/Bank penerima.');
    const paymentMethod=payNow?(paymentMode==='PAY_LATER'?$('payLaterProvider').value:paymentMode):null;
+   const waTab=window.hmPrepareClosingWhatsApp?.()||null;
+   const paymentLabel=paymentMode==='PIUTANG'?'Piutang Customer':(paymentMode==='PAY_LATER'?($('payLaterProvider')?.selectedOptions?.[0]?.textContent||'Finance'):($('salePayment')?.selectedOptions?.[0]?.textContent||paymentMode));
    let x;
    x=await sb.rpc('set_sales_closing_with_payment',{
      p_lead_id:leadId,p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,
      p_payment_account_id:paymentAccount,p_payment_method_id:paymentMethod,p_pay_now:payNow
    });
-   if(x.error)return alert('Closing gagal: '+x.error.message);
+   if(x.error){if(waTab&&!waTab.closed)waTab.close();return alert('Closing gagal: '+x.error.message);}
    try{
      const saleId=x.data?.sale_id||x.data?.sale?.sale_id||null;
      const stockMeta=await sb.from('stock_units').select('source_type,partner_name').eq('id',stockId).maybeSingle();
@@ -7232,6 +7271,7 @@ async function saveS(id){
      console.error('[HM] Closing photo cleanup error',e);
      alert('Closing berhasil, tetapi foto stock belum berhasil dibersihkan. Coba buka ulang aplikasi dan bersihkan foto unit tersebut.\\n\\n'+(e?.message||e));
    }
+   await window.hmSendClosingWhatsApp?.(waTab,leadId,stockId,salePrice,paymentLabel);
    closeModal();await loadLeads();showHistory('CLOSING');return;
  }
  if(result==='POTENSIAL'&&!$('sd').value)return alert('Tanggal follow-up wajib.');

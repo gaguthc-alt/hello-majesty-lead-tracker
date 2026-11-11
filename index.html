@@ -6219,7 +6219,7 @@ async function renderTargetBoard(){
   const rows=Array.isArray(data.response?.d)?data.response.d:[];
   const amount=no=>Number(rows.find(x=>String(x.accountNo)===no&&!x.isParent)?.amount||0);
   labaByOutlet['Majesty Plaza iPhone']=(amount('410101')-amount('4301'))+amount('410105')+(amount('410102')-amount('4302'));
-  labaByOutlet['Majesty Refill Phone']=amount('410201'); accurateProfitLoaded=true;
+  labaByOutlet['Majesty Refill Phone']=amount('410201'); labaByOutlet['Hello Majesty']=amount('410301'); accurateProfitLoaded=true;
  }catch(e){console.error('[HM] Target Outlet Accurate profit:',e);}
  const profileRole=String(profile?.role||'').trim(); const roles=d.management?['Management']:(d.roles?.length?d.roles:[profileRole].filter(Boolean));
  const facPerm=(!d.management&&profile?.name&&profile?.outlet)?await sb.from('team_permissions').select('can_facilitator').eq('name',profile.name).eq('outlet',profile.outlet).eq('active',true).maybeSingle():{data:null};

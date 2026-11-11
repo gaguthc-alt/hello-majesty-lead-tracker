@@ -620,6 +620,7 @@
         return '<div class="lead" style="margin:10px 0;border:1px solid #cbd5e1;padding:12px;border-radius:12px">'+
           '<div style="font-weight:800;font-size:15px">💰 Penjualan · '+statusBadge(status)+'</div>'+
           '<div style="font-weight:700;margin-top:6px">'+esc(d.product||'Transaksi penjualan')+'</div>'+
+          '<div class="small" style="font-weight:700;color:#334155">Identitas unit: '+esc([d.color||null,d.grade?'Grade '+d.grade:null,d.battery_health?'BH '+d.battery_health+'%':null].filter(Boolean).join(' • ')||'Detail unit belum tersedia')+'</div>'+
           '<div class="small">Outlet: '+esc(d.outlet||'-')+' • Nilai: Rp'+financeFmt(d.sale_price)+'</div>'+
           '<div class="small">ID transaksi: '+esc(x.local_id||'-')+'</div>'+
           '<div class="small">ID/No. Accurate: '+esc(x.accurate_id||'-')+' / '+esc(x.accurate_no||'-')+'</div>'+

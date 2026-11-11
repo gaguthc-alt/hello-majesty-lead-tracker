@@ -727,7 +727,7 @@ function togglePartnerFields(){const box=$('partnerBox'),source=$('stsource')?.v
 function inventoryReceiveOutlet(){
  const sel=$('stoutlet');
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- return (profile?.is_management||role==='MITRA STOCKIST') ? (sel?.value||'') : (profile?.outlet||'');
+ return (profile?.is_management||role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL') ? (sel?.value||'') : (profile?.outlet||'');
 }
 function hmRestoreStockCardActions(){
  const body=document.getElementById('inventoryBody');
@@ -1289,7 +1289,7 @@ window.openReceiveStock=async function openReceiveStock(){
  const selectedCategory=receiveProductCategory(selected);
  const isIphoneNew=selectedCategory==='IPHONE_NEW',isIphoneSecond=selectedCategory==='IPHONE_SECOND',isAndroidNew=selectedCategory==='ANDROID_NEW';
  const teamRows=teams.data||[]; const activeProfiles=teamRows; const mgmtIds=new Set(); const allowed=teamRows.filter(x=>x.can_hunter===true).map(x=>({name:x.name,outlet:x.outlet,can_hunter:true,active:true})); const normName=v=>String(v||'').trim().toLocaleLowerCase('id'); const normOutlet=v=>String(v||'').trim().toLocaleLowerCase('id').replace(/[^a-z0-9]/g,''); const plazaAliases=['majestyplazaiphone','plazaiphone','plaza']; const plazaAllowed=allowed; const directoryByName=new Map(teamRows.filter(t=>t.user_id&&t.name).map(t=>[normName(t.name),t])); const hunterById=new Map(); for(const t of [...activeProfiles,...teamRows]){const uid=String(t.user_id||'').trim(),name=String(t.name||t.full_name||t.display_name||'').trim(); if(!uid||!name||mgmtIds.has(uid)||t.is_management===true||String(t.is_management).toLowerCase()==='true')continue; const permitted=plazaAllowed.some(x=>normName(x.name)===normName(name)); if(!permitted)continue; const dir=directoryByName.get(normName(name)); const row={user_id:uid,name,outlet:t.outlet||dir?.outlet||'Majesty Plaza iPhone'}; if(!hunterById.has(uid))hunterById.set(uid,row);} const hunterRows=Array.from(hunterById.values()); /* Fallback hanya untuk anggota Plaza yang sudah ditetapkan sebelumnya; tidak mengubah transaksi atau komisi. */ const plazaHunterFallback=[{user_id:'66d416c6-107e-41ec-840c-2caa8349db93',name:'Aal',outlet:'Majesty Plaza iPhone'},{user_id:'f5b6b58b-cf10-4905-b0ca-bfd6be4f8cb4',name:'Ebi',outlet:'Majesty Plaza iPhone'},{user_id:'bac5277a-6a3f-4235-b386-db7cfe7d92d7',name:'Imas',outlet:'Majesty Plaza iPhone'},{user_id:'02fa3f73-2060-48fc-9b38-603b58185c3b',name:'Tyo',outlet:'Majesty Plaza iPhone'}]; for(const h of plazaHunterFallback){if(!hunterRows.some(t=>String(t.user_id||'')===h.user_id))hunterRows.push(h);} const hunters=hunterRows.map(t=>'<option value="'+esc(t.user_id)+'" data-hunter-outlet="'+esc(t.outlet||'')+'">'+esc(t.name)+'</option>').join('');
- const isMgmt=!!profile?.is_management;const receiveRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const isStockist=receiveRole==='MITRA STOCKIST';const hunterOptions=hunters;
+ const isMgmt=!!profile?.is_management;const receiveRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const isStockist=receiveRole==='MITRA STOCKIST'||receiveRole==='ADMIN FINANCE MAJESTY CELL';const hunterOptions=hunters;
  /* Checker dropdown: merge active team profiles and team directory because RLS/active flags can make team_profiles incomplete. Exclude management accounts and deduplicate by user_id. */
  const checkerById=new Map();
  for(const t of [...activeProfiles,...teamRows]){

@@ -602,6 +602,9 @@
         const d=detail[String(x.local_id)]||{};
         const status=normStatus(x.status);
         const reason=x.last_error||syncFailureReason(x);
+        const retry=status==='FAILED' && !x.accurate_id && !x.accurate_no
+          ? '<button class="secondary" id="hm-sales-retry-'+esc(x.local_id)+'" style="width:100%;margin-top:9px" onclick="window.hmRetryAccurateSale(\''+esc(x.local_id)+'\')">🔁 Periksa & Sync Ulang</button><div class="small" style="margin-top:5px">Backend memeriksa status dokumen sebelum mencoba ulang.</div>'
+          : (status==='FAILED'?'<div class="small" style="margin-top:8px;color:#92400e">⛔ Referensi dokumen Accurate terdeteksi. Pengiriman ulang ditahan untuk pemeriksaan.</div>':'');
         return '<div class="lead" style="margin:10px 0;border:1px solid #cbd5e1;padding:12px;border-radius:12px">'+
           '<div style="font-weight:800;font-size:15px">💰 Penjualan · '+statusBadge(status)+'</div>'+
           '<div style="font-weight:700;margin-top:6px">'+esc(d.product||'Transaksi penjualan')+'</div>'+
@@ -610,12 +613,12 @@
           '<div class="small">ID/No. Accurate: '+esc(x.accurate_id||'-')+' / '+esc(x.accurate_no||'-')+'</div>'+
           '<div class="small">Percobaan: '+Number(x.attempts||0)+' • Diperbarui: '+esc(x.updated_at||'-')+'</div>'+
           (status==='FAILED'?'<div style="color:#991b1b;margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere"><b>Alasan:</b> '+esc(reason)+'</div>':'')+
-          '</div>';
+          retry+'</div>';
       }).join('');
       const summary=['SYNCED','PENDING','PROCESSING','FAILED'].map(s=>'<span style="display:inline-block;margin:3px;padding:7px 9px;background:#eef2f7;border-radius:8px">'+s+': <b>'+Number(counts[s]||0)+'</b></span>').join('');
-      openModal('💰 Antrean Sync Penjualan','<div class="box"><b>Total '+rows.length+' transaksi penjualan</b><div style="margin-top:8px">'+summary+'</div><div class="small" style="margin-top:6px">Antrean ini membaca accurate_sync_records (sales_invoice). Data hanya ditampilkan; tombol ini tidak mengirim ulang transaksi secara otomatis.</div></div>'+
-        (cards||'<div class="box">Belum ada antrean penjualan.</div>')+
-        '<button class="secondary" onclick="window.hmOpenAccurateSalesQueue()">🔄 Muat Ulang Antrean Penjualan</button>');
+      openModal('💰 Antrean Sync Penjualan','<div class="box"><b>Total '+rows.length+' transaksi penjualan</b><div style="margin-top:8px">'+summary+'</div><div class="small" style="margin-top:6px">Antrean utama: accurate_sync_records (sales_invoice). Pengiriman ulang hanya tersedia per transaksi FAILED dan tetap melewati pemeriksaan backend.</div></div>'+
+        '<div class="row" style="margin:10px 0"><button class="secondary" onclick="window.hmOpenAccurateSalesQueue()">🔄 Muat Ulang Antrean</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Periksa Pemetaan Produk</button></div>'+
+        (cards||'<div class="box">Belum ada antrean penjualan.</div>'));
     }catch(e){
       console.error('[HM sales queue]',e);
       openModal('💰 Antrean Sync Penjualan','<div class="danger box">'+esc(e?.message||e)+'</div>');

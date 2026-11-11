@@ -579,11 +579,16 @@
     try{
       if(!isFinanceAdmin()) throw new Error('Akses hanya untuk Developer/Management/Finance Admin.');
       openModal('💰 Antrean Sync Penjualan','<div class="box">Memuat antrean penjualan...</div>');
-      const res=await sb.from('accurate_sync_records')
-        .select('id,local_id,status,attempts,accurate_id,accurate_no,last_error,queued_at,last_attempt_at,synced_at,updated_at,metadata')
-        .eq('entity_type','sales_invoice').eq('direction','HM_TO_ACCURATE')
-        .order('queued_at',{ascending:false}).limit(100);
+      const [res,itemRes]=await Promise.all([
+        sb.from('accurate_sync_records').select('id,local_id,status,attempts,accurate_id,accurate_no,last_error,queued_at,last_attempt_at,synced_at,updated_at,metadata').eq('entity_type','sales_invoice').eq('direction','HM_TO_ACCURATE').order('queued_at',{ascending:false}).limit(100),
+        sb.functions.invoke('accurate-sync',{body:{action:'list_items'}})
+      ]);
       if(res.error) throw res.error;
+      if(itemRes.error) throw itemRes.error;
+      const itemData=itemRes.data||{};
+      if(!itemData.ok) throw new Error(itemData.error||'Daftar Barang & Jasa Accurate gagal dimuat.');
+      const items=Array.isArray(itemData.items)?itemData.items:[];
+      window.__hmSalesItems=items;
       // Keep successful sales in the database for audit, but hide them from the active queue.
       const allRows=res.data||[];
       const rows=allRows.filter(x=>normStatus(x.status)!=='SYNCED');
@@ -596,7 +601,7 @@
           if(typeof data==='string'){try{data=JSON.parse(data)}catch(_){data=[]}}
           if(!Array.isArray(data)&&Array.isArray(data?.data))data=data.data;
           if(!Array.isArray(data)&&Array.isArray(data?.rows))data=data.rows;
-          if(Array.isArray(data)) data.forEach(x=>{detail[String(x.id)]={product:x.product,outlet:x.outlet,sale_price:x.sale_price,sold_at:x.sold_at}});
+          if(Array.isArray(data)) data.forEach(x=>{detail[String(x.id)]={product:x.product,outlet:x.outlet,sale_price:x.sale_price,sold_at:x.sold_at,stock_unit_id:x.stock_unit_id,color:x.color,grade:x.grade,battery_health:x.battery_health}});
         }
       }
       const counts=rows.reduce((a,x)=>{const s=normStatus(x.status)||'UNKNOWN';a[s]=(a[s]||0)+1;return a;},{});
@@ -604,9 +609,14 @@
         const d=detail[String(x.local_id)]||{};
         const status=normStatus(x.status);
         const reason=x.last_error||syncFailureReason(x);
+        const unitId=d.stock_unit_id||'';
+        const options='<option value="">— Pilih item Accurate —</option>'+items.map(it=>'<option value="'+esc(it.id)+'"> '+esc(it.no||'-')+' — '+esc(it.name||'-')+'</option>').join('');
+        const mapping=status==='FAILED'&&unitId
+          ? '<div style="margin-top:10px;padding-top:9px;border-top:1px solid #e2e8f0"><label style="font-weight:700">Mapping Barang Accurate</label><select id="hm-sales-map-'+esc(x.local_id)+'" style="width:100%;padding:10px;margin-top:5px">'+options+'</select><button class="secondary" style="width:100%;margin-top:8px" onclick="window.hmSaveSalesMapping(\''+esc(x.local_id)+'\',\''+esc(unitId)+'\')">🧩 Simpan Mapping</button><div id="hm-sales-map-msg-'+esc(x.local_id)+'" class="small"></div></div>'
+          : (status==='FAILED'?'<div class="small" style="margin-top:8px;color:#92400e">Unit stok tidak ditemukan; mapping manual tidak tersedia.</div>':'');
         const retry=status==='FAILED' && !x.accurate_id && !x.accurate_no
-          ? '<button class="secondary" id="hm-sales-retry-'+esc(x.local_id)+'" style="width:100%;margin-top:9px" onclick="window.hmRetryAccurateSale(\''+esc(x.local_id)+'\')">🔁 Periksa & Sync Ulang</button><div class="small" style="margin-top:5px">Backend memeriksa status dokumen sebelum mencoba ulang.</div>'
-          : (status==='FAILED'?'<div class="small" style="margin-top:8px;color:#92400e">⛔ Referensi dokumen Accurate terdeteksi. Pengiriman ulang ditahan untuk pemeriksaan.</div>':'');
+          ? '<button class="secondary" id="hm-retry-sale-'+esc(x.local_id)+'" style="width:100%;margin-top:9px" onclick="window.hmRetryAccurateSale(\''+esc(x.local_id)+'\')">🔁 Periksa & Sync Ulang</button><div class="small" style="margin-top:5px">Gunakan setelah mapping tersimpan. Backend tetap memeriksa status dokumen.</div>'
+          : (status==='FAILED'?'<div class="small" style="margin-top:8px;color:#92400e">⛔ Referensi dokumen Accurate terdeteksi. Pengiriman ulang ditahan.</div>':'');
         return '<div class="lead" style="margin:10px 0;border:1px solid #cbd5e1;padding:12px;border-radius:12px">'+
           '<div style="font-weight:800;font-size:15px">💰 Penjualan · '+statusBadge(status)+'</div>'+
           '<div style="font-weight:700;margin-top:6px">'+esc(d.product||'Transaksi penjualan')+'</div>'+
@@ -615,7 +625,7 @@
           '<div class="small">ID/No. Accurate: '+esc(x.accurate_id||'-')+' / '+esc(x.accurate_no||'-')+'</div>'+
           '<div class="small">Percobaan: '+Number(x.attempts||0)+' • Diperbarui: '+esc(x.updated_at||'-')+'</div>'+
           (status==='FAILED'?'<div style="color:#991b1b;margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere"><b>Alasan:</b> '+esc(reason)+'</div>':'')+
-          retry+'</div>';
+          mapping+retry+'</div>';
       }).join('');
       const summary=['PENDING','PROCESSING','FAILED'].map(s=>'<span style="display:inline-block;margin:3px;padding:7px 9px;background:#eef2f7;border-radius:8px">'+s+': <b>'+Number(counts[s]||0)+'</b></span>').join('');
       openModal('💰 Antrean Sync Penjualan','<div class="box"><b>'+rows.length+' transaksi perlu dipantau / ditindak</b><div style="margin-top:8px">'+summary+'</div><div class="small" style="margin-top:6px">Transaksi SYNCED disembunyikan dari antrean aktif, tetapi riwayatnya tetap tersimpan di database. Pengiriman ulang transaksi FAILED tetap melewati pemeriksaan backend.</div></div>'+
@@ -625,6 +635,21 @@
       console.error('[HM sales queue]',e);
       openModal('💰 Antrean Sync Penjualan','<div class="danger box">'+esc(e?.message||e)+'</div>');
     }
+  };
+
+  window.hmSaveSalesMapping=async function(saleId,stockUnitId){
+    const msg=document.getElementById('hm-sales-map-msg-'+saleId), select=document.getElementById('hm-sales-map-'+saleId);
+    const say=(v,ok)=>{if(msg){msg.textContent=v;msg.style.color=ok?'#15803d':'#b91c1c';}};
+    try{
+      if(!isFinanceAdmin()) throw new Error('Akses mapping ditolak.');
+      if(!select||!select.value) throw new Error('Pilih item Accurate terlebih dahulu.');
+      const item=(window.__hmSalesItems||[]).find(x=>String(x.id)===String(select.value));
+      if(!item) throw new Error('Item Accurate tidak ditemukan. Muat ulang antrean.');
+      say('Menyimpan mapping...',true);
+      const saved=await sb.from('stock_units').update({accurate_item_id:String(item.id),accurate_item_no:String(item.no||'')}).eq('id',stockUnitId).select('id').single();
+      if(saved.error) throw saved.error;
+      say('Mapping tersimpan: '+String(item.no||'-')+' — '+String(item.name||'')+'. Faktur belum dikirim ulang.',true);
+    }catch(e){say(e?.message||String(e),false);}
   };
 
   window.hmOpenAccuratePurchaseQueue=async function(){

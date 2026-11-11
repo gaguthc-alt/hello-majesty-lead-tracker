@@ -199,8 +199,8 @@
       const d=r.data||{};
       if(!d.ok) throw new Error(d.error||'Sinkronisasi belum terkonfirmasi.');
       if(result) result.textContent='Berhasil: '+String(d.journal?.number||d.invoice?.number||d.invoice_no||'cek Accurate');
-      alert('Sinkronisasi terkonfirmasi oleh backend. Periksa nomor faktur dan status di Accurate Sync Monitor.');
-      await window.hmOpenAccurateSyncMonitor();
+      alert('Sinkronisasi terkonfirmasi oleh backend. Transaksi akan dikeluarkan dari antrean aktif.');
+      await window.hmOpenAccurateSalesQueue();
     }catch(e){
       let msg=String(e?.message||e||'Kesalahan tidak diketahui');
       // Supabase FunctionsHttpError sering menyimpan pesan asli Accurate di context Response,
@@ -221,9 +221,14 @@
           if(detail) msg=typeof detail==='string'?detail:JSON.stringify(detail);
         }
       }catch(parseErr){/* pertahankan pesan error awal */}
+      if(/sudah tersinkron|sudah disinkron|already synced|sudah memiliki faktur|sudah ada.*faktur|sudah diproses/i.test(msg)){
+        alert('Backend mendeteksi transaksi sudah tersinkron. Antrean akan dimuat ulang agar transaksi yang beres tidak tampil lagi.');
+        await window.hmOpenAccurateSalesQueue();
+        return;
+      }
       if(result) result.textContent='GAGAL: '+msg;
       alert('Sinkronisasi gagal. Alasan dari backend:\n'+msg+'\n\nJangan kirim ulang sebelum penyebabnya diperiksa.');
-      // Jangan render ulang monitor saat gagal; biarkan pesan tetap terlihat di samping tombol.
+      // Jangan render ulang antrean saat benar-benar gagal; biarkan pesan tetap terlihat.
     }
   };
   window.hmRunConsignJournal=async function(){

@@ -1371,7 +1371,7 @@ async function saveStock(){
  const receiveRoleCheck=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  if(receiveRoleCheck==='MITRA STOCKIST'){
   const allowedDestinations=[String(profile?.outlet||'').trim(),'Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space'].filter(Boolean).map(x=>x.toLowerCase());
-  if(!allowedDestinations.includes(String(receiveOutlet||'').trim().toLowerCase()))return alert('Unit Bisnis hanya dapat memasukkan barang ke unit sendiri, Majesty Plaza iPhone, atau Majesty Refill Phone.');
+  if(!allowedDestinations.includes(String(receiveOutlet||'').trim().toLowerCase()))return alert('Unit Bisnis hanya dapat memasukkan barang ke unit sendiri, Majesty Plaza iPhone, Majesty Refill Phone, atau Majesty Space.');
  }
  const hunters=selectedReceivePeople('sthunter');
  const checkers=selectedReceivePeople('stchecker');

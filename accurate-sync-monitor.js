@@ -165,7 +165,7 @@
       '<div class="stat"><div class="small">🔴 Gagal</div><div class="num">'+failed+'</div></div>'+
       '<div class="stat"><div class="small">🟠 Konflik</div><div class="num">'+conflicts.length+'</div></div></div>'+
       '<div class="box" style="margin-top:12px"><b>ℹ️ Sinkronisasi otomatis</b><div class="small" style="margin-top:5px">Transaksi normal diproses melalui alur sinkronisasi aplikasi. Gunakan alat pemeriksaan di bawah hanya bila ada data gagal, tertunda, atau konflik. Jurnal konsinyasi lama yang sudah tercatat tidak perlu dikirim ulang.</div></div>' +
-      '<h3 style="margin-top:16px">🛠️ Alat pemeriksaan lanjutan</h3><div class="small">Gunakan alat ini hanya saat ada transaksi atau data yang perlu diperiksa.</div><div class="row" style="margin-top:8px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Muat Ulang Monitor</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button><button class="secondary" onclick="window.hmOpenAccuratePurchaseQueue()">🧾 Antrean Sync Pembelian</button></div>'+
+      '<h3 style="margin-top:16px">🛠️ Alat pemeriksaan lanjutan</h3><div class="small">Gunakan alat ini hanya saat ada transaksi atau data yang perlu diperiksa.</div><div class="row" style="margin-top:8px"><button class="secondary" onclick="window.hmOpenAccurateSyncMonitor()">🔄 Muat Ulang Monitor</button><button class="secondary" onclick="window.hmCheckAccurateItems()">📦 Cek Barang Accurate</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Pemetaan Produk</button><button class="secondary" onclick="window.hmOpenAccuratePurchaseQueue()">🧾 Antrean Sync Pembelian</button><button class="secondary" onclick="window.hmOpenAccurateSalesQueue()">💰 Antrean Sync Penjualan</button></div>'+
       '<h3 style="margin-top:16px">⚠️ Data yang perlu ditindak ('+queue.filter(x=>['FAILED','PENDING','PROCESSING','CONFLICT'].includes(normStatus(x.status))).length+')</h3>'+
       (records.filter(x=>normStatus(x.status)==='FAILED').map(x=>'<div class="lead hm-accurate-queue-card" style="background:#fff1f2!important;color:#172033!important;border:2px solid #f87171!important"><b style="color:#991b1b!important">🔴 KEGAGALAN CATATAN SINKRONISASI</b><div class="small" style="margin-top:5px">Jenis data: '+esc(x.entity_type||x.direction||'Belum tercatat')+' • ID lokal: '+esc(x.local_id||x.sale_id||x.id||'-')+' • ID Accurate: '+esc(x.accurate_no||x.accurate_id||'-')+'</div><div style="font-weight:700;margin-top:7px">Alasan kegagalan:</div><div style="white-space:pre-wrap;overflow-wrap:anywhere;color:#7f1d1d!important">'+esc(syncFailureReason(x))+'</div><div class="small" style="margin-top:5px">Terakhir diperbarui: '+esc(x.updated_at||x.created_at||'-')+'</div></div>').join('')||'')+
       (conflicts.length?conflicts.map(x=>'<div class="lead"><b>🟠 Konflik '+esc(x.entity_type)+'</b><div class="small">'+esc(x.reason)+'</div><div class="row" style="margin-top:7px"><span>'+esc(x.local_id||'-')+'</span><span>'+esc(x.accurate_no||x.accurate_id||'-')+'</span></div></div>').join(''):'')+
@@ -574,6 +574,53 @@
     }
   };
 
+
+  window.hmOpenAccurateSalesQueue=async function(){
+    try{
+      if(!isFinanceAdmin()) throw new Error('Akses hanya untuk Developer/Management/Finance Admin.');
+      openModal('💰 Antrean Sync Penjualan','<div class="box">Memuat antrean penjualan...</div>');
+      const res=await sb.from('accurate_sync_records')
+        .select('id,local_id,status,attempts,accurate_id,accurate_no,last_error,queued_at,last_attempt_at,synced_at,updated_at,metadata')
+        .eq('entity_type','sales_invoice').eq('direction','HM_TO_ACCURATE')
+        .order('queued_at',{ascending:false}).limit(100);
+      if(res.error) throw res.error;
+      const rows=res.data||[];
+      const ids=rows.map(x=>x.local_id).filter(Boolean);
+      const detail={};
+      if(ids.length){
+        const rpc=await sb.rpc('accurate_sync_monitor_sale_details',{p_ids:ids});
+        if(!rpc.error){
+          let data=rpc.data;
+          if(typeof data==='string'){try{data=JSON.parse(data)}catch(_){data=[]}}
+          if(!Array.isArray(data)&&Array.isArray(data?.data))data=data.data;
+          if(!Array.isArray(data)&&Array.isArray(data?.rows))data=data.rows;
+          if(Array.isArray(data)) data.forEach(x=>{detail[String(x.id)]={product:x.product,outlet:x.outlet,sale_price:x.sale_price,sold_at:x.sold_at}});
+        }
+      }
+      const counts=rows.reduce((a,x)=>{const s=normStatus(x.status)||'UNKNOWN';a[s]=(a[s]||0)+1;return a;},{});
+      const cards=rows.map(x=>{
+        const d=detail[String(x.local_id)]||{};
+        const status=normStatus(x.status);
+        const reason=x.last_error||syncFailureReason(x);
+        return '<div class="lead" style="margin:10px 0;border:1px solid #cbd5e1;padding:12px;border-radius:12px">'+
+          '<div style="font-weight:800;font-size:15px">💰 Penjualan · '+statusBadge(status)+'</div>'+
+          '<div style="font-weight:700;margin-top:6px">'+esc(d.product||'Transaksi penjualan')+'</div>'+
+          '<div class="small">Outlet: '+esc(d.outlet||'-')+' • Nilai: Rp'+financeFmt(d.sale_price)+'</div>'+
+          '<div class="small">ID transaksi: '+esc(x.local_id||'-')+'</div>'+
+          '<div class="small">ID/No. Accurate: '+esc(x.accurate_id||'-')+' / '+esc(x.accurate_no||'-')+'</div>'+
+          '<div class="small">Percobaan: '+Number(x.attempts||0)+' • Diperbarui: '+esc(x.updated_at||'-')+'</div>'+
+          (status==='FAILED'?'<div style="color:#991b1b;margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere"><b>Alasan:</b> '+esc(reason)+'</div>':'')+
+          '</div>';
+      }).join('');
+      const summary=['SYNCED','PENDING','PROCESSING','FAILED'].map(s=>'<span style="display:inline-block;margin:3px;padding:7px 9px;background:#eef2f7;border-radius:8px">'+s+': <b>'+Number(counts[s]||0)+'</b></span>').join('');
+      openModal('💰 Antrean Sync Penjualan','<div class="box"><b>Total '+rows.length+' transaksi penjualan</b><div style="margin-top:8px">'+summary+'</div><div class="small" style="margin-top:6px">Antrean ini membaca accurate_sync_records (sales_invoice). Data hanya ditampilkan; tombol ini tidak mengirim ulang transaksi secara otomatis.</div></div>'+
+        (cards||'<div class="box">Belum ada antrean penjualan.</div>')+
+        '<button class="secondary" onclick="window.hmOpenAccurateSalesQueue()">🔄 Muat Ulang Antrean Penjualan</button>');
+    }catch(e){
+      console.error('[HM sales queue]',e);
+      openModal('💰 Antrean Sync Penjualan','<div class="danger box">'+esc(e?.message||e)+'</div>');
+    }
+  };
 
   window.hmOpenAccuratePurchaseQueue=async function(){
     try{

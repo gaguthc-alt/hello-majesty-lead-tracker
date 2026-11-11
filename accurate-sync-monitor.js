@@ -584,7 +584,9 @@
         .eq('entity_type','sales_invoice').eq('direction','HM_TO_ACCURATE')
         .order('queued_at',{ascending:false}).limit(100);
       if(res.error) throw res.error;
-      const rows=res.data||[];
+      // Keep successful sales in the database for audit, but hide them from the active queue.
+      const allRows=res.data||[];
+      const rows=allRows.filter(x=>normStatus(x.status)!=='SYNCED');
       const ids=rows.map(x=>x.local_id).filter(Boolean);
       const detail={};
       if(ids.length){
@@ -615,8 +617,8 @@
           (status==='FAILED'?'<div style="color:#991b1b;margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere"><b>Alasan:</b> '+esc(reason)+'</div>':'')+
           retry+'</div>';
       }).join('');
-      const summary=['SYNCED','PENDING','PROCESSING','FAILED'].map(s=>'<span style="display:inline-block;margin:3px;padding:7px 9px;background:#eef2f7;border-radius:8px">'+s+': <b>'+Number(counts[s]||0)+'</b></span>').join('');
-      openModal('💰 Antrean Sync Penjualan','<div class="box"><b>Total '+rows.length+' transaksi penjualan</b><div style="margin-top:8px">'+summary+'</div><div class="small" style="margin-top:6px">Antrean utama: accurate_sync_records (sales_invoice). Pengiriman ulang hanya tersedia per transaksi FAILED dan tetap melewati pemeriksaan backend.</div></div>'+
+      const summary=['PENDING','PROCESSING','FAILED'].map(s=>'<span style="display:inline-block;margin:3px;padding:7px 9px;background:#eef2f7;border-radius:8px">'+s+': <b>'+Number(counts[s]||0)+'</b></span>').join('');
+      openModal('💰 Antrean Sync Penjualan','<div class="box"><b>'+rows.length+' transaksi perlu dipantau / ditindak</b><div style="margin-top:8px">'+summary+'</div><div class="small" style="margin-top:6px">Transaksi SYNCED disembunyikan dari antrean aktif, tetapi riwayatnya tetap tersimpan di database. Pengiriman ulang transaksi FAILED tetap melewati pemeriksaan backend.</div></div>'+
         '<div class="row" style="margin:10px 0"><button class="secondary" onclick="window.hmOpenAccurateSalesQueue()">🔄 Muat Ulang Antrean</button><button class="secondary" onclick="window.hmOpenAccurateProductMapping()">🧩 Periksa Pemetaan Produk</button></div>'+
         (cards||'<div class="box">Belum ada antrean penjualan.</div>'));
     }catch(e){

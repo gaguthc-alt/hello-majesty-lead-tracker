@@ -16,13 +16,13 @@ const sb=window.supabase.createClient('https://ksowzhhmzrumyciehuyv.supabase.co'
 const $=id=>document.getElementById(id),money=n=>'Rp'+Number(n||0).toLocaleString('id-ID',{maximumFractionDigits:2}),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function loadForMonth(month){
  $('actionMsg').textContent='';$('result').classList.add('hidden');
- const start=month+'-01';
+ const start=month+'-01';\n const [yy,mm]=month.split('-').map(Number);\n const endDate=new Date(Date.UTC(yy,mm,1)).toISOString().slice(0,10);
  const {data:allocationId,error:rpcError}=await sb.rpc('generate_investor_monthly_allocation',{p_month_start:start});
  if(rpcError)throw rpcError;
  const [header,items,sales]=await Promise.all([
   sb.from('investor_monthly_allocations').select('*').eq('id',allocationId).single(),
   sb.from('investor_monthly_report').select('*').eq('allocation_id',allocationId).order('investor_name'),
-  sb.from('investor_management_sales_detail').select('sales_transaction_id,sold_at,realized_profit').gte('sold_at',start+'T00:00:00+08:00').lt('sold_at',new Date(new Date(start+'T00:00:00+08:00').getTime()+32*86400000).toISOString()).limit(2000)
+  sb.from('investor_management_sales_detail').select('sales_transaction_id,sold_at,realized_profit').gte('sold_at',start+'T00:00:00+08:00').lt('sold_at',endDate+'T00:00:00+08:00').limit(2000)
  ]);
  for(const x of [header,items,sales])if(x.error)throw x.error;
  const h=header.data,detail=items.data||[];
@@ -33,7 +33,7 @@ async function loadForMonth(month){
  $('items').innerHTML=detail.length?detail.map(x=>'<tr><td>'+esc(x.investor_name)+'</td><td class="right">'+money(x.investment_basis)+'</td><td class="right">'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td class="right"><b>'+money(x.allocated_amount)+'</b></td><td>'+esc(x.payment_status||'UNPAID')+'</td></tr>').join(''):'<tr><td colspan="5">Belum ada investor aktif dengan modal tercatat.</td></tr>';
  $('result').classList.remove('hidden');
 }
-$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginError').textContent='';$('loginBtn').disabled=true;try{const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;const {data:probe,error:probeError}=await sb.rpc('generate_investor_monthly_allocation',{p_month_start:'2026-10-01'});if(!probeError){/* do not run another month; this probe would generate October. */} $('login').classList.add('hidden');$('app').classList.remove('hidden');}catch(err){await sb.auth.signOut();$('loginError').textContent=err.message||'Login gagal';}finally{$('loginBtn').disabled=false;}});
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginError').textContent='';$('loginBtn').disabled=true;try{const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;$('login').classList.add('hidden');$('app').classList.remove('hidden');}catch(err){await sb.auth.signOut();$('loginError').textContent=err.message||'Login gagal';}finally{$('loginBtn').disabled=false;}});
 $('generate').addEventListener('click',async()=>{const m=$('month').value;if(!m){$('actionMsg').textContent='Pilih bulan terlebih dahulu.';return;}$('generate').disabled=true;$('generate').textContent='Menghitung…';try{await loadForMonth(m);}catch(err){$('actionMsg').textContent=err.message||'Perhitungan gagal.';}finally{$('generate').disabled=false;$('generate').textContent='Hitung / Perbarui Draft';}});
 $('logout').addEventListener('click',async()=>{await sb.auth.signOut();location.reload();});
 (async()=>{const {data}=await sb.auth.getSession();if(data.session){$('login').classList.add('hidden');$('app').classList.remove('hidden');}})();

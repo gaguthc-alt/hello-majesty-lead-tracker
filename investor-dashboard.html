@@ -423,7 +423,7 @@ async function loadProspectAdmin(){
   if(investors.error)throw investors.error;if(accesses.error)throw accesses.error;
   prospectDefaultInvestorId=investors.data?.[0]?.id||null;
   if(!prospectDefaultInvestorId)throw new Error('Belum ada data investor untuk membuat akses presentasi.');
-  $('prospectList').innerHTML=table(['Alias','Berakhir','Status','Aksi'],(accesses.data||[]).map(x=>'<tr><td>'+esc(x.display_alias||'Investor')+'</td><td>'+fmtDate(x.expires_at)+' '+(x.expires_at?new Date(x.expires_at).toLocaleTimeString('id-ID'):'')+'</td><td>'+((x.active&&new Date(x.expires_at)>new Date())?'<span class="pill green">AKTIF</span>':'<span class="pill gold">KEDALUWARSA / DICABUT</span>')+'</td><td><button class="btn" data-prospect-action="extend" data-id="'+esc(x.id)+'">Perpanjang 7 hari</button> <button class="btn" data-prospect-action="revoke" data-id="'+esc(x.id)+'">Cabut</button></td></tr>'));
+  $('prospectList').innerHTML=table(['Alias','Berakhir','Status','Aksi'],(accesses.data||[]).filter(x=>x.active&&(!x.expires_at||new Date(x.expires_at)>new Date())).map(x=>'<tr><td>'+esc(x.display_alias||'Investor')+'</td><td>'+fmtDate(x.expires_at)+' '+(x.expires_at?new Date(x.expires_at).toLocaleTimeString('id-ID'):'')+'</td><td>'+((x.active&&new Date(x.expires_at)>new Date())?'<span class="pill green">AKTIF</span>':'<span class="pill gold">KEDALUWARSA / DICABUT</span>')+'</td><td><button class="btn" data-prospect-action="extend" data-id="'+esc(x.id)+'">Perpanjang 7 hari</button> <button class="btn" data-prospect-action="revoke" data-id="'+esc(x.id)+'">Cabut</button></td></tr>'));
 }
 async function prospectAction(action,payload={}){
  const {data:{session}}=await sb.auth.getSession();

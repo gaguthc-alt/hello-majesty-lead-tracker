@@ -12,7 +12,7 @@ create unique index if not exists investor_semester_settlements_batch_number_uq 
 create index if not exists idx_investor_settlement_months_settlement on public.investor_semester_settlement_months(settlement_id);
 alter table public.investor_semester_settlement_months enable row level security;
 drop policy if exists investor_settlement_months_select on public.investor_semester_settlement_months;
-create policy investor_settlement_months_select on public.investor_semester_settlement_months for select to authenticated using(public.is_management() or exists(select 1 from public.investor_semester_settlement_items si join public.investor_user_access ua on ua.investor_id=si.investor_id join public.investor_semester_settlement_months sm on sm.settlement_id=si.settlement_id where sm.id=investor_semester_settlement_months.id and ua.user_id=(select auth.uid()) and ua.active=true));
+create policy investor_settlement_months_select on public.investor_semester_settlement_months for select to authenticated using(public.is_management());
 drop policy if exists investor_settlement_months_insert on public.investor_semester_settlement_months;
 create policy investor_settlement_months_insert on public.investor_semester_settlement_months for insert to authenticated with check(public.is_management());
 drop policy if exists investor_settlement_months_delete on public.investor_semester_settlement_months;

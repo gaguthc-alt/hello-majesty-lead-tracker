@@ -50,7 +50,7 @@
       <button class="tab active" data-tab="overview">Ringkasan</button>
       <button class="tab" data-tab="stock">Monitoring Stok</button>
       <button class="tab" data-tab="sales">Penjualan</button>
-      <button class="tab" data-tab="reports">Laporan Bulanan</button>
+      <button class="tab" data-tab="reports">Laporan Bulanan</button><button class="tab" data-tab="semester">Settlement Semester</button>
     </nav>
     <section id="tab-overview" class="tab-panel">
       <div class="panel"><div class="section-head"><div><h2>Posisi investasi</h2><div class="hint">Ringkasan modal dan proporsi investasi dari laporan bulanan terakhir.</div></div></div><div id="positionSummary" class="empty">Memuat data…</div></div>
@@ -78,7 +78,7 @@ const $=id=>document.getElementById(id);
 const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
-let investorId=null,stockRows=[],salesRows=[],reportRows=[];
+let investorId=null,stockRows=[],salesRows=[],reportRows=[],semesterRows=[];
 const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
 function showError(msg){$('loginError').textContent=msg||'';}
 function statusPill(s){const v=String(s||'-').toUpperCase();const cls=v==='READY'?'green':v==='SOLD'?'gold':'';return '<span class="pill '+cls+'">'+esc(v)+'</span>';}
@@ -93,10 +93,10 @@ async function loadDashboard(user){
     sb.from('investor_portfolio_summary').select('*').eq('investor_id',investorId).maybeSingle(),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
     sb.from('investor_management_sales_detail').select('*').order('sold_at',{ascending:false}).limit(1000),
-    sb.from('investor_monthly_report').select('*').eq('investor_id',investorId).order('month_start',{ascending:false}).limit(36)
+    sb.from('investor_monthly_report').select('*').eq('investor_id',investorId).order('month_start',{ascending:false}).limit(36),\n    sb.from('investor_semester_report').select('*').eq('investor_id',investorId).order('fiscal_year',{ascending:false})
   ]);
-  for(const x of [investor,portfolio,stocks,sales,reports])if(x.error)throw x.error;
-  stockRows=stocks.data||[];salesRows=sales.data||[];reportRows=reports.data||[];
+  for(const x of [investor,portfolio,stocks,sales,reports,semesters])if(x.error)throw x.error;
+  stockRows=stocks.data||[];salesRows=sales.data||[];reportRows=reports.data||[];semesterRows=semesters.data||[];
   $('investorName').textContent=investor.data.investor_name;
   $('myInvestment').textContent=money(portfolio.data?.net_investment||0);
   const ready=stockRows.filter(x=>x.status==='READY');
@@ -109,7 +109,7 @@ async function loadDashboard(user){
   $('myShare').textContent=money(latest?.allocated_amount||0);
   $('mySharePct').textContent=latest?Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'% dari total investasi · '+(latest.payment_status==='PAID'?'Sudah dibayar':'Belum dibayar'):'Menunggu laporan bulanan';
   $('positionSummary').innerHTML=latest?'<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(latest.total_investment)+'</strong></div><div class="metric"><small>Alokasi investor 10%</small><strong>'+money(latest.investor_pool)+'</strong></div><div class="metric"><small>Investasi Anda</small><strong>'+money(latest.investment_basis)+'</strong></div><div class="metric"><small>Proporsi Anda</small><strong>'+Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</strong></div></div>':'<div class="empty">Laporan alokasi bulanan belum diterbitkan Management.</div>';
-  renderStock();renderSales();renderReports();renderRecent();
+  renderStock();renderSales();renderReports();renderSemester();renderRecent();
   $('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
 }
 function renderStock(){

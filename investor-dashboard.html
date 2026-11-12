@@ -54,6 +54,9 @@
     </nav>
     <section id="tab-overview" class="tab-panel">
       <div class="panel"><div class="section-head"><div><h2>Posisi investasi</h2><div class="hint">Ringkasan modal dan proporsi investasi dari laporan bulanan terakhir.</div></div></div><div id="positionSummary" class="empty">Memuat data…</div></div>
+      <div class="panel"><h2>Posisi perputaran modal</h2><div class="hint">Nilai modal stok Management dibandingkan dengan modal investor yang tercatat. Porsi investor ditampilkan secara proporsional karena modal dikelola sebagai pool bersama, bukan kepemilikan unit per investor.</div><div id="capitalPosition"></div></div>
+      <div class="panel"><h2>Tren laba bulanan</h2><div class="hint">Perubahan laba Management dan hak profit Anda berdasarkan laporan alokasi yang sudah diterbitkan. Bulan tanpa laporan tidak dianggap nol.</div><div id="profitTrend"></div></div>
+      <div class="panel"><h2>Rincian penjualan per produk</h2><div class="hint">Akumulasi kuantitas, penjualan, modal, dan laba berdasarkan produk serta outlet.</div><div id="productSales"></div></div>
       <div class="panel"><h2>Penjualan terbaru</h2><div class="hint">Rincian produk, modal, harga jual, laba, dan outlet.</div><div id="recentSales"></div></div>
     </section>
     <section id="tab-stock" class="tab-panel hidden">
@@ -111,7 +114,7 @@ async function loadDashboard(user){
   $('myShare').textContent=money(latest?.allocated_amount||0);
   $('mySharePct').textContent=latest?Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'% dari total investasi · '+(latest.payment_status==='PAID'?'Sudah dibayar':'Belum dibayar'):'Menunggu laporan bulanan';
   $('positionSummary').innerHTML=latest?'<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(latest.total_investment)+'</strong></div><div class="metric"><small>Alokasi investor 10%</small><strong>'+money(latest.investor_pool)+'</strong></div><div class="metric"><small>Investasi Anda</small><strong>'+money(latest.investment_basis)+'</strong></div><div class="metric"><small>Proporsi Anda</small><strong>'+Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</strong></div></div>':'<div class="empty">Laporan alokasi bulanan belum diterbitkan Management.</div>';
-  renderStock();renderSales();renderReports();renderSemester();renderRecent();
+  renderStock();renderSales();renderReports();renderSemester();renderRecent();renderCapitalPosition(portfolio.data?.net_investment||0);renderProfitTrend();renderProductSales();
   $('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
 }
 function renderStock(){
@@ -132,6 +135,56 @@ function renderSemester(){
   const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · Semester '+x.semester+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+statusPill(x.settlement_status)+'</td></tr>');
   $('semesterTable').innerHTML=table(['Periode','Laba 6 bulan','Pool 10%','Hak Anda','Sudah dibayar','Sisa hak','Status settlement'],rows);
 }
+
+function renderCapitalPosition(netInvestment){
+  const totalStock=stockRows.reduce((a,x)=>a+Number(x.capital_cost||0),0);
+  const ready=stockRows.filter(x=>x.status==='READY');
+  const sold=salesRows;
+  const readyCost=ready.reduce((a,x)=>a+Number(x.capital_cost||0),0);
+  const soldCost=sold.reduce((a,x)=>a+Number(x.capital_cost||0),0);
+  const share=Number(netInvestment||0);
+  const allInvestorCapital=Number(reportRows[0]?.total_investment||220000000);
+  const pct=allInvestorCapital>0?share/allInvestorCapital:0;
+  const fmtPct=v=>(v*100).toLocaleString('id-ID',{maximumFractionDigits:2})+'%';
+  const line=(label,value,sub='')=>'<div class="metric"><small>'+label+'</small><strong>'+money(value)+'</strong><div class="sub">'+sub+'</div></div>';
+  $('capitalPosition').innerHTML='<div class="grid" style="margin:0 0 12px">'+
+    line('Modal bersih Anda',share,'Setoran dikurangi penarikan')+
+    line('Modal stok Management',totalStock,'Seluruh status stok yang tercatat')+
+    line('Modal stok tersedia',readyCost,ready.length+' unit belum terjual')+
+    line('Modal barang terjual',soldCost,sold.length+' transaksi terhubung')+
+    '</div><div class="hint">Porsi proporsional Anda saat ini: <b>'+fmtPct(pct)+'</b>. Estimasi porsi nilai stok tersedia: <b>'+money(readyCost*pct)+'</b>. Ini adalah indikator proporsional pool, bukan pemetaan kepemilikan unit. Nilai stok di luar data yang termuat (lebih dari 1.000 baris) dapat membuat ringkasan ini belum lengkap.</div>';
+}
+function renderProfitTrend(){
+  const rows=[...reportRows].sort((a,b)=>String(a.month_start).localeCompare(String(b.month_start)));
+  if(!rows.length){$('profitTrend').innerHTML='<div class="empty">Grafik akan muncul setelah laporan alokasi bulanan tersedia.</div>';return;}
+  const max=Math.max(1,...rows.map(x=>Number(x.management_profit||0)));
+  const bars=rows.map((x,i)=>{
+    const h=Math.max(4,Number(x.management_profit||0)/max*150);
+    const prev=i?Number(rows[i-1].management_profit||0):null;
+    const cur=Number(x.management_profit||0);
+    const change=prev===null?null:(prev===0?null:(cur-prev)/Math.abs(prev)*100);
+    const trend=change===null?'Periode awal':(change>=0?'Naik ':'Turun ')+Math.abs(change).toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
+    return '<div style="flex:1;min-width:66px;text-align:center"><div style="height:164px;display:flex;align-items:flex-end;justify-content:center"><div title="'+money(cur)+'" style="width:34px;height:'+h+'px;background:linear-gradient(180deg,#d9bd7b,#8a7040);border-radius:7px 7px 2px 2px"></div></div><div style="font-size:11px;margin-top:7px">'+esc(String(x.month_start).slice(0,7))+'</div><div style="font-size:10px;color:'+(change===null?'#9fb0c6':change>=0?'#62d6a2':'#ff8e8e')+'">'+trend+'</div><div style="font-size:10px;color:#9fb0c6">'+money(cur)+'</div></div>';
+  }).join('');
+  const latest=rows[rows.length-1],previous=rows.length>1?rows[rows.length-2]:null;
+  const delta=previous?Number(latest.management_profit||0)-Number(previous.management_profit||0):null;
+  $('profitTrend').innerHTML='<div style="display:flex;gap:12px;align-items:flex-end;overflow:auto;padding:8px 2px 14px">'+bars+'</div><div class="hint">Perbandingan periode terakhir: '+(delta===null?'Belum ada periode pembanding.':(delta>=0?'Kenaikan ':'Penurunan ')+money(Math.abs(delta))+' dibanding bulan sebelumnya.')+'</div>';
+}
+function renderProductSales(){
+  const map=new Map();
+  salesRows.forEach(x=>{
+    const name=[x.product,x.variant,x.color,x.grade].filter(Boolean).join(' ');
+    const key=name+'|'+(x.sold_outlet||'-');
+    const v=map.get(key)||{name,outlet:x.sold_outlet||'-',qty:0,sales:0,cost:0,profit:0};
+    v.qty+=1;v.sales+=Number(x.sale_price||0);v.cost+=Number(x.capital_cost||0);v.profit+=Number(x.realized_profit||0);map.set(key,v);
+  });
+  const values=[...map.values()].sort((a,b)=>b.profit-a.profit);
+  const rows=values.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x.name)+'</td><td class="right">'+x.qty+'</td><td class="right">'+money(x.sales)+'</td><td class="right">'+money(x.cost)+'</td><td class="right">'+money(x.profit)+'</td><td>'+esc(x.outlet)+'</td></tr>');
+  const total=values.reduce((a,x)=>({qty:a.qty+x.qty,sales:a.sales+x.sales,cost:a.cost+x.cost,profit:a.profit+x.profit}),{qty:0,sales:0,cost:0,profit:0});
+  if(rows.length)rows.push('<tr style="font-weight:800;background:#1a2d45"><td colspan="2">TOTAL</td><td class="right">'+total.qty+'</td><td class="right">'+money(total.sales)+'</td><td class="right">'+money(total.cost)+'</td><td class="right">'+money(total.profit)+'</td><td>-</td></tr>');
+  $('productSales').innerHTML=table(['No','Nama barang','Kuantitas','Penjualan','Modal','Laba','Outlet'],rows);
+}
+
 function renderRecent(){
   const rows=salesRows.slice(0,5).map(x=>'<tr><td>'+fmtDate(x.sold_at)+'</td><td>'+esc([x.product,x.variant].filter(Boolean).join(' '))+'</td><td>'+money(x.capital_cost)+'</td><td>'+money(x.sale_price)+'</td><td>'+money(x.realized_profit)+'</td><td>'+esc(x.sold_outlet||'-')+'</td></tr>');
   $('recentSales').innerHTML=table(['Tanggal','Produk','Modal','Jual','Laba','Outlet'],rows);

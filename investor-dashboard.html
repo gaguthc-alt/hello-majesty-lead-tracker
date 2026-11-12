@@ -188,8 +188,8 @@ function renderReports(){
   $('semesterMonthReport').innerHTML=table(['Bulan','Laba Management','Pool investor 10%','Porsi modal Anda','Hak investor bulan itu','Status'],monthRows);
 }
 function renderSemester(){
-  const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · Semester '+x.semester+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+statusPill(x.settlement_status)+'</td></tr>');
-  $('semesterTable').innerHTML=table(['Periode','Laba 6 bulan','Pool 10%','Hak Anda','Sudah dibayar','Sisa hak','Status settlement'],rows);
+  const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · Semester '+x.semester+(Number(x.batch_number||1)>1?' · Batch '+esc(x.batch_number):'')+'</td><td>'+esc(x.investor_name||'-')+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+statusPill(x.settlement_status)+'</td></tr>');
+  $('semesterTable').innerHTML=table(['Periode','Nama investor','Laba 6 bulan','Pool 10%','Hak investor','Sudah dibayar','Sisa hak','Status settlement'],rows);
 }
 
 function renderCapitalPosition(netInvestment){

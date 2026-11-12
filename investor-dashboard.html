@@ -355,10 +355,10 @@ function renderReports(){
       });
     }
     const found=reportRows.filter(x=>String(x.month_start||'').slice(0,7)===m.key);
-    if(!found.length)return ['<tr><td>'+esc(m.label)+'</td><td colspan="6">Belum ada data.</td></tr>'];
-    return found.map(x=>'<tr><td>'+esc(m.label)+'</td><td>'+esc(x.investor_name||'-')+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(x.allocated_amount)+'</b></td><td><span class="pill green">Laporan tersedia</span></td></tr>');
+    if(!found.length)return ['<tr><td>'+esc(m.label)+'</td><td colspan="5">Belum ada data.</td></tr>'];
+    return found.map(x=>'<tr><td>'+esc(m.label)+'</td><td>'+esc(x.investor_name||'-')+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(x.allocated_amount)+'</b></td></tr>');
   });
-  $('semesterMonthReport').innerHTML=table(['Bulan','Investor','Laba Management','Pool investor 10%','Porsi modal','Hak investor','Status'],monthRows);
+  $('semesterMonthReport').innerHTML=table(['Bulan','Investor','Laba Management','Pool investor 10%','Porsi modal','Hak investor'],monthRows);
 }
 function renderSemester(){
   const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · '+(Number(x.fiscal_year)===2026&&Number(x.semester)===2&&Number(x.batch_number||1)===1?'Oktober':'Semester '+x.semester)+(Number(x.batch_number||1)>1?' · Batch '+esc(x.batch_number):'')+'</td><td>'+esc(x.investor_name||'-')+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+(String(x.settlement_status||'').toUpperCase()==='DRAFT'?'<span class="pill gold">BELUM DITERIMA</span>':statusPill(x.settlement_status))+'</td></tr>');

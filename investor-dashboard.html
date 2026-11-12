@@ -233,20 +233,30 @@ function renderCapitalPosition(netInvestment){
     '</div><div class="hint">Porsi proporsional Anda berdasarkan laporan alokasi terakhir: <b>'+(allInvestorCapital>0?fmtPct(pct):'Belum tersedia')+'</b>. Estimasi porsi nilai stok tersedia: <b>'+(allInvestorCapital>0?money(readyCost*pct):'Belum dapat dihitung')+'</b>. Ini adalah indikator proporsional pool, bukan pemetaan kepemilikan unit. Nilai stok di luar data yang termuat (lebih dari 1.000 baris) dapat membuat ringkasan ini belum lengkap.</div>';
 }
 function renderProfitTrend(){
-  const rows=[...reportRows].sort((a,b)=>String(a.month_start).localeCompare(String(b.month_start)));
-  if(!rows.length){$('profitTrend').innerHTML='<div class="empty">Grafik akan muncul setelah laporan alokasi bulanan tersedia.</div>';return;}
-  const max=Math.max(1,...rows.map(x=>Number(x.management_profit||0)));
-  const bars=rows.map((x,i)=>{
-    const h=Math.max(4,Number(x.management_profit||0)/max*150);
-    const prev=i?Number(rows[i-1].management_profit||0):null;
-    const cur=Number(x.management_profit||0);
-    const change=prev===null?null:(prev===0?null:(cur-prev)/Math.abs(prev)*100);
-    const trend=change===null?'Periode awal':(change>=0?'Naik ':'Turun ')+Math.abs(change).toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
-    return '<div style="flex:1;min-width:66px;text-align:center"><div style="height:164px;display:flex;align-items:flex-end;justify-content:center"><div title="'+money(cur)+'" style="width:34px;height:'+h+'px;background:linear-gradient(180deg,#d9bd7b,#8a7040);border-radius:7px 7px 2px 2px"></div></div><div style="font-size:11px;margin-top:7px">'+esc(String(x.month_start).slice(0,7))+'</div><div style="font-size:10px;color:'+(change===null?'#9fb0c6':change>=0?'#62d6a2':'#ff8e8e')+'">'+trend+'</div><div style="font-size:10px;color:#9fb0c6">'+money(cur)+'</div></div>';
+  // Semester II 2026: tampilkan seluruh bulan, termasuk bulan tanpa data.
+  const months=[
+    {key:'2026-07',label:'Juli',profit:null,status:'Belum ada data'},
+    {key:'2026-08',label:'Agustus',profit:7657227.14,status:'Laporan manual'},
+    {key:'2026-09',label:'September',profit:23153925.47,status:'Laporan manual'},
+    {key:'2026-10',label:'Oktober',profit:18594051,status:'Laporan tersedia'},
+    {key:'2026-11',label:'November',profit:null,status:'Berjalan'},
+    {key:'2026-12',label:'Desember',profit:null,status:'Belum ada data'}
+  ];
+  const novSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)==='2026-11');
+  months.find(x=>x.key==='2026-11').profit=novSales.reduce((a,x)=>a+Number(x.realized_profit||0),0);
+  const max=Math.max(1,...months.map(x=>Number(x.profit||0)));
+  const bars=months.map(m=>{
+    const hasData=m.profit!==null;
+    const value=Number(m.profit||0);
+    const h=hasData?Math.max(4,value/max*150):0;
+    const color=m.key==='2026-11'?'#62d6a2':'linear-gradient(180deg,#d9bd7b,#8a7040)';
+    const bar=hasData
+      ? '<div title="'+money(value)+'" style="width:34px;height:'+h+'px;background:'+color+';border-radius:7px 7px 2px 2px"></div>'
+      : '<div style="width:34px;height:3px;background:#40536b;border-radius:4px"></div>';
+    const statusColor=m.key==='2026-11'?'#62d6a2':(hasData?'#d9bd7b':'#9fb0c6');
+    return '<div style="flex:1;min-width:66px;text-align:center"><div style="height:164px;display:flex;align-items:flex-end;justify-content:center">'+bar+'</div><div style="font-size:11px;margin-top:7px">'+m.label+'</div><div style="font-size:10px;color:'+statusColor+'">'+m.status+'</div><div style="font-size:10px;color:#9fb0c6">'+(hasData?money(value):'—')+'</div></div>';
   }).join('');
-  const latest=rows[rows.length-1],previous=rows.length>1?rows[rows.length-2]:null;
-  const delta=previous?Number(latest.management_profit||0)-Number(previous.management_profit||0):null;
-  $('profitTrend').innerHTML='<div style="display:flex;gap:12px;align-items:flex-end;overflow:auto;padding:8px 2px 14px">'+bars+'</div><div class="hint">Perbandingan periode terakhir: '+(delta===null?'Belum ada periode pembanding.':(delta>=0?'Kenaikan ':'Penurunan ')+money(Math.abs(delta))+' dibanding bulan sebelumnya.')+'</div>';
+  $('profitTrend').innerHTML='<div style="display:flex;gap:12px;align-items:flex-end;overflow:auto;padding:8px 2px 14px">'+bars+'</div><div class="hint">Juli dan Desember belum memiliki data. Agustus–September berasal dari laporan manual, Oktober dari laporan tersedia, dan November merupakan akumulasi sementara transaksi Management yang sudah tercatat.</div>';
 }
 function renderProductSales(){
   const month=thisMonth();

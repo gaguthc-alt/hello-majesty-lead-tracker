@@ -339,10 +339,18 @@ function displayInvestorName(alias){
 function renderReports(){
   const now=new Date(),year=now.getFullYear(),start=now.getMonth()>=6?6:0;
   const semesterMonths=Array.from({length:6},(_,i)=>{const m=start+i;return {key:year+'-'+String(m+1).padStart(2,'0'),label:new Date(year,m,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'})};});
-  const key=thisMonth(),currentRows=reportRows.filter(x=>String(x.month_start||'').slice(0,7)===key);
-  const currentHtml=currentRows.map(x=>'<tr><td>'+esc(x.investor_name||'-')+'</td><td>'+esc(semesterMonths.find(m=>m.key===key)?.label||key)+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(x.allocated_amount)+'</b></td><td><span class="pill gold">Estimasi / laporan</span></td></tr>');
-  if(!currentHtml.length)currentHtml.push('<tr><td colspan="7">Belum ada laporan bulan berjalan.</td></tr>');
-  $('currentMonthReport').innerHTML=table(['Investor','Periode','Laba Management','Pool 10%','Porsi modal','Hak investor','Status'],currentHtml);
+  const key=thisMonth(),periodLabel=semesterMonths.find(m=>m.key===key)?.label||key;
+  const totalCapital=portfolioRows.reduce((sum,p)=>sum+Math.max(0,Number(p.net_investment||0)),0);
+  const liveProfit=Number(liveAllocation?.management_month_profit||0);
+  const livePool=Number(liveAllocation?.investor_pool_estimate??Math.max(0,liveProfit)*0.10);
+  const currentRows=portfolioRows.filter(p=>Number(p.net_investment||0)>0&&totalCapital>0);
+  const currentHtml=currentRows.map(p=>{
+    const share=Number(p.net_investment||0)/totalCapital*100;
+    const amount=livePool*share/100;
+    return '<tr><td>'+esc(p.investor_name||p.investor_alias||'-')+'</td><td>'+esc(periodLabel)+'</td><td>'+money(liveProfit)+'</td><td>'+money(livePool)+'</td><td>'+share.toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(amount)+'</b></td></tr>';
+  });
+  if(!currentHtml.length)currentHtml.push('<tr><td colspan="6">Belum ada modal investor aktif untuk periode ini.</td></tr>');
+  $('currentMonthReport').innerHTML=table(['Investor','Periode','Laba Management','Pool 10%','Porsi modal','Hak investor'],currentHtml);
   const monthRows=semesterMonths.flatMap(m=>{
     if(m.key==='2026-08'||m.key==='2026-09'){
       return portfolioRows.filter(p=>m.key!=='2026-08'||p.investor_alias!=='Investor B').map(p=>{

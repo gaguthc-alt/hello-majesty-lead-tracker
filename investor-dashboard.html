@@ -199,8 +199,9 @@ function renderSemester(){
     {name:'H. Imam', amount:210490}
   ].filter(x=>isManagement || $('investorName').textContent.trim()===x.name);
   const historicalSettlementRows = historicalRows.map(x=>'<tr><td>2026 · September</td><td>'+esc(x.name)+'</td><td>'+money(23153925.47)+'</td><td>'+money(2315392)+'</td><td><b>'+money(x.amount)+'</b></td><td>'+money(0)+'</td><td>'+money(x.amount)+'</td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>');
-  const monthlyEntitlementRows = historicalRows.map(x=>{const oct= x.name==='H. Imam'?169037:1690368; const total=x.amount+oct; return '<tr><td><b>Total September–Oktober 2026</b></td><td>'+esc(x.name)+'</td><td>—</td><td>—</td><td><b>'+money(total)+'</b></td><td>'+money(0)+'</td><td>'+money(total)+'</td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>';});
-  $('semesterTable').innerHTML=table(['Periode','Nama investor','Laba bulan','Pool 10%','Pendapatan investor','Sudah diterima','Sisa hak','Status'],historicalSettlementRows.concat(rows,monthlyEntitlementRows));
+  const semesterTotalRows = historicalRows.map(x=>{const oct= x.name==='H. Imam'?169037:1690368; const total=x.amount+oct; return '<tr><td>'+esc(x.name)+'</td><td><b>'+money(total)+'</b></td><td>'+money(0)+'</td><td><b>'+money(total)+'</b></td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>';});
+  const monthlyRows = historicalSettlementRows.concat(rows);
+  $('semesterTable').innerHTML='<h3 style="margin:0 0 8px">Rincian pendapatan bulanan</h3>'+table(['Periode','Nama investor','Laba bulan','Pool 10%','Pendapatan investor','Sudah diterima','Sisa hak','Status'],monthlyRows)+'<h3 style="margin:18px 0 8px">Total Semester II 2026</h3>'+table(['Nama investor','Total hak Semester II 2026','Sudah diterima','Sisa hak','Status'],semesterTotalRows);
 }
 
 function renderCapitalPosition(netInvestment){

@@ -351,7 +351,7 @@ function renderReports(){
         const pool=m.key==='2026-08'?765723:2315392;
         const pct=m.key==='2026-08'?(isA?100:0):(isA?90.9091:(isB?9.0909:0));
         const amount=m.key==='2026-08'?(isA?765723:0):(isA?2104902:(isB?210490:0));
-        return '<tr><td>'+esc(m.label)+'</td><td>'+esc(p.investor_name||p.investor_alias)+'</td><td>'+money(profit)+'</td><td>'+money(pool)+'</td><td>'+pct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(amount)+'</b></td><td><span class="pill gold">'+(m.key==='2026-08'&&isB?'Belum menjadi investor':'Laporan manual')+'</span></td></tr>';
+        return '<tr><td>'+esc(m.label)+'</td><td>'+esc(p.investor_name||p.investor_alias)+'</td><td>'+money(profit)+'</td><td>'+money(pool)+'</td><td>'+pct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(amount)+'</b></td></tr>';
       });
     }
     const found=reportRows.filter(x=>String(x.month_start||'').slice(0,7)===m.key);

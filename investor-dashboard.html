@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hello Majesty — Investor Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:dark;--bg:#08111f;--panel:#111f33;--panel2:#172941;--line:#2a3d56;--text:#edf4ff;--muted:#9fb0c6;--gold:#d9bd7b;--green:#62d6a2;--red:#ff8e8e}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#18344c 0,transparent 34%),var(--bg);font-family:Inter,Arial,sans-serif;color:var(--text)}
+.wrap{max-width:1180px;margin:auto;padding:22px 16px 50px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px}.brand{display:flex;align-items:center;gap:12px}.mark{width:44px;height:44px;border-radius:14px;background:linear-gradient(145deg,#d9bd7b,#8b7040);display:grid;place-items:center;color:#152033;font-weight:900}.brand b{letter-spacing:.12em}.brand small{display:block;color:var(--muted);margin-top:3px}.btn{border:1px solid var(--line);border-radius:11px;padding:10px 14px;background:#20334c;color:var(--text);font-weight:700;cursor:pointer}.btn.primary{background:linear-gradient(120deg,#c7a96c,#ead8a6);color:#172033;border:0}.btn:disabled{opacity:.55;cursor:wait}
+.login{max-width:420px;margin:8vh auto;background:linear-gradient(145deg,#152943,#0e1a2c);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 24px 70px #0006}.login h1{font-size:23px;margin:0 0 8px}.login p{color:var(--muted);line-height:1.5;font-size:13px}.field{margin:15px 0}.field label{display:block;font-size:12px;color:#c4d0df;margin-bottom:7px}.field input{width:100%;padding:13px;border-radius:10px;border:1px solid var(--line);background:#091627;color:#fff}.error{color:var(--red);font-size:13px;min-height:18px;margin-top:10px}
+.hero{border:1px solid #344963;border-radius:22px;padding:22px;background:linear-gradient(120deg,#142a42,#172d40 60%,#26334a);margin-bottom:18px}.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--gold);font-weight:800}.hero h1{font-size:clamp(22px,4vw,32px);margin:8px 0}.hero p{margin:0;color:#b6c5d7;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0 20px}.metric{background:linear-gradient(145deg,#14263c,#101e30);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{display:block;font-size:clamp(18px,2.4vw,25px);margin-top:8px;overflow-wrap:anywhere}.metric .sub{font-size:11px;color:var(--muted);margin-top:5px}
+.tabs{display:flex;gap:8px;overflow:auto;padding:3px 0 12px}.tab{white-space:nowrap;border:1px solid var(--line);background:#122239;color:#bdcadd;border-radius:999px;padding:10px 15px;cursor:pointer}.tab.active{background:#d9bd7b;color:#152033;border-color:#d9bd7b;font-weight:800}
+.panel{background:#101e30;border:1px solid var(--line);border-radius:18px;padding:17px;margin:10px 0 18px}.panel h2{font-size:17px;margin:0 0 5px}.hint{font-size:12px;color:var(--muted);margin-bottom:14px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;min-width:760px;font-size:12px}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid #263950;white-space:nowrap}th{background:#1a2d45;color:#c7d5e6;font-size:11px}td{color:#e4ecf6}tr:last-child td{border-bottom:0}.right{text-align:right}.pill{display:inline-block;border-radius:999px;padding:5px 9px;background:#263b55;color:#dce8f7;font-size:10px;font-weight:800}.pill.green{background:#143f37;color:#8ff0c3}.pill.gold{background:#493d24;color:#f3d99d}.empty{padding:25px;text-align:center;color:var(--muted);font-size:13px}.foot{color:#71849d;font-size:11px;text-align:center;margin-top:24px}.hidden{display:none!important}.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}.filter{background:#0b192a;color:#fff;border:1px solid var(--line);padding:9px;border-radius:9px}
+@media(max-width:780px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:15px 12px 35px}.hero{padding:18px}.panel{padding:13px}.top{align-items:flex-start}}
+@media(max-width:380px){.grid{grid-template-columns:1fr 1fr}.metric{padding:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><div class="mark">HM</div><div><b>HELLO MAJESTY</b><small>INVESTOR PORTAL · BUILT ON TRUST</small></div></div>
+    <button id="logoutBtn" class="btn hidden">Keluar</button>
+  </div>
+  <section id="loginPanel" class="login">
+    <div class="eyebrow">INVESTOR ACCESS</div><h1>Selamat datang</h1>
+    <p>Masuk untuk memantau stok sumber Management, penjualan, dan laporan keuntungan investasi Anda.</p>
+    <form id="loginForm">
+      <div class="field"><label>Email investor</label><input id="email" type="email" autocomplete="username" required></div>
+      <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+      <button id="loginBtn" class="btn primary" style="width:100%">Masuk ke Dashboard</button>
+      <div id="loginError" class="error" role="alert"></div>
+    </form>
+  </section>
+  <main id="dashboard" class="hidden">
+    <section class="hero">
+      <div class="eyebrow">INVESTOR DASHBOARD</div>
+      <h1 id="investorName">Dashboard Investor</h1>
+      <p>Monitoring terbatas pada stok sumber Management non-Stockist. Data Stockist dan investor lain tidak ditampilkan.</p>
+    </section>
+    <div class="grid">
+      <div class="metric"><small>Investasi bersih Anda</small><strong id="myInvestment">Rp0</strong><div class="sub">Setoran dikurangi penarikan modal</div></div>
+      <div class="metric"><small>Stok Management tersedia</small><strong id="availableStock">0 unit</strong><div class="sub" id="availableValue">Modal stok tersedia Rp0</div></div>
+      <div class="metric"><small>Laba Management bulan ini</small><strong id="monthProfit">Rp0</strong><div class="sub">Hanya dari stok sumber Management</div></div>
+      <div class="metric"><small>Hak keuntungan Anda</small><strong id="myShare">Rp0</strong><div class="sub" id="mySharePct">Alokasi 10% dibagi proporsional</div></div>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="overview">Ringkasan</button>
+      <button class="tab" data-tab="stock">Monitoring Stok</button>
+      <button class="tab" data-tab="sales">Penjualan</button>
+      <button class="tab" data-tab="reports">Laporan Bulanan</button>
+    </nav>
+    <section id="tab-overview" class="tab-panel">
+      <div class="panel"><div class="section-head"><div><h2>Posisi investasi</h2><div class="hint">Ringkasan modal dan proporsi investasi dari laporan bulanan terakhir.</div></div></div><div id="positionSummary" class="empty">Memuat data…</div></div>
+      <div class="panel"><h2>Penjualan terbaru</h2><div class="hint">Rincian produk, modal, harga jual, laba, dan outlet.</div><div id="recentSales"></div></div>
+    </section>
+    <section id="tab-stock" class="tab-panel hidden">
+      <div class="panel"><div class="section-head"><div><h2>Monitoring stok sumber Management</h2><div class="hint">Termasuk stok tersedia, terjual, dan status stok lainnya. IMEI tidak ditampilkan.</div></div><select id="stockStatus" class="filter"><option value="ALL">Semua status</option><option value="READY">Tersedia</option><option value="SOLD">Terjual</option><option value="RETURN">Retur</option><option value="RESERVED">Reserved</option></select></div><div id="stockTable"></div></div>
+    </section>
+    <section id="tab-sales" class="tab-panel hidden">
+      <div class="panel"><div class="section-head"><div><h2>Riwayat penjualan</h2><div class="hint">Hanya transaksi dari stok sumber Management.</div></div><input id="salesMonth" class="filter" type="month"></div><div id="salesTable"></div></div>
+    </section>
+    <section id="tab-reports" class="tab-panel hidden">
+      <div class="panel"><h2>Laporan keuntungan bulanan</h2><div class="hint">Alokasi investor = 10% laba penjualan Management × proporsi investasi Anda.</div><div id="reportTable"></div></div>
+    </section>
+    <div class="foot">HELLO MAJESTY · INVESTOR PORTAL · Akses baca saja</div>
+  </main>
+</div>
+<script>
+(function(){
+'use strict';
+const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
+const SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
+let investorId=null,stockRows=[],salesRows=[],reportRows=[];
+const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
+function showError(msg){$('loginError').textContent=msg||'';}
+function statusPill(s){const v=String(s||'-').toUpperCase();const cls=v==='READY'?'green':v==='SOLD'?'gold':'';return '<span class="pill '+cls+'">'+esc(v)+'</span>';}
+function table(headers,rows){if(!rows.length)return '<div class="empty">Belum ada data.</div>';return '<div class="table-wrap"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';}
+async function loadDashboard(user){
+  const access=await sb.from('investor_user_access').select('investor_id').eq('user_id',user.id).eq('active',true).maybeSingle();
+  if(access.error)throw access.error;
+  if(!access.data)throw new Error('Akun ini belum terdaftar sebagai investor. Hubungi Management Hello Majesty.');
+  investorId=access.data.investor_id;
+  const [investor,portfolio,stocks,sales,reports]=await Promise.all([
+    sb.from('investors').select('investor_name').eq('id',investorId).single(),
+    sb.from('investor_portfolio_summary').select('*').eq('investor_id',investorId).maybeSingle(),
+    sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
+    sb.from('investor_management_sales_detail').select('*').order('sold_at',{ascending:false}).limit(1000),
+    sb.from('investor_monthly_report').select('*').eq('investor_id',investorId).order('month_start',{ascending:false}).limit(36)
+  ]);
+  for(const x of [investor,portfolio,stocks,sales,reports])if(x.error)throw x.error;
+  stockRows=stocks.data||[];salesRows=sales.data||[];reportRows=reports.data||[];
+  $('investorName').textContent=investor.data.investor_name;
+  $('myInvestment').textContent=money(portfolio.data?.net_investment||0);
+  const ready=stockRows.filter(x=>x.status==='READY');
+  $('availableStock').textContent=ready.length+' unit';
+  $('availableValue').textContent='Modal stok tersedia '+money(ready.reduce((a,x)=>a+Number(x.capital_cost||0),0));
+  const month=thisMonth(),monthSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)===month);
+  const monthProfit=monthSales.reduce((a,x)=>a+Number(x.realized_profit||0),0);
+  $('monthProfit').textContent=money(monthProfit);
+  const latest=reportRows.find(x=>String(x.month_start).slice(0,7)===month)||reportRows[0];
+  $('myShare').textContent=money(latest?.allocated_amount||0);
+  $('mySharePct').textContent=latest?Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'% dari total investasi · '+(latest.payment_status==='PAID'?'Sudah dibayar':'Belum dibayar'):'Menunggu laporan bulanan';
+  $('positionSummary').innerHTML=latest?'<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(latest.total_investment)+'</strong></div><div class="metric"><small>Alokasi investor 10%</small><strong>'+money(latest.investor_pool)+'</strong></div><div class="metric"><small>Investasi Anda</small><strong>'+money(latest.investment_basis)+'</strong></div><div class="metric"><small>Proporsi Anda</small><strong>'+Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</strong></div></div>':'<div class="empty">Laporan alokasi bulanan belum diterbitkan Management.</div>';
+  renderStock();renderSales();renderReports();renderRecent();
+  $('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
+}
+function renderStock(){
+  const f=$('stockStatus').value;
+  const rows=stockRows.filter(x=>f==='ALL'||x.status===f).map(x=>'<tr><td>'+esc([x.product,x.variant].filter(Boolean).join(' '))+'</td><td>'+esc(x.color||'-')+'</td><td>'+esc(x.grade||'-')+'</td><td>'+(x.battery_health==null?'-':esc(x.battery_health)+'%')+'</td><td>'+money(x.capital_cost)+'</td><td>'+money(x.asking_price)+'</td><td>'+esc(x.current_outlet||'-')+'</td><td>'+statusPill(x.status)+'</td><td>'+fmtDate(x.received_at)+'</td></tr>');
+  $('stockTable').innerHTML=table(['Produk','Warna','Grade','BH','Modal','Harga acuan','Lokasi','Status','Tanggal masuk'],rows);
+}
+function renderSales(){
+  const month=$('salesMonth').value;
+  const rows=salesRows.filter(x=>!month||String(x.sold_at||'').slice(0,7)===month).map(x=>'<tr><td>'+fmtDate(x.sold_at)+'</td><td>'+esc([x.product,x.variant].filter(Boolean).join(' '))+'</td><td>'+money(x.capital_cost)+'</td><td>'+money(x.sale_price)+'</td><td>'+money(x.realized_profit)+'</td><td>'+esc(x.sold_outlet||'-')+'</td></tr>');
+  $('salesTable').innerHTML=table(['Tanggal','Produk','Modal','Harga jual','Laba','Outlet terjual'],rows);
+}
+function renderReports(){
+  const rows=reportRows.map(x=>'<tr><td>'+esc(String(x.month_start).slice(0,7))+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+money(x.total_investment)+'</td><td>'+money(x.investment_basis)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(x.allocated_amount)+'</b></td><td>'+statusPill(x.payment_status)+'</td></tr>');
+  $('reportTable').innerHTML=table(['Bulan','Laba Management','Pool investor 10%','Total investasi','Investasi Anda','Proporsi','Hak Anda','Pembayaran'],rows);
+}
+function renderRecent(){
+  const rows=salesRows.slice(0,5).map(x=>'<tr><td>'+fmtDate(x.sold_at)+'</td><td>'+esc([x.product,x.variant].filter(Boolean).join(' '))+'</td><td>'+money(x.capital_cost)+'</td><td>'+money(x.sale_price)+'</td><td>'+money(x.realized_profit)+'</td><td>'+esc(x.sold_outlet||'-')+'</td></tr>');
+  $('recentSales').innerHTML=table(['Tanggal','Produk','Modal','Jual','Laba','Outlet'],rows);
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.tab-panel').forEach(x=>x.classList.toggle('hidden',x.id!=='tab-'+b.dataset.tab));}));
+$('stockStatus').addEventListener('change',renderStock);$('salesMonth').value=thisMonth();$('salesMonth').addEventListener('change',renderSales);
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();showError('');$('loginBtn').disabled=true;$('loginBtn').textContent='Memeriksa akun…';try{const r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw r.error;await loadDashboard(r.data.user);}catch(err){await sb.auth.signOut();showError(err.message||'Login gagal.');}finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Masuk ke Dashboard';}});
+$('logoutBtn').addEventListener('click',async()=>{await sb.auth.signOut();location.reload();});
+(async()=>{try{const r=await sb.auth.getSession();if(r.data.session)await loadDashboard(r.data.session.user);}catch(err){showError(err.message||'Gagal memuat akun.');}})();
+})();
+</script>
+</body>
+</html>

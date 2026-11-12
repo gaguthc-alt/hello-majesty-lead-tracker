@@ -164,7 +164,7 @@ body{background:radial-gradient(ellipse at 78% -8%,rgba(185,151,91,.19),transpar
     <section id="prospectAdmin" class="panel hidden"><h2>Akses Calon Investor</h2><div class="hint">Buat akun baca-saja selama 7 hari. Akun dapat diperpanjang 7 hari atau dicabut kapan saja.</div><form id="prospectForm" class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="field"><label>Email calon investor</label><input id="prospectEmail" type="email" required></div><div class="field"><label>Password awal (minimal 10 karakter)</label><input id="prospectPassword" type="password" minlength="10" required></div><div class="field"><label>Portofolio yang ditampilkan</label><select id="prospectInvestor" class="filter" required style="width:100%"></select></div><div class="field"><label>Nama samaran</label><select id="prospectAlias" class="filter" required style="width:100%"><option>Investor A</option><option>Investor B</option><option>Investor C</option><option>Investor D</option><option>Investor E</option></select></div><div><button class="btn primary" id="prospectCreate">Buat akun 7 hari</button></div><div id="prospectMessage" class="hint" role="status"></div></form><div id="prospectList" class="hint">Memuat akun…</div></section><section class="hero">
       <div class="eyebrow">INVESTOR DASHBOARD</div>
       <h1 id="investorName">Dashboard Investor</h1>
-      <p>Management dapat melihat seluruh portofolio investor, sedangkan Investor hanya dapat melihat portofolio miliknya sendiri.</p>
+      <p>Management melihat seluruh identitas investor. Investor melihat identitas sendiri dan investor lain dalam nama samaran. Calon investor melihat seluruh data dalam tampilan simulasi dengan semua identitas disamarkan.</p>
     </section>
     <div class="grid">
       <div class="metric"><small id="investmentLabel">Investasi bersih Anda</small><strong id="myInvestment">Rp0</strong><div class="sub">Setoran dikurangi penarikan modal</div></div>
@@ -318,7 +318,7 @@ async function loadDashboard(user){
   }
   renderStock();renderSales();renderReports();renderSemester();renderCapitalPosition(netInvestment);renderProfitTrend();
   if(isManagement){$('prospectAdmin').classList.remove('hidden');await loadProspectAdmin();}
-  if(isProspect){$('investorName').textContent=prospectAlias||'Investor';const expiry=await sb.from('investor_user_access').select('expires_at').eq('id',accessRowId).maybeSingle();if(expiry.data?.expires_at){const p=document.createElement('p');p.className='pill gold';p.textContent='AKSES PRESENTASI BERAKHIR '+new Date(expiry.data.expires_at).toLocaleString('id-ID');document.querySelector('.hero').appendChild(p);}}
+  if(isProspect){$('investorName').textContent='Calon Investor — Simulasi Bisnis';const expiry=await sb.from('investor_user_access').select('expires_at').eq('id',accessRowId).maybeSingle();if(expiry.data?.expires_at){const p=document.createElement('p');p.className='pill gold';p.textContent='AKSES PRESENTASI BERAKHIR '+new Date(expiry.data.expires_at).toLocaleString('id-ID');document.querySelector('.hero').appendChild(p);}}
   if(isManagement){$('investorName').textContent='Management — Monitoring Seluruh Investor';document.querySelector('.hero .eyebrow').textContent='MANAGEMENT DASHBOARD';}
   $('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
 }

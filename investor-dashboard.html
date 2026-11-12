@@ -138,7 +138,7 @@ async function loadDashboard(user){
   const ready=stockRows.filter(x=>x.status==='READY');
   $('availableStock').textContent=ready.length+' unit';
   $('availableValue').textContent='Modal stok tersedia '+money(ready.reduce((a,x)=>a+Number(x.capital_cost||0),0));
-  const month=thisMonth(),monthSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)===month);
+  const monthSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)===month);
   $('monthProfit').textContent=money(allocation.data?.management_month_profit ?? monthSales.reduce((a,x)=>a+Number(x.realized_profit||0),0));
   const monthReports=reportRows.filter(x=>String(x.month_start).slice(0,7)===month);
   const latest=monthReports[0]||reportRows[0];

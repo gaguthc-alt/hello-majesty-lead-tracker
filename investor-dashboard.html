@@ -65,6 +65,7 @@
     <section id="tab-reports" class="tab-panel hidden">
       <div class="panel"><h2>Laporan keuntungan bulanan</h2><div class="hint">Alokasi investor = 10% laba penjualan Management × proporsi investasi Anda.</div><div id="reportTable"></div></div>
     </section>
+    <section id="tab-semester" class="tab-panel hidden"><div class="panel"><h2>Settlement bagi hasil semester</h2><div class="hint">Hak keuntungan dikumpulkan dari laporan bulanan dan dibayarkan setiap Januari–Juni atau Juli–Desember.</div><div id="semesterTable"></div></div></section>
     <div class="foot">HELLO MAJESTY · INVESTOR PORTAL · Akses baca saja</div>
   </main>
 </div>
@@ -124,8 +125,12 @@ function renderSales(){
   $('salesTable').innerHTML=table(['Tanggal','Produk','Modal','Harga jual','Laba','Outlet terjual'],rows);
 }
 function renderReports(){
-  const rows=reportRows.map(x=>'<tr><td>'+esc(String(x.month_start).slice(0,7))+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+money(x.total_investment)+'</td><td>'+money(x.investment_basis)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(x.allocated_amount)+'</b></td><td>'+statusPill(x.payment_status)+'</td></tr>');
-  $('reportTable').innerHTML=table(['Bulan','Laba Management','Pool investor 10%','Total investasi','Investasi Anda','Proporsi','Hak Anda','Pembayaran'],rows);
+  const rows=reportRows.map(x=>'<tr><td>'+esc(String(x.month_start).slice(0,7))+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+money(x.total_investment)+'</td><td>'+money(x.investment_basis)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(x.allocated_amount)+'</b></td></tr>');
+  $('reportTable').innerHTML=table(['Bulan','Laba Management','Pool investor 10%','Total investasi','Modal dasar Anda','Proporsi bulan itu','Hak bulan itu'],rows);
+}
+function renderSemester(){
+  const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · Semester '+x.semester+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+statusPill(x.settlement_status)+'</td></tr>');
+  $('semesterTable').innerHTML=table(['Periode','Laba 6 bulan','Pool 10%','Hak Anda','Sudah dibayar','Sisa hak','Status settlement'],rows);
 }
 function renderRecent(){
   const rows=salesRows.slice(0,5).map(x=>'<tr><td>'+fmtDate(x.sold_at)+'</td><td>'+esc([x.product,x.variant].filter(Boolean).join(' '))+'</td><td>'+money(x.capital_cost)+'</td><td>'+money(x.sale_price)+'</td><td>'+money(x.realized_profit)+'</td><td>'+esc(x.sold_outlet||'-')+'</td></tr>');

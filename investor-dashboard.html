@@ -118,12 +118,12 @@ async function loadDashboard(user){
   const nextMonthDate=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),1);
   const nextMonth=nextMonthDate.getFullYear()+'-'+String(nextMonthDate.getMonth()+1).padStart(2,'0')+'-01';
   const [investor,portfolio,stocks,sales,reports,semesters,allocation,monthStocks]=await Promise.all([
-    isManagement?Promise.resolve({data:null,error:null}):sb.from('investors').select('investor_name').eq('id',investorId).single(),
-    sb.from('investor_portfolio_summary').select('*').then(r=>isManagement?r:{...r,data:(r.data||[]).filter(x=>x.investor_id===investorId)}),
+    (isManagement||isProspect)?Promise.resolve({data:null,error:null}):sb.from('investors').select('investor_name').eq('id',investorId).single(),
+    sb.from(isProspect?'investor_prospect_portfolio_summary':'investor_portfolio_summary').select('*').then(r=>isManagement?r:{...r,data:(r.data||[]).filter(x=>x.investor_id===investorId)}),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
     sb.rpc('get_investor_management_sales_detail'),
-    sb.from('investor_monthly_report').select('*').order('month_start',{ascending:false}).limit(500),
-    sb.from('investor_semester_report').select('*').order('fiscal_year',{ascending:false}).limit(200),
+    sb.from(isProspect?'investor_prospect_monthly_report':'investor_monthly_report').select('*').order('month_start',{ascending:false}).limit(500),
+    sb.from(isProspect?'investor_prospect_semester_report':'investor_semester_report').select('*').order('fiscal_year',{ascending:false}).limit(200),
     sb.rpc('get_investor_month_to_date_allocation').then(r=>({...r,data:Array.isArray(r.data)?r.data[0]:r.data})),
     sb.from('investor_management_stock_monitor').select('capital_cost,received_at,status').gte('received_at',monthStart).lt('received_at',nextMonth)
   ]);

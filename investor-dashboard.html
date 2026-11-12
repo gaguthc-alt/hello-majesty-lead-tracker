@@ -66,7 +66,22 @@
       <div class="panel"><div class="section-head"><div><h2>Riwayat penjualan</h2><div class="hint">Hanya transaksi dari stok sumber Management.</div></div><input id="salesMonth" class="filter" type="month"></div><div id="salesTable"></div></div>
     </section>
     <section id="tab-reports" class="tab-panel hidden">
-      <div class="panel"><h2>Laporan keuntungan bulanan</h2><div class="hint">Alokasi investor = 10% laba penjualan Management × proporsi investasi Anda.</div><div id="reportTable"></div></div>
+      <div class="panel">
+        <div class="tabs" style="padding-top:0">
+          <button class="tab active" data-period-tab="current">Bulan Ini</button>
+          <button class="tab" data-period-tab="semester">Semester Ini · Juli–Desember</button>
+        </div>
+        <section id="period-current">
+          <h2>Laporan bulan berjalan</h2>
+          <div class="hint">Hanya transaksi stok sumber Management pada bulan ini. Estimasi bulan berjalan bersifat sementara sampai laporan bulanan difinalisasi.</div>
+          <div id="currentMonthReport"></div>
+        </section>
+        <section id="period-semester" class="hidden">
+          <h2>Laporan semester Juli–Desember</h2>
+          <div class="hint">Setiap bulan tetap ditampilkan. Jika belum ada transaksi atau laporan alokasi, nilainya ditandai — dan tidak mengambil angka dari bulan lain.</div>
+          <div id="semesterMonthReport"></div>
+        </section>
+      </div>
     </section>
     <section id="tab-semester" class="tab-panel hidden"><div class="panel"><h2>Settlement bagi hasil semester</h2><div class="hint">Hak keuntungan dikumpulkan dari laporan bulanan dan dibayarkan setiap Januari–Juni atau Juli–Desember.</div><div id="semesterTable"></div></div></section>
     <div class="foot">HELLO MAJESTY · INVESTOR PORTAL · Akses baca saja</div>
@@ -82,7 +97,7 @@ const $=id=>document.getElementById(id);
 const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
-let investorId=null,isManagement=false,stockRows=[],salesRows=[],reportRows=[],semesterRows=[];
+let investorId=null,isManagement=false,stockRows=[],salesRows=[],reportRows=[],semesterRows=[],liveAllocation=null;
 const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
 function showError(msg){$('loginError').textContent=msg||'';}
 function statusPill(s){const v=String(s||'-').toUpperCase();const cls=v==='READY'?'green':v==='SOLD'?'gold':'';return '<span class="pill '+cls+'">'+esc(v)+'</span>';}
@@ -107,7 +122,7 @@ async function loadDashboard(user){
     sb.rpc('get_investor_month_to_date_allocation').then(r=>({...r,data:Array.isArray(r.data)?r.data[0]:r.data}))
   ]);
   for(const x of [investor,portfolio,stocks,sales,reports,semesters,allocation])if(x.error)throw x.error;
-  stockRows=stocks.data||[];salesRows=sales.data||[];
+  stockRows=stocks.data||[];salesRows=sales.data||[];liveAllocation=allocation.data||{};
   reportRows=(reports.data||[]).filter(x=>isManagement||x.investor_id===investorId);
   semesterRows=(semesters.data||[]).filter(x=>isManagement||x.investor_id===investorId);
   const netInvestment=Number(allocation.data?.investor_net_capital ?? (portfolio.data||[]).reduce((a,x)=>a+Number(x.net_investment||0),0));
@@ -150,8 +165,27 @@ function renderSales(){
   $('salesTable').innerHTML=table(['Tanggal','Produk','Modal','Harga jual','Laba','Outlet terjual'],rows);
 }
 function renderReports(){
-  const rows=reportRows.map(x=>'<tr><td>'+esc(String(x.month_start).slice(0,7))+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+money(x.total_investment)+'</td><td>'+money(x.investment_basis)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(x.allocated_amount)+'</b></td></tr>');
-  $('reportTable').innerHTML=table(['Bulan','Laba Management','Pool investor 10%','Total investasi','Modal dasar Anda','Proporsi bulan itu','Hak bulan itu'],rows);
+  const now=new Date();
+  const year=now.getFullYear(), month=String(now.getMonth()+1).padStart(2,'0');
+  const key=year+'-'+month;
+  const start=now.getMonth()>=6?6:0;
+  const semesterMonths=Array.from({length:6},(_,i)=>{const m=start+i;return {key:year+'-'+String(m+1).padStart(2,'0'),label:new Date(year,m,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'})};});
+  const currentSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)===key);
+  const currentProfit=currentSales.reduce((a,x)=>a+Number(x.realized_profit||0),0);
+  const currentPool=Number(liveAllocation?.investor_pool_estimate ?? currentProfit*0.10);
+  const currentOwn=Number(liveAllocation?.investor_allocation_estimate||0);
+  const ownPct=Number(liveAllocation?.investor_share_pct||0);
+  const currentRows=isManagement
+    ? '<tr><td>'+esc(semesterMonths.find(x=>x.key===key)?.label||key)+'</td><td>'+money(currentProfit)+'</td><td>'+money(currentPool)+'</td><td>—</td><td><b>'+money(currentPool)+'</b></td><td><span class="pill gold">Estimasi berjalan</span></td></tr>'
+    : '<tr><td>'+esc(semesterMonths.find(x=>x.key===key)?.label||key)+'</td><td>'+money(currentProfit)+'</td><td>'+money(currentPool)+'</td><td>'+ownPct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(currentOwn)+'</b></td><td><span class="pill gold">Estimasi berjalan</span></td></tr>';
+  $('currentMonthReport').innerHTML=table(['Periode','Laba Management','Pool 10%','Porsi modal Anda','Estimasi hak bulan ini','Status'],[currentRows]);
+  const monthRows=semesterMonths.map(m=>{
+    const found=reportRows.filter(x=>String(x.month_start||'').slice(0,7)===m.key);
+    if(!found.length)return '<tr><td>'+esc(m.label)+'</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="pill">Belum ada data</span></td></tr>';
+    const x=isManagement?found[0]:found[0];
+    return '<tr><td>'+esc(m.label)+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+(isManagement?'—':Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%')+'</td><td><b>'+money(isManagement?x.investor_pool:x.allocated_amount)+'</b></td><td><span class="pill green">Laporan tersedia</span></td></tr>';
+  });
+  $('semesterMonthReport').innerHTML=table(['Bulan','Laba Management','Pool investor 10%','Porsi modal Anda','Hak investor bulan itu','Status'],monthRows);
 }
 function renderSemester(){
   const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · Semester '+x.semester+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+statusPill(x.settlement_status)+'</td></tr>');
@@ -212,6 +246,11 @@ function renderRecent(){
   $('recentSales').innerHTML=table(['Tanggal','Produk','Modal','Jual','Laba','Outlet'],rows);
 }
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.tab-panel').forEach(x=>x.classList.toggle('hidden',x.id!=='tab-'+b.dataset.tab));}));
+document.querySelectorAll('[data-period-tab]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-period-tab]').forEach(x=>x.classList.toggle('active',x===b));
+  $('period-current').classList.toggle('hidden',b.dataset.periodTab!=='current');
+  $('period-semester').classList.toggle('hidden',b.dataset.periodTab!=='semester');
+}));
 $('stockStatus').addEventListener('change',renderStock);$('salesMonth').value=thisMonth();$('salesMonth').addEventListener('change',renderSales);
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();showError('');$('loginBtn').disabled=true;$('loginBtn').textContent='Memeriksa akun…';try{const r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw r.error;await loadDashboard(r.data.user);}catch(err){await sb.auth.signOut();showError(err.message||'Login gagal.');}finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Masuk ke Dashboard';}});
 $('logoutBtn').addEventListener('click',async()=>{await sb.auth.signOut();location.reload();});

@@ -56,7 +56,7 @@
       <div class="panel"><div class="section-head"><div><h2>Posisi investasi</h2><div class="hint">Ringkasan posisi modal dan estimasi alokasi berjalan dari laba stok Management.</div></div></div><div id="positionSummary" class="empty">Memuat data…</div></div>
       <div class="panel"><h2>Posisi perputaran modal</h2><div class="hint">Nilai modal stok Management dibandingkan dengan modal investor yang tercatat. Porsi investor ditampilkan secara proporsional karena modal dikelola sebagai pool bersama, bukan kepemilikan unit per investor.</div><div id="capitalPosition"></div></div>
       <div class="panel"><h2>Tren laba bulanan</h2><div class="hint">Perubahan laba Management dan hak profit Anda berdasarkan laporan alokasi yang sudah diterbitkan. Bulan tanpa laporan tidak dianggap nol.</div><div id="profitTrend"></div></div>
-      <div class="panel"><h2>Rincian penjualan per produk</h2><div class="hint" id="productSalesHint">Rincian penjualan bulan berjalan berdasarkan produk dan outlet. Tidak mencampur bulan sebelumnya.</div><div id="productSales"></div></div>
+      <div class="panel"><h2>Rincian penjualan</h2><div class="hint" id="productSalesHint">Rincian penjualan bulan berjalan berdasarkan produk dan outlet. Tidak mencampur bulan sebelumnya.</div><div id="productSales"></div></div>
       
     </section>
     <section id="tab-stock" class="tab-panel hidden">
@@ -150,7 +150,7 @@ async function loadDashboard(user){
   }else{
     $('positionSummary').innerHTML='<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(totalCapital)+'</strong></div><div class="metric"><small>Pool investor 10%</small><strong>'+money(livePool)+'</strong></div><div class="metric"><small>Modal bersih Anda</small><strong>'+money(netInvestment)+'</strong></div><div class="metric"><small>Estimasi hak keuntungan Anda</small><strong>'+money(ownEstimate)+'</strong></div></div><div class="hint">Porsi modal Anda '+pct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%. Estimasi sementara, belum final atau dibayarkan.</div>';
   }
-  renderStock();renderSales();renderReports();renderSemester();renderRecent();renderCapitalPosition(netInvestment);renderProfitTrend();renderProductSales();
+  renderStock();renderSales();renderReports();renderSemester();renderCapitalPosition(netInvestment);renderProfitTrend();renderProductSales();
   if(isManagement){$('investorName').textContent='Management — Monitoring Seluruh Investor';document.querySelector('.hero .eyebrow').textContent='MANAGEMENT DASHBOARD';}
   $('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
 }

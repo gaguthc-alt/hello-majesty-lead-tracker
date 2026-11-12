@@ -345,7 +345,7 @@ function renderReports(){
   $('currentMonthReport').innerHTML=table(['Investor','Periode','Laba Management','Pool 10%','Porsi modal','Hak investor','Status'],currentHtml);
   const monthRows=semesterMonths.flatMap(m=>{
     if(m.key==='2026-08'||m.key==='2026-09'){
-      return portfolioRows.map(p=>{
+      return portfolioRows.filter(p=>m.key!=='2026-08'||p.investor_alias!=='Investor B').map(p=>{
         const isA=p.investor_alias==='Investor A',isB=p.investor_alias==='Investor B';
         const profit=m.key==='2026-08'?7657227.14:23153925.47;
         const pool=m.key==='2026-08'?765723:2315392;
@@ -372,7 +372,7 @@ function renderSemester(){
     const a=p.investor_alias==='Investor A',b=p.investor_alias==='Investor B';
     const aug=a?765723:0,sep=a?2104902:(b?210490:0);
     const out=[];
-    if(aug||b)out.push('<tr><td>2026 · Agustus</td><td>'+esc(p.investor_name||p.investor_alias)+'</td><td>'+money(7657227.14)+'</td><td>'+money(765723)+'</td><td><b>'+money(aug)+'</b></td><td>'+money(0)+'</td><td>'+money(aug)+'</td><td><span class="pill gold">'+(b?'BELUM MENJADI INVESTOR':'BELUM DITERIMA')+'</span></td></tr>');
+    if(aug)out.push('<tr><td>2026 · Agustus</td><td>'+esc(p.investor_name||p.investor_alias)+'</td><td>'+money(7657227.14)+'</td><td>'+money(765723)+'</td><td><b>'+money(aug)+'</b></td><td>'+money(0)+'</td><td>'+money(aug)+'</td><td><span class="pill gold">'+(b?'BELUM MENJADI INVESTOR':'BELUM DITERIMA')+'</span></td></tr>');
     out.push('<tr><td>2026 · September</td><td>'+esc(p.investor_name||p.investor_alias)+'</td><td>'+money(23153925.47)+'</td><td>'+money(2315392)+'</td><td><b>'+money(sep)+'</b></td><td>'+money(0)+'</td><td>'+money(sep)+'</td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>');
     return out;
   });

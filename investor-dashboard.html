@@ -97,7 +97,7 @@ const $=id=>document.getElementById(id);
 const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
-let investorId=null,isManagement=false,stockRows=[],salesRows=[],reportRows=[],semesterRows=[],liveAllocation=null;
+let investorId=null,isManagement=false,stockRows=[],salesRows=[],reportRows=[],semesterRows=[],monthlyStockRows=[],liveAllocation=null;
 const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
 function showError(msg){$('loginError').textContent=msg||'';}
 function statusPill(s){const v=String(s||'-').toUpperCase();const cls=v==='READY'?'green':v==='SOLD'?'gold':'';return '<span class="pill '+cls+'">'+esc(v)+'</span>';}
@@ -112,7 +112,7 @@ async function loadDashboard(user){
     if(!access.data)throw new Error('Akun ini belum terdaftar sebagai investor atau Management. Hubungi Management Hello Majesty.');
     investorId=access.data.investor_id;
   }
-  const [investor,portfolio,stocks,sales,reports,semesters,allocation]=await Promise.all([
+  const month=thisMonth();\n  const monthStart=month+'-01';\n  const nextMonthDate=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),1);\n  const nextMonth=nextMonthDate.getFullYear()+'-'+String(nextMonthDate.getMonth()+1).padStart(2,'0')+'-01';\n  const [investor,portfolio,stocks,sales,reports,semesters,allocation,monthStocks]=await Promise.all([
     isManagement?Promise.resolve({data:null,error:null}):sb.from('investors').select('investor_name').eq('id',investorId).single(),
     sb.from('investor_portfolio_summary').select('*').then(r=>isManagement?r:{...r,data:(r.data||[]).filter(x=>x.investor_id===investorId)}),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
@@ -211,26 +211,35 @@ function renderSemester(){
   const historicalSettlementRows = augustRows.map(x=>'<tr><td>2026 · Agustus</td><td>'+esc(x.name)+'</td><td>'+money(7657227.14)+'</td><td>'+money(765723)+'</td><td><b>'+money(x.amount)+'</b></td><td>'+money(0)+'</td><td>'+money(x.amount)+'</td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>').concat(historicalRows.map(x=>'<tr><td>2026 · September</td><td>'+esc(x.name)+'</td><td>'+money(23153925.47)+'</td><td>'+money(2315392)+'</td><td><b>'+money(x.amount)+'</b></td><td>'+money(0)+'</td><td>'+money(x.amount)+'</td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>'));
   const semesterTotalRows = historicalRows.map(x=>{const aug=x.name==='B. Titis / P. Budi'?765723:0; const oct= x.name==='H. Imam'?169037:1690368; const total=aug+x.amount+oct; return '<tr><td>'+esc(x.name)+'</td><td><b>'+money(total)+'</b></td><td>'+money(0)+'</td><td><b>'+money(total)+'</b></td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>';});
   const monthlyRows = historicalSettlementRows.concat(rows);
-  $('semesterTable').innerHTML='<h3 style="margin:0 0 8px">Rincian pendapatan bulanan</h3>'+table(['Periode','Nama investor','Laba bulan','Pool 10%','Pendapatan investor','Sudah diterima','Sisa hak','Status'],monthlyRows)+'<h3 style="margin:18px 0 8px">Total Semester II 2026</h3>'+table(['Nama investor','Total hak Semester II 2026','Sudah diterima','Sisa hak','Status'],semesterTotalRows);
-}
-
-function renderCapitalPosition(netInvestment){
+  $('semesterTable').innerHTML='<h3 style="margin:0 0 8px">Rincian pendapatan bulanan</h3>'+table(['Periodefunction renderCapitalPosition(netInvestment){
   const totalStock=stockRows.reduce((a,x)=>a+Number(x.capital_cost||0),0);
   const ready=stockRows.filter(x=>x.status==='READY');
-  const sold=salesRows;
+  const sold=stockRows.filter(x=>x.status==='SOLD');
   const readyCost=ready.reduce((a,x)=>a+Number(x.capital_cost||0),0);
   const soldCost=sold.reduce((a,x)=>a+Number(x.capital_cost||0),0);
-  const share=Number(netInvestment||0);
-  const allInvestorCapital=Number(reportRows[0]?.total_investment||0);
-  const pct=allInvestorCapital>0?share/allInvestorCapital:0;
-  const fmtPct=v=>(v*100).toLocaleString('id-ID',{maximumFractionDigits:2})+'%';
+  const month=thisMonth();
+  const monthSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)===month);
+  const monthStockValue=monthlyStockRows.reduce((a,x)=>a+Number(x.capital_cost||0),0);
+  const monthSoldCost=monthSales.reduce((a,x)=>a+Number(x.capital_cost||0),0);
+  const monthProfit=monthSales.reduce((a,x)=>a+Number(x.realized_profit||0),0);
   const line=(label,value,sub='')=>'<div class="metric"><small>'+label+'</small><strong>'+money(value)+'</strong><div class="sub">'+sub+'</div></div>';
-  $('capitalPosition').innerHTML='<div class="grid" style="margin:0 0 12px">'+
-    line('Modal bersih Anda',share,'Setoran dikurangi penarikan')+
-    line('Modal stok Management',totalStock,'Seluruh status stok yang tercatat')+
-    line('Modal stok tersedia',readyCost,ready.length+' unit belum terjual')+
-    line('Modal barang terjual',soldCost,sold.length+' transaksi terhubung')+
-    '</div><div class="hint">Porsi proporsional Anda berdasarkan laporan alokasi terakhir: <b>'+(allInvestorCapital>0?fmtPct(pct):'Belum tersedia')+'</b>. Estimasi porsi nilai stok tersedia: <b>'+(allInvestorCapital>0?money(readyCost*pct):'Belum dapat dihitung')+'</b>. Ini adalah indikator proporsional pool, bukan pemetaan kepemilikan unit. Nilai stok di luar data yang termuat (lebih dari 1.000 baris) dapat membuat ringkasan ini belum lengkap.</div>';
+  const monthLabel=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  $('capitalPosition').innerHTML=
+    '<h3 style="margin:0 0 8px">Posisi modal keseluruhan</h3>'+
+    '<div class="grid" style="margin:0 0 8px">'+
+    line('Modal stok Management',totalStock,'Seluruh status stok yang termuat')+
+    line('Modal stok tersedia',readyCost,ready.length+' unit saat ini')+
+    line('Modal barang terjual',soldCost,sold.length+' unit berstatus terjual')+
+    '</div><div class="hint" style="margin-bottom:18px">Gambaran akumulasi data stok Management yang termuat di monitoring. Bukan angka khusus bulan berjalan.</div>'+
+    '<h3 style="margin:0 0 8px">Perputaran modal bulan '+esc(monthLabel)+'</h3>'+
+    '<div class="grid" style="margin:0 0 8px">'+
+    line('Modal barang masuk',monthStockValue,monthlyStockRows.length+' unit diterima bulan ini')+
+    line('Modal barang terjual',monthSoldCost,monthSales.length+' transaksi terjual bulan ini')+
+    line('Laba terealisasi',monthProfit,'Dari penjualan stok Management bulan ini')+
+    line('Stok tersedia saat ini',readyCost,ready.length+' unit · posisi hari ini')+
+    '</div><div class="hint">Barang masuk dihitung dari tanggal diterima bulan ini. Barang terjual dan laba dihitung dari tanggal penjualan bulan ini. Stok tersedia adalah posisi saat ini, bukan saldo historis akhir bulan.</div>';
+}
+nilai stok tersedia: <b>'+(allInvestorCapital>0?money(readyCost*pct):'Belum dapat dihitung')+'</b>. Ini adalah indikator proporsional pool, bukan pemetaan kepemilikan unit. Nilai stok di luar data yang termuat (lebih dari 1.000 baris) dapat membuat ringkasan ini belum lengkap.</div>';
 }
 function renderProfitTrend(){
   // Semester II 2026: tampilkan seluruh bulan, termasuk bulan tanpa data.

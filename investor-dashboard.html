@@ -112,17 +112,22 @@ async function loadDashboard(user){
     if(!access.data)throw new Error('Akun ini belum terdaftar sebagai investor atau Management. Hubungi Management Hello Majesty.');
     investorId=access.data.investor_id;
   }
-  const month=thisMonth();\n  const monthStart=month+'-01';\n  const nextMonthDate=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),1);\n  const nextMonth=nextMonthDate.getFullYear()+'-'+String(nextMonthDate.getMonth()+1).padStart(2,'0')+'-01';\n  const [investor,portfolio,stocks,sales,reports,semesters,allocation,monthStocks]=await Promise.all([
+  const month=thisMonth();
+  const monthStart=month+'-01';
+  const nextMonthDate=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),1);
+  const nextMonth=nextMonthDate.getFullYear()+'-'+String(nextMonthDate.getMonth()+1).padStart(2,'0')+'-01';
+  const [investor,portfolio,stocks,sales,reports,semesters,allocation,monthStocks]=await Promise.all([
     isManagement?Promise.resolve({data:null,error:null}):sb.from('investors').select('investor_name').eq('id',investorId).single(),
     sb.from('investor_portfolio_summary').select('*').then(r=>isManagement?r:{...r,data:(r.data||[]).filter(x=>x.investor_id===investorId)}),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
     sb.rpc('get_investor_management_sales_detail'),
     sb.from('investor_monthly_report').select('*').order('month_start',{ascending:false}).limit(500),
     sb.from('investor_semester_report').select('*').order('fiscal_year',{ascending:false}).limit(200),
-    sb.rpc('get_investor_month_to_date_allocation').then(r=>({...r,data:Array.isArray(r.data)?r.data[0]:r.data}))
+    sb.rpc('get_investor_month_to_date_allocation').then(r=>({...r,data:Array.isArray(r.data)?r.data[0]:r.data})),
+    sb.from('investor_management_stock_monitor').select('capital_cost,received_at,status').gte('received_at',monthStart).lt('received_at',nextMonth)
   ]);
-  for(const x of [investor,portfolio,stocks,sales,reports,semesters,allocation])if(x.error)throw x.error;
-  stockRows=stocks.data||[];salesRows=sales.data||[];liveAllocation=allocation.data||{};
+  for(const x of [investor,portfolio,stocks,sales,reports,semesters,allocation,monthStocks])if(x.error)throw x.error;
+  stockRows=stocks.data||[];salesRows=sales.data||[];monthlyStockRows=monthStocks.data||[];liveAllocation=allocation.data||{};
   reportRows=(reports.data||[]).filter(x=>isManagement||x.investor_id===investorId);
   semesterRows=(semesters.data||[]).filter(x=>isManagement||x.investor_id===investorId);
   const netInvestment=Number(allocation.data?.investor_net_capital ?? (portfolio.data||[]).reduce((a,x)=>a+Number(x.net_investment||0),0));

@@ -97,15 +97,17 @@ revoke all on function public.generate_investor_semester_settlement(integer,smal
 grant execute on function public.generate_investor_semester_settlement(integer,smallint) to authenticated;
 create or replace function public.record_investor_semester_payment(p_settlement_item_id uuid,p_amount numeric,p_reference text default null,p_notes text default null)
 returns uuid language plpgsql set search_path to 'pg_catalog','public','pg_temp' as $$
-declare v_item public.investor_semester_settlement_items%rowtype; v_payment uuid; v_remaining numeric(18,2); v_settlement uuid;
+declare v_item public.investor_semester_settlement_items%rowtype; v_payment uuid; v_remaining numeric(18,2); v_settlement uuid; v_status text;
 begin
  if not public.is_management() then raise exception 'Akses hanya untuk Management'; end if;
  if p_amount is null or p_amount<=0 then raise exception 'Nominal pembayaran harus lebih dari nol'; end if;
  select * into v_item from public.investor_semester_settlement_items where id=p_settlement_item_id for update;
  if not found then raise exception 'Data hak investor tidak ditemukan'; end if;
+ select settlement_id into v_settlement from public.investor_semester_settlement_items where id=p_settlement_item_id;
+ select status into v_status from public.investor_semester_settlements where id=v_settlement for update;
+ if v_status not in ('READY_TO_SETTLE','PARTIALLY_PAID') then raise exception 'Settlement harus ditandai READY_TO_SETTLE sebelum pembayaran dicatat'; end if;
  v_remaining:=v_item.allocated_amount-v_item.paid_amount;
  if p_amount>v_remaining then raise exception 'Pembayaran melebihi sisa kewajiban sebesar %',v_remaining; end if;
- select settlement_id into v_settlement from public.investor_semester_settlement_items where id=p_settlement_item_id;
  insert into public.investor_semester_payments(settlement_item_id,amount,paid_by,payment_reference,notes)
  values(p_settlement_item_id,p_amount,auth.uid(),nullif(trim(p_reference),''),nullif(trim(p_notes),'')) returning id into v_payment;
  update public.investor_semester_settlement_items set paid_amount=paid_amount+p_amount,payment_status=case when paid_amount+p_amount>=allocated_amount then 'PAID' else 'PARTIALLY_PAID' end where id=p_settlement_item_id;

@@ -41,10 +41,10 @@
       <p>Mode Management dapat memantau seluruh investor. Mode Investor hanya menampilkan data investasi miliknya sendiri. Data Stockist tetap dikecualikan.</p>
     </section>
     <div class="grid">
-      <div class="metric"><small>Investasi bersih Anda</small><strong id="myInvestment">Rp0</strong><div class="sub">Setoran dikurangi penarikan modal</div></div>
+      <div class="metric"><small id="investmentLabel">Investasi bersih Anda</small><strong id="myInvestment">Rp0</strong><div class="sub">Setoran dikurangi penarikan modal</div></div>
       <div class="metric"><small>Stok Management tersedia</small><strong id="availableStock">0 unit</strong><div class="sub" id="availableValue">Modal stok tersedia Rp0</div></div>
       <div class="metric"><small>Laba Management bulan ini</small><strong id="monthProfit">Rp0</strong><div class="sub">Hanya dari stok sumber Management</div></div>
-      <div class="metric"><small>Hak keuntungan Anda</small><strong id="myShare">Rp0</strong><div class="sub" id="mySharePct">Alokasi 10% dibagi proporsional</div></div>
+      <div class="metric"><small id="allocationLabel">Estimasi hak keuntungan Anda</small><strong id="myShare">Rp0</strong><div class="sub" id="mySharePct">Estimasi berjalan · belum final</div></div>
     </div>
     <nav class="tabs">
       <button class="tab active" data-tab="overview">Ringkasan</button>
@@ -97,31 +97,34 @@ async function loadDashboard(user){
     if(!access.data)throw new Error('Akun ini belum terdaftar sebagai investor atau Management. Hubungi Management Hello Majesty.');
     investorId=access.data.investor_id;
   }
-  const [investor,portfolio,stocks,sales,reports,semesters]=await Promise.all([
+  const [investor,portfolio,stocks,sales,reports,semesters,allocation]=await Promise.all([
     isManagement?Promise.resolve({data:null,error:null}):sb.from('investors').select('investor_name').eq('id',investorId).single(),
     sb.from('investor_portfolio_summary').select('*').then(r=>isManagement?r:{...r,data:(r.data||[]).filter(x=>x.investor_id===investorId)}),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
     sb.rpc('get_investor_management_sales_detail'),
     sb.from('investor_monthly_report').select('*').order('month_start',{ascending:false}).limit(500),
-    sb.from('investor_semester_report').select('*').order('fiscal_year',{ascending:false}).limit(200)
+    sb.from('investor_semester_report').select('*').order('fiscal_year',{ascending:false}).limit(200),
+    sb.rpc('get_investor_month_to_date_allocation').then(r=>({...r,data:Array.isArray(r.data)?r.data[0]:r.data}))
   ]);
-  for(const x of [investor,portfolio,stocks,sales,reports,semesters])if(x.error)throw x.error;
+  for(const x of [investor,portfolio,stocks,sales,reports,semesters,allocation])if(x.error)throw x.error;
   stockRows=stocks.data||[];salesRows=sales.data||[];
   reportRows=(reports.data||[]).filter(x=>isManagement||x.investor_id===investorId);
   semesterRows=(semesters.data||[]).filter(x=>isManagement||x.investor_id===investorId);
-  const netInvestment=(portfolio.data||[]).reduce((a,x)=>a+Number(x.net_investment||0),0);
+  const netInvestment=Number(allocation.data?.investor_net_capital ?? (portfolio.data||[]).reduce((a,x)=>a+Number(x.net_investment||0),0));
   $('investorName').textContent=isManagement?'Management — Monitoring Seluruh Investor':investor.data.investor_name;
   $('investorName').insertAdjacentHTML('afterend',isManagement?'<p class="pill gold">AKSES MANAGEMENT · SELURUH INVESTOR</p>':'');
+  $('investmentLabel').textContent=isManagement?'Total modal bersih seluruh investor':'Modal bersih Anda';
   $('myInvestment').textContent=money(netInvestment);
   const ready=stockRows.filter(x=>x.status==='READY');
   $('availableStock').textContent=ready.length+' unit';
   $('availableValue').textContent='Modal stok tersedia '+money(ready.reduce((a,x)=>a+Number(x.capital_cost||0),0));
   const month=thisMonth(),monthSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)===month);
-  $('monthProfit').textContent=money(monthSales.reduce((a,x)=>a+Number(x.realized_profit||0),0));
+  $('monthProfit').textContent=money(allocation.data?.management_month_profit ?? monthSales.reduce((a,x)=>a+Number(x.realized_profit||0),0));
   const monthReports=reportRows.filter(x=>String(x.month_start).slice(0,7)===month);
   const latest=monthReports[0]||reportRows[0];
-  $('myShare').textContent=money(isManagement?monthReports.reduce((a,x)=>a+Number(x.allocated_amount||0),0):(latest?.allocated_amount||0));
-  $('mySharePct').textContent=isManagement?'Total hak seluruh investor pada laporan bulan berjalan':latest?Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'% dari total investasi · '+(latest.payment_status==='PAID'?'Sudah dibayar':'Belum dibayar'):'Menunggu laporan bulanan';
+  $('allocationLabel').textContent=isManagement?'Total pool investor · 10% laba':'Estimasi hak profit Anda';
+  $('myShare').textContent=money(allocation.data?.investor_allocation_estimate ?? 0);
+  $('mySharePct').textContent=isManagement?'10% dari laba Management bulan berjalan · estimasi sementara':Number(allocation.data?.investor_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'% porsi modal × pool 10% · estimasi sementara';
   if(isManagement){
     $('positionSummary').innerHTML=latest?'<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(latest.total_investment)+'</strong></div><div class="metric"><small>Alokasi investor 10%</small><strong>'+money(latest.investor_pool)+'</strong></div><div class="metric"><small>Jumlah investor penerima</small><strong>'+new Set(monthReports.map(x=>x.investor_id)).size+'</strong></div><div class="metric"><small>Total hak yang dialokasikan</small><strong>'+money(monthReports.reduce((a,x)=>a+Number(x.allocated_amount||0),0))+'</strong></div></div>':'<div class="empty">Laporan alokasi bulanan belum diterbitkan Management.</div>';
   }else{

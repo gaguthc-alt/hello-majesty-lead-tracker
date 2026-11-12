@@ -57,7 +57,7 @@
       <div class="panel"><h2>Posisi perputaran modal</h2><div class="hint">Nilai modal stok Management dibandingkan dengan modal investor yang tercatat. Porsi investor ditampilkan secara proporsional karena modal dikelola sebagai pool bersama, bukan kepemilikan unit per investor.</div><div id="capitalPosition"></div></div>
       <div class="panel"><h2>Tren laba bulanan</h2><div class="hint">Perubahan laba Management dan hak profit Anda berdasarkan laporan alokasi yang sudah diterbitkan. Bulan tanpa laporan tidak dianggap nol.</div><div id="profitTrend"></div></div>
       <div class="panel"><h2>Rincian penjualan per produk</h2><div class="hint" id="productSalesHint">Rincian penjualan bulan berjalan berdasarkan produk dan outlet. Tidak mencampur bulan sebelumnya.</div><div id="productSales"></div></div>
-      <div class="panel"><h2>Penjualan terbaru</h2><div class="hint">Rincian produk, modal, harga jual, laba, dan outlet.</div><div id="recentSales"></div></div>
+      
     </section>
     <section id="tab-stock" class="tab-panel hidden">
       <div class="panel"><div class="section-head"><div><h2>Monitoring stok sumber Management</h2><div class="hint">Termasuk stok tersedia, terjual, dan status stok lainnya. IMEI tidak ditampilkan.</div></div><select id="stockStatus" class="filter"><option value="ALL">Semua status</option><option value="READY">Tersedia</option><option value="SOLD">Terjual</option><option value="RETURN">Retur</option><option value="RESERVED">Reserved</option></select></div><div id="stockTable"></div></div>
@@ -253,18 +253,11 @@ function renderProductSales(){
   const monthLabel=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
   const currentSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)===month);
   $('productSalesHint').textContent='Periode '+monthLabel+' · hanya penjualan stok sumber Management pada bulan berjalan. Bulan sebelumnya tidak dijumlahkan.';
-  const map=new Map();
-  currentSales.forEach(x=>{
-    const name=[x.product,x.variant,x.color,x.grade].filter(Boolean).join(' ');
-    const key=name+'|'+(x.sold_outlet||'-');
-    const v=map.get(key)||{name,outlet:x.sold_outlet||'-',qty:0,sales:0,cost:0,profit:0};
-    v.qty+=1;v.sales+=Number(x.sale_price||0);v.cost+=Number(x.capital_cost||0);v.profit+=Number(x.realized_profit||0);map.set(key,v);
-  });
-  const values=[...map.values()].sort((a,b)=>b.profit-a.profit);
-  const rows=values.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x.name)+'</td><td class="right">'+x.qty+'</td><td class="right">'+money(x.sales)+'</td><td class="right">'+money(x.cost)+'</td><td class="right">'+money(x.profit)+'</td><td>'+esc(x.outlet)+'</td></tr>');
-  const total=values.reduce((a,x)=>({qty:a.qty+x.qty,sales:a.sales+x.sales,cost:a.cost+x.cost,profit:a.profit+x.profit}),{qty:0,sales:0,cost:0,profit:0});
+  const values=currentSales.slice().sort((a,b)=>new Date(a.sold_at||0)-new Date(b.sold_at||0));
+  const rows=values.map(x=>'<tr><td>'+fmtDate(x.sold_at)+'</td><td>'+esc([x.product,x.variant,x.color,x.grade].filter(Boolean).join(' '))+'</td><td class="right">1</td><td class="right">'+money(x.sale_price)+'</td><td class="right">'+money(x.capital_cost)+'</td><td class="right">'+money(x.realized_profit)+'</td><td>'+esc(x.sold_outlet||'-')+'</td></tr>');
+  const total=values.reduce((a,x)=>({qty:a.qty+1,sales:a.sales+Number(x.sale_price||0),cost:a.cost+Number(x.capital_cost||0),profit:a.profit+Number(x.realized_profit||0)}),{qty:0,sales:0,cost:0,profit:0});
   if(rows.length)rows.push('<tr style="font-weight:800;background:#1a2d45"><td colspan="2">TOTAL '+esc(monthLabel.toUpperCase())+'</td><td class="right">'+total.qty+'</td><td class="right">'+money(total.sales)+'</td><td class="right">'+money(total.cost)+'</td><td class="right">'+money(total.profit)+'</td><td>-</td></tr>');
-  $('productSales').innerHTML=table(['No','Nama barang','Kuantitas','Penjualan','Modal','Laba','Outlet'],rows);
+  $('productSales').innerHTML=table(['Tanggal','Nama barang','Kuantitas','Penjualan','Modal','Laba','Outlet'],rows);
 }
 
 function renderRecent(){

@@ -347,10 +347,11 @@ function renderReports(){
   const currentHtml=currentRows.map(p=>{
     const share=Number(p.net_investment||0)/totalCapital*100;
     const amount=livePool*share/100;
-    return '<tr><td>'+esc(p.investor_name||p.investor_alias||'-')+'</td><td>'+esc(periodLabel)+'</td><td>'+money(liveProfit)+'</td><td>'+money(livePool)+'</td><td>'+share.toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(amount)+'</b></td></tr>';
+    const action=isManagement?'<button class="btn primary" type="button" data-wa-investor="'+esc(p.investor_id)+'" data-wa-name="'+esc(p.investor_name||p.investor_alias||'Pemilik Modal')+'">Kirim WhatsApp</button>':'';
+    return '<tr><td>'+esc(p.investor_name||p.investor_alias||'-')+'</td><td>'+esc(periodLabel)+'</td><td>'+money(liveProfit)+'</td><td>'+money(livePool)+'</td><td>'+share.toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(amount)+'</b></td>'+(isManagement?'<td>'+action+'</td>':'')+'</tr>';
   });
-  if(!currentHtml.length)currentHtml.push('<tr><td colspan="6">Belum ada modal investor aktif untuk periode ini.</td></tr>');
-  $('currentMonthReport').innerHTML=table(['Investor','Periode','Laba Management','Pool 10%','Porsi modal','Hak investor'],currentHtml);
+  if(!currentHtml.length)currentHtml.push('<tr><td colspan="'+(isManagement?7:6)+'">Belum ada modal pemilik modal aktif untuk periode ini.</td></tr>');
+  $('currentMonthReport').innerHTML=table(['Pemilik Modal','Periode','Laba Management','Alokasi 10%','Porsi modal','Hak bagi hasil',...(isManagement?['Aksi']:[])],currentHtml);
   const monthRows=semesterMonths.flatMap(m=>{
     if(m.key==='2026-08'||m.key==='2026-09'){
       return portfolioRows.filter(p=>m.key!=='2026-08'||p.investor_alias!=='Investor B').map(p=>{
@@ -368,6 +369,37 @@ function renderReports(){
   });
   $('semesterMonthReport').innerHTML=table(['Bulan','Investor','Laba Management','Pool investor 10%','Porsi modal','Hak investor'],monthRows);
 }
+function sendInvestorWhatsApp(investorId,investorName){
+  const phoneRaw=window.prompt('Masukkan nomor WhatsApp '+investorName+' (contoh 628123456789):');
+  if(!phoneRaw)return;
+  let phone=String(phoneRaw).replace(/[^0-9]/g,'');
+  if(phone.startsWith('0'))phone='62'+phone.slice(1);
+  if(!phone.startsWith('62')||phone.length<10){alert('Nomor WhatsApp harus menggunakan kode negara Indonesia 62.');return;}
+  const rows=reportRows.filter(x=>x.investor_id===investorId).sort((a,b)=>String(a.month_start).localeCompare(String(b.month_start)));
+  const totalCapital=portfolioRows.reduce((sum,p)=>sum+Math.max(0,Number(p.net_investment||0)),0);
+  const liveProfit=Number(liveAllocation?.management_month_profit||0);
+  const livePool=Number(liveAllocation?.investor_pool_estimate??Math.max(0,liveProfit)*0.10);
+  const own=portfolioRows.find(p=>p.investor_id===investorId);
+  const sharePct=own&&totalCapital>0?Number(own.net_investment||0)/totalCapital*100:0;
+  const currentKey=thisMonth();
+  const currentMonthLabel=new Date(Number(currentKey.slice(0,4)),Number(currentKey.slice(5,7))-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  const lines=rows.map(x=>{
+    const label=new Date(x.month_start+'T00:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+    return '*'+label+'*\\n- Laba Kotor Management Stock: '+money(x.management_profit)+'\\n- Alokasi Bagi Hasil ('+Number(x.allocation_rate||10)+'%): '+money(x.investor_pool)+'\\n- Hak Bagi Hasil Anda: '+money(x.allocated_amount);
+  });
+  if(!rows.some(x=>String(x.month_start).slice(0,7)===currentKey)){
+    const estimate=livePool*sharePct/100;
+    lines.push('*'+currentMonthLabel+' (estimasi berjalan)*\\n- Laba Kotor Management Stock: '+money(liveProfit)+'\\n- Alokasi Bagi Hasil (10%): '+money(livePool)+'\\n- Hak Bagi Hasil Anda: '+money(estimate));
+  }
+  const total=rows.reduce((sum,x)=>sum+Number(x.allocated_amount||0),0)+(rows.some(x=>String(x.month_start).slice(0,7)===currentKey)?0:livePool*sharePct/100);
+  const message='*LAPORAN PENYERTAAN MODAL & BAGI HASIL*\\n*HELLO MAJESTY*\\n\\nYth. Bapak/Ibu '+investorName+',\\n\\nBerikut laporan perkembangan penyertaan modal Anda.\\n\\n*INFORMASI PENYERTAAN MODAL*\\nNama Pemilik Modal: '+investorName+'\\nTotal Penyertaan Modal: '+money(own?.net_investment||0)+'\\nPorsi Penyertaan Modal: '+sharePct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%\\n\\n*RINCIAN BAGI HASIL BULANAN*\\n'+(lines.length?lines.join('\\n\\n'):'Belum ada rincian bulanan yang diterbitkan.')+'\\n\\n*TOTAL HAK BAGI HASIL*\\n*'+money(total)+'*\\n\\n*MONITORING PENYERTAAN MODAL*\\nhttps://hello-majesty-lead-tracker.pages.dev/investor-dashboard.html\\n\\nTerima kasih atas kepercayaan dan dukungan Bapak/Ibu kepada Hello Majesty.\\n\\n*HELLO MAJESTY*\\n_Built on Trust_';
+  window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(message),'_blank','noopener');
+}
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-wa-investor]');
+  if(!btn)return;
+  sendInvestorWhatsApp(btn.dataset.waInvestor,btn.dataset.waName||'Pemilik Modal');
+});
 function renderSemester(){
   const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · '+(Number(x.fiscal_year)===2026&&Number(x.semester)===2&&Number(x.batch_number||1)===1?'Oktober':'Semester '+x.semester)+(Number(x.batch_number||1)>1?' · Batch '+esc(x.batch_number):'')+'</td><td>'+esc(x.investor_name||'-')+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+(String(x.settlement_status||'').toUpperCase()==='DRAFT'?'<span class="pill gold">BELUM DITERIMA</span>':statusPill(x.settlement_status))+'</td></tr>');
   const historicalRows=portfolioRows.map(p=>{

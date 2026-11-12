@@ -8,7 +8,7 @@
 :root{color-scheme:dark;--bg:#08111f;--panel:#111f33;--line:#2a3d56;--text:#edf4ff;--muted:#9fb0c6;--gold:#d9bd7b;--green:#62d6a2}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#18344c 0,transparent 34%),var(--bg);font-family:Inter,Arial,sans-serif;color:var(--text)}
 .wrap{max-width:1080px;margin:auto;padding:24px 16px 50px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-weight:900;letter-spacing:.12em}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:5px}.tag{border:1px solid #806c43;color:#f3d99d;border-radius:30px;padding:7px 11px;font-size:11px;font-weight:800}
-.hero,.panel{border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#14263c,#101e30);padding:22px;margin-top:18px}.hero{background:linear-gradient(120deg,#142a42,#172d40 60%,#26334a)}.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--gold);font-weight:800}.hero h1{font-size:clamp(26px,5vw,42px);margin:10px 0}.hero p,.muted{color:var(--muted);line-height:1.6;font-size:13px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}.metric{border:1px solid var(--line);background:#0d1b2c;border-radius:15px;padding:15px}.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{display:block;font-size:clamp(18px,2.4vw,25px);margin-top:9px;overflow-wrap:anywhere}.panel h2{font-size:18px;margin:0 0 6px}.notice{border:1px solid #695a39;background:#292617;border-radius:12px;padding:12px;color:#f0dfb7;font-size:12px;line-height:1.55;margin-top:14px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}.field label{display:block;font-size:12px;color:#c4d0df;margin-bottom:7px}.field input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#091627;color:#fff;font-size:15px}.result{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}.result>div{padding:14px;border:1px solid var(--line);border-radius:13px;background:#0b192a}.result small{display:block;color:var(--muted);font-size:11px}.result strong{display:block;margin-top:7px;font-size:20px}.foot{text-align:center;color:#71849d;font-size:11px;margin-top:24px}
+.hero,.panel{border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#14263c,#101e30);padding:22px;margin-top:18px}.hero{background:linear-gradient(120deg,#142a42,#172d40 60%,#26334a)}.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--gold);font-weight:800}.hero h1{font-size:clamp(26px,5vw,42px);margin:10px 0}.hero p,.muted{color:var(--muted);line-height:1.6;font-size:13px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}.metric{border:1px solid var(--line);background:#0d1b2c;border-radius:15px;padding:15px}.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{display:block;font-size:clamp(18px,2.4vw,25px);margin-top:9px;overflow-wrap:anywhere}.panel h2{font-size:18px;margin:0 0 6px}.notice{border:1px solid #695a39;background:#292617;border-radius:12px;padding:12px;color:#f0dfb7;font-size:12px;line-height:1.55;margin-top:14px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}.field label{display:block;font-size:12px;color:#c4d0df;margin-bottom:7px}.field input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#091627;color:#fff;font-size:15px}.result{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}.result>div{padding:14px;border:1px solid var(--line);border-radius:13px;background:#0b192a}.result small{display:block;color:var(--muted);font-size:11px}.result strong{display:block;margin-top:7px;font-size:20px}.flowline{display:grid;grid-template-columns:1fr;gap:5px}.flowline b{color:var(--gold);margin-top:10px}.flowline p{margin:0 0 5px;color:var(--muted);font-size:13px;line-height:1.55}.foot{text-align:center;color:#71849d;font-size:11px;margin-top:24px}
 @media(max-width:700px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.result{grid-template-columns:1fr}.fields{grid-template-columns:1fr}.hero,.panel{padding:17px}}
 </style>
 </head>
@@ -20,17 +20,11 @@
 <div class="metric"><small>Nilai penjualan</small><strong id="revenue">—</strong></div>
 <div class="metric"><small>Laba terealisasi</small><strong id="profit">—</strong></div>
 <div class="metric"><small>Stok tersedia</small><strong id="stock">—</strong></div>
+<div class="metric"><small>Modal stok tersedia</small><strong id="stockCapital">—</strong></div>
 </div><div id="publicNote" class="muted" style="margin-top:12px"></div></section>
-<section class="panel"><h2>Simulasi investasi</h2><p class="muted">Ubah angka untuk memahami ilustrasi pembagian pool keuntungan. Simulasi ini bukan penawaran investasi, proyeksi pasti, atau jaminan imbal hasil.</p>
-<div class="fields">
-<div class="field"><label for="capital">Contoh modal Anda (Rp)</label><input id="capital" type="number" min="0" step="1000000" value="10000000"></div>
-<div class="field"><label for="poolCapital">Total modal investor dalam pool (Rp)</label><input id="poolCapital" type="number" min="1" step="1000000" value="100000000"></div>
-<div class="field"><label for="businessProfit">Contoh laba bersih usaha Management (Rp)</label><input id="businessProfit" type="number" min="0" step="1000000" value="10000000"></div>
-<div class="field"><label for="poolRate">Porsi pool investor (%)</label><input id="poolRate" type="number" min="0" max="100" step="0.5" value="10"></div>
-</div>
-<div class="result"><div><small>Pool keuntungan ilustratif</small><strong id="poolResult">Rp0</strong></div><div><small>Porsi modal ilustratif</small><strong id="shareResult">0%</strong></div><div><small>Ilustrasi hak keuntungan</small><strong id="returnResult">Rp0</strong></div></div>
-<div class="notice">Hasil hanya mengikuti angka yang Anda masukkan dan asumsi pembagian pool pada layar ini. Hasil aktual dapat berbeda, dapat bernilai nol atau rugi, dan tunduk pada perjanjian tertulis serta laporan final.</div>
-</section>
+<section class="panel"><h2>Transparansi hak hasil investor</h2><p class="muted">Berikut ringkasan alokasi aktual berdasarkan laporan Hello Majesty. Nama disamarkan; nilai modal, hak hasil, pembayaran, dan saldo ditampilkan sesuai catatan yang dipublikasikan.</p><div id="investorReport" class="muted">Memuat laporan investor…</div></section>
+<section class="panel"><h2>Bagaimana Management mengelola modal?</h2><div class="flowline"><b>1 · Modal investor</b><p>Modal tercatat sebagai sumber pendanaan usaha dan dikelola dalam pool sesuai pencatatan investasi.</p><b>2 · Pengadaan stok Management</b><p>Modal digunakan untuk memperoleh persediaan barang. Stok milik Stockist dipisahkan dan tidak dihitung dalam pool investor.</p><b>3 · Monitoring persediaan</b><p>Management memantau barang masuk, posisi stok tersedia, barang terjual, dan modal yang masih tertanam pada persediaan.</p><b>4 · Penjualan dan pencatatan laba</b><p>Setiap penjualan stok Management dicatat berdasarkan modal barang, harga jual, dan laba terealisasi.</p><b>5 · Perhitungan hak investor</b><p>Pool investor dihitung dari 10% laba Management yang tercatat, lalu dialokasikan secara proporsional berdasarkan modal investasi yang berlaku.</p><b>6 · Pembayaran dan saldo hak</b><p>Pembayaran dicatat terpisah dari hak yang terbentuk. Calon investor dapat melihat mana yang sudah dibayar dan mana yang masih menjadi saldo hak.</p></div><div class="notice">Kinerja masa lalu bukan jaminan hasil masa depan. Keuntungan tidak dijanjikan tetap; hasil mengikuti kinerja usaha, realisasi penjualan, ketentuan kerja sama, dan risiko pengelolaan persediaan.</div></section>
+<section class="panel"><h2>Kenali peluang kerja sama</h2><p class="muted">Kami membuka ruang diskusi bagi calon mitra yang ingin memahami model pengelolaan modal, alur operasional, laporan aktual, pembagian hasil, dan risiko usaha sebelum mengambil keputusan.</p><p><b>Ingin mempelajari kerja sama lebih lanjut?</b></p><p class="muted">Hubungi Management Hello Majesty untuk meminta penjelasan langsung dan dokumen ketentuan kerja sama. Tidak ada kewajiban untuk berinvestasi sebelum memahami seluruh ketentuannya.</p></section>
 <footer class="foot">HELLO MAJESTY · INVESTOR PREVIEW · Informasi untuk tujuan presentasi</footer>
 </div>
 <script>
@@ -40,14 +34,14 @@ const KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 const sb=window.supabase.createClient(URL,KEY);
 const $=id=>document.getElementById(id);
 const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
-function simulate(){
- const capital=Math.max(0,Number($('capital').value)||0), total=Math.max(0,Number($('poolCapital').value)||0);
- const profit=Number($('businessProfit').value)||0, rate=Math.min(100,Math.max(0,Number($('poolRate').value)||0));
- const pool=Math.max(0,profit)*rate/100, share=total>0?capital/total:0;
- $('poolResult').textContent=money(pool);$('shareResult').textContent=(share*100).toLocaleString('id-ID',{maximumFractionDigits:2})+'%';
- $('returnResult').textContent=money(pool*share);
+function money(v){return 'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});}
+async function loadInvestorReport(){
+ const {data,error}=await sb.from('investor_preview_investor_rows').select('period_label,management_profit,investor_pool,investor_alias,investment_basis,investment_share_pct,allocated_amount,paid_amount,remaining_amount,payment_status,sort_date').eq('is_published',true).order('sort_date',{ascending:false}).order('investor_alias');
+ if(error)throw error;
+ if(!data||!data.length){$('investorReport').textContent='Belum ada laporan alokasi investor yang dipublikasikan.';return;}
+ const rows=data.map(x=>'<tr><td>'+x.period_label+'</td><td>'+x.investor_alias+'</td><td>'+money(x.investment_basis)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:2})+'%</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+String(x.payment_status).replaceAll('_',' ')+'</td></tr>').join('');
+ $('investorReport').innerHTML='<div style="overflow:auto"><table><thead><tr><th>Periode</th><th>Investor</th><th>Modal dasar</th><th>Porsi</th><th>Laba Management</th><th>Pool 10%</th><th>Hak hasil</th><th>Dibayar</th><th>Sisa hak</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
-['capital','poolCapital','businessProfit','poolRate'].forEach(id=>$(id).addEventListener('input',simulate));
 async function load(){
  try{
   const {data,error}=await sb.from('investor_preview_publications').select('period_label,sales_units,sales_revenue,realized_profit,available_stock_units,available_stock_capital,public_note,published_at').eq('is_published',true).order('published_at',{ascending:false}).limit(1).maybeSingle();
@@ -56,10 +50,10 @@ async function load(){
   $('actualPeriod').textContent='Periode: '+data.period_label+' · diperbarui '+(data.published_at?new Date(data.published_at).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—');
   $('units').textContent=Number(data.sales_units||0).toLocaleString('id-ID')+' unit';
   $('revenue').textContent=money(data.sales_revenue);$('profit').textContent=money(data.realized_profit);
-  $('stock').textContent=Number(data.available_stock_units||0).toLocaleString('id-ID')+' unit';
+  $('stock').textContent=Number(data.available_stock_units||0).toLocaleString('id-ID')+' unit';$('stockCapital').textContent=money(data.available_stock_capital);
   $('publicNote').textContent=data.public_note||'Ringkasan aktual yang telah disetujui untuk presentasi.';
  }catch(e){$('actualPeriod').textContent='Ringkasan aktual belum dapat dimuat. Silakan hubungi Management Hello Majesty.';}
 }
-simulate();load();
+loadInvestorReport().catch(()=>{$('investorReport').textContent='Laporan investor belum dapat dimuat.';});load();
 })();
 </script></body></html>

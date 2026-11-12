@@ -50,7 +50,7 @@
       <button class="tab active" data-tab="overview">Ringkasan</button>
       <button class="tab" data-tab="stock">Monitoring Stok</button>
       <button class="tab" data-tab="sales">Penjualan</button>
-      <button class="tab" data-tab="reports">Laporan Bulanan</button>
+      <button class="tab" data-tab="reports">Laporan Bulanan</button><button class="tab" data-tab="semester">Settlement Semester</button>
     </nav>
     <section id="tab-overview" class="tab-panel">
       <div class="panel"><div class="section-head"><div><h2>Posisi investasi</h2><div class="hint">Ringkasan modal dan proporsi investasi dari laporan bulanan terakhir.</div></div></div><div id="positionSummary" class="empty">Memuat data…</div></div>
@@ -65,6 +65,7 @@
     <section id="tab-reports" class="tab-panel hidden">
       <div class="panel"><h2>Laporan keuntungan bulanan</h2><div class="hint">Alokasi investor = 10% laba penjualan Management × proporsi investasi Anda.</div><div id="reportTable"></div></div>
     </section>
+    <section id="tab-semester" class="tab-panel hidden"><div class="panel"><h2>Settlement bagi hasil semester</h2><div class="hint">Hak keuntungan dikumpulkan dari laporan bulanan dan dibayarkan setiap Januari–Juni atau Juli–Desember.</div><div id="semesterTable"></div></div></section>
     <div class="foot">HELLO MAJESTY · INVESTOR PORTAL · Akses baca saja</div>
   </main>
 </div>
@@ -78,7 +79,7 @@ const $=id=>document.getElementById(id);
 const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
-let investorId=null,stockRows=[],salesRows=[],reportRows=[];
+let investorId=null,stockRows=[],salesRows=[],reportRows=[],semesterRows=[];
 const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
 function showError(msg){$('loginError').textContent=msg||'';}
 function statusPill(s){const v=String(s||'-').toUpperCase();const cls=v==='READY'?'green':v==='SOLD'?'gold':'';return '<span class="pill '+cls+'">'+esc(v)+'</span>';}
@@ -88,15 +89,16 @@ async function loadDashboard(user){
   if(access.error)throw access.error;
   if(!access.data)throw new Error('Akun ini belum terdaftar sebagai investor. Hubungi Management Hello Majesty.');
   investorId=access.data.investor_id;
-  const [investor,portfolio,stocks,sales,reports]=await Promise.all([
+  const [investor,portfolio,stocks,sales,reports,semesters]=await Promise.all([
     sb.from('investors').select('investor_name').eq('id',investorId).single(),
     sb.from('investor_portfolio_summary').select('*').eq('investor_id',investorId).maybeSingle(),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
     sb.from('investor_management_sales_detail').select('*').order('sold_at',{ascending:false}).limit(1000),
-    sb.from('investor_monthly_report').select('*').eq('investor_id',investorId).order('month_start',{ascending:false}).limit(36)
+    sb.from('investor_monthly_report').select('*').eq('investor_id',investorId).order('month_start',{ascending:false}).limit(36),
+    sb.from('investor_semester_report').select('*').eq('investor_id',investorId).order('fiscal_year',{ascending:false})
   ]);
-  for(const x of [investor,portfolio,stocks,sales,reports])if(x.error)throw x.error;
-  stockRows=stocks.data||[];salesRows=sales.data||[];reportRows=reports.data||[];
+  for(const x of [investor,portfolio,stocks,sales,reports,semesters])if(x.error)throw x.error;
+  stockRows=stocks.data||[];salesRows=sales.data||[];reportRows=reports.data||[];semesterRows=semesters.data||[];
   $('investorName').textContent=investor.data.investor_name;
   $('myInvestment').textContent=money(portfolio.data?.net_investment||0);
   const ready=stockRows.filter(x=>x.status==='READY');
@@ -109,7 +111,7 @@ async function loadDashboard(user){
   $('myShare').textContent=money(latest?.allocated_amount||0);
   $('mySharePct').textContent=latest?Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'% dari total investasi · '+(latest.payment_status==='PAID'?'Sudah dibayar':'Belum dibayar'):'Menunggu laporan bulanan';
   $('positionSummary').innerHTML=latest?'<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(latest.total_investment)+'</strong></div><div class="metric"><small>Alokasi investor 10%</small><strong>'+money(latest.investor_pool)+'</strong></div><div class="metric"><small>Investasi Anda</small><strong>'+money(latest.investment_basis)+'</strong></div><div class="metric"><small>Proporsi Anda</small><strong>'+Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</strong></div></div>':'<div class="empty">Laporan alokasi bulanan belum diterbitkan Management.</div>';
-  renderStock();renderSales();renderReports();renderRecent();
+  renderStock();renderSales();renderReports();renderSemester();renderRecent();
   $('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
 }
 function renderStock(){
@@ -123,8 +125,12 @@ function renderSales(){
   $('salesTable').innerHTML=table(['Tanggal','Produk','Modal','Harga jual','Laba','Outlet terjual'],rows);
 }
 function renderReports(){
-  const rows=reportRows.map(x=>'<tr><td>'+esc(String(x.month_start).slice(0,7))+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+money(x.total_investment)+'</td><td>'+money(x.investment_basis)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(x.allocated_amount)+'</b></td><td>'+statusPill(x.payment_status)+'</td></tr>');
-  $('reportTable').innerHTML=table(['Bulan','Laba Management','Pool investor 10%','Total investasi','Investasi Anda','Proporsi','Hak Anda','Pembayaran'],rows);
+  const rows=reportRows.map(x=>'<tr><td>'+esc(String(x.month_start).slice(0,7))+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+money(x.total_investment)+'</td><td>'+money(x.investment_basis)+'</td><td>'+Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(x.allocated_amount)+'</b></td></tr>');
+  $('reportTable').innerHTML=table(['Bulan','Laba Management','Pool investor 10%','Total investasi','Modal dasar Anda','Proporsi bulan itu','Hak bulan itu'],rows);
+}
+function renderSemester(){
+  const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · Semester '+x.semester+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+statusPill(x.settlement_status)+'</td></tr>');
+  $('semesterTable').innerHTML=table(['Periode','Laba 6 bulan','Pool 10%','Hak Anda','Sudah dibayar','Sisa hak','Status settlement'],rows);
 }
 function renderRecent(){
   const rows=salesRows.slice(0,5).map(x=>'<tr><td>'+fmtDate(x.sold_at)+'</td><td>'+esc([x.product,x.variant].filter(Boolean).join(' '))+'</td><td>'+money(x.capital_cost)+'</td><td>'+money(x.sale_price)+'</td><td>'+money(x.realized_profit)+'</td><td>'+esc(x.sold_outlet||'-')+'</td></tr>');

@@ -16,7 +16,9 @@ const sb=window.supabase.createClient('https://ksowzhhmzrumyciehuyv.supabase.co'
 const $=id=>document.getElementById(id),money=n=>'Rp'+Number(n||0).toLocaleString('id-ID',{maximumFractionDigits:2}),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function loadForMonth(month){
  $('actionMsg').textContent='';$('result').classList.add('hidden');
- const start=month+'-01';\n const [yy,mm]=month.split('-').map(Number);\n const endDate=new Date(Date.UTC(yy,mm,1)).toISOString().slice(0,10);
+ const start=month+'-01';
+ const [yy,mm]=month.split('-').map(Number);
+ const endDate=new Date(Date.UTC(yy,mm,1)).toISOString().slice(0,10);
  const {data:allocationId,error:rpcError}=await sb.rpc('generate_investor_monthly_allocation',{p_month_start:start});
  if(rpcError)throw rpcError;
  const [header,items,sales]=await Promise.all([

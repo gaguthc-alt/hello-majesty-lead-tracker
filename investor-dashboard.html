@@ -239,8 +239,7 @@ function renderSemester(){
     line('Stok tersedia saat ini',readyCost,ready.length+' unit · posisi hari ini')+
     '</div><div class="hint">Barang masuk dihitung dari tanggal diterima bulan ini. Barang terjual dan laba dihitung dari tanggal penjualan bulan ini. Stok tersedia adalah posisi saat ini, bukan saldo historis akhir bulan.</div>';
 }
-nilai stok tersedia: <b>'+(allInvestorCapital>0?money(readyCost*pct):'Belum dapat dihitung')+'</b>. Ini adalah indikator proporsional pool, bukan pemetaan kepemilikan unit. Nilai stok di luar data yang termuat (lebih dari 1.000 baris) dapat membuat ringkasan ini belum lengkap.</div>';
-}
+
 function renderProfitTrend(){
   // Semester II 2026: tampilkan seluruh bulan, termasuk bulan tanpa data.
   const months=[

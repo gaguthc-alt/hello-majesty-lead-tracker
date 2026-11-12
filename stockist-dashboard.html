@@ -22,9 +22,15 @@ function openPublic(){ $('loginPanel').classList.remove('show');$('publicPage').
 $('loginOpen').onclick=openLogin;$('ctaLogin').onclick=openLogin;$('backBtn').onclick=openPublic;
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('error').textContent='';$('submitBtn').disabled=true;$('submitBtn').textContent='Memeriksa akses…';try{
  const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;
- const {data:profile,error:pe}=await sb.from('team_profiles').select('role,active').eq('user_id',data.user.id).maybeSingle();if(pe)throw pe;
+ const [{data:profile,error:pe},{data:isManagement,error:me}]=await Promise.all([
+   sb.from('team_profiles').select('role,active').eq('user_id',data.user.id).maybeSingle(),
+   sb.rpc('is_management')
+ ]);
+ if(pe)throw pe;if(me)throw me;
  const role=String(profile?.role||'').toUpperCase().replace(/[_-]/g,' ');
- if(!profile?.active||!['STOCKIST','MITRA STOCKIST','STOCKIST PARTNER'].includes(role)){await sb.auth.signOut();throw new Error('Akun ini belum memiliki akses Mitra Stockist aktif. Hubungi Management Hello Majesty.');}
+ const management=isManagement===true;
+ const stockist=!!profile?.active&&['STOCKIST','MITRA STOCKIST','STOCKIST PARTNER'].includes(role);
+ if(!management&&!stockist){await sb.auth.signOut();throw new Error('Akun ini belum memiliki akses Stockist Portal. Hubungi Management Hello Majesty.');}
  location.href='index.html';
  }catch(err){$('error').textContent=err.message||'Login belum berhasil.';}finally{$('submitBtn').disabled=false;$('submitBtn').textContent='Masuk ke Portal';}});
 </script></body></html>

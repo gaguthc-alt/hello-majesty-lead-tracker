@@ -25,10 +25,10 @@
     <button id="logoutBtn" class="btn hidden">Keluar</button>
   </div>
   <section id="loginPanel" class="login">
-    <div class="eyebrow">INVESTOR ACCESS</div><h1>Selamat datang</h1>
+    <div class="eyebrow">INVESTOR & MANAGEMENT ACCESS</div><h1>Selamat datang</h1>
     <p>Masuk untuk memantau stok sumber Management, penjualan, dan laporan keuntungan investasi Anda.</p>
     <form id="loginForm">
-      <div class="field"><label>Email investor</label><input id="email" type="email" autocomplete="username" required></div>
+      <div class="field"><label>Email akun Investor atau Management</label><input id="email" type="email" autocomplete="username" required></div>
       <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" required></div>
       <button id="loginBtn" class="btn primary" style="width:100%">Masuk ke Dashboard</button>
       <div id="loginError" class="error" role="alert"></div>
@@ -38,7 +38,7 @@
     <section class="hero">
       <div class="eyebrow">INVESTOR DASHBOARD</div>
       <h1 id="investorName">Dashboard Investor</h1>
-      <p>Monitoring terbatas pada stok sumber Management non-Stockist. Data Stockist dan investor lain tidak ditampilkan.</p>
+      <p>Mode Management dapat memantau seluruh investor. Mode Investor hanya menampilkan data investasi miliknya sendiri. Data Stockist tetap dikecualikan.</p>
     </section>
     <div class="grid">
       <div class="metric"><small>Investasi bersih Anda</small><strong id="myInvestment">Rp0</strong><div class="sub">Setoran dikurangi penarikan modal</div></div>
@@ -82,39 +82,53 @@ const $=id=>document.getElementById(id);
 const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
-let investorId=null,stockRows=[],salesRows=[],reportRows=[],semesterRows=[];
+let investorId=null,isManagement=false,stockRows=[],salesRows=[],reportRows=[],semesterRows=[];
 const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
 function showError(msg){$('loginError').textContent=msg||'';}
 function statusPill(s){const v=String(s||'-').toUpperCase();const cls=v==='READY'?'green':v==='SOLD'?'gold':'';return '<span class="pill '+cls+'">'+esc(v)+'</span>';}
 function table(headers,rows){if(!rows.length)return '<div class="empty">Belum ada data.</div>';return '<div class="table-wrap"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';}
 async function loadDashboard(user){
-  const access=await sb.from('investor_user_access').select('investor_id').eq('user_id',user.id).eq('active',true).maybeSingle();
-  if(access.error)throw access.error;
-  if(!access.data)throw new Error('Akun ini belum terdaftar sebagai investor. Hubungi Management Hello Majesty.');
-  investorId=access.data.investor_id;
+  const mg=await sb.rpc('is_management');
+  if(mg.error)throw mg.error;
+  isManagement=mg.data===true;
+  if(!isManagement){
+    const access=await sb.from('investor_user_access').select('investor_id').eq('user_id',user.id).eq('active',true).maybeSingle();
+    if(access.error)throw access.error;
+    if(!access.data)throw new Error('Akun ini belum terdaftar sebagai investor atau Management. Hubungi Management Hello Majesty.');
+    investorId=access.data.investor_id;
+  }
   const [investor,portfolio,stocks,sales,reports,semesters]=await Promise.all([
-    sb.from('investors').select('investor_name').eq('id',investorId).single(),
-    sb.from('investor_portfolio_summary').select('*').eq('investor_id',investorId).maybeSingle(),
+    isManagement?Promise.resolve({data:null,error:null}):sb.from('investors').select('investor_name').eq('id',investorId).single(),
+    sb.from('investor_portfolio_summary').select('*').then(r=>isManagement?r:{...r,data:(r.data||[]).filter(x=>x.investor_id===investorId)}),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
     sb.rpc('get_investor_management_sales_detail'),
-    sb.from('investor_monthly_report').select('*').eq('investor_id',investorId).order('month_start',{ascending:false}).limit(36),
-    sb.from('investor_semester_report').select('*').eq('investor_id',investorId).order('fiscal_year',{ascending:false})
+    sb.from('investor_monthly_report').select('*').order('month_start',{ascending:false}).limit(500),
+    sb.from('investor_semester_report').select('*').order('fiscal_year',{ascending:false}).limit(200)
   ]);
   for(const x of [investor,portfolio,stocks,sales,reports,semesters])if(x.error)throw x.error;
-  stockRows=stocks.data||[];salesRows=sales.data||[];reportRows=reports.data||[];semesterRows=semesters.data||[];
-  $('investorName').textContent=investor.data.investor_name;
-  $('myInvestment').textContent=money(portfolio.data?.net_investment||0);
+  stockRows=stocks.data||[];salesRows=sales.data||[];
+  reportRows=(reports.data||[]).filter(x=>isManagement||x.investor_id===investorId);
+  semesterRows=(semesters.data||[]).filter(x=>isManagement||x.investor_id===investorId);
+  const netInvestment=(portfolio.data||[]).reduce((a,x)=>a+Number(x.net_investment||0),0);
+  $('investorName').textContent=isManagement?'Management — Monitoring Seluruh Investor':investor.data.investor_name;
+  $('investorName').insertAdjacentHTML('afterend',isManagement?'<p class="pill gold">AKSES MANAGEMENT · SELURUH INVESTOR</p>':'');
+  $('myInvestment').textContent=money(netInvestment);
   const ready=stockRows.filter(x=>x.status==='READY');
   $('availableStock').textContent=ready.length+' unit';
   $('availableValue').textContent='Modal stok tersedia '+money(ready.reduce((a,x)=>a+Number(x.capital_cost||0),0));
   const month=thisMonth(),monthSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)===month);
-  const monthProfit=monthSales.reduce((a,x)=>a+Number(x.realized_profit||0),0);
-  $('monthProfit').textContent=money(monthProfit);
-  const latest=reportRows.find(x=>String(x.month_start).slice(0,7)===month)||reportRows[0];
-  $('myShare').textContent=money(latest?.allocated_amount||0);
-  $('mySharePct').textContent=latest?Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'% dari total investasi · '+(latest.payment_status==='PAID'?'Sudah dibayar':'Belum dibayar'):'Menunggu laporan bulanan';
-  $('positionSummary').innerHTML=latest?'<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(latest.total_investment)+'</strong></div><div class="metric"><small>Alokasi investor 10%</small><strong>'+money(latest.investor_pool)+'</strong></div><div class="metric"><small>Investasi Anda</small><strong>'+money(latest.investment_basis)+'</strong></div><div class="metric"><small>Proporsi Anda</small><strong>'+Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</strong></div></div>':'<div class="empty">Laporan alokasi bulanan belum diterbitkan Management.</div>';
-  renderStock();renderSales();renderReports();renderSemester();renderRecent();renderCapitalPosition(portfolio.data?.net_investment||0);renderProfitTrend();renderProductSales();
+  $('monthProfit').textContent=money(monthSales.reduce((a,x)=>a+Number(x.realized_profit||0),0));
+  const monthReports=reportRows.filter(x=>String(x.month_start).slice(0,7)===month);
+  const latest=monthReports[0]||reportRows[0];
+  $('myShare').textContent=money(isManagement?monthReports.reduce((a,x)=>a+Number(x.allocated_amount||0),0):(latest?.allocated_amount||0));
+  $('mySharePct').textContent=isManagement?'Total hak seluruh investor pada laporan bulan berjalan':latest?Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'% dari total investasi · '+(latest.payment_status==='PAID'?'Sudah dibayar':'Belum dibayar'):'Menunggu laporan bulanan';
+  if(isManagement){
+    $('positionSummary').innerHTML=latest?'<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(latest.total_investment)+'</strong></div><div class="metric"><small>Alokasi investor 10%</small><strong>'+money(latest.investor_pool)+'</strong></div><div class="metric"><small>Jumlah investor penerima</small><strong>'+new Set(monthReports.map(x=>x.investor_id)).size+'</strong></div><div class="metric"><small>Total hak yang dialokasikan</small><strong>'+money(monthReports.reduce((a,x)=>a+Number(x.allocated_amount||0),0))+'</strong></div></div>':'<div class="empty">Laporan alokasi bulanan belum diterbitkan Management.</div>';
+  }else{
+    $('positionSummary').innerHTML=latest?'<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(latest.total_investment)+'</strong></div><div class="metric"><small>Alokasi investor 10%</small><strong>'+money(latest.investor_pool)+'</strong></div><div class="metric"><small>Investasi Anda</small><strong>'+money(latest.investment_basis)+'</strong></div><div class="metric"><small>Proporsi Anda</small><strong>'+Number(latest.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%</strong></div></div>':'<div class="empty">Laporan alokasi bulanan belum diterbitkan Management.</div>';
+  }
+  renderStock();renderSales();renderReports();renderSemester();renderRecent();renderCapitalPosition(netInvestment);renderProfitTrend();renderProductSales();
+  if(isManagement){$('investorName').textContent='Management — Monitoring Seluruh Investor';document.querySelector('.hero .eyebrow').textContent='MANAGEMENT DASHBOARD';}
   $('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
 }
 function renderStock(){

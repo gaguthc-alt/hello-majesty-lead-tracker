@@ -180,9 +180,14 @@ function renderReports(){
     : '<tr><td>'+esc(semesterMonths.find(x=>x.key===key)?.label||key)+'</td><td>'+money(currentProfit)+'</td><td>'+money(currentPool)+'</td><td>'+ownPct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(currentOwn)+'</b></td><td><span class="pill gold">Estimasi berjalan</span></td></tr>';
   $('currentMonthReport').innerHTML=table(['Periode','Laba Management','Pool 10%','Porsi modal Anda','Estimasi hak bulan ini','Status'],[currentRows]);
   const monthRows=semesterMonths.map(m=>{
+    if(m.key==='2026-09'){
+      const isImam=String($('investorName').textContent).toLowerCase().includes('imam');
+      const historicalOwn=isManagement?2315392:(isImam?210490:2104902);
+      return '<tr><td>'+esc(m.label)+'</td><td>—</td><td>—</td><td>'+(isManagement?'—':(isImam?'9,09%':'90,91%'))+'</td><td><b>'+money(historicalOwn)+'</b></td><td><span class="pill gold">Hak historis · transisi</span></td></tr>';
+    }
     const found=reportRows.filter(x=>String(x.month_start||'').slice(0,7)===m.key);
     if(!found.length)return '<tr><td>'+esc(m.label)+'</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="pill">Belum ada data</span></td></tr>';
-    const x=isManagement?found[0]:found[0];
+    const x=found[0];
     return '<tr><td>'+esc(m.label)+'</td><td>'+money(x.management_profit)+'</td><td>'+money(x.investor_pool)+'</td><td>'+(isManagement?'—':Number(x.investment_share_pct||0).toLocaleString('id-ID',{maximumFractionDigits:4})+'%')+'</td><td><b>'+money(isManagement?x.investor_pool:x.allocated_amount)+'</b></td><td><span class="pill green">Laporan tersedia</span></td></tr>';
   });
   $('semesterMonthReport').innerHTML=table(['Bulan','Laba Management','Pool investor 10%','Porsi modal Anda','Hak investor bulan itu','Status'],monthRows);

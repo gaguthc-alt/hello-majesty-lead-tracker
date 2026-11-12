@@ -171,6 +171,37 @@ body{background:radial-gradient(ellipse at 78% -8%,rgba(185,151,91,.19),transpar
   </main>
 </div>
 <script>
+/* Keep public-page navigation independent from dashboard authentication scripts. */
+document.addEventListener('DOMContentLoaded',function(){
+  function showLogin(){
+    var landing=document.getElementById('landingPage');
+    var panel=document.getElementById('loginPanel');
+    if(landing) landing.classList.add('hidden');
+    if(panel) panel.classList.remove('hidden');
+    var email=document.getElementById('email');
+    if(email) email.focus();
+  }
+  function showLanding(){
+    var landing=document.getElementById('landingPage');
+    var panel=document.getElementById('loginPanel');
+    if(panel) panel.classList.add('hidden');
+    if(landing) landing.classList.remove('hidden');
+  }
+  ['landingLoginBtn','accessBtn'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.addEventListener('click',function(e){e.preventDefault();showLogin();});
+  });
+  var back=document.getElementById('backLandingBtn');
+  if(back) back.addEventListener('click',function(e){e.preventDefault();showLanding();});
+  var learn=document.getElementById('learnMoreBtn');
+  if(learn) learn.addEventListener('click',function(e){
+    e.preventDefault();
+    var target=document.getElementById('businessOverview');
+    if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
+</script>
+<script>
 (function(){
 'use strict';
 const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';

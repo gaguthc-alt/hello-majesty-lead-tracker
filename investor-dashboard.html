@@ -35,7 +35,7 @@
     </form>
   </section>
   <main id="dashboard" class="hidden">
-    <section class="hero">
+    <section id="prospectAdmin" class="panel hidden"><h2>Akses Calon Investor</h2><div class="hint">Buat akun baca-saja selama 7 hari. Akun dapat diperpanjang 7 hari atau dicabut kapan saja.</div><form id="prospectForm" class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="field"><label>Email calon investor</label><input id="prospectEmail" type="email" required></div><div class="field"><label>Password awal (minimal 10 karakter)</label><input id="prospectPassword" type="password" minlength="10" required></div><div class="field"><label>Portofolio yang ditampilkan</label><select id="prospectInvestor" class="filter" required style="width:100%"></select></div><div class="field"><label>Nama samaran</label><select id="prospectAlias" class="filter" required style="width:100%"><option>Investor A</option><option>Investor B</option><option>Investor C</option><option>Investor D</option><option>Investor E</option></select></div><div><button class="btn primary" id="prospectCreate">Buat akun 7 hari</button></div><div id="prospectMessage" class="hint" role="status"></div></form><div id="prospectList" class="hint">Memuat akun…</div></section><section class="hero">
       <div class="eyebrow">INVESTOR DASHBOARD</div>
       <h1 id="investorName">Dashboard Investor</h1>
       <p>Management dapat melihat seluruh portofolio investor, sedangkan Investor hanya dapat melihat portofolio miliknya sendiri.</p>
@@ -97,7 +97,7 @@ const $=id=>document.getElementById(id);
 const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
-let investorId=null,isManagement=false,stockRows=[],salesRows=[],reportRows=[],semesterRows=[],monthlyStockRows=[],liveAllocation=null;
+let investorId=null,isManagement=false,isProspect=false,prospectAlias=null,accessRowId=null,stockRows=[],salesRows=[],reportRows=[],semesterRows=[],monthlyStockRows=[],liveAllocation=null;
 const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
 function showError(msg){$('loginError').textContent=msg||'';}
 function statusPill(s){const v=String(s||'-').toUpperCase();const cls=v==='READY'?'green':v==='SOLD'?'gold':'';return '<span class="pill '+cls+'">'+esc(v)+'</span>';}
@@ -107,10 +107,11 @@ async function loadDashboard(user){
   if(mg.error)throw mg.error;
   isManagement=mg.data===true;
   if(!isManagement){
-    const access=await sb.from('investor_user_access').select('investor_id').eq('user_id',user.id).eq('active',true).maybeSingle();
+    const access=await sb.from('investor_user_access').select('id,investor_id,expires_at,access_kind,display_alias').eq('user_id',user.id).eq('active',true).maybeSingle();
     if(access.error)throw access.error;
     if(!access.data)throw new Error('Akun ini belum terdaftar sebagai investor atau Management. Hubungi Management Hello Majesty.');
-    investorId=access.data.investor_id;
+    if(access.data.expires_at && new Date(access.data.expires_at).getTime()<=Date.now())throw new Error('Masa akses calon investor telah berakhir. Hubungi Management untuk perpanjangan.');
+    investorId=access.data.investor_id;isProspect=access.data.access_kind==='prospect';prospectAlias=access.data.display_alias;accessRowId=access.data.id;
   }
   const month=thisMonth();
   const monthStart=month+'-01';
@@ -131,7 +132,7 @@ async function loadDashboard(user){
   reportRows=(reports.data||[]).filter(x=>isManagement||x.investor_id===investorId);
   semesterRows=(semesters.data||[]).filter(x=>isManagement||x.investor_id===investorId);
   const netInvestment=Number(allocation.data?.investor_net_capital ?? (portfolio.data||[]).reduce((a,x)=>a+Number(x.net_investment||0),0));
-  $('investorName').textContent=isManagement?'Management — Monitoring Seluruh Investor':investor.data.investor_name;
+  $('investorName').textContent=isManagement?'Management — Monitoring Seluruh Investor':(isProspect?(prospectAlias||'Investor'):investor.data.investor_name);
   $('investorName').insertAdjacentHTML('afterend',isManagement?'<p class="pill gold">AKSES MANAGEMENT · SELURUH INVESTOR</p>':'');
   $('investmentLabel').textContent=isManagement?'Total modal bersih seluruh investor':'Modal bersih Anda';
   $('myInvestment').textContent=money(netInvestment);
@@ -156,6 +157,8 @@ async function loadDashboard(user){
     $('positionSummary').innerHTML='<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(totalCapital)+'</strong></div><div class="metric"><small>Pool investor 10%</small><strong>'+money(livePool)+'</strong></div><div class="metric"><small>Modal bersih Anda</small><strong>'+money(netInvestment)+'</strong></div><div class="metric"><small>Estimasi hak keuntungan Anda</small><strong>'+money(ownEstimate)+'</strong></div></div><div class="hint">Porsi modal Anda '+pct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%. Estimasi sementara, belum final atau dibayarkan.</div>';
   }
   renderStock();renderSales();renderReports();renderSemester();renderCapitalPosition(netInvestment);renderProfitTrend();
+  if(isManagement){$('prospectAdmin').classList.remove('hidden');await loadProspectAdmin();}
+  if(isProspect){$('investorName').textContent=prospectAlias||'Investor';const expiry=await sb.from('investor_user_access').select('expires_at').eq('id',accessRowId).maybeSingle();if(expiry.data?.expires_at){const p=document.createElement('p');p.className='pill gold';p.textContent='AKSES PRESENTASI BERAKHIR '+new Date(expiry.data.expires_at).toLocaleString('id-ID');document.querySelector('.hero').appendChild(p);}}
   if(isManagement){$('investorName').textContent='Management — Monitoring Seluruh Investor';document.querySelector('.hero .eyebrow').textContent='MANAGEMENT DASHBOARD';}
   $('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
 }
@@ -186,7 +189,7 @@ function renderReports(){
   $('currentMonthReport').innerHTML=table(['Periode','Laba Management','Pool 10%','Porsi modal Anda','Estimasi hak bulan ini','Status'],[currentRows]);
   const monthRows=semesterMonths.map(m=>{
     if(m.key==='2026-08'){
-      const isImam=String($('investorName').textContent).toLowerCase().includes('imam');
+      const isImam=isProspect?prospectAlias==='Investor B':String($('investorName').textContent).toLowerCase().includes('imam');
       const augustProfit=7657227.14;
       const augustPool=765723;
       const augustOwn=isManagement?augustPool:(isImam?0:augustPool);
@@ -207,12 +210,12 @@ function renderReports(){
 function renderSemester(){
   const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · '+(Number(x.fiscal_year)===2026&&Number(x.semester)===2&&Number(x.batch_number||1)===1?'Oktober':'Semester '+x.semester)+(Number(x.batch_number||1)>1?' · Batch '+esc(x.batch_number):'')+'</td><td>'+esc(x.investor_name||'-')+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+(String(x.settlement_status||'').toUpperCase()==='DRAFT'?'<span class="pill gold">BELUM DITERIMA</span>':statusPill(x.settlement_status))+'</td></tr>');
   const historicalRows = [
-    {name:'B. Titis / P. Budi', amount:2104902},
-    {name:'H. Imam', amount:210490}
-  ].filter(x=>isManagement || $('investorName').textContent.trim()===x.name);
+    {name:isProspect?(prospectAlias||'Investor A'):'B. Titis / P. Budi', amount:2104902, alias:'Investor A'},
+    {name:isProspect?(prospectAlias||'Investor B'):'H. Imam', amount:210490, alias:'Investor B'}
+  ].filter(x=>isManagement || (isProspect?x.alias===prospectAlias:$('investorName').textContent.trim()===x.name));
   const augustRows = [
-    {name:'B. Titis / P. Budi', amount:765723}
-  ].filter(x=>isManagement || $('investorName').textContent.trim()===x.name);
+    {name:isProspect?(prospectAlias||'Investor A'):'B. Titis / P. Budi', amount:765723, alias:'Investor A'}
+  ].filter(x=>isManagement || (isProspect?x.alias==='Investor A':$('investorName').textContent.trim()===x.name));
   const historicalSettlementRows = augustRows.map(x=>'<tr><td>2026 · Agustus</td><td>'+esc(x.name)+'</td><td>'+money(7657227.14)+'</td><td>'+money(765723)+'</td><td><b>'+money(x.amount)+'</b></td><td>'+money(0)+'</td><td>'+money(x.amount)+'</td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>').concat(historicalRows.map(x=>'<tr><td>2026 · September</td><td>'+esc(x.name)+'</td><td>'+money(23153925.47)+'</td><td>'+money(2315392)+'</td><td><b>'+money(x.amount)+'</b></td><td>'+money(0)+'</td><td>'+money(x.amount)+'</td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>'));
   const semesterTotalRows = historicalRows.map(x=>{const aug=x.name==='B. Titis / P. Budi'?765723:0; const oct= x.name==='H. Imam'?169037:1690368; const total=aug+x.amount+oct; return '<tr><td>'+esc(x.name)+'</td><td><b>'+money(total)+'</b></td><td>'+money(0)+'</td><td><b>'+money(total)+'</b></td><td><span class="pill gold">BELUM DITERIMA</span></td></tr>';});
   const monthlyRows = historicalSettlementRows.concat(rows);
@@ -247,6 +250,22 @@ function renderCapitalPosition(netInvestment){
     '</div><div class="hint">Barang masuk dihitung dari tanggal diterima bulan ini. Barang terjual dan laba dihitung dari tanggal penjualan bulan ini. Stok tersedia adalah posisi saat ini, bukan saldo historis akhir bulan.</div>';
 }
 
+async function loadProspectAdmin(){
+  const [investors,accesses]=await Promise.all([
+    sb.from('investors').select('id,investor_name').order('investor_name'),
+    sb.from('investor_user_access').select('id,display_alias,expires_at,active,created_at').eq('access_kind','prospect').order('created_at',{ascending:false})
+  ]);
+  if(investors.error)throw investors.error;if(accesses.error)throw accesses.error;
+  $('prospectInvestor').innerHTML=(investors.data||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.investor_name)+'</option>').join('');
+  $('prospectList').innerHTML=table(['Alias','Berakhir','Status','Aksi'],(accesses.data||[]).map(x=>'<tr><td>'+esc(x.display_alias||'Investor')+'</td><td>'+fmtDate(x.expires_at)+' '+(x.expires_at?new Date(x.expires_at).toLocaleTimeString('id-ID'):'')+'</td><td>'+((x.active&&new Date(x.expires_at)>new Date())?'<span class="pill green">AKTIF</span>':'<span class="pill gold">KEDALUWARSA / DICABUT</span>')+'</td><td><button class="btn" data-prospect-action="extend" data-id="'+esc(x.id)+'">Perpanjang 7 hari</button> <button class="btn" data-prospect-action="revoke" data-id="'+esc(x.id)+'">Cabut</button></td></tr>'));
+}
+async function prospectAction(action,payload={}){
+ const {data:{session}}=await sb.auth.getSession();
+ const res=await fetch(SUPABASE_URL+'/functions/v1/investor-prospect-access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...payload})});
+ const data=await res.json();if(!res.ok)throw new Error(data.error||'Permintaan gagal.');return data;
+}
+$('prospectForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('prospectCreate');btn.disabled=true;$('prospectMessage').textContent='Membuat akun…';try{const result=await prospectAction('create',{email:$('prospectEmail').value.trim(),password:$('prospectPassword').value,investor_id:$('prospectInvestor').value,display_alias:$('prospectAlias').value});$('prospectMessage').textContent='Akun dibuat: '+result.email+' · berakhir '+new Date(result.expires_at).toLocaleString('id-ID');$('prospectForm').reset();await loadProspectAdmin();}catch(err){$('prospectMessage').textContent=err.message;}finally{btn.disabled=false;}});
+$('prospectList').addEventListener('click',async e=>{const btn=e.target.closest('[data-prospect-action]');if(!btn)return;btn.disabled=true;try{await prospectAction(btn.dataset.prospectAction,{access_id:btn.dataset.id});await loadProspectAdmin();}catch(err){$('prospectMessage').textContent=err.message;}finally{btn.disabled=false;}});
 function renderProfitTrend(){
   // Semester II 2026: tampilkan seluruh bulan, termasuk bulan tanpa data.
   const months=[

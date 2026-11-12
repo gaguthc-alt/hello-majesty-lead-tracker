@@ -18,6 +18,22 @@ const SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
 async function prospectAction(action,payload={}){const {data:{session}}=await sb.auth.getSession();if(!session)throw new Error("Sesi login berakhir.");const res=await fetch(SUPABASE_URL+"/functions/v1/stockist-prospect-access",{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":"Bearer "+session.access_token},body:JSON.stringify({action,...payload})});const out=await res.json();if(!res.ok)throw new Error(out.error||"Permintaan gagal.");return out;}
+
+async function loadProspectLiveData(){
+ const {data,error}=await sb.rpc('get_stockist_prospect_live_overview');if(error)throw error;
+ const vals=[data.total_units+' Unit',data.distributed_units+' Unit',data.sold_units+' Unit',data.settlement?.ongoing_records+' Berjalan'];
+ document.querySelectorAll('.metric strong').forEach((el,i)=>el.textContent=vals[i]??'0');
+ $('previewBanner').innerHTML='MODE BACA SAJA · Data aktual seluruh mitra Stockist, identitas disamarkan. Tidak tersedia fungsi perubahan data. Pembaruan: '+new Date(data.generated_at).toLocaleString('id-ID')+'.';
+ const partnerRows=(data.partners||[]).map(p=>'<tr><td>'+p.alias+'</td><td>'+p.available_units+'</td><td>'+p.distributed_units+'</td><td>'+p.sold_units+'</td><td>'+p.total_units+'</td></tr>').join('');
+ const outletRows=(data.outlets||[]).map(o=>'<tr><td>'+o.outlet+'</td><td>'+o.units+'</td></tr>').join('');
+ $('panel-overview').querySelector('.notice').innerHTML='Data aktual agregat dari persediaan Stockist. Identitas mitra, IMEI, harga modal, harga transaksi individual, pelanggan, dan bukti pembayaran tidak ditampilkan. Akun ini hanya memiliki hak baca.';
+ $('panel-inventory').innerHTML='<div class="label">LIVE STOCKIST DATA · READ ONLY</div><h2>Monitoring Stok Seluruh Mitra</h2><p>Ringkasan aktual per mitra dengan identitas disamarkan.</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Mitra</th><th>Tersedia</th><th>Distribusi</th><th>Terjual</th><th>Total</th></tr></thead><tbody>'+partnerRows+'</tbody></table></div>';
+ $('panel-distribution').innerHTML='<div class="label">DISTRIBUTION · READ ONLY</div><h2>Distribusi ke Outlet</h2><p>Jumlah unit stockist pada setiap outlet, tanpa identitas pemilik.</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Outlet</th><th>Unit</th></tr></thead><tbody>'+outletRows+'</tbody></table></div>';
+ $('panel-sales').innerHTML='<div class="label">SALES MONITORING · READ ONLY</div><h2>Penjualan Mitra</h2><p>Total unit terjual seluruh mitra: <b>'+data.sold_units+'</b>. Data pelanggan, sales, harga transaksi individual, dan dokumen penjualan tidak dibuka.</p>';
+ $('panel-settlement').innerHTML='<div class="label">SETTLEMENT · READ ONLY</div><h2>Status Settlement Agregat</h2><p>Total catatan: <b>'+data.settlement.total_records+'</b> · Selesai: <b>'+data.settlement.completed_records+'</b> · Berjalan: <b>'+data.settlement.ongoing_records+'</b>. Tidak ada nominal atau bukti pembayaran yang dibuka.</p>';
+ $('panel-reports').innerHTML='<div class="label">LIVE BUSINESS REPORT · READ ONLY</div><h2>Ringkasan Aktivitas Mitra</h2><p>'+data.partner_count+' mitra tercatat · '+data.total_units+' unit tercatat · '+data.sold_units+' unit terjual · '+data.distributed_units+' unit sedang/tercatat didistribusikan.</p>';
+}
+
 async function loadProspects(){const out=await prospectAction("list");const rows=out.items||[];$("prospectList").innerHTML=rows.length?rows.map(x=>"<div style='padding:10px;border-bottom:1px solid var(--line)'>"+x.email+" · "+new Date(x.expires_at).toLocaleString("id-ID")+" <button class='btn' data-prospect-action='extend' data-id='"+x.id+"'>+7 hari</button> <button class='btn' data-prospect-action='revoke' data-id='"+x.id+"'>Cabut</button></div>").join(""):"Belum ada akun preview aktif.";}
 
 function openLogin(){ $('publicPage').classList.add('hidden');$('loginPanel').classList.add('show');window.scrollTo({top:0,behavior:'smooth'}); }
@@ -39,7 +55,7 @@ $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('error')
  $('publicPage').classList.add('hidden');$('loginPanel').classList.remove('show');$('dashboard').classList.add('show');
  $('dashTitle').textContent=management?'Management Stockist':prospect?'Preview Kemitraan Stockist':'Dashboard '+(profile?.outlet||'Mitra');
  $('dashSubtitle').textContent=management?'Pusat kendali seluruh mitra Stockist Hello Majesty.':prospect?'Simulasi pengalaman operasional sebelum bergabung.':'Ringkasan aktivitas '+(profile?.outlet||'kemitraan Anda')+'.';
- if(prospect){$('previewBanner').hidden=false;$('previewExpiry').textContent=new Date(preview.expires_at).toLocaleString('id-ID');['24 Unit','8 Unit','16 Unit','Rp12,5 jt'].forEach((v,i)=>document.querySelectorAll('.metric strong')[i].textContent=v);document.querySelectorAll('[data-panel="inbound"],[data-panel="distribution"]').forEach(x=>x.disabled=true);}
+ if(prospect){$('previewBanner').hidden=false;$('previewExpiry').textContent=new Date(preview.expires_at).toLocaleString('id-ID');document.querySelectorAll('[data-panel="inbound"]').forEach(x=>x.disabled=true);await loadProspectLiveData();}
  if(management){$('prospectAdmin').hidden=false;await loadProspects();}
  window.scrollTo({top:0,behavior:'smooth'});
  }catch(err){$('error').textContent=err.message||'Login belum berhasil.';}finally{$('submitBtn').disabled=false;$('submitBtn').textContent='Masuk ke Portal';}});

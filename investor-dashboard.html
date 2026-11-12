@@ -370,11 +370,6 @@ function renderReports(){
   $('semesterMonthReport').innerHTML=table(['Bulan','Investor','Laba Management','Pool investor 10%','Porsi modal','Hak investor'],monthRows);
 }
 function sendInvestorWhatsApp(investorId,investorName){
-  const phoneRaw=window.prompt('Masukkan nomor WhatsApp '+investorName+' (contoh 628123456789):');
-  if(!phoneRaw)return;
-  let phone=String(phoneRaw).replace(/[^0-9]/g,'');
-  if(phone.startsWith('0'))phone='62'+phone.slice(1);
-  if(!phone.startsWith('62')||phone.length<10){alert('Nomor WhatsApp harus menggunakan kode negara Indonesia 62.');return;}
   const rows=reportRows.filter(x=>x.investor_id===investorId).sort((a,b)=>String(a.month_start).localeCompare(String(b.month_start)));
   const totalCapital=portfolioRows.reduce((sum,p)=>sum+Math.max(0,Number(p.net_investment||0)),0);
   const liveProfit=Number(liveAllocation?.management_month_profit||0);
@@ -393,7 +388,8 @@ function sendInvestorWhatsApp(investorId,investorName){
   }
   const total=rows.reduce((sum,x)=>sum+Number(x.allocated_amount||0),0)+(rows.some(x=>String(x.month_start).slice(0,7)===currentKey)?0:livePool*sharePct/100);
   const message='*LAPORAN PENYERTAAN MODAL & BAGI HASIL*\\n*HELLO MAJESTY*\\n\\nYth. Bapak/Ibu '+investorName+',\\n\\nBerikut laporan perkembangan penyertaan modal Anda.\\n\\n*INFORMASI PENYERTAAN MODAL*\\nNama Pemilik Modal: '+investorName+'\\nTotal Penyertaan Modal: '+money(own?.net_investment||0)+'\\nPorsi Penyertaan Modal: '+sharePct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%\\n\\n*RINCIAN BAGI HASIL BULANAN*\\n'+(lines.length?lines.join('\\n\\n'):'Belum ada rincian bulanan yang diterbitkan.')+'\\n\\n*TOTAL HAK BAGI HASIL*\\n*'+money(total)+'*\\n\\n*MONITORING PENYERTAAN MODAL*\\nhttps://hello-majesty-lead-tracker.pages.dev/investor-dashboard.html\\n\\nTerima kasih atas kepercayaan dan dukungan Bapak/Ibu kepada Hello Majesty.\\n\\n*HELLO MAJESTY*\\n_Built on Trust_';
-  window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(message),'_blank','noopener');
+  // Tanpa nomor tujuan: biarkan Management memilih kontak atau grup langsung di WhatsApp.
+  window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank','noopener');
 }
 document.addEventListener('click',e=>{
   const btn=e.target.closest('[data-wa-investor]');

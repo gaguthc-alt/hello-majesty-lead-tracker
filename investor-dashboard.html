@@ -180,6 +180,13 @@ function renderReports(){
     : '<tr><td>'+esc(semesterMonths.find(x=>x.key===key)?.label||key)+'</td><td>'+money(currentProfit)+'</td><td>'+money(currentPool)+'</td><td>'+ownPct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%</td><td><b>'+money(currentOwn)+'</b></td><td><span class="pill gold">Estimasi berjalan</span></td></tr>';
   $('currentMonthReport').innerHTML=table(['Periode','Laba Management','Pool 10%','Porsi modal Anda','Estimasi hak bulan ini','Status'],[currentRows]);
   const monthRows=semesterMonths.map(m=>{
+    if(m.key==='2026-08'){
+      const isImam=String($('investorName').textContent).toLowerCase().includes('imam');
+      const augustProfit=7657227.14;
+      const augustPool=765723;
+      const augustOwn=isManagement?augustPool:(isImam?0:augustPool);
+      return '<tr><td>'+esc(m.label)+'</td><td>'+money(augustProfit)+'</td><td>'+money(augustPool)+'</td><td>'+(isManagement?'—':(isImam?'0%':'100%'))+'</td><td><b>'+money(augustOwn)+'</b></td><td><span class="pill gold">'+(isImam&&!isManagement?'Belum menjadi investor':'Laporan manual')+'</span></td></tr>';
+    }
     if(m.key==='2026-09'){
       const isImam=String($('investorName').textContent).toLowerCase().includes('imam');
       const historicalOwn=isManagement?2315392:(isImam?210490:2104902);

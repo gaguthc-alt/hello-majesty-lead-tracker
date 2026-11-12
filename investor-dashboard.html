@@ -16,16 +16,76 @@
 .panel{background:#101e30;border:1px solid var(--line);border-radius:18px;padding:17px;margin:10px 0 18px}.panel h2{font-size:17px;margin:0 0 5px}.hint{font-size:12px;color:var(--muted);margin-bottom:14px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;min-width:760px;font-size:12px}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid #263950;white-space:nowrap}th{background:#1a2d45;color:#c7d5e6;font-size:11px}td{color:#e4ecf6}tr:last-child td{border-bottom:0}.right{text-align:right}.pill{display:inline-block;border-radius:999px;padding:5px 9px;background:#263b55;color:#dce8f7;font-size:10px;font-weight:800}.pill.green{background:#143f37;color:#8ff0c3}.pill.gold{background:#493d24;color:#f3d99d}.empty{padding:25px;text-align:center;color:var(--muted);font-size:13px}.foot{color:#71849d;font-size:11px;text-align:center;margin-top:24px}.hidden{display:none!important}.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}.filter{background:#0b192a;color:#fff;border:1px solid var(--line);padding:9px;border-radius:9px}
 @media(max-width:780px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:15px 12px 35px}.hero{padding:18px}.panel{padding:13px}.top{align-items:flex-start}}
 @media(max-width:380px){.grid{grid-template-columns:1fr 1fr}.metric{padding:12px}}
+
+/* Premium public introduction */
+:root{--gold2:#f0dfb4;--ink:#07111e}
+body{background:radial-gradient(ellipse at 78% -8%,rgba(185,151,91,.19),transparent 34%),radial-gradient(ellipse at 0% 42%,rgba(35,82,108,.20),transparent 38%),#07111e}
+.wrap{max-width:1240px;padding-top:24px}.top{margin-bottom:26px}.mark{box-shadow:0 8px 28px #d9bd7b22}.brand b{font-size:13px}.brand small{letter-spacing:.13em;font-size:9px}
+.landing{position:relative;overflow:hidden;border:1px solid #34475b;border-radius:28px;background:linear-gradient(112deg,rgba(13,29,46,.98),rgba(17,39,57,.94) 55%,rgba(43,47,57,.96));box-shadow:0 28px 90px #0005;margin-bottom:22px}
+.landing:before{content:"";position:absolute;width:520px;height:520px;border:1px solid #d9bd7b18;border-radius:50%;right:-170px;top:-245px;box-shadow:0 0 0 42px #d9bd7b08,0 0 0 90px #d9bd7b05;pointer-events:none}
+.landing-inner{position:relative;padding:clamp(26px,5vw,58px)}.landing-kicker{display:flex;align-items:center;gap:10px;color:var(--gold2);font-size:10px;letter-spacing:.23em;font-weight:800}.landing-kicker:before{content:"";width:28px;height:1px;background:var(--gold)}
+.landing h1{font-family:Georgia,'Times New Roman',serif;font-weight:500;letter-spacing:-.035em;font-size:clamp(36px,6vw,68px);line-height:1.04;max-width:780px;margin:22px 0 12px}.landing h1 span{color:var(--gold2);font-style:italic}.landing-sub{font-size:clamp(15px,2vw,19px);color:#c4d0dc;line-height:1.65;max-width:650px;margin:0}.landing-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}.landing-actions .btn{padding:13px 19px;border-radius:12px}.btn.ghost{background:#ffffff08;border-color:#607086;color:#e9eef5}.landing-note{font-size:11px;color:#8fa2b7;margin-top:17px;letter-spacing:.02em}
+.intro-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin:16px 0}.intro-card{border:1px solid #293d54;background:linear-gradient(145deg,#12253a,#0d1b2c);border-radius:20px;padding:23px}.intro-card h2{font-family:Georgia,serif;font-size:25px;font-weight:500;margin:8px 0 10px}.intro-card p{font-size:13px;line-height:1.75;color:#b4c2d2;margin:0}.intro-label{font-size:10px;letter-spacing:.17em;color:var(--gold);font-weight:800}.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}.pillar{border:1px solid #2a3e54;background:#0e1d2e;border-radius:16px;padding:17px}.pillar .num{font-family:Georgia,serif;color:var(--gold2);font-size:24px}.pillar b{display:block;font-size:13px;margin:9px 0 5px}.pillar span{font-size:11px;color:#9fb0c6;line-height:1.6;display:block}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:17px}.flow-step{position:relative;border-top:1px solid #826f4d;padding:14px 10px 4px 0}.flow-step b{font-size:12px;display:block;margin-bottom:5px}.flow-step span{font-size:10px;color:#9fb0c6;line-height:1.5;display:block}.trustline{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:19px 22px;border:1px solid #5b4c32;background:linear-gradient(90deg,#1c2b37,#1b2631);border-radius:18px;margin:16px 0 28px}.trustline strong{font-family:Georgia,serif;color:var(--gold2);font-size:20px;font-weight:500}.trustline span{font-size:11px;color:#aebdcb;max-width:620px;line-height:1.6}
+.login{margin:5vh auto}.login-back{border:0;background:none;color:#c8b17d;cursor:pointer;padding:0 0 16px;font-size:12px}
+@media(max-width:760px){.intro-grid{grid-template-columns:1fr}.pillars{grid-template-columns:1fr}.flow{grid-template-columns:1fr 1fr}.flow-step{padding:10px 8px 8px 0}.landing-inner{padding:27px 22px}.trustline{align-items:flex-start}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
     <div class="brand"><div class="mark">HM</div><div><b>HELLO MAJESTY</b><small>INVESTOR PORTAL · BUILT ON TRUST</small></div></div>
-    <button id="logoutBtn" class="btn hidden">Keluar</button>
+    <div style="display:flex;gap:8px;align-items:center"><button id="accessBtn" class="btn ghost">Akses Investor</button><button id="logoutBtn" class="btn hidden">Keluar</button></div>
   </div>
-  <section id="loginPanel" class="login">
-    <div class="eyebrow">INVESTOR & MANAGEMENT ACCESS</div><h1>Selamat datang</h1>
+  <main id="landingPage">
+    <section class="landing">
+      <div class="landing-inner">
+        <div class="landing-kicker">HELLO MAJESTY · INVESTOR RELATIONS</div>
+        <h1>TRANSPARANSI <span>BISNIS.</span></h1>
+        <p class="landing-sub">Lihat bagaimana bisnis dikelola. Kenali ekosistem Hello Majesty, pahami alur pengelolaan modal, dan ikuti kinerja bisnis melalui informasi yang disajikan secara terukur.</p>
+        <div class="landing-actions">
+          <button id="landingLoginBtn" class="btn primary">Masuk ke Investor Dashboard&nbsp; →</button>
+          <button id="learnMoreBtn" class="btn ghost">Kenali Model Bisnis</button>
+        </div>
+        <div class="landing-note">INFORMASI TERBUKA · DATA TERJAGA · AKSES BERDASARKAN OTORISASI</div>
+      </div>
+    </section>
+    <section class="intro-grid" id="businessOverview">
+      <article class="intro-card">
+        <div class="intro-label">01 · TENTANG HELLO MAJESTY</div>
+        <h2>Ekosistem retail gadget yang dikelola secara terintegrasi.</h2>
+        <p>Hello Majesty mengembangkan kegiatan usaha retail smartphone dan gadget melalui pengelolaan persediaan, penjualan, distribusi antarunit, serta pemasaran digital. Setiap aktivitas dirancang agar dapat dipantau melalui sistem operasional yang saling terhubung.</p>
+      </article>
+      <article class="intro-card">
+        <div class="intro-label">02 · CARA BISNIS BERJALAN</div>
+        <h2>Modal bergerak. Stok terpantau. Hasil tercatat.</h2>
+        <p>Pengelolaan bisnis berfokus pada perputaran persediaan dan realisasi penjualan. Kinerja ditinjau dari stok yang tersedia, barang yang terjual, modal yang berputar, serta laba yang benar-benar terealisasi.</p>
+      </article>
+    </section>
+    <section class="pillars" aria-label="Prinsip pengelolaan">
+      <article class="pillar"><div class="num">01</div><b>Pengelolaan Modal</b><span>Penggunaan modal dan posisi persediaan dipantau melalui catatan operasional.</span></article>
+      <article class="pillar"><div class="num">02</div><b>Kontrol Persediaan</b><span>Stok Management dipantau berdasarkan status, nilai modal, dan pergerakannya.</span></article>
+      <article class="pillar"><div class="num">03</div><b>Pelaporan Kinerja</b><span>Penjualan, laba terealisasi, alokasi keuntungan, dan settlement disajikan sesuai hak akses.</span></article>
+    </section>
+    <section class="intro-card">
+      <div class="intro-label">03 · SIKLUS PENGELOLAAN</div>
+      <h2>Bagaimana modal dikelola?</h2>
+      <p>Alur operasional yang menjadi dasar pemantauan bisnis.</p>
+      <div class="flow">
+        <div class="flow-step"><b>Modal</b><span>Pencatatan kontribusi dan posisi modal</span></div>
+        <div class="flow-step"><b>Pengadaan</b><span>Modal dialokasikan untuk persediaan</span></div>
+        <div class="flow-step"><b>Monitoring</b><span>Stok dan perputaran dipantau</span></div>
+        <div class="flow-step"><b>Penjualan</b><span>Transaksi dan laba direkam</span></div>
+        <div class="flow-step"><b>Pelaporan</b><span>Alokasi hak dan settlement ditinjau</span></div>
+      </div>
+    </section>
+    <section class="trustline">
+      <div><strong>Built on Trust.</strong><div class="intro-label" style="margin-top:5px">HELLO MAJESTY</div></div>
+      <span>Transparansi bukan hanya tentang menampilkan angka, tetapi juga tentang memperlihatkan bagaimana angka tersebut terbentuk dan dikelola.</span>
+    </section>
+    <div class="foot">HELLO MAJESTY · INVESTOR RELATIONS · INFORMASI UMUM</div>
+  </main>
+  <section id="loginPanel" class="login hidden">
+    <button id="backLandingBtn" type="button" class="login-back">← Kembali ke halaman pengenalan</button><div class="eyebrow">INVESTOR & MANAGEMENT ACCESS</div><h1>Selamat datang</h1>
     <p>Masuk untuk memantau stok sumber Management, penjualan, dan laporan keuntungan investasi Anda.</p>
     <form id="loginForm">
       <div class="field"><label>Email akun Investor atau Management</label><input id="email" type="email" autocomplete="username" required></div>
@@ -99,7 +159,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
 let investorId=null,isManagement=false,isProspect=false,prospectAlias=null,accessRowId=null,stockRows=[],salesRows=[],reportRows=[],semesterRows=[],monthlyStockRows=[],liveAllocation=null;
 const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
-function showError(msg){$('loginError').textContent=msg||'';}
+function showError(msg){$('loginError').textContent=msg||'';}\nfunction openLogin(){ $('landingPage').classList.add('hidden'); $('loginPanel').classList.remove('hidden'); $('email').focus(); }\nfunction openLanding(){ $('loginPanel').classList.add('hidden'); $('landingPage').classList.remove('hidden'); showError(''); }\n$('accessBtn').addEventListener('click',openLogin);$('landingLoginBtn').addEventListener('click',openLogin);$('backLandingBtn').addEventListener('click',openLanding);$('learnMoreBtn').addEventListener('click',()=>$('businessOverview').scrollIntoView({behavior:'smooth',block:'start'}));
 function statusPill(s){const v=String(s||'-').toUpperCase();const cls=v==='READY'?'green':v==='SOLD'?'gold':'';return '<span class="pill '+cls+'">'+esc(v)+'</span>';}
 function table(headers,rows){if(!rows.length)return '<div class="empty">Belum ada data.</div>';return '<div class="table-wrap"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';}
 async function loadDashboard(user){
@@ -305,7 +365,7 @@ document.querySelectorAll('[data-period-tab]').forEach(b=>b.addEventListener('cl
 $('stockStatus').addEventListener('change',renderStock);$('salesMonth').value=thisMonth();$('salesMonth').addEventListener('change',renderSales);
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();showError('');$('loginBtn').disabled=true;$('loginBtn').textContent='Memeriksa akun…';try{const r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw r.error;await loadDashboard(r.data.user);}catch(err){await sb.auth.signOut();showError(err.message||'Login gagal.');}finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Masuk ke Dashboard';}});
 $('logoutBtn').addEventListener('click',async()=>{await sb.auth.signOut();location.reload();});
-(async()=>{try{const r=await sb.auth.getSession();if(r.data.session)await loadDashboard(r.data.session.user);}catch(err){showError(err.message||'Gagal memuat akun.');}})();
+(async()=>{try{const r=await sb.auth.getSession();if(r.data.session){await loadDashboard(r.data.session.user);$('landingPage').classList.add('hidden');}}catch(err){showError(err.message||'Gagal memuat akun.');}})();
 })();
 </script>
 </body>

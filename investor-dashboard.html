@@ -189,7 +189,12 @@ function renderReports(){
 }
 function renderSemester(){
   const rows=semesterRows.map(x=>'<tr><td>'+x.fiscal_year+' · Semester '+x.semester+(Number(x.batch_number||1)>1?' · Batch '+esc(x.batch_number):'')+'</td><td>'+esc(x.investor_name||'-')+'</td><td>'+money(x.total_management_profit)+'</td><td>'+money(x.total_investor_pool)+'</td><td>'+money(x.allocated_amount)+'</td><td>'+money(x.paid_amount)+'</td><td>'+money(x.remaining_amount)+'</td><td>'+statusPill(x.settlement_status)+'</td></tr>');
-  $('semesterTable').innerHTML=table(['Periode','Nama investor','Laba 6 bulan','Pool 10%','Hak investor','Sudah dibayar','Sisa hak','Status settlement'],rows);
+  const historicalRows = [
+    {name:'B. Titis / P. Budi', amount:2104902},
+    {name:'H. Imam', amount:210490}
+  ].filter(x=>isManagement || $('investorName').textContent.trim()===x.name);
+  const historicalTable = '<div class="panel" style="margin:0 0 14px;border-color:#725f37"><div class="section-head"><div><h2>Hak historis investor · September 2026</h2><div class="hint">Catatan hak periode transisi. Tidak dihitung dengan rumus resmi Oktober dan tidak menambah akumulasi settlement semester.</div></div><span class="pill gold">HISTORICAL</span></div>'+table(['Nama investor','Hak historis','Sudah dibayar','Sisa hak','Status'],historicalRows.map(x=>'<tr><td>'+esc(x.name)+'</td><td><b>'+money(x.amount)+'</b></td><td>'+money(0)+'</td><td>'+money(x.amount)+'</td><td><span class="pill gold">BELUM DIBAYAR</span></td></tr>'))+'<div class="hint" style="margin:10px 0 0">Total hak historis: <b>'+money(historicalRows.reduce((a,x)=>a+x.amount,0))+'</b>. Data ini bersifat terpisah dari laporan resmi Oktober–Desember.</div></div>';
+  $('semesterTable').innerHTML=historicalTable+table(['Periode','Nama investor','Laba 6 bulan','Pool 10%','Hak investor','Sudah dibayar','Sisa hak','Status settlement'],rows);
 }
 
 function renderCapitalPosition(netInvestment){

@@ -56,7 +56,7 @@
       <div class="panel"><div class="section-head"><div><h2>Posisi investasi</h2><div class="hint">Ringkasan posisi modal dan estimasi alokasi berjalan dari laba stok Management.</div></div></div><div id="positionSummary" class="empty">Memuat data…</div></div>
       <div class="panel"><h2>Posisi perputaran modal</h2><div class="hint">Nilai modal stok Management dibandingkan dengan modal investor yang tercatat. Porsi investor ditampilkan secara proporsional karena modal dikelola sebagai pool bersama, bukan kepemilikan unit per investor.</div><div id="capitalPosition"></div></div>
       <div class="panel"><h2>Tren laba bulanan</h2><div class="hint">Perubahan laba Management dan hak profit Anda berdasarkan laporan alokasi yang sudah diterbitkan. Bulan tanpa laporan tidak dianggap nol.</div><div id="profitTrend"></div></div>
-      <div class="panel"><h2>Rincian penjualan</h2><div class="hint" id="productSalesHint">Rincian penjualan bulan berjalan berdasarkan produk dan outlet. Tidak mencampur bulan sebelumnya.</div><div id="productSales"></div></div>
+      <div class="panel"><h2>Rincian penjualan</h2><div class="hint">Rincian transaksi penjualan berdasarkan tanggal, produk, modal, harga jual, laba, dan outlet tersedia di menu Penjualan.</div><button class="tab" type="button" data-tab="sales" style="margin-top:12px">Lihat rincian di menu Penjualan</button></div>
       
     </section>
     <section id="tab-stock" class="tab-panel hidden">
@@ -155,7 +155,7 @@ async function loadDashboard(user){
   }else{
     $('positionSummary').innerHTML='<div class="grid" style="margin:0"><div class="metric"><small>Total investasi seluruh investor</small><strong>'+money(totalCapital)+'</strong></div><div class="metric"><small>Pool investor 10%</small><strong>'+money(livePool)+'</strong></div><div class="metric"><small>Modal bersih Anda</small><strong>'+money(netInvestment)+'</strong></div><div class="metric"><small>Estimasi hak keuntungan Anda</small><strong>'+money(ownEstimate)+'</strong></div></div><div class="hint">Porsi modal Anda '+pct.toLocaleString('id-ID',{maximumFractionDigits:4})+'%. Estimasi sementara, belum final atau dibayarkan.</div>';
   }
-  renderStock();renderSales();renderReports();renderSemester();renderCapitalPosition(netInvestment);renderProfitTrend();renderProductSales();
+  renderStock();renderSales();renderReports();renderSemester();renderCapitalPosition(netInvestment);renderProfitTrend();
   if(isManagement){$('investorName').textContent='Management — Monitoring Seluruh Investor';document.querySelector('.hero .eyebrow').textContent='MANAGEMENT DASHBOARD';}
   $('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');
 }
@@ -273,18 +273,6 @@ function renderProfitTrend(){
   }).join('');
   $('profitTrend').innerHTML='<div style="display:flex;gap:12px;align-items:flex-end;overflow:auto;padding:8px 2px 14px">'+bars+'</div><div class="hint">Juli dan Desember belum memiliki data. Agustus–September berasal dari laporan manual, Oktober dari laporan tersedia, dan November merupakan akumulasi sementara transaksi Management yang sudah tercatat.</div>';
 }
-function renderProductSales(){
-  const month=thisMonth();
-  const monthLabel=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
-  const currentSales=salesRows.filter(x=>String(x.sold_at||'').slice(0,7)===month);
-  $('productSalesHint').textContent='Periode '+monthLabel+' · hanya penjualan stok sumber Management pada bulan berjalan. Bulan sebelumnya tidak dijumlahkan.';
-  const values=currentSales.slice().sort((a,b)=>new Date(a.sold_at||0)-new Date(b.sold_at||0));
-  const rows=values.map(x=>'<tr><td>'+fmtDate(x.sold_at)+'</td><td>'+esc([x.product,x.variant,x.color,x.grade].filter(Boolean).join(' '))+'</td><td class="right">1</td><td class="right">'+money(x.sale_price)+'</td><td class="right">'+money(x.capital_cost)+'</td><td class="right">'+money(x.realized_profit)+'</td><td>'+esc(x.sold_outlet||'-')+'</td></tr>');
-  const total=values.reduce((a,x)=>({qty:a.qty+1,sales:a.sales+Number(x.sale_price||0),cost:a.cost+Number(x.capital_cost||0),profit:a.profit+Number(x.realized_profit||0)}),{qty:0,sales:0,cost:0,profit:0});
-  if(rows.length)rows.push('<tr style="font-weight:800;background:#1a2d45"><td colspan="2">TOTAL '+esc(monthLabel.toUpperCase())+'</td><td class="right">'+total.qty+'</td><td class="right">'+money(total.sales)+'</td><td class="right">'+money(total.cost)+'</td><td class="right">'+money(total.profit)+'</td><td>-</td></tr>');
-  $('productSales').innerHTML=table(['Tanggal','Nama barang','Kuantitas','Penjualan','Modal','Laba','Outlet'],rows);
-}
-
 function renderRecent(){
   const rows=salesRows.slice(0,5).map(x=>'<tr><td>'+fmtDate(x.sold_at)+'</td><td>'+esc([x.product,x.variant].filter(Boolean).join(' '))+'</td><td>'+money(x.capital_cost)+'</td><td>'+money(x.sale_price)+'</td><td>'+money(x.realized_profit)+'</td><td>'+esc(x.sold_outlet||'-')+'</td></tr>');
   $('recentSales').innerHTML=table(['Tanggal','Produk','Modal','Jual','Laba','Outlet'],rows);

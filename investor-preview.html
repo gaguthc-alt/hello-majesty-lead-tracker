@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hello Majesty — Investor Preview</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:dark;--bg:#08111f;--panel:#111f33;--line:#2a3d56;--text:#edf4ff;--muted:#9fb0c6;--gold:#d9bd7b;--green:#62d6a2}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#18344c 0,transparent 34%),var(--bg);font-family:Inter,Arial,sans-serif;color:var(--text)}
+.wrap{max-width:1080px;margin:auto;padding:24px 16px 50px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-weight:900;letter-spacing:.12em}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:5px}.tag{border:1px solid #806c43;color:#f3d99d;border-radius:30px;padding:7px 11px;font-size:11px;font-weight:800}
+.hero,.panel{border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#14263c,#101e30);padding:22px;margin-top:18px}.hero{background:linear-gradient(120deg,#142a42,#172d40 60%,#26334a)}.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--gold);font-weight:800}.hero h1{font-size:clamp(26px,5vw,42px);margin:10px 0}.hero p,.muted{color:var(--muted);line-height:1.6;font-size:13px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}.metric{border:1px solid var(--line);background:#0d1b2c;border-radius:15px;padding:15px}.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{display:block;font-size:clamp(18px,2.4vw,25px);margin-top:9px;overflow-wrap:anywhere}.panel h2{font-size:18px;margin:0 0 6px}.notice{border:1px solid #695a39;background:#292617;border-radius:12px;padding:12px;color:#f0dfb7;font-size:12px;line-height:1.55;margin-top:14px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}.field label{display:block;font-size:12px;color:#c4d0df;margin-bottom:7px}.field input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#091627;color:#fff;font-size:15px}.result{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}.result>div{padding:14px;border:1px solid var(--line);border-radius:13px;background:#0b192a}.result small{display:block;color:var(--muted);font-size:11px}.result strong{display:block;margin-top:7px;font-size:20px}.foot{text-align:center;color:#71849d;font-size:11px;margin-top:24px}
+@media(max-width:700px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.result{grid-template-columns:1fr}.fields{grid-template-columns:1fr}.hero,.panel{padding:17px}}
+</style>
+</head>
+<body><div class="wrap">
+<header class="top"><div class="brand">HELLO MAJESTY<small>INVESTOR PREVIEW · BUILT ON TRUST</small></div><span class="tag">AKSES PRESENTASI</span></header>
+<section class="hero"><div class="eyebrow">TRANSPARANSI BISNIS</div><h1>Lihat bagaimana bisnis dikelola.</h1><p>Kenali aktivitas usaha Hello Majesty melalui ringkasan kinerja aktual yang telah disetujui untuk dipublikasikan, lalu pelajari ilustrasi perhitungan investasi melalui simulator.</p><div class="notice">Halaman presentasi ini bersifat baca-saja. Data aktual yang ditampilkan merupakan ringkasan terpilih, bukan akses ke transaksi mentah atau portofolio investor lain.</div></section>
+<section class="panel"><h2>Kinerja bisnis aktual</h2><div id="actualPeriod" class="muted">Memuat publikasi Management…</div><div class="grid">
+<div class="metric"><small>Unit terjual</small><strong id="units">—</strong></div>
+<div class="metric"><small>Nilai penjualan</small><strong id="revenue">—</strong></div>
+<div class="metric"><small>Laba terealisasi</small><strong id="profit">—</strong></div>
+<div class="metric"><small>Stok tersedia</small><strong id="stock">—</strong></div>
+</div><div id="publicNote" class="muted" style="margin-top:12px"></div></section>
+<section class="panel"><h2>Simulasi investasi</h2><p class="muted">Ubah angka untuk memahami ilustrasi pembagian pool keuntungan. Simulasi ini bukan penawaran investasi, proyeksi pasti, atau jaminan imbal hasil.</p>
+<div class="fields">
+<div class="field"><label for="capital">Contoh modal Anda (Rp)</label><input id="capital" type="number" min="0" step="1000000" value="20000000"></div>
+<div class="field"><label for="poolCapital">Total modal investor dalam pool (Rp)</label><input id="poolCapital" type="number" min="1" step="1000000" value="220000000"></div>
+<div class="field"><label for="businessProfit">Contoh laba bersih usaha Management (Rp)</label><input id="businessProfit" type="number" min="0" step="1000000" value="10000000"></div>
+<div class="field"><label for="poolRate">Porsi pool investor (%)</label><input id="poolRate" type="number" min="0" max="100" step="0.5" value="10"></div>
+</div>
+<div class="result"><div><small>Pool keuntungan ilustratif</small><strong id="poolResult">Rp0</strong></div><div><small>Porsi modal ilustratif</small><strong id="shareResult">0%</strong></div><div><small>Ilustrasi hak keuntungan</small><strong id="returnResult">Rp0</strong></div></div>
+<div class="notice">Hasil hanya mengikuti angka yang Anda masukkan dan asumsi pembagian pool pada layar ini. Hasil aktual dapat berbeda, dapat bernilai nol atau rugi, dan tunduk pada perjanjian tertulis serta laporan final.</div>
+</section>
+<footer class="foot">HELLO MAJESTY · INVESTOR PREVIEW · Informasi untuk tujuan presentasi</footer>
+</div>
+<script>
+(function(){
+const URL='https://ksowzhhmzrumyciehuyv.supabase.co';
+const KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
+const sb=window.supabase.createClient(URL,KEY);
+const $=id=>document.getElementById(id);
+const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
+function simulate(){
+ const capital=Math.max(0,Number($('capital').value)||0), total=Math.max(0,Number($('poolCapital').value)||0);
+ const profit=Number($('businessProfit').value)||0, rate=Math.min(100,Math.max(0,Number($('poolRate').value)||0));
+ const pool=Math.max(0,profit)*rate/100, share=total>0?capital/total:0;
+ $('poolResult').textContent=money(pool);$('shareResult').textContent=(share*100).toLocaleString('id-ID',{maximumFractionDigits:2})+'%';
+ $('returnResult').textContent=money(pool*share);
+}
+['capital','poolCapital','businessProfit','poolRate'].forEach(id=>$(id).addEventListener('input',simulate));
+async function load(){
+ try{
+  const {data,error}=await sb.from('investor_preview_publications').select('period_label,sales_units,sales_revenue,realized_profit,available_stock_units,available_stock_capital,public_note,published_at').eq('is_published',true).order('published_at',{ascending:false}).limit(1).maybeSingle();
+  if(error)throw error;
+  if(!data){$('actualPeriod').textContent='Belum ada ringkasan aktual yang dipublikasikan Management. Silakan minta materi presentasi resmi dari tim Hello Majesty.';return;}
+  $('actualPeriod').textContent='Periode: '+data.period_label+' · diperbarui '+(data.published_at?new Date(data.published_at).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—');
+  $('units').textContent=Number(data.sales_units||0).toLocaleString('id-ID')+' unit';
+  $('revenue').textContent=money(data.sales_revenue);$('profit').textContent=money(data.realized_profit);
+  $('stock').textContent=Number(data.available_stock_units||0).toLocaleString('id-ID')+' unit';
+  $('publicNote').textContent=data.public_note||'Ringkasan aktual yang telah disetujui untuk presentasi.';
+ }catch(e){$('actualPeriod').textContent='Ringkasan aktual belum dapat dimuat. Silakan hubungi Management Hello Majesty.';}
+}
+simulate();load();
+})();
+</script></body></html>

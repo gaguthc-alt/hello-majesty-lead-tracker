@@ -88,7 +88,7 @@ async function loadDashboard(user){
   if(access.error)throw access.error;
   if(!access.data)throw new Error('Akun ini belum terdaftar sebagai investor. Hubungi Management Hello Majesty.');
   investorId=access.data.investor_id;
-  const [investor,portfolio,stocks,sales,reports]=await Promise.all([
+  const [investor,portfolio,stocks,sales,reports,semesters]=await Promise.all([
     sb.from('investors').select('investor_name').eq('id',investorId).single(),
     sb.from('investor_portfolio_summary').select('*').eq('investor_id',investorId).maybeSingle(),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),

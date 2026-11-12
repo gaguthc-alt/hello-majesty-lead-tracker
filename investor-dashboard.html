@@ -96,7 +96,7 @@ async function loadDashboard(user){
     sb.from('investors').select('investor_name').eq('id',investorId).single(),
     sb.from('investor_portfolio_summary').select('*').eq('investor_id',investorId).maybeSingle(),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
-    sb.from('investor_management_sales_detail').select('*').order('sold_at',{ascending:false}).limit(1000),
+    sb.rpc('get_investor_management_sales_detail'),
     sb.from('investor_monthly_report').select('*').eq('investor_id',investorId).order('month_start',{ascending:false}).limit(36),
     sb.from('investor_semester_report').select('*').eq('investor_id',investorId).order('fiscal_year',{ascending:false})
   ]);
@@ -143,7 +143,7 @@ function renderCapitalPosition(netInvestment){
   const readyCost=ready.reduce((a,x)=>a+Number(x.capital_cost||0),0);
   const soldCost=sold.reduce((a,x)=>a+Number(x.capital_cost||0),0);
   const share=Number(netInvestment||0);
-  const allInvestorCapital=Number(reportRows[0]?.total_investment||220000000);
+  const allInvestorCapital=Number(reportRows[0]?.total_investment||0);
   const pct=allInvestorCapital>0?share/allInvestorCapital:0;
   const fmtPct=v=>(v*100).toLocaleString('id-ID',{maximumFractionDigits:2})+'%';
   const line=(label,value,sub='')=>'<div class="metric"><small>'+label+'</small><strong>'+money(value)+'</strong><div class="sub">'+sub+'</div></div>';
@@ -152,7 +152,7 @@ function renderCapitalPosition(netInvestment){
     line('Modal stok Management',totalStock,'Seluruh status stok yang tercatat')+
     line('Modal stok tersedia',readyCost,ready.length+' unit belum terjual')+
     line('Modal barang terjual',soldCost,sold.length+' transaksi terhubung')+
-    '</div><div class="hint">Porsi proporsional Anda saat ini: <b>'+fmtPct(pct)+'</b>. Estimasi porsi nilai stok tersedia: <b>'+money(readyCost*pct)+'</b>. Ini adalah indikator proporsional pool, bukan pemetaan kepemilikan unit. Nilai stok di luar data yang termuat (lebih dari 1.000 baris) dapat membuat ringkasan ini belum lengkap.</div>';
+    '</div><div class="hint">Porsi proporsional Anda berdasarkan laporan alokasi terakhir: <b>'+(allInvestorCapital>0?fmtPct(pct):'Belum tersedia')+'</b>. Estimasi porsi nilai stok tersedia: <b>'+(allInvestorCapital>0?money(readyCost*pct):'Belum dapat dihitung')+'</b>. Ini adalah indikator proporsional pool, bukan pemetaan kepemilikan unit. Nilai stok di luar data yang termuat (lebih dari 1.000 baris) dapat membuat ringkasan ini belum lengkap.</div>';
 }
 function renderProfitTrend(){
   const rows=[...reportRows].sort((a,b)=>String(a.month_start).localeCompare(String(b.month_start)));

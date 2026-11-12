@@ -34,7 +34,6 @@ const KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 const sb=window.supabase.createClient(URL,KEY);
 const $=id=>document.getElementById(id);
 const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
-function money(v){return 'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});}
 async function loadInvestorReport(){
  const {data,error}=await sb.from('investor_preview_investor_rows').select('period_label,management_profit,investor_pool,investor_alias,investment_basis,investment_share_pct,allocated_amount,paid_amount,remaining_amount,payment_status,sort_date').eq('is_published',true).order('sort_date',{ascending:false}).order('investor_alias');
  if(error)throw error;

@@ -161,7 +161,7 @@ body{background:radial-gradient(ellipse at 78% -8%,rgba(185,151,91,.19),transpar
     </form>
   </section>
   <main id="dashboard" class="hidden">
-    <section id="prospectAdmin" class="panel hidden"><h2>Akses Calon Investor</h2><div class="hint">Buat akun baca-saja selama 7 hari. Akun dapat diperpanjang 7 hari atau dicabut kapan saja.</div><form id="prospectForm" class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="field"><label>Email calon investor</label><input id="prospectEmail" type="email" required></div><div class="field"><label>Password awal (minimal 10 karakter)</label><input id="prospectPassword" type="password" minlength="10" required></div><div class="field"><label>Portofolio yang ditampilkan</label><select id="prospectInvestor" class="filter" required style="width:100%"></select></div><div class="field"><label>Nama samaran</label><select id="prospectAlias" class="filter" required style="width:100%"><option>Investor A</option><option>Investor B</option><option>Investor C</option><option>Investor D</option><option>Investor E</option></select></div><div><button class="btn primary" id="prospectCreate">Buat akun 7 hari</button></div><div id="prospectMessage" class="hint" role="status"></div></form><div id="prospectList" class="hint">Memuat akun…</div></section><section class="hero">
+    <section id="prospectAdmin" class="panel hidden"><h2>Akses Calon Investor</h2><div class="hint">Buat akun baca-saja selama 7 hari. Akun dapat diperpanjang 7 hari atau dicabut kapan saja.</div><form id="prospectForm" class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="field"><label>Email calon investor</label><input id="prospectEmail" type="email" required></div><div class="field"><label>Password awal (minimal 10 karakter)</label><input id="prospectPassword" type="password" minlength="10" required></div><div><button class="btn primary" id="prospectCreate">Buat akun 7 hari</button></div><div id="prospectMessage" class="hint" role="status"></div></form><div id="prospectList" class="hint">Memuat akun…</div></section><section class="hero">
       <div class="eyebrow">INVESTOR DASHBOARD</div>
       <h1 id="investorName">Dashboard Investor</h1>
       <p>Management melihat seluruh identitas investor. Investor melihat identitas sendiri dan investor lain dalam nama samaran. Calon investor melihat seluruh data dalam tampilan simulasi dengan semua identitas disamarkan.</p>
@@ -254,7 +254,7 @@ const $=id=>document.getElementById(id);
 const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:0});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
-let investorId=null,isManagement=false,isProspect=false,prospectAlias=null,accessRowId=null,stockRows=[],salesRows=[],reportRows=[],semesterRows=[],monthlyStockRows=[],liveAllocation=null,portfolioRows=[];
+let investorId=null,isManagement=false,isProspect=false,prospectAlias=null,accessRowId=null,prospectDefaultInvestorId=null,stockRows=[],salesRows=[],reportRows=[],semesterRows=[],monthlyStockRows=[],liveAllocation=null,portfolioRows=[];
 const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
 function showError(msg){$('loginError').textContent=msg||'';}
 function openLogin(){ $('landingPage').classList.add('hidden'); $('loginPanel').classList.remove('hidden'); $('email').focus(); }
@@ -413,7 +413,8 @@ async function loadProspectAdmin(){
     sb.from('investor_user_access').select('id,display_alias,expires_at,active,created_at').eq('access_kind','prospect').order('created_at',{ascending:false})
   ]);
   if(investors.error)throw investors.error;if(accesses.error)throw accesses.error;
-  $('prospectInvestor').innerHTML=(investors.data||[]).map(x=>'<option value="'+esc(x.id)+'">'+esc(x.investor_name)+'</option>').join('');
+  prospectDefaultInvestorId=investors.data?.[0]?.id||null;
+  if(!prospectDefaultInvestorId)throw new Error('Belum ada data investor untuk membuat akses presentasi.');
   $('prospectList').innerHTML=table(['Alias','Berakhir','Status','Aksi'],(accesses.data||[]).map(x=>'<tr><td>'+esc(x.display_alias||'Investor')+'</td><td>'+fmtDate(x.expires_at)+' '+(x.expires_at?new Date(x.expires_at).toLocaleTimeString('id-ID'):'')+'</td><td>'+((x.active&&new Date(x.expires_at)>new Date())?'<span class="pill green">AKTIF</span>':'<span class="pill gold">KEDALUWARSA / DICABUT</span>')+'</td><td><button class="btn" data-prospect-action="extend" data-id="'+esc(x.id)+'">Perpanjang 7 hari</button> <button class="btn" data-prospect-action="revoke" data-id="'+esc(x.id)+'">Cabut</button></td></tr>'));
 }
 async function prospectAction(action,payload={}){
@@ -421,7 +422,7 @@ async function prospectAction(action,payload={}){
  const res=await fetch(SUPABASE_URL+'/functions/v1/investor-prospect-access',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...payload})});
  const data=await res.json();if(!res.ok)throw new Error(data.error||'Permintaan gagal.');return data;
 }
-$('prospectForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('prospectCreate');btn.disabled=true;$('prospectMessage').textContent='Membuat akun…';try{const result=await prospectAction('create',{email:$('prospectEmail').value.trim(),password:$('prospectPassword').value,investor_id:$('prospectInvestor').value,display_alias:$('prospectAlias').value});$('prospectMessage').textContent='Akun dibuat: '+result.email+' · berakhir '+new Date(result.expires_at).toLocaleString('id-ID');$('prospectForm').reset();await loadProspectAdmin();}catch(err){$('prospectMessage').textContent=err.message;}finally{btn.disabled=false;}});
+$('prospectForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('prospectCreate');btn.disabled=true;$('prospectMessage').textContent='Membuat akun…';try{const result=await prospectAction('create',{email:$('prospectEmail').value.trim(),password:$('prospectPassword').value,investor_id:prospectDefaultInvestorId,display_alias:'Investor A'});$('prospectMessage').textContent='Akun dibuat: '+result.email+' · berakhir '+new Date(result.expires_at).toLocaleString('id-ID');$('prospectForm').reset();await loadProspectAdmin();}catch(err){$('prospectMessage').textContent=err.message;}finally{btn.disabled=false;}});
 $('prospectList').addEventListener('click',async e=>{const btn=e.target.closest('[data-prospect-action]');if(!btn)return;btn.disabled=true;try{await prospectAction(btn.dataset.prospectAction,{access_id:btn.dataset.id});await loadProspectAdmin();}catch(err){$('prospectMessage').textContent=err.message;}finally{btn.disabled=false;}});
 function renderProfitTrend(){
   // Semester II 2026: tampilkan seluruh bulan, termasuk bulan tanpa data.

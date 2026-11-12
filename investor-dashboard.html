@@ -213,7 +213,10 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtDate=v=>v?new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';
 let investorId=null,isManagement=false,isProspect=false,prospectAlias=null,accessRowId=null,stockRows=[],salesRows=[],reportRows=[],semesterRows=[],monthlyStockRows=[],liveAllocation=null;
 const thisMonth=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
-function showError(msg){$('loginError').textContent=msg||'';}\nfunction openLogin(){ $('landingPage').classList.add('hidden'); $('loginPanel').classList.remove('hidden'); $('email').focus(); }\nfunction openLanding(){ $('loginPanel').classList.add('hidden'); $('landingPage').classList.remove('hidden'); showError(''); }\n$('accessBtn').addEventListener('click',openLogin);$('landingLoginBtn').addEventListener('click',openLogin);$('backLandingBtn').addEventListener('click',openLanding);$('learnMoreBtn').addEventListener('click',()=>$('businessOverview').scrollIntoView({behavior:'smooth',block:'start'}));
+function showError(msg){$('loginError').textContent=msg||'';}
+function openLogin(){ $('landingPage').classList.add('hidden'); $('loginPanel').classList.remove('hidden'); $('email').focus(); }
+function openLanding(){ $('loginPanel').classList.add('hidden'); $('landingPage').classList.remove('hidden'); showError(''); }
+$('accessBtn').addEventListener('click',openLogin);$('landingLoginBtn').addEventListener('click',openLogin);$('backLandingBtn').addEventListener('click',openLanding);$('learnMoreBtn').addEventListener('click',()=>$('businessOverview').scrollIntoView({behavior:'smooth',block:'start'}));
 function statusPill(s){const v=String(s||'-').toUpperCase();const cls=v==='READY'?'green':v==='SOLD'?'gold':'';return '<span class="pill '+cls+'">'+esc(v)+'</span>';}
 function table(headers,rows){if(!rows.length)return '<div class="empty">Belum ada data.</div>';return '<div class="table-wrap"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';}
 async function loadDashboard(user){

@@ -190,7 +190,7 @@ function renderReports(){
     if(m.key==='2026-09'){
       const isImam=String($('investorName').textContent).toLowerCase().includes('imam');
       const historicalOwn=isManagement?2315392:(isImam?210490:2104902);
-      return '<tr><td>'+esc(m.label)+'</td><td>'+money(23153925.47)+'</td><td>'+money(2315392)+'</td><td>'+(isManagement?'—':(isImam?'9,09%':'90,91%'))+'</td><td><b>'+money(historicalOwn)+'</b></td><td><span class="pill gold">Hak historis · transisi</span></td></tr>';
+      return '<tr><td>'+esc(m.label)+'</td><td>'+money(23153925.47)+'</td><td>'+money(2315392)+'</td><td>'+(isManagement?'—':(isImam?'9,09%':'90,91%'))+'</td><td><b>'+money(historicalOwn)+'</b></td><td><span class="pill gold">Laporan manual</span></td></tr>';
     }
     const found=reportRows.filter(x=>String(x.month_start||'').slice(0,7)===m.key);
     if(!found.length)return '<tr><td>'+esc(m.label)+'</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="pill">Belum ada data</span></td></tr>';

@@ -44,19 +44,25 @@ create policy investor_semester_settlements_select on public.investor_semester_s
  public.is_management() or exists (select 1 from public.investor_semester_settlement_items si join public.investor_user_access ua on ua.investor_id=si.investor_id where si.settlement_id=investor_semester_settlements.id and ua.user_id=(select auth.uid()) and ua.active=true)
 );
 drop policy if exists investor_semester_settlements_write on public.investor_semester_settlements;
-create policy investor_semester_settlements_write on public.investor_semester_settlements for all to authenticated using (public.is_management()) with check (public.is_management());
+create policy investor_semester_settlements_insert on public.investor_semester_settlements for insert to authenticated with check (public.is_management());
+create policy investor_semester_settlements_update on public.investor_semester_settlements for update to authenticated using (public.is_management()) with check (public.is_management());
+create policy investor_semester_settlements_delete on public.investor_semester_settlements for delete to authenticated using (public.is_management());
 drop policy if exists investor_semester_items_select on public.investor_semester_settlement_items;
 create policy investor_semester_items_select on public.investor_semester_settlement_items for select to authenticated using (
  public.is_management() or exists (select 1 from public.investor_user_access ua where ua.investor_id=investor_semester_settlement_items.investor_id and ua.user_id=(select auth.uid()) and ua.active=true)
 );
 drop policy if exists investor_semester_items_write on public.investor_semester_settlement_items;
-create policy investor_semester_items_write on public.investor_semester_settlement_items for all to authenticated using (public.is_management()) with check (public.is_management());
+create policy investor_semester_items_insert on public.investor_semester_settlement_items for insert to authenticated with check (public.is_management());
+create policy investor_semester_items_update on public.investor_semester_settlement_items for update to authenticated using (public.is_management()) with check (public.is_management());
+create policy investor_semester_items_delete on public.investor_semester_settlement_items for delete to authenticated using (public.is_management());
 drop policy if exists investor_semester_payments_select on public.investor_semester_payments;
 create policy investor_semester_payments_select on public.investor_semester_payments for select to authenticated using (
  public.is_management() or exists (select 1 from public.investor_semester_settlement_items si join public.investor_user_access ua on ua.investor_id=si.investor_id where si.id=investor_semester_payments.settlement_item_id and ua.user_id=(select auth.uid()) and ua.active=true)
 );
 drop policy if exists investor_semester_payments_insert on public.investor_semester_payments;
 create policy investor_semester_payments_insert on public.investor_semester_payments for insert to authenticated with check (public.is_management() and paid_by=(select auth.uid()));
+create index if not exists idx_investor_semester_items_investor on public.investor_semester_settlement_items(investor_id);
+create index if not exists idx_investor_semester_payments_item on public.investor_semester_payments(settlement_item_id);
 grant select on public.investor_semester_settlements,public.investor_semester_settlement_items,public.investor_semester_payments to authenticated;
 create or replace function public.generate_investor_semester_settlement(p_fiscal_year integer,p_semester smallint)
 returns uuid language plpgsql set search_path to 'pg_catalog','public','pg_temp' as $$

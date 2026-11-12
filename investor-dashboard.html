@@ -93,7 +93,8 @@ async function loadDashboard(user){
     sb.from('investor_portfolio_summary').select('*').eq('investor_id',investorId).maybeSingle(),
     sb.from('investor_management_stock_monitor').select('*').order('received_at',{ascending:false}).limit(1000),
     sb.from('investor_management_sales_detail').select('*').order('sold_at',{ascending:false}).limit(1000),
-    sb.from('investor_monthly_report').select('*').eq('investor_id',investorId).order('month_start',{ascending:false}).limit(36),\n    sb.from('investor_semester_report').select('*').eq('investor_id',investorId).order('fiscal_year',{ascending:false})
+    sb.from('investor_monthly_report').select('*').eq('investor_id',investorId).order('month_start',{ascending:false}).limit(36),
+    sb.from('investor_semester_report').select('*').eq('investor_id',investorId).order('fiscal_year',{ascending:false})
   ]);
   for(const x of [investor,portfolio,stocks,sales,reports,semesters])if(x.error)throw x.error;
   stockRows=stocks.data||[];salesRows=sales.data||[];reportRows=reports.data||[];semesterRows=semesters.data||[];

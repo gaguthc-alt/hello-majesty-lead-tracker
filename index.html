@@ -6879,8 +6879,8 @@ async function salesResult(id){
      (providerText.includes('AKULAKU')?'AKULAKU':providerText.includes('KREDIVO')?'KREDIVO':providerText.includes('SPAY')?'SPAYLATER':rawProviderCode);
    const paymentSelect=document.getElementById('salePayment');
    const paymentText=String(paymentSelect?.selectedOptions?.[0]?.textContent||'').toUpperCase();
-   const isPayLater=paymentSelect?.value==='PAY_LATER' || /PAY\\s?LATER/.test(paymentText);
-   const providerKnown=['SPAYLATER','KREDIVO','AKULAKU'].includes(code) || /AKULAKU|KREDIVO|SPAY\\s?LATER/.test(providerText);
+   const isPayLater=paymentSelect?.value==='PAY_LATER' || /PAY\s?LATER/.test(paymentText);
+   const providerKnown=['SPAYLATER','KREDIVO','AKULAKU'].includes(code) || /AKULAKU|KREDIVO|SPAY\s?LATER/.test(providerText);
    financeBox?.classList.toggle('hidden',!(isPayLater && providerKnown));
  };
  const financeBox=document.getElementById('financeSaleBox');

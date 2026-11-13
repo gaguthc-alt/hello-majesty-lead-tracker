@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#075e54"><title>WhatsApp Inbox • Hello Majesty</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
 :root{font-family:Inter,system-ui,Arial;color:#17212b;background:#f3f6f7}*{box-sizing:border-box}body{margin:0}.top{background:#075e54;color:white;padding:18px 22px;display:flex;justify-content:space-between;align-items:center}.top small{opacity:.8}.wrap{max-width:1180px;margin:22px auto;padding:0 14px;display:grid;grid-template-columns:360px 1fr;gap:16px}.panel{background:white;border:1px solid #e2e8eb;border-radius:14px;overflow:hidden;min-height:70vh}.toolbar{padding:14px;border-bottom:1px solid #edf0f2;display:flex;gap:8px}.toolbar input{flex:1;min-width:0}.field,button{font:inherit;border:1px solid #d7e0e3;border-radius:9px;padding:10px;background:white}.btn{background:#087f70;color:white;border:0;cursor:pointer}.btn:disabled{opacity:.45;cursor:not-allowed}.items{max-height:75vh;overflow:auto}.item{padding:14px;border-bottom:1px solid #eef1f2;cursor:pointer}.item:hover,.item.sel{background:#effaf7}.muted{color:#718096;font-size:12px}.item strong{display:block;margin-bottom:4px}.tag{display:inline-block;font-size:11px;padding:3px 7px;border-radius:20px;background:#e7f5ef;color:#087f70}.tag.lock{background:#fff2df;color:#925b0a}.detail{display:flex;flex-direction:column}.head{padding:16px;border-bottom:1px solid #edf0f2;display:flex;justify-content:space-between;gap:12px;align-items:center}.msgs{padding:18px;flex:1;overflow:auto;min-height:350px;background:#f7faf9}.bubble{max-width:78%;padding:11px 13px;margin:8px 0;border-radius:12px;background:white;box-shadow:0 1px 2px #0000000c;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.cs{margin-left:auto;background:#dcf8c6}.foot{padding:14px;border-top:1px solid #edf0f2}.compose{display:flex;gap:9px;align-items:flex-end;margin-top:10px}.compose textarea{flex:1;min-width:0;min-height:48px;max-height:140px;resize:vertical;border:1px solid #d7e0e3;border-radius:10px;padding:12px;font:inherit}.compose button{min-width:92px}.compose-help{margin-top:6px}.compose-expired{color:#a15b18}.empty{display:grid;place-items:center;color:#718096;min-height:60vh;text-align:center;padding:30px}.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}@media(max-width:760px){.wrap{grid-template-columns:1fr}.panel{min-height:auto}.items{max-height:35vh}.detail .msgs{min-height:40vh}}
-</style></head><body><header class="top"><div><b>Hello Majesty · WhatsApp Inbox</b><br><small>Customer Service Workspace</small></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="location.href='push-setup.html'">🔔 Aktifkan Alarm</button><button onclick="location.href='index.html'">Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan WhatsApp melalui Sambungan · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
+.lead-review{padding:14px 16px;border-bottom:1px solid #edf0f2;background:#fff}.lead-review h3{margin:0 0 8px;font-size:14px}.lead-review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.lead-review input,.lead-review textarea,.lead-review select{width:100%;min-width:0;border:1px solid #d7e0e3;border-radius:8px;padding:9px;font:inherit;background:#fff}.lead-review textarea{min-height:58px;resize:vertical}.lead-review .field-label{display:block;font-size:11px;color:#667085;margin:4px 0}.lead-review .review-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.lead-review .review-note{font-size:12px;color:#667085;margin:6px 0}.lead-review .statusline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.lead-review .decision{font-size:12px;padding:4px 8px;border-radius:20px;background:#edf7f3;color:#087f70}.lead-review .decision.warn{background:#fff2df;color:#925b0a}@media(max-width:600px){.lead-review-grid{grid-template-columns:1fr}}
+</style></head><body><header class="top"><div><b>Hello Majesty · WhatsApp Inbox</b><br><small>Customer Service Workspace</small></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="location.href='push-setup.html'">🔔 Aktifkan Alarm</button><button onclick="location.href='index.html'">Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan WhatsApp melalui Sambungan · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
 const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co',SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 let sb,me,profile=null,maskPhoneNumbers=true,rows=[],active=null,realtimeChannel=null,realtimeConnected=false,realtimeRefreshTimer=null;
@@ -69,7 +70,102 @@ async function init(){try{
 async function load(quiet=false){try{const {data,error}=await sb.from('chat_conversations').select('*').order('updated_at',{ascending:false}).limit(200);if(error)throw error;rows=(data||[]);renderList();if(active){const fresh=rows.find(x=>x.id===active.id);if(fresh){active=fresh;await loadMessages(true);renderHead();}}}catch(e){if(!quiet)$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
 function renderList(){const q=$('search').value.toLowerCase();const filtered=rows.filter(c=>(c.customer_phone||'').toLowerCase().includes(q)||(c.customer_name||'').toLowerCase().includes(q));$('list').innerHTML=filtered.map(c=>'<div class="item '+(active?.id===c.id?'sel':'')+'" data-id="'+c.id+'"><strong>'+esc(c.customer_name||displayPhone(c.customer_phone)||'Percakapan lama')+'</strong><div class="muted">'+esc(c.customer_phone?displayPhone(c.customer_phone):'Nomor belum tersedia')+'</div><div style="margin-top:7px"><span class="tag '+(c.claimed_by?'lock':'')+'">'+(c.customer_phone?(c.claimed_by?'PIC: '+esc(c.claimed_name||'CS'):'BELUM DI-CLAIM'):'NOMOR BELUM TERCATAT')+'</span> <span class="muted">'+esc(c.status||'NEW')+'</span></div></div>').join('')||'<div class="empty">Belum ada percakapan WhatsApp.</div>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));}
 async function openChat(id){active=rows.find(c=>c.id===id);renderList();renderHead();await loadMessages();}
-function renderHead(){if(!active)return;const mine=active.claimed_by===me.id;const free=!active.claimed_by;$('head').innerHTML='<div><b>'+esc(active.customer_name||displayPhone(active.customer_phone)||'Customer')+'</b><div class="muted">'+esc(active.customer_phone?displayPhone(active.customer_phone):'Nomor tidak tersedia')+' · '+esc(active.status||'NEW')+'</div><div class="muted">'+(active.claimed_by?'PIC: '+esc(active.claimed_name||'CS'):'Belum ada PIC')+'</div></div><div class="actions">'+(free?'<button id="claim" class="btn">Claim Chat</button>':mine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dikunci oleh '+esc(active.claimed_name||'CS lain')+'</span>')+'</div>';if($('claim'))$('claim').onclick=claim;renderComposer();}
+function renderHead(){if(!active)return;const mine=active.claimed_by===me.id;const free=!active.claimed_by;$('head').innerHTML='<div><b>'+esc(active.customer_name||displayPhone(active.customer_phone)||'Customer')+'</b><div class="muted">'+esc(active.customer_phone?displayPhone(active.customer_phone):'Nomor tidak tersedia')+' · '+esc(active.status||'NEW')+'</div><div class="muted">'+(active.claimed_by?'PIC: '+esc(active.claimed_name||'CS'):'Belum ada PIC')+'</div></div><div class="actions">'+(free?'<button id="claim" class="btn">Claim Chat</button>':mine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dikunci oleh '+esc(active.claimed_name||'CS lain')+'</span>')+'</div>';if($('claim'))$('claim').onclick=claim;renderComposer();renderLeadReview();}
+
+function renderLeadReview(){
+  const el=$('leadReview');if(!el)return;
+  if(!active){el.style.display='none';return;}
+  el.style.display='block';
+  if(active.claimed_by!==me.id){
+    el.innerHTML='<div class="muted">Keputusan lead dan handover hanya dapat dilakukan oleh PIC chat.</div>';return;
+  }
+  if(active.lead_decision==='NOT_LEAD'){
+    el.innerHTML='<div class="statusline"><b>Keputusan CS:</b><span class="decision warn">BUKAN LEAD</span></div><div class="review-note">'+esc(active.lead_decision_note||'')+'</div><div class="review-note">Kontak tetap tersimpan. Jika kebutuhan pembelian muncul kemudian, CS dapat menilai ulang percakapan ini.</div>';return;
+  }
+  if(active.lead_id){
+    const label=active.lead_decision==='EXISTING_LEAD'?'LEAD SUDAH ADA':'LEAD TERBUAT';
+    el.innerHTML='<div class="statusline"><b>Terhubung ke Lead:</b><span class="decision">'+label+'</span><b>'+esc(active.lead_id)+'</b></div><div id="leadLinkStatus" class="review-note">Memeriksa status handover…</div>';
+    loadLinkedLeadStatus();return;
+  }
+  el.innerHTML=`
+    <div class="statusline"><h3>Identifikasi Customer & Kualifikasi Lead</h3><span class="decision warn">BELUM DIPUTUSKAN</span></div>
+    <div class="review-note">Kontak sudah tersimpan otomatis. Buat Lead hanya jika customer menunjukkan kebutuhan pembelian. Pertanyaan umum atau spam cukup ditandai Bukan Lead.</div>
+    <div class="lead-review-grid">
+      <label><span class="field-label">Nama customer *</span><input id="lrName" maxlength="120" value="${esc(active.customer_name||'')}" placeholder="Nama customer"></label>
+      <label><span class="field-label">Produk yang dicari</span><input id="lrProduct" maxlength="160" placeholder="Contoh: iPhone 15 128GB"></label>
+      <label><span class="field-label">Kebutuhan / maksud pembelian *</span><input id="lrNeed" maxlength="240" placeholder="Contoh: ingin beli, lihat langsung"></label>
+      <label><span class="field-label">Budget</span><input id="lrBudget" maxlength="100" placeholder="Contoh: Rp15 juta"></label>
+      <label><span class="field-label">Waktu pembelian</span><select id="lrTimeline"><option value="">Belum diketahui</option><option>Hari ini</option><option>1–3 hari</option><option>Minggu ini</option><option>Bulan ini</option><option>Belum pasti</option></select></label>
+      <label><span class="field-label">Preferensi</span><input id="lrPreference" maxlength="180" placeholder="Warna, kapasitas, kondisi, outlet"></label>
+      <label><span class="field-label">Skor kualifikasi (0–100) *</span><input id="lrScore" type="number" min="0" max="100" value="50"></label>
+      <label><span class="field-label">Tanggal follow-up</span><input id="lrFollowUp" type="date"></label>
+      <label style="grid-column:1/-1"><span class="field-label">Catatan / alasan kualifikasi</span><textarea id="lrReason" maxlength="1000" placeholder="Ringkasan kebutuhan dan hasil percakapan"></textarea></label>
+      <label style="grid-column:1/-1"><span class="field-label">Tindakan berikutnya</span><input id="lrNext" maxlength="180" placeholder="Contoh: kirim foto stok dan konfirmasi kunjungan"></label>
+    </div>
+    <div class="review-note">Panduan skor: 0–39 perlu follow-up CS; 40–69 Qualified; 70–100 Potensial. Skor tidak menggantikan verifikasi CS.</div>
+    <div class="review-actions"><button id="makeLead" class="btn">Buat Lead Baru</button><button id="notLead">Tandai Bukan Lead</button></div>
+    <div id="notLeadReasonWrap" style="display:none;margin-top:8px"><span class="field-label">Alasan Bukan Lead *</span><input id="notLeadReason" maxlength="300" placeholder="Contoh: hanya bertanya jam operasional"><button id="saveNotLead" style="margin-top:8px">Simpan Keputusan</button></div>`;
+  $('makeLead').onclick=createLeadFromChat;
+  $('notLead').onclick=()=>{$('notLeadReasonWrap').style.display='block';$('notLeadReason')?.focus();};
+  $('saveNotLead').onclick=markChatNotLead;
+}
+async function createLeadFromChat(){
+  const score=Number($('lrScore')?.value);
+  const payload={
+    p_conversation_id:active.id,p_decision:'NEW_LEAD',
+    p_customer_name:$('lrName')?.value.trim()||'',
+    p_product:$('lrProduct')?.value.trim()||null,
+    p_need:$('lrNeed')?.value.trim()||'',
+    p_budget:$('lrBudget')?.value.trim()||null,
+    p_timeline:$('lrTimeline')?.value||null,
+    p_preference:$('lrPreference')?.value.trim()||null,
+    p_score:score,
+    p_reason:$('lrReason')?.value.trim()||null,
+    p_follow_up_date:$('lrFollowUp')?.value||null,
+    p_next_action:$('lrNext')?.value.trim()||null
+  };
+  const button=$('makeLead');if(button)button.disabled=true;
+  try{
+    const {data,error}=await sb.rpc('hm_review_whatsapp_conversation',payload);
+    if(error)throw error;
+    await load(true);
+    if(active)renderHead();
+    alert(data?.decision==='EXISTING_LEAD'?'Nomor ini sudah memiliki lead aktif. Percakapan dihubungkan ke lead tersebut.':'Lead berhasil dibuat. Skor '+score+'/100 · '+(score>=70?'POTENSIAL':score>=40?'QUALIFIED':'perlu follow-up CS')+'.');
+  }catch(e){alert(e.message||'Gagal membuat lead.');if(button)button.disabled=false;}
+}
+async function markChatNotLead(){
+  const reason=$('notLeadReason')?.value.trim()||'';
+  const button=$('saveNotLead');if(button)button.disabled=true;
+  try{
+    const {data,error}=await sb.rpc('hm_review_whatsapp_conversation',{p_conversation_id:active.id,p_decision:'NOT_LEAD',p_reason:reason});
+    if(error)throw error;
+    await load(true);if(active)renderHead();
+    alert('Percakapan ditandai Bukan Lead. Kontak dan riwayat chat tetap tersimpan.');
+  }catch(e){alert(e.message||'Gagal menyimpan keputusan.');if(button)button.disabled=false;}
+}
+async function loadLinkedLeadStatus(){
+  const target=$('leadLinkStatus');if(!target||!active?.lead_id)return;
+  const {data,error}=await sb.from('leads').select('lead_id,qualification_result,sales_handover_at,sales_claimed_by').eq('lead_id',active.lead_id).maybeSingle();
+  if(error||!data){target.textContent='Lead sudah terhubung. Status rinci dapat dilihat di Lead Tracker.';return;}
+  const q=data.qualification_result||'BELUM QUALIFIED';
+  if(data.sales_claimed_by){target.textContent='Sales sudah claim oleh '+data.sales_claimed_by+'. Lanjutkan tindak lanjut melalui Lead Tracker.';return;}
+  if(data.sales_handover_at){target.textContent='Sudah di-handover ke Sales. Menunggu Sales melakukan Claim.';return;}
+  if(['QUALIFIED','POTENSIAL'].includes(q)){
+    target.innerHTML='Status: <b>'+esc(q)+'</b> · siap dikirim ke Sales. <button id="handoverLead" class="btn" style="margin-left:8px">Handover ke Sales</button>';
+    $('handoverLead').onclick=handoverChatLead;
+  }else{
+    target.textContent='Status: '+q+'. Lanjutkan kualifikasi/follow-up CS sampai memenuhi syarat handover.';
+  }
+}
+async function handoverChatLead(){
+  const b=$('handoverLead');if(b)b.disabled=true;
+  try{
+    const {data,error}=await sb.rpc('handover_lead_to_sales',{p_lead_id:active.lead_id});
+    if(error)throw error;
+    await loadLinkedLeadStatus();
+    alert('Handover berhasil. Lead sekarang menunggu Sales Claim di Lead Tracker.');
+  }catch(e){alert(e.message||'Handover gagal.');if(b)b.disabled=false;}
+}
 async function claim(){const b=$('claim');if(b)b.disabled=true;try{const {data,error}=await sb.rpc('hm_claim_chat_conversation',{p_conversation_id:active.id});if(error)throw error;active=data;await load();renderHead();alert('Chat berhasil di-claim. Anda menjadi PIC percakapan ini.');}catch(e){alert(e.message||'Claim gagal. Chat mungkin sudah diambil CS lain.');await load();}}
 async function loadMessages(quiet=false){if(!active)return;const {data,error}=await sb.from('chat_messages').select('*').eq('conversation_id',active.id).order('created_at',{ascending:true});if(error){if(!quiet)$('msgs').innerHTML='<div class="empty">'+esc(error.message)+'</div>';return;}const atBottom=$('msgs').scrollHeight-$('msgs').scrollTop-$('msgs').clientHeight<80;$('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(m.sender_type==='CS'?'cs':'')+'">'+esc(m.message)+'<div class="muted">'+esc(m.sender_type||'')+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';if(atBottom)$('msgs').scrollTop=$('msgs').scrollHeight;}
 

@@ -692,17 +692,17 @@
       // The backend performs its own product validation and duplicate-invoice guard.
       const canonicalName=function(u){
         const p=u.product_master||{}, category=String(p.category||'').toUpperCase();
-        const base=String(p.product||'').trim().replace(/\\s+(?:NEW|SECOND)$/i,'').trim();
-        const variant=String(p.variant||'').trim().replace(/\\s*GB$/i,'').trim();
+        const base=String(p.product||'').trim().replace(/\s+(?:NEW|SECOND)$/i,'').trim();
+        const variant=String(p.variant||'').trim().replace(/\s*GB$/i,'').trim();
         const isIphone=category==='IPHONE_NEW'||category==='IPHONE_SECOND';
         const isSecond=category==='IPHONE_SECOND'||category==='ANDROID_SECOND';
         const parts=['HP '+(isSecond?'Second':'New'),base];
         if(isIphone&&u.color||isIphone&&p.color) parts.push(String(u.color||p.color).trim());
         if(variant) parts.push(variant);
-        const grade=String(u.grade||p.grade||'').replace(/^grade\\s*/i,'').trim();
+        const grade=String(u.grade||p.grade||'').replace(/^grade\s*/i,'').trim();
         if(category==='IPHONE_SECOND'&&grade) parts.push('Grade '+grade);
         return ['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(category)
-          ? parts.filter(Boolean).join(' ').replace(/\\s+/g,' ').trim()
+          ? parts.filter(Boolean).join(' ').replace(/\s+/g,' ').trim()
           : '';
       };
       const autoCandidates=units.filter(function(u){

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#075e54"><title>Database Kontak Customer • Hello Majesty</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
+:root{font-family:Inter,system-ui,Arial;color:#17212b;background:#f3f6f7}*{box-sizing:border-box}body{margin:0}.top{background:#075e54;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.top small{opacity:.8}.wrap{max-width:1100px;margin:22px auto;padding:0 14px}.panel{background:#fff;border:1px solid #e2e8eb;border-radius:14px;overflow:hidden}.toolbar{padding:14px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid #edf0f2}.field,button{font:inherit;border:1px solid #d7e0e3;border-radius:9px;padding:10px;background:#fff}.field{flex:1;min-width:220px}.btn{background:#087f70;color:#fff;border:0;cursor:pointer}.meta{padding:12px 14px;color:#718096;font-size:12px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:12px 14px;border-bottom:1px solid #edf0f2;font-size:13px}th{background:#f8fafb;color:#667085;font-size:11px;text-transform:uppercase;letter-spacing:.04em}.empty{padding:35px;text-align:center;color:#718096}
+</style></head><body>
+<header class="top"><div><b>Hello Majesty · Database Kontak Customer</b><br><small>Kontak WhatsApp tersimpan otomatis · akses Management</small></div><button onclick="location.href='whatsapp-inbox.html'">Kembali ke WhatsApp Inbox</button></header>
+<main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nama, nomor, atau kode customer"><button id="reload" class="btn">Muat Ulang</button></div><div id="meta" class="meta">Memuat database kontak…</div><div class="table-wrap"><table><thead><tr><th>Kode</th><th>Nama Customer</th><th>WhatsApp</th><th>Sumber</th><th>Tanggal Terdaftar</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="empty">Memuat…</td></tr></tbody></table></div></section></main>
+<script>
+const URL='https://ksowzhhmzrumyciehuyv.supabase.co',KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
+const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let sb,items=[];
+async function init(){try{
+ const raw=localStorage.getItem('hm_auth_session'),s=raw?JSON.parse(raw):null;
+ if(!s?.access_token)throw Error('Sesi login tidak ditemukan. Silakan login dari dashboard.');
+ sb=window.supabase.createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+ const {data,error}=await sb.auth.setSession({access_token:s.access_token,refresh_token:s.refresh_token||''});if(error)throw error;
+ if(!data.user)throw Error('Sesi login tidak valid.');
+ const {data:p,error:pe}=await sb.from('team_profiles').select('role,is_management,active').eq('user_id',data.user.id).eq('active',true).maybeSingle();if(pe)throw pe;
+ const role=String(p?.role||'').toUpperCase().replace(/_/g,' ');
+ if(!(p?.is_management===true||role.includes('MANAGEMENT')||role.includes('DEVELOPER')||role==='DIVISI'))throw Error('Database kontak hanya dapat diakses Management.');
+ await load();
+ }catch(e){$('meta').textContent=e.message;$('rows').innerHTML='<tr><td colspan="5" class="empty">'+esc(e.message)+'</td></tr>';}}
+async function load(){const {data,error}=await sb.from('customers').select('id,customer_code,name,whatsapp,source,created_at').order('created_at',{ascending:false}).limit(2000);if(error)throw error;items=data||[];render();}
+function render(){const q=$('search').value.toLowerCase();const list=items.filter(x=>[x.customer_code,x.name,x.whatsapp,x.source].some(v=>String(v||'').toLowerCase().includes(q)));$('meta').textContent=list.length+' kontak ditampilkan · '+items.length+' total kontak tersimpan';$('rows').innerHTML=list.map(x=>'<tr><td><b>'+esc(x.customer_code)+'</b></td><td>'+esc(x.name)+'</td><td>'+esc(x.whatsapp||'—')+'</td><td>'+esc(x.source||'—')+'</td><td>'+esc(x.created_at?new Date(x.created_at).toLocaleString('id-ID'):'—')+'</td></tr>').join('')||'<tr><td colspan="5" class="empty">Belum ada kontak.</td></tr>';}
+$('reload').onclick=()=>load().catch(e=>alert(e.message));$('search').oninput=render;init();
+</script></body></html>

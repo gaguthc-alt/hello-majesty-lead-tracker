@@ -417,10 +417,15 @@
       const p=window.__hmAccurateMapProducts.find(function(x){return String(x.id)===String(productId)&&String(x.hm_grade||'')===String(grade||'')&&String(x.hm_color||'')===String(color||'');});
       if(!p) throw new Error('Data produk tidak ditemukan. Buka ulang pemetaan.');
       const category=String(p.category||'').toUpperCase(),isIphone=category.indexOf('IPHONE_')===0,isSecond=category.endsWith('_SECOND');
-      const cleanProduct=String(p.product||'').trim().replace(/\\s+(?:NEW|SECOND)$/i,'').trim();
+      // Standard nama Accurate: HP Second iPhone 11 Black 128 Grade B.
+      // Hilangkan suffix kondisi dari nama master produk; kategori sudah memuat NEW/SECOND.
+      const cleanProduct=String(p.product||'').trim().replace(/\s+(?:NEW|SECOND)$/i,'').trim();
       const parts=['HP '+(isSecond?'Second':'New'),cleanProduct];
       if(isIphone&&p.hm_color)parts.push(String(p.hm_color).trim());
-      if(p.variant)parts.push(String(p.variant).trim());
+      let variantName=String(p.variant||'').trim();
+      // Kapasitas iPhone Second ditulis tanpa satuan GB sesuai standar nama Hello Majesty.
+      if(isIphone&&isSecond)variantName=variantName.replace(/\s*GB$/i,'').trim();
+      if(variantName)parts.push(variantName);
       if(isIphone&&isSecond&&p.hm_grade)parts.push('Grade '+String(p.hm_grade).trim());
       const name=parts.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
       if(!['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(category)||!p.product||!p.variant)throw new Error('Kategori, nama produk, atau varian belum lengkap.');

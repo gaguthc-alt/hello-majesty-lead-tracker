@@ -1278,9 +1278,10 @@ window.openReceiveStock=async function openReceiveStock(){
  }
  inventoryProducts=freshProductRows;
  const supplierResult=await sb.from('suppliers').select('id,name,accurate_vendor_no,active').eq('active',true).order('name');
- if(supplierResult.error)throw supplierResult.error;
+ // Daftar pemasok hanya informasi opsional; gangguan integrasi Accurate tidak boleh menutup form Barang Masuk.
+ if(supplierResult.error)console.warn('[HM] Daftar pemasok opsional gagal dimuat:',supplierResult.error);
  const receiveSupplierRows=supplierResult.data||[];
- const supplierOptions='<option value="">Pilih pemasok Accurate...</option>'+receiveSupplierRows.map(v=>'<option value="'+esc(v.id)+'" data-vendor-no="'+esc(v.accurate_vendor_no||'')+'">'+esc(v.name)+' — '+esc(v.accurate_vendor_no||'Kode Accurate belum dipetakan')+'</option>').join('');
+ const supplierOptions='<option value="">Pemasok (opsional)</option>'+receiveSupplierRows.map(v=>'<option value="'+esc(v.id)+'" data-vendor-no="'+esc(v.accurate_vendor_no||'')+'">'+esc(v.name)+'</option>').join('');
  const teamOptionsResult=await sb.rpc('get_inventory_receive_team_options',{p_outlet:profile?.is_management?null:(profile?.outlet||null)});if(teamOptionsResult.error)throw teamOptionsResult.error;
  const teams={data:teamOptionsResult.data||[]};
  const receiveCategories=[['IPHONE_NEW','iPhone New'],['IPHONE_SECOND','iPhone Second'],['ANDROID_NEW','Android New'],['ANDROID_SECOND','Android Second']];

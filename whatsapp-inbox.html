@@ -4,10 +4,44 @@
 </style></head><body><header class="top"><div><b>Hello Majesty · WhatsApp Inbox</b><br><small>Customer Service Workspace</small></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="location.href='push-setup.html'">🔔 Aktifkan Alarm</button><button onclick="location.href='index.html'">Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan WhatsApp melalui Sambungan · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
 const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co',SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
-let sb,me,rows=[],active=null;
+let sb,me,rows=[],active=null,realtimeChannel=null,realtimeConnected=false,realtimeRefreshTimer=null;
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-async function init(){try{const raw=localStorage.getItem('hm_auth_session');const s=raw?JSON.parse(raw):null;if(!s?.access_token)throw Error('Sesi login tidak ditemukan. Silakan login dari dashboard.');sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});const {data,error}=await sb.auth.setSession({access_token:s.access_token,refresh_token:s.refresh_token||''});if(error)throw error;me=data.user;if(!me)throw Error('Sesi login tidak valid.');await load();setInterval(()=>load(true),12000);}catch(e){$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
+function scheduleRealtimeRefresh(conversationId=null){
+  if(realtimeRefreshTimer)clearTimeout(realtimeRefreshTimer);
+  realtimeRefreshTimer=setTimeout(async()=>{
+    await load(true);
+    if(active&&(!conversationId||active.id===conversationId))await loadMessages(true);
+  },120);
+}
+function connectInboxRealtime(){
+  if(realtimeChannel)sb.removeChannel(realtimeChannel);
+  realtimeChannel=sb.channel('hm-whatsapp-inbox-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'chat_conversations'},payload=>{
+      scheduleRealtimeRefresh(payload?.new?.id||payload?.old?.id||null);
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'chat_messages'},payload=>{
+      const conversationId=payload?.new?.conversation_id||payload?.old?.conversation_id||null;
+      scheduleRealtimeRefresh(conversationId);
+    })
+    .subscribe(status=>{
+      realtimeConnected=status==='SUBSCRIBED';
+      if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')realtimeConnected=false;
+    });
+}
+async function init(){try{
+  const raw=localStorage.getItem('hm_auth_session');const s=raw?JSON.parse(raw):null;
+  if(!s?.access_token)throw Error('Sesi login tidak ditemukan. Silakan login dari dashboard.');
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data,error}=await sb.auth.setSession({access_token:s.access_token,refresh_token:s.refresh_token||''});
+  if(error)throw error;me=data.user;if(!me)throw Error('Sesi login tidak valid.');
+  await load();
+  connectInboxRealtime();
+  // Fallback polling only when Realtime is disconnected; no routine 12-second polling.
+  setInterval(()=>{if(!realtimeConnected)load(true);},15000);
+  window.addEventListener('focus',()=>load(true));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);});
+}catch(e){$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
 async function load(quiet=false){try{const {data,error}=await sb.from('chat_conversations').select('*').order('updated_at',{ascending:false}).limit(200);if(error)throw error;rows=(data||[]);renderList();if(active){const fresh=rows.find(x=>x.id===active.id);if(fresh){active=fresh;await loadMessages(true);renderHead();}}}catch(e){if(!quiet)$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
 function renderList(){const q=$('search').value.toLowerCase();const filtered=rows.filter(c=>(c.customer_phone||'').toLowerCase().includes(q)||(c.customer_name||'').toLowerCase().includes(q));$('list').innerHTML=filtered.map(c=>'<div class="item '+(active?.id===c.id?'sel':'')+'" data-id="'+c.id+'"><strong>'+esc(c.customer_name||c.customer_phone||'Percakapan lama')+'</strong><div class="muted">'+esc(c.customer_phone||'Nomor belum tersedia')+'</div><div style="margin-top:7px"><span class="tag '+(c.claimed_by?'lock':'')+'">'+(c.customer_phone?(c.claimed_by?'PIC: '+esc(c.claimed_name||'CS'):'BELUM DI-CLAIM'):'NOMOR BELUM TERCATAT')+'</span> <span class="muted">'+esc(c.status||'NEW')+'</span></div></div>').join('')||'<div class="empty">Belum ada percakapan WhatsApp.</div>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));}
 async function openChat(id){active=rows.find(c=>c.id===id);renderList();renderHead();await loadMessages();}

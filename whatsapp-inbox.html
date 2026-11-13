@@ -99,7 +99,12 @@ function renderLeadReview(){
       <label><span class="field-label">Budget</span><input id="lrBudget" maxlength="100" placeholder="Contoh: Rp15 juta"></label>
       <label><span class="field-label">Waktu pembelian</span><select id="lrTimeline"><option value="">Belum diketahui</option><option>Hari ini</option><option>1–3 hari</option><option>Minggu ini</option><option>Bulan ini</option><option>Belum pasti</option></select></label>
       <label><span class="field-label">Preferensi</span><input id="lrPreference" maxlength="180" placeholder="Warna, kapasitas, kondisi, outlet"></label>
-      <label><span class="field-label">Skor kualifikasi (0–100) *</span><input id="lrScore" type="number" min="0" max="100" value="50"></label>
+      <label><span class="field-label">Kebutuhan produk jelas (0–25)</span><input id="lrNeedScore" type="number" min="0" max="25" value="0"></label>
+      <label><span class="field-label">Budget sesuai (0–20)</span><input id="lrBudgetScore" type="number" min="0" max="20" value="0"></label>
+      <label><span class="field-label">Waktu pembelian jelas (0–20)</span><input id="lrTimelineScore" type="number" min="0" max="20" value="0"></label>
+      <label><span class="field-label">Keseriusan membeli (0–25)</span><input id="lrIntentScore" type="number" min="0" max="25" value="0"></label>
+      <label><span class="field-label">Responsif & kooperatif (0–10)</span><input id="lrResponseScore" type="number" min="0" max="10" value="0"></label>
+      <label><span class="field-label">Total skor (otomatis)</span><input id="lrScore" type="number" value="0" readonly></label>
       <label><span class="field-label">Tanggal follow-up</span><input id="lrFollowUp" type="date"></label>
       <label style="grid-column:1/-1"><span class="field-label">Catatan / alasan kualifikasi</span><textarea id="lrReason" maxlength="1000" placeholder="Ringkasan kebutuhan dan hasil percakapan"></textarea></label>
       <label style="grid-column:1/-1"><span class="field-label">Tindakan berikutnya</span><input id="lrNext" maxlength="180" placeholder="Contoh: kirim foto stok dan konfirmasi kunjungan"></label>
@@ -107,9 +112,22 @@ function renderLeadReview(){
     <div class="review-note">Panduan skor: 0–39 perlu follow-up CS; 40–69 Qualified; 70–100 Potensial. Skor tidak menggantikan verifikasi CS.</div>
     <div class="review-actions"><button id="makeLead" class="btn">Buat Lead Baru</button><button id="notLead">Tandai Bukan Lead</button></div>
     <div id="notLeadReasonWrap" style="display:none;margin-top:8px"><span class="field-label">Alasan Bukan Lead *</span><input id="notLeadReason" maxlength="300" placeholder="Contoh: hanya bertanya jam operasional"><button id="saveNotLead" style="margin-top:8px">Simpan Keputusan</button></div>`;
+  ['lrNeedScore','lrBudgetScore','lrTimelineScore','lrIntentScore','lrResponseScore'].forEach(id=>$(id).addEventListener('input',updateQualificationScore));
+  updateQualificationScore();
   $('makeLead').onclick=createLeadFromChat;
   $('notLead').onclick=()=>{$('notLeadReasonWrap').style.display='block';$('notLeadReason')?.focus();};
   $('saveNotLead').onclick=markChatNotLead;
+}
+function updateQualificationScore(){
+  const limits={lrNeedScore:25,lrBudgetScore:20,lrTimelineScore:20,lrIntentScore:25,lrResponseScore:10};
+  let total=0;
+  for(const [id,max] of Object.entries(limits)){
+    const el=$(id);if(!el)continue;
+    const value=Math.max(0,Math.min(max,Number(el.value)||0));
+    if(Number(el.value)!==value)el.value=String(value);
+    total+=value;
+  }
+  const score=$('lrScore');if(score)score.value=String(total);
 }
 async function createLeadFromChat(){
   const score=Number($('lrScore')?.value);

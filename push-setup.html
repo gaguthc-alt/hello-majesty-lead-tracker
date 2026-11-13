@@ -34,7 +34,7 @@ async function enablePush(){
   const token=await messaging.getToken({vapidKey:VAPID_PUBLIC_KEY,serviceWorkerRegistration:registration});
   if(!token)throw Error('Token FCM belum berhasil dibuat. Periksa konfigurasi Firebase dan VAPID.');
   const endpointHash=await digest(token);
-  const ua=navigator.userAgent;const platform=/Android/i.test(ua)?'android':/iPhone|iPad|iPod/i.test(ua)?'ios':/Windows/i.test(ua)?'windows':/Mac/i.test(ua)?'macos':'desktop';
+  const ua=navigator.userAgent;const platform=/Android/i.test(ua)?'android':/iPhone|iPad|iPod/i.test(ua)?'ios':'desktop';
   const deviceLabel=(platform==='android'?'Android':platform==='ios'?'iPhone/iPad':platform==='windows'?'Windows PC':platform==='macos'?'Mac':'Browser')+' · '+(navigator.userAgentData?.platform||navigator.platform||'');
   const {error}=await sb.from('hm_push_subscriptions').upsert({user_id:user.id,endpoint_hash:endpointHash,fcm_token:token,device_label:deviceLabel,platform,enabled:true,last_seen_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id,endpoint_hash'});
   if(error)throw error;

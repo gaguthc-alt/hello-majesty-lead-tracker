@@ -1390,7 +1390,7 @@ async function saveStock(){
   data={product_id:fieldValue('stprod'),imei_1:imei1,imei_2:fieldValue('stimei2new').trim()||null,color,grade:null,condition:null,battery_health:null,completeness:null,minus:null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(cost),asking_price:Number(price),supplier:fieldValue('stsupplier').trim()||null,notes:fieldValue('stnotesnew').trim()||null,receipt_ref:null,received_source_note:source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
  }else if(isIphoneSecond){
   const imei1=fieldValue('stimei1second').trim(),color=String(selectedProduct?.color||'').trim(),grade=String(selectedProduct?.grade||'').replace(/^grade\s*/i,'').trim().toUpperCase(),bh=fieldValue('stbhsecond'),condition=fieldValue('stconditionsecond').trim(),complete=fieldValue('stcompletesecond').trim(),cost=fieldValue('stcostsecond'),price=fieldValue('stpricesec');
-  if(!imei1||!color||!grade||bh===''||!condition||!complete||cost===''||price==='')return alert('Untuk iPhone Second, IMEI 1, Warna, Grade, Battery Health, Kondisi, Kelengkapan, Harga Beli dan Harga Jual wajib diisi.');
+  if(!imei1||bh===''||!condition||!complete||cost===''||price==='')return alert('Untuk iPhone Second, isi IMEI 1, Battery Health, Kondisi, Kelengkapan, Harga Beli dan Harga Jual. Warna dan Grade diambil otomatis dari Master Produk.');
   data={product_id:fieldValue('stprod'),imei_1:imei1,imei_2:fieldValue('stimei2second').trim()||null,grade,condition,battery_health:Number(bh),color,completeness:complete,minus:fieldValue('stminusseconde').trim()||null,source_type:source,hunter_user_id:hunter,checker_user_id:checker,hunter_user_ids:hunters,checker_user_ids:checkers,partner_name:source==='STOCKIST'?partnerName:null,cost:Number(cost),asking_price:Number(price),supplier:fieldValue('stsuppliersecond').trim()||null,notes:fieldValue('stnotessecond').trim()||null,receipt_ref:null,received_source_note:source==='STOCKIST'?partnerName:'Management',outlet:inventoryReceiveOutlet()};
  }else if(isAndroidSecond){
   const imei1=fieldValue('standroidsecondimei1').trim(),condition=fieldValue('standroidsecondcondition').trim(),complete=fieldValue('standroidsecondcomplete').trim(),cost=fieldValue('standroidsecondcost'),price=fieldValue('standroidsecondprice');
@@ -1413,9 +1413,7 @@ async function saveStock(){
   data.accurate_vendor_no=supplierOption?.dataset?.vendorNo||null;
  }
  // Stok MANAGEMENT wajib memilih pemasok yang berasal dari master Accurate.
- if(source==='MANAGEMENT'){
-  if(!data.supplier_id||!data.accurate_vendor_no)return alert('Pilih pemasok dari master Accurate sebelum menyimpan Barang Masuk MANAGEMENT.');
- }
+ // Pemasok/nomor vendor Accurate bersifat opsional untuk pencatatan inventaris Hello Majesty.
  // Standar sumber stok: STOCKIST. Nama pemilik tetap disimpan terpisah di partner_name.
  if(source==='STOCKIST'){
   const stockistNames=['Majesty Cell','Majesty Gadget','Majesty Store'];
@@ -1439,8 +1437,8 @@ async function saveStock(){
   // Accurate is a downstream integration: local stock receipt must never depend on it.
   // The local product master already exists; Accurate item creation/mapping runs only after
   // stock_units has committed successfully. Failure leaves the local stock and sync queue intact.
-  if(source==='MANAGEMENT'&&(!selectedProduct||!data.supplier_id||!data.accurate_vendor_no)){
-   throw new Error('Produk dan pemasok Accurate wajib dipilih untuk stok MANAGEMENT.');
+  if(source==='MANAGEMENT'&&!selectedProduct){
+   throw new Error('Pilih produk dari Master Produk sebelum menyimpan Barang Masuk.');
   }
   const duplicate=await hmCheckDuplicateImeis(imei1,imei2,null);
   if(duplicate)throw new Error('IMEI/EID '+duplicate.imei+' sudah terdaftar pada stock lain. Barang masuk dibatalkan agar tidak tercatat ganda.');

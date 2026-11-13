@@ -3978,7 +3978,7 @@ async function hmRenderHomePerformance(){
  }
 }
 function hmOpenHelloMajestyChat(){
-  const url='hello-majesty-chat.html';
+  const url='whatsapp-inbox.html';
   window.open(url,'_blank','noopener');
 }
 function hmOpenDeveloperRolePreview(){
@@ -4069,11 +4069,11 @@ function renderRoleHome(){
  
 
  if(cs && !mg && !developer){
-   add('💬','Hello Majesty Chat','Inbox chat customer • claim & balas customer','hmOpenHelloMajestyChat()');
+   add('💬','Hello Majesty Chat','WhatsApp Inbox • claim dan kelola chat customer','hmOpenHelloMajestyChat()');
  }
  if(mg || developer){
    add('📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()');
-   add('💬','Hello Majesty Chat','Chat customer → lead otomatis → claim CS','hmOpenHelloMajestyChat()');
+   add('💬','Hello Majesty Chat','WhatsApp Inbox → kualifikasi CS → Lead','hmOpenHelloMajestyChat()');
    add('👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()');
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');
    add('🤝','Lead Handover','Qualified/Potensial → handover & share ke Sales','hmOpenLeadHandover()');

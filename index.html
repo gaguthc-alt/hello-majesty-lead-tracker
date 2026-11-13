@@ -7338,7 +7338,7 @@ async function saveLead(){
     const whatsapp=hmLeadField('fw')?.value||'';
     const customerLocation=hmLeadField('flocation')?.value?.trim()||'';
     const catatan=hmLeadField('fcatatan')?.value?.trim()||'';
-    const initialData={...d,customer_location:customerLocation};
+    const initialData={...d,customer_location:customerLocation,origin:'MANUAL_WA_MASUK',intake_source:'MANUAL_WA_MASUK'};
     const summary=
       type==='PEMBELIAN'?(d.product||''):
       type==='SERVICE'?(String(d.device||'')+' '+String(d.model||'')+' — '+String(d.complaint||'')):

@@ -10,12 +10,12 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function displayPhone(value){
   const phone=String(value||'').trim();
   if(!phone||!maskPhoneNumbers)return phone;
-  const digits=phone.replace(/\\D/g,'');
+  const digits=phone.replace(/\D/g,'');
   if(digits.length<8)return phone.replace(/\\d(?=\\d{2})/g,'x');
   const keepStart=Math.min(5,Math.max(3,digits.length-5));
   const keepEnd=3;
   let index=0;
-  return phone.replace(/\\d/g,()=>{const current=index++;return current<keepStart||current>=digits.length-keepEnd?digits[current]:'x';});
+  return phone.replace(/\d/g,()=>{const current=index++;return current<keepStart||current>=digits.length-keepEnd?digits[current]:'x';});
 }
 async function loadInboxProfile(){
   const {data,error}=await sb.from('team_profiles').select('*').eq('user_id',me.id).maybeSingle();

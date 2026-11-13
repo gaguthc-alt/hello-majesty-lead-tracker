@@ -165,7 +165,7 @@ function showContactSavePrompt(customerName, phone){
   $('skipPhoneContact').onclick=()=>overlay.remove();
   $('savePhoneContact').onclick=()=>{
     const safeName=vcardEscape(customerName),safePhone=String(phone||'').replace(/[^+0-9]/g,'');
-    const vcard=['BEGIN:VCARD','VERSION:3.0','FN:'+safeName,'N:'+safeName+';;;;','TEL;TYPE=CELL:'+safePhone,'ORG:Hello Majesty','END:VCARD'].join('\\r\\n');
+    const vcard=['BEGIN:VCARD','VERSION:3.0','FN:'+safeName,'N:'+safeName+';;;;','TEL;TYPE=CELL:'+safePhone,'ORG:Hello Majesty','END:VCARD'].join(String.fromCharCode(13,10));
     const blob=new Blob([vcard],{type:'text/vcard;charset=utf-8'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=url;a.download=(String(customerName||'Customer').replace(/[^a-z0-9_-]/gi,'_')||'Customer')+'.vcf';

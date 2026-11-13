@@ -120,8 +120,12 @@ function renderInboxNeedFields(){
     '<label><span class="field-label">Kapasitas</span><input id="lrTradeCapacity" placeholder="128 GB"></label>'+
     '<label><span class="field-label">Kondisi Umum</span><input id="lrTradeCondition"></label>'+
     '<label><span class="field-label">Kelengkapan</span><input id="lrTradeCompleteness" placeholder="Unit + Box + Kabel"></label>'+
+    '<label><span class="field-label">Garansi</span><select id="lrTradeWarranty"><option value="">— Pilih —</option><option>iBox</option><option>Inter</option><option>Distributor</option><option>Garansi Toko</option><option>Tidak Ada</option><option>Tidak Tahu</option></select></label>'+
+    '<label><span class="field-label">Face ID / Fungsi</span><input id="lrTradeFunction" placeholder="Normal / bermasalah"></label>'+
+    '<label><span class="field-label">Signal</span><select id="lrTradeSignal"><option value="">— Pilih —</option><option>ON</option><option>OFF</option><option>Tidak Tahu</option></select></label>'+
     '<label><span class="field-label">Battery Health</span><input id="lrTradeBH" placeholder="Khusus iPhone, contoh 85%"></label>'+
     '<label><span class="field-label">Minus</span><input id="lrTradeMinus"></label>'+
+    '<label><span class="field-label">Estimasi Lama Pemakaian</span><input id="lrTradeUsage" placeholder="Contoh: ±2 tahun"></label>'+
     '<label><span class="field-label">HP yang Diinginkan</span><input id="lrWanted" placeholder="Unit yang ingin dibeli"></label>'+
     '<label><span class="field-label">Estimasi Budget / Tambah Dana</span><input id="lrTradeBudget" placeholder="Contoh: tambah 5 juta"></label></div>';
   else if(type==='KREDIT/CICILAN')host.innerHTML='<div class="lead-review-grid">'+
@@ -137,7 +141,7 @@ function buildInboxInitialData(){
   const type=$('lrNeedType')?.value||'',d={};
   if(type==='PEMBELIAN')Object.assign(d,{product:inboxValue('lrProduct'),budget:inboxValue('lrBudget'),preference:inboxValue('lrPreference'),special:inboxValue('lrSpecial')});
   if(type==='SERVICE')Object.assign(d,{device:inboxValue('lrDevice'),model:inboxValue('lrModel'),complaint:inboxValue('lrComplaint'),condition:inboxValue('lrCondition')});
-  if(type==='TUKAR TAMBAH')Object.assign(d,{device:inboxValue('lrTradeDevice'),capacity:inboxValue('lrTradeCapacity'),condition:inboxValue('lrTradeCondition'),completeness:inboxValue('lrTradeCompleteness'),battery_health:inboxValue('lrTradeBH'),minus:inboxValue('lrTradeMinus'),wanted_product:inboxValue('lrWanted'),budget:inboxValue('lrTradeBudget')});
+  if(type==='TUKAR TAMBAH')Object.assign(d,{device:inboxValue('lrTradeDevice'),capacity:inboxValue('lrTradeCapacity'),condition:inboxValue('lrTradeCondition'),completeness:inboxValue('lrTradeCompleteness'),warranty:inboxValue('lrTradeWarranty'),function_check:inboxValue('lrTradeFunction'),signal:inboxValue('lrTradeSignal'),battery_health:inboxValue('lrTradeBH'),minus:inboxValue('lrTradeMinus'),usage_duration:inboxValue('lrTradeUsage'),wanted_product:inboxValue('lrWanted'),budget:inboxValue('lrTradeBudget')});
   if(type==='KREDIT/CICILAN')Object.assign(d,{product:inboxValue('lrCreditProduct'),price:inboxValue('lrCreditPrice'),tenor:inboxValue('lrTenor'),dp_budget:inboxValue('lrDP'),credit_history:inboxValue('lrCreditHistory')});
   return d;
 }

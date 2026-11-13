@@ -423,9 +423,10 @@
       const parts=['HP '+(isSecond?'Second':'New'),cleanProduct];
       if(isIphone&&p.hm_color)parts.push(String(p.hm_color).trim());
       let variantName=String(p.variant||'').trim();
-      // Kapasitas iPhone Second ditulis tanpa satuan GB sesuai standar nama Hello Majesty.
-      if(isIphone&&isSecond)variantName=variantName.replace(/\s*GB$/i,'').trim();
+      // Semua kategori menulis kapasitas tanpa akhiran GB.
+      variantName=variantName.replace(/\s*GB$/i,'').trim();
       if(variantName)parts.push(variantName);
+      // Grade hanya berlaku untuk iPhone Second; Android tidak memakai warna maupun grade.
       if(isIphone&&isSecond&&p.hm_grade)parts.push('Grade '+String(p.hm_grade).trim());
       const name=parts.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
       if(!['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(category)||!p.product||!p.variant)throw new Error('Kategori, nama produk, atau varian belum lengkap.');
@@ -691,13 +692,18 @@
       // The backend performs its own product validation and duplicate-invoice guard.
       const canonicalName=function(u){
         const p=u.product_master||{}, category=String(p.category||'').toUpperCase();
-        const raw=String(p.product||'').trim(), base=raw.replace(/\\s+(NEW|SECOND)\\s*$/i,'').trim();
-        const variant=String(p.variant||'').trim(), color=String(u.color||p.color||'').trim();
-        const grade=String(u.grade||p.grade||'').replace(/^grade\\s*/i,'').trim();
-        if(category==='IPHONE_SECOND' && /^iphone\\s+/i.test(base)) return ['HP Second Iphone',base.replace(/^iphone\\s*/i,''),'SECOND',color,variant,grade?'Grade '+grade:''].filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
-        if(category==='IPHONE_NEW' && /^iphone\\s+/i.test(base)) return ['HP New Iphone',base.replace(/^iphone\\s*/i,''),color,variant.replace(/GB$/i,'')].filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
-        if(category==='ANDROID_SECOND'||category==='ANDROID_NEW') return [category==='ANDROID_NEW'?'HP New':'HP Second',base.replace(/^HP\\s+/i,'').replace(/\\s+(NEW|SECOND)\\s*$/i,''),category==='ANDROID_NEW'?'NEW':'SECOND',variant].filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
-        return '';
+        const base=String(p.product||'').trim().replace(/\s+(?:NEW|SECOND)$/i,'').trim();
+        const variant=String(p.variant||'').trim().replace(/\s*GB$/i,'').trim();
+        const isIphone=category==='IPHONE_NEW'||category==='IPHONE_SECOND';
+        const isSecond=category==='IPHONE_SECOND'||category==='ANDROID_SECOND';
+        const parts=['HP '+(isSecond?'Second':'New'),base];
+        if(isIphone&&u.color||isIphone&&p.color) parts.push(String(u.color||p.color).trim());
+        if(variant) parts.push(variant);
+        const grade=String(u.grade||p.grade||'').replace(/^grade\s*/i,'').trim();
+        if(category==='IPHONE_SECOND'&&grade) parts.push('Grade '+grade);
+        return ['IPHONE_NEW','IPHONE_SECOND','ANDROID_NEW','ANDROID_SECOND'].includes(category)
+          ? parts.filter(Boolean).join(' ').replace(/\s+/g,' ').trim()
+          : '';
       };
       const autoCandidates=units.filter(function(u){
         const p=u.product_master||{};

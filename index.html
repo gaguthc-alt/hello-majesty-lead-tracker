@@ -7055,12 +7055,8 @@ async function submitStockClosingApproval(id){
    (providerText.includes('AKULAKU')?'AKULAKU':providerText.includes('KREDIVO')?'KREDIVO':providerText.includes('SPAY')?'SPAYLATER':rawProviderCode);
  const isFinance=paymentMode==='PAY_LATER' && ['SPAYLATER','KREDIVO','AKULAKU'].includes(providerCode);
  const notes=document.getElementById('financeNotes')?.value?.trim()||null;
- if(isFinance){
-   if(!financeRequestedAmount)return alert('Nominal Finance wajib diisi.');
-   if(financeRequestedAmount-fee+cashPayment!==salePrice+cashoutAmount)
-     return alert('Pembagian belum seimbang. Finance setelah potongan + Cash harus sama dengan Harga HP + Tarik Tunai.');
-   if(fee>financeRequestedAmount)return alert('Estimasi potongan tidak boleh melebihi nominal Finance.');
- }
+ // Nominal Finance dan biaya Finance bersifat opsional/informatif.
+ // Validasi closing hanya memakai Harga Jual, Tarik Tunai Customer, dan Cash.
  const x=await sb.rpc('submit_stock_sale_approval',{p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,p_payment_account_id:paymentAccount,p_payment_method_id:paymentMethod,p_pay_now:payNow,p_finance_estimated_fee:fee,p_finance_notes:notes,p_finance_requested_amount:financeRequestedAmount,p_finance_cash_payment:cashPayment,p_finance_cashout_amount:cashoutAmount,p_customer_phone:(document.getElementById('walkinCustomerPhone')?.value||'').trim(),p_closing_capacity:closingCapacity});
  if(x.error)return alert('Pengajuan Closing gagal: '+x.error.message);
  const temp=window.hmStockClosingTempLeadId;

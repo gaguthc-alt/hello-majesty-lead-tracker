@@ -602,7 +602,7 @@
       window.__hmSalesItems=items;
       // Keep successful sales in the database for audit, but hide them from the active queue.
       const allRows=res.data||[];
-      const rows=allRows.filter(x=>normStatus(x.status)!=='SYNCED');
+      const rows=allRows.filter(x=>!['SYNCED','SKIPPED','CANCELLED'].includes(normStatus(x.status)));
       const ids=rows.map(x=>x.local_id).filter(Boolean);
       const detail={};
       if(ids.length){

@@ -12,8 +12,8 @@ function displayPhone(value){
   if(!phone||!maskPhoneNumbers)return phone;
   const digits=phone.replace(/\D/g,'');
   if(digits.length<8)return phone.replace(/\d(?=\d{2})/g,'x');
-  const keepStart=Math.min(5,Math.max(3,digits.length-5));
-  const keepEnd=3;
+  const keepStart=Math.min(4,Math.max(3,digits.length-5));
+  const keepEnd=2;
   let index=0;
   return phone.replace(/\d/g,()=>{const current=index++;return current<keepStart||current>=digits.length-keepEnd?digits[current]:'x';});
 }

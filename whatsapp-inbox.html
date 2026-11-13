@@ -21,14 +21,14 @@ async function loadInboxProfile(){
   const {data,error}=await sb.from('team_profiles').select('*').eq('user_id',me.id).maybeSingle();
   if(error)throw error;
   profile=data||{};
-  const role=String(profile.role||'').trim().toUpperCase().replace(/_/g,' ');
+  const role=[profile.role,profile.position,profile.access_role,profile.account_role,profile.user_role,profile.department].filter(Boolean).join(' ').trim().toUpperCase().replace(/_/g,' ');
   let canCS=role.includes('CS'),canSales=role.includes('SALES');
   try{
     const {data:permission,error:permissionError}=await sb.from('team_permissions').select('can_cs,can_sales').eq('name',profile.name||'').eq('outlet',profile.outlet||'').eq('active',true).limit(1).maybeSingle();
     if(!permissionError&&permission){canCS=canCS||permission.can_cs===true;canSales=canSales||permission.can_sales===true;}
   }catch(_e){}
   const management=profile.is_management===true||role.includes('MANAGEMENT')||role==='DIVISI'||role.includes('DEVELOPER');
-  maskPhoneNumbers=!management&&(canCS||canSales);
+  maskPhoneNumbers=!management;
 }
 function scheduleRealtimeRefresh(conversationId=null){
   if(realtimeRefreshTimer)clearTimeout(realtimeRefreshTimer);

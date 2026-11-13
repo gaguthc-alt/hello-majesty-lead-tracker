@@ -78,80 +78,95 @@ function renderLeadReview(){
   const el=$('leadReview');if(!el)return;
   if(!active){el.style.display='none';return;}
   el.style.display='block';
-  if(active.claimed_by!==me.id){
-    el.innerHTML='<div class="muted">Keputusan lead dan handover hanya dapat dilakukan oleh PIC chat.</div>';return;
-  }
+  if(active.claimed_by!==me.id){el.innerHTML='<div class="muted">Keputusan lead hanya dapat dilakukan oleh PIC chat.</div>';return;}
   if(active.lead_decision==='NOT_LEAD'){
-    el.innerHTML='<div class="statusline"><b>Keputusan CS:</b><span class="decision warn">BUKAN LEAD</span></div><div class="review-note">'+esc(active.lead_decision_note||'')+'</div><div class="review-note">Kontak tetap tersimpan. Jika kebutuhan pembelian muncul kemudian, CS dapat menilai ulang percakapan ini.</div>';return;
+    el.innerHTML='<div class="statusline"><b>Keputusan CS:</b><span class="decision warn">BUKAN LEAD</span></div><div class="review-note">'+esc(active.lead_decision_note||'')+'</div><div class="review-note">Kontak dan riwayat chat tetap tersimpan. Jika kebutuhan pembelian muncul kemudian, CS dapat menilai ulang percakapan ini.</div>';return;
   }
   if(active.lead_id){
     const label=active.lead_decision==='EXISTING_LEAD'?'LEAD SUDAH ADA':'LEAD TERBUAT';
-    el.innerHTML='<div class="statusline"><b>Terhubung ke Lead:</b><span class="decision">'+label+'</span><b>'+esc(active.lead_id)+'</b></div><div id="leadLinkStatus" class="review-note">Memeriksa status handover…</div>';
+    el.innerHTML='<div class="statusline"><b>Terhubung ke Lead:</b><span class="decision">'+label+'</span><b>'+esc(active.lead_id)+'</b></div><div id="leadLinkStatus" class="review-note">Memeriksa status lead…</div>';
     loadLinkedLeadStatus();return;
   }
-  el.innerHTML=`
-    <div class="statusline"><h3>Identifikasi Customer & Kualifikasi Lead</h3><span class="decision warn">BELUM DIPUTUSKAN</span></div>
-    <div class="review-note">Kontak sudah tersimpan otomatis. Buat Lead hanya jika customer menunjukkan kebutuhan pembelian. Pertanyaan umum atau spam cukup ditandai Bukan Lead.</div>
-    <div class="lead-review-grid">
-      <label><span class="field-label">Nama customer *</span><input id="lrName" maxlength="120" value="${esc(active.customer_name||'')}" placeholder="Nama customer"></label>
-      <label><span class="field-label">Produk yang dicari</span><input id="lrProduct" maxlength="160" placeholder="Contoh: iPhone 15 128GB"></label>
-      <label><span class="field-label">Kebutuhan / maksud pembelian *</span><input id="lrNeed" maxlength="240" placeholder="Contoh: ingin beli, lihat langsung"></label>
-      <label><span class="field-label">Budget</span><input id="lrBudget" maxlength="100" placeholder="Contoh: Rp15 juta"></label>
-      <label><span class="field-label">Waktu pembelian</span><select id="lrTimeline"><option value="">Belum diketahui</option><option>Hari ini</option><option>1–3 hari</option><option>Minggu ini</option><option>Bulan ini</option><option>Belum pasti</option></select></label>
-      <label><span class="field-label">Preferensi</span><input id="lrPreference" maxlength="180" placeholder="Warna, kapasitas, kondisi, outlet"></label>
-      <label><span class="field-label">Kebutuhan produk jelas (0–25)</span><input id="lrNeedScore" type="number" min="0" max="25" value="0"></label>
-      <label><span class="field-label">Budget sesuai (0–20)</span><input id="lrBudgetScore" type="number" min="0" max="20" value="0"></label>
-      <label><span class="field-label">Waktu pembelian jelas (0–20)</span><input id="lrTimelineScore" type="number" min="0" max="20" value="0"></label>
-      <label><span class="field-label">Keseriusan membeli (0–25)</span><input id="lrIntentScore" type="number" min="0" max="25" value="0"></label>
-      <label><span class="field-label">Responsif & kooperatif (0–10)</span><input id="lrResponseScore" type="number" min="0" max="10" value="0"></label>
-      <label><span class="field-label">Total skor (otomatis)</span><input id="lrScore" type="number" value="0" readonly></label>
-      <label><span class="field-label">Tanggal follow-up</span><input id="lrFollowUp" type="date"></label>
-      <label style="grid-column:1/-1"><span class="field-label">Catatan / alasan kualifikasi</span><textarea id="lrReason" maxlength="1000" placeholder="Ringkasan kebutuhan dan hasil percakapan"></textarea></label>
-      <label style="grid-column:1/-1"><span class="field-label">Tindakan berikutnya</span><input id="lrNext" maxlength="180" placeholder="Contoh: kirim foto stok dan konfirmasi kunjungan"></label>
-    </div>
-    <div class="review-note">Panduan skor: 0–39 perlu follow-up CS; 40–69 Qualified; 70–100 Potensial. Skor tidak menggantikan verifikasi CS.</div>
-    <div class="review-actions"><button id="makeLead" class="btn">Buat Lead Baru</button><button id="notLead">Tandai Bukan Lead</button></div>
-    <div id="notLeadReasonWrap" style="display:none;margin-top:8px"><span class="field-label">Alasan Bukan Lead *</span><input id="notLeadReason" maxlength="300" placeholder="Contoh: hanya bertanya jam operasional"><button id="saveNotLead" style="margin-top:8px">Simpan Keputusan</button></div>`;
-  ['lrNeedScore','lrBudgetScore','lrTimelineScore','lrIntentScore','lrResponseScore'].forEach(id=>$(id).addEventListener('input',updateQualificationScore));
-  updateQualificationScore();
+  el.innerHTML=
+    '<div class="statusline"><h3>Data Lead Awal</h3><span class="decision warn">BELUM DIDAFTARKAN</span></div>'+
+    '<div class="review-note">Form ini mengikuti mekanisme WA Masuk / Lead Baru. Setelah disimpan, lead masuk ke Lead Tracker dengan status awal CS LOCK. Kualifikasi, penilaian Qualified/Potensial, follow-up, dan handover dilakukan melalui alur Lead Tracker yang sama.</div>'+
+    '<div class="lead-review-grid">'+
+      '<label><span class="field-label">Nama Customer *</span><input id="lrName" maxlength="120" value="'+esc(active.customer_name||'')+'" placeholder="Nama customer"></label>'+
+      '<label><span class="field-label">No. WhatsApp</span><input value="'+esc(displayPhone(active.customer_phone||''))+'" readonly></label>'+
+      '<label><span class="field-label">Lokasi Customer</span><input id="lrLocation" maxlength="180" placeholder="Desa / kelurahan, kecamatan"></label>'+
+      '<label><span class="field-label">Kebutuhan *</span><select id="lrNeedType" onchange="renderInboxNeedFields()"><option value="">— Pilih Kebutuhan —</option><option value="PEMBELIAN">PEMBELIAN</option><option value="SERVICE">SERVICE</option><option value="TUKAR TAMBAH">TUKAR TAMBAH</option><option value="KREDIT/CICILAN">KREDIT/CICILAN</option></select></label>'+
+    '</div><div id="lrNeedFields"></div>'+
+    '<label style="display:block;margin-top:10px"><span class="field-label">Catatan Awal</span><textarea id="lrNotes" maxlength="1000" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea></label>'+
+    '<div class="review-actions"><button id="makeLead" class="btn">Simpan Lead</button><button id="notLead">Tandai Bukan Lead</button></div>'+
+    '<div id="notLeadReasonWrap" style="display:none;margin-top:8px"><span class="field-label">Alasan Bukan Lead *</span><input id="notLeadReason" maxlength="300" placeholder="Contoh: hanya bertanya jam operasional"><button id="saveNotLead" style="margin-top:8px">Simpan Keputusan</button></div>';
   $('makeLead').onclick=createLeadFromChat;
   $('notLead').onclick=()=>{$('notLeadReasonWrap').style.display='block';$('notLeadReason')?.focus();};
   $('saveNotLead').onclick=markChatNotLead;
 }
-function updateQualificationScore(){
-  const limits={lrNeedScore:25,lrBudgetScore:20,lrTimelineScore:20,lrIntentScore:25,lrResponseScore:10};
-  let total=0;
-  for(const [id,max] of Object.entries(limits)){
-    const el=$(id);if(!el)continue;
-    const value=Math.max(0,Math.min(max,Number(el.value)||0));
-    if(Number(el.value)!==value)el.value=String(value);
-    total+=value;
-  }
-  const score=$('lrScore');if(score)score.value=String(total);
+function renderInboxNeedFields(){
+  const type=$('lrNeedType')?.value,host=$('lrNeedFields');if(!host)return;
+  if(type==='PEMBELIAN')host.innerHTML='<div class="lead-review-grid">'+
+    '<label><span class="field-label">Produk yang Dicari</span><input id="lrProduct" placeholder="Contoh: iPhone 17 Pro Max"></label>'+
+    '<label><span class="field-label">Budget</span><input id="lrBudget" placeholder="Contoh: 20 juta"></label>'+
+    '<label><span class="field-label">Preferensi</span><select id="lrPreference"><option>Baru</option><option>Second</option><option>Bebas</option></select></label>'+
+    '<label><span class="field-label">Kebutuhan Khusus</span><input id="lrSpecial" placeholder="Kapasitas / warna / kondisi / lainnya"></label></div>';
+  else if(type==='SERVICE')host.innerHTML='<div class="lead-review-grid">'+
+    '<label><span class="field-label">Perangkat</span><select id="lrDevice"><option>iPhone</option><option>Android</option><option>iPad</option><option>MacBook</option><option>Apple Watch</option><option>Lainnya</option></select></label>'+
+    '<label><span class="field-label">Tipe / Model</span><input id="lrModel" placeholder="Contoh: iPhone 13"></label>'+
+    '<label><span class="field-label">Keluhan</span><textarea id="lrComplaint" placeholder="Contoh: layar bergaris hijau"></textarea></label>'+
+    '<label><span class="field-label">Kondisi yang Diketahui</span><input id="lrCondition" placeholder="Kondisi perangkat saat datang / informasi customer"></label></div>';
+  else if(type==='TUKAR TAMBAH')host.innerHTML='<div class="lead-review-grid">'+
+    '<label><span class="field-label">HP yang Dimiliki</span><input id="lrTradeDevice" placeholder="Contoh: iPhone 13"></label>'+
+    '<label><span class="field-label">Kapasitas</span><input id="lrTradeCapacity" placeholder="128 GB"></label>'+
+    '<label><span class="field-label">Kondisi Umum</span><input id="lrTradeCondition"></label>'+
+    '<label><span class="field-label">Kelengkapan</span><input id="lrTradeCompleteness" placeholder="Unit + Box + Kabel"></label>'+
+    '<label><span class="field-label">Battery Health</span><input id="lrTradeBH" placeholder="Khusus iPhone, contoh 85%"></label>'+
+    '<label><span class="field-label">Minus</span><input id="lrTradeMinus"></label>'+
+    '<label><span class="field-label">HP yang Diinginkan</span><input id="lrWanted" placeholder="Unit yang ingin dibeli"></label>'+
+    '<label><span class="field-label">Estimasi Budget / Tambah Dana</span><input id="lrTradeBudget" placeholder="Contoh: tambah 5 juta"></label></div>';
+  else if(type==='KREDIT/CICILAN')host.innerHTML='<div class="lead-review-grid">'+
+    '<label><span class="field-label">Produk yang Diminati</span><input id="lrCreditProduct"></label>'+
+    '<label><span class="field-label">Harga / Estimasi</span><input id="lrCreditPrice"></label>'+
+    '<label><span class="field-label">Tenor</span><select id="lrTenor"><option value="">— Pilih —</option><option>3 bulan</option><option>6 bulan</option><option>9 bulan</option><option>12 bulan</option><option>18 bulan</option><option>24 bulan</option></select></label>'+
+    '<label><span class="field-label">DP / Budget</span><input id="lrDP"></label>'+
+    '<label><span class="field-label">Pernah Ajukan Kredit?</span><select id="lrCreditHistory"><option>Tidak</option><option>Ya</option></select></label></div>';
+  else host.innerHTML='<div class="review-note">Pilih kebutuhan untuk menampilkan data yang perlu diisi.</div>';
+}
+function inboxValue(id){return $(id)?.value?.trim()||'';}
+function buildInboxInitialData(){
+  const type=$('lrNeedType')?.value||'',d={};
+  if(type==='PEMBELIAN')Object.assign(d,{product:inboxValue('lrProduct'),budget:inboxValue('lrBudget'),preference:inboxValue('lrPreference'),special:inboxValue('lrSpecial')});
+  if(type==='SERVICE')Object.assign(d,{device:inboxValue('lrDevice'),model:inboxValue('lrModel'),complaint:inboxValue('lrComplaint'),condition:inboxValue('lrCondition')});
+  if(type==='TUKAR TAMBAH')Object.assign(d,{device:inboxValue('lrTradeDevice'),capacity:inboxValue('lrTradeCapacity'),condition:inboxValue('lrTradeCondition'),completeness:inboxValue('lrTradeCompleteness'),battery_health:inboxValue('lrTradeBH'),minus:inboxValue('lrTradeMinus'),wanted_product:inboxValue('lrWanted'),budget:inboxValue('lrTradeBudget')});
+  if(type==='KREDIT/CICILAN')Object.assign(d,{product:inboxValue('lrCreditProduct'),price:inboxValue('lrCreditPrice'),tenor:inboxValue('lrTenor'),dp_budget:inboxValue('lrDP'),credit_history:inboxValue('lrCreditHistory')});
+  return d;
+}
+function buildInboxLeadSummary(type,d){
+  if(type==='PEMBELIAN')return d.product||'';
+  if(type==='SERVICE')return [d.device,d.model,d.complaint].filter(Boolean).join(' — ');
+  if(type==='TUKAR TAMBAH')return [d.device,d.capacity].filter(Boolean).join(' ')+' → '+(d.wanted_product||'');
+  if(type==='KREDIT/CICILAN')return d.product||'';
+  return '';
 }
 async function createLeadFromChat(){
-  const score=Number($('lrScore')?.value);
-  const payload={
-    p_conversation_id:active.id,p_decision:'NEW_LEAD',
-    p_customer_name:$('lrName')?.value.trim()||'',
-    p_product:$('lrProduct')?.value.trim()||null,
-    p_need:$('lrNeed')?.value.trim()||'',
-    p_budget:$('lrBudget')?.value.trim()||null,
-    p_timeline:$('lrTimeline')?.value||null,
-    p_preference:$('lrPreference')?.value.trim()||null,
-    p_score:score,
-    p_reason:$('lrReason')?.value.trim()||null,
-    p_follow_up_date:$('lrFollowUp')?.value||null,
-    p_next_action:$('lrNext')?.value.trim()||null
-  };
-  const button=$('makeLead');if(button)button.disabled=true;
+  const type=$('lrNeedType')?.value||'',customer=$('lrName')?.value.trim()||'';
+  if(!customer){alert('Nama customer wajib diisi.');return;}
+  if(!type){alert('Kebutuhan wajib dipilih.');return;}
+  if(!active?.customer_phone){alert('Nomor WhatsApp customer belum tersedia.');return;}
+  const d=buildInboxInitialData(),summary=buildInboxLeadSummary(type,d);
+  const initialData={...d,customer_location:inboxValue('lrLocation'),origin:'WHATSAPP_INBOX',conversation_id:active.id};
+  const button=$('makeLead');if(button){button.disabled=true;button.textContent='Menyimpan…';}
   try{
-    const {data,error}=await sb.rpc('hm_review_whatsapp_conversation',payload);
+    const {data,error}=await sb.rpc('hm_review_whatsapp_conversation',{
+      p_conversation_id:active.id,p_decision:'NEW_LEAD',p_customer_name:customer,p_need_type:type,
+      p_product:d.product||d.wanted_product||null,p_need:summary||type,
+      p_budget:d.budget||d.dp_budget||d.price||null,p_timeline:null,p_preference:d.preference||null,
+      p_score:0,p_reason:inboxValue('lrNotes')||null,p_follow_up_date:null,p_next_action:null,p_initial_data:initialData
+    });
     if(error)throw error;
-    await load(true);
-    if(active)renderHead();
-    alert(data?.decision==='EXISTING_LEAD'?'Nomor ini sudah memiliki lead aktif. Percakapan dihubungkan ke lead tersebut.':'Lead berhasil dibuat. Skor '+score+'/100 · '+(score>=70?'POTENSIAL':score>=40?'QUALIFIED':'perlu follow-up CS')+'.');
-  }catch(e){alert(e.message||'Gagal membuat lead.');if(button)button.disabled=false;}
+    await load(true);if(active)renderHead();
+    alert(data?.decision==='EXISTING_LEAD'?'Nomor ini sudah memiliki lead aktif. Percakapan dihubungkan ke lead tersebut.':'Lead berhasil disimpan dengan mekanisme yang sama seperti WA Masuk / Lead Baru. Lanjutkan kualifikasi melalui Lead Tracker.');
+  }catch(e){alert(e.message||'Gagal membuat lead.');if(button){button.disabled=false;button.textContent='Simpan Lead';}}
 }
 async function markChatNotLead(){
   const reason=$('notLeadReason')?.value.trim()||'';

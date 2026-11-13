@@ -164,7 +164,6 @@ body{background:radial-gradient(ellipse at 78% -8%,rgba(185,151,91,.19),transpar
     <section id="prospectAdmin" class="panel hidden"><h2>Akses Calon Investor</h2><div class="hint">Buat akun baca-saja selama 7 hari. Akun dapat diperpanjang 7 hari atau dicabut kapan saja.</div><form id="prospectForm" class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="field"><label>Email calon investor</label><input id="prospectEmail" type="email" required></div><div class="field"><label>Password awal (minimal 10 karakter)</label><input id="prospectPassword" type="password" minlength="10" required></div><div><button class="btn primary" id="prospectCreate">Buat akun 7 hari</button></div><div id="prospectMessage" class="hint" role="status"></div></form><div id="prospectList" class="hint">Memuat akun…</div></section><section class="hero">
       <div class="eyebrow">INVESTOR DASHBOARD</div>
       <h1 id="investorName">Dashboard Investor</h1>
-      <p>Management melihat seluruh identitas investor. Investor melihat identitas sendiri dan investor lain dalam nama samaran. Calon investor melihat seluruh data dalam tampilan simulasi dengan semua identitas disamarkan.</p>
     </section>
     <div class="grid">
       <div class="metric"><small id="investmentLabel">Investasi bersih Anda</small><strong id="myInvestment">Rp0</strong><div class="sub">Setoran dikurangi penarikan modal</div></div>
@@ -210,7 +209,15 @@ body{background:radial-gradient(ellipse at 78% -8%,rgba(185,151,91,.19),transpar
       </div>
     </section>
     <section id="tab-semester" class="tab-panel hidden"><div class="panel"><h2>Settlement bagi hasil semester</h2><div class="hint">Hak keuntungan dikumpulkan dari laporan bulanan dan dibayarkan setiap Januari–Juni atau Juli–Desember.</div><div id="semesterTable"></div></div></section>
-    <div class="foot">HELLO MAJESTY · INVESTOR PORTAL · Akses baca saja</div>
+    <section class="panel" style="margin-top:18px">
+      <h2>Privasi dan Transparansi Informasi</h2>
+      <p class="hint">Hello Majesty mengatur akses informasi sesuai dengan peran masing-masing pengguna.</p>
+      <div class="hint"><b>Management</b><br>Memiliki akses penuh terhadap identitas dan data seluruh investor.</div>
+      <div class="hint" style="margin-top:10px"><b>Investor</b><br>Dapat melihat identitas dan informasi investasinya sendiri. Informasi investor lainnya ditampilkan menggunakan nama samaran.</div>
+      <div class="hint" style="margin-top:10px"><b>Calon Investor</b><br>Dapat melihat gambaran portofolio dan simulasi investasi. Seluruh identitas investor disamarkan untuk menjaga privasi.</div>
+      <p class="hint" style="margin-top:12px">Kami berkomitmen menjaga kerahasiaan identitas investor sekaligus menghadirkan transparansi informasi investasi secara proporsional.</p>
+    </section>
+    <div class="foot">HELLO MAJESTY · BUILT ON TRUST · Akses baca saja</div>
   </main>
 </div>
 <script>

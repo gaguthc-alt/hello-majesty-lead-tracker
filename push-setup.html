@@ -35,7 +35,7 @@ async function enablePush(){
   if(!token)throw Error('Token FCM belum berhasil dibuat. Periksa konfigurasi Firebase dan VAPID.');
   const endpointHash=await digest(token);
   const ua=navigator.userAgent;const platform=/Android/i.test(ua)?'android':/iPhone|iPad|iPod/i.test(ua)?'ios':'desktop';
-  const deviceLabel=(platform==='android'?'Android':platform==='ios'?'iPhone/iPad':platform==='windows'?'Windows PC':platform==='macos'?'Mac':'Browser')+' · '+(navigator.userAgentData?.platform||navigator.platform||'');
+  const deviceLabel=(platform==='android'?'Android':platform==='ios'?'iPhone/iPad':'Desktop / PC')+' · '+(navigator.userAgentData?.platform||navigator.platform||'');
   const {error}=await sb.from('hm_push_subscriptions').upsert({user_id:user.id,endpoint_hash:endpointHash,fcm_token:token,device_label:deviceLabel,platform,enabled:true,last_seen_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id,endpoint_hash'});
   if(error)throw error;
   show('BERHASIL! Perangkat ini sudah terdaftar untuk menerima notifikasi Hello Majesty. Ulangi aktivasi pada perangkat lain yang digunakan akun ini.','good');

@@ -9,7 +9,7 @@
 const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co';
 const SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 const VAPID_PUBLIC_KEY='BD_8aEumdug4XayvBGQMkEH74wKzm70XbgaOJfseNazaB3jdxnZvP64Sz8J1j1bIGtPtBB1PrjlRB9yXw-rbIc4';
-const firebaseConfig={apiKey:'AIzaSyDaDCr1AvQCOSuwiTIV-bSp4-4SU1RVtRP8',authDomain:'hello-majesty-notification.firebaseapp.com',projectId:'hello-majesty-notification',storageBucket:'hello-majesty-notification.firebasestorage.app',messagingSenderId:'439732318734',appId:'1:439732318734:web:8be113b44cffd3be37425f'};
+const firebaseConfig={apiKey:'AIzaSyDaDCr1AvQCOSuwiTIV-bSp-4SU1RVtRP8',authDomain:'hello-majesty-notification.firebaseapp.com',projectId:'hello-majesty-notification',storageBucket:'hello-majesty-notification.firebasestorage.app',messagingSenderId:'439732318734',appId:'1:439732318734:web:8be113b44cffd3be37425f'};
 const $=id=>document.getElementById(id);let sb,user;
 function show(msg,kind=''){ $('status').textContent=msg;$('status').className='status '+kind; }
 function b64urlToBytes(base64){const pad='='.repeat((4-base64.length%4)%4);const raw=atob((base64+pad).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}

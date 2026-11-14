@@ -5361,6 +5361,31 @@ window.hmRunStockistJournalReclass = async function(){
        });
        return;
      }
+     // UMUR STOCK: dispatch sebelum handler Inventory generik.
+     if(title==='Umur Stock' || action==='openStockAgeReport()'){
+       hmCloseMainMenu();
+       hmActiveMainMenu=title;
+       hmSetMainMenuButtonOpen(title);
+       void (async()=>{
+         if(typeof window.openStockAgeReport!=='function'){
+           await new Promise((resolve,reject)=>{
+             const sc=document.createElement('script');
+             sc.src='inventory.js?v=20261115-stock-age-menu-fix-2';
+             sc.onload=resolve;
+             sc.onerror=()=>reject(new Error('Modul Umur Stock gagal dimuat.'));
+             document.head.appendChild(sc);
+           });
+         }
+         if(typeof window.openStockAgeReport!=='function')throw new Error('Fungsi Umur Stock tidak tersedia.');
+         await window.openStockAgeReport();
+       })().catch(ex=>{
+         console.error('[HM] Umur Stock gagal dibuka:',ex);
+         const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),titleEl=document.getElementById('hmMenuPanelTitle');
+         if(panel&&body){if(titleEl)titleEl.textContent='⚠️ Umur Stock';body.innerHTML='<div class="box" style="color:#b42318"><b>Umur Stock gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div></div>';panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}
+         else alert('Umur Stock gagal dibuka: '+(ex?.message||ex));
+       });
+       return;
+     }
      // Product & Stock / Laporan Penjualan / Komisi Tim memakai jalur inline
      // khusus agar tidak bergantung pada modal lama dan tidak tertutup oleh
      // hmCloseMainMenu()/sequence guard.

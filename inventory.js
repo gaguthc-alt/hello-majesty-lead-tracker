@@ -1837,7 +1837,19 @@ try{hmApplyProductMasterAccess();}catch(_e){}
       '<div class="small" style="margin-top:6px">AI menggunakan konteks stock yang sedang dibuka dan mengikuti kewenangan role Anda.</div>'+
       '<button id="stockAIAskBtn" class="success" style="margin-top:10px" onclick="askStockAI(\''+String(stockId).replace(/'/g,"\\'")+'\')">🤖 Tanya AI</button>'+
       '<div id="stockAIAnswer" class="box hidden" style="white-space:pre-wrap;margin-top:12px"></div>';
-    $('modal').classList.remove('hidden');
+    const agePanel=document.getElementById('hmMenuPanel');
+   const ageBody=document.getElementById('hmMenuPanelBody');
+   const ageTitle=document.getElementById('hmMenuPanelTitle');
+   const legacyModal=$('modal');
+   if(agePanel&&ageBody){
+    if(ageTitle)ageTitle.textContent='⏳ UMUR STOCK';
+    ageBody.replaceChildren(...Array.from($('mb').childNodes));
+    if(legacyModal)legacyModal.classList.add('hidden');
+    agePanel.classList.remove('hidden');
+    agePanel.scrollIntoView({behavior:'smooth',block:'start'});
+   }else if(legacyModal){
+    legacyModal.classList.remove('hidden');
+   }
     setTimeout(()=>$('stockAIQuestion')?.focus(),50);
   };
   window.askStockAI=async function(stockId){
@@ -1952,7 +1964,7 @@ window.openStockAgeReport=async function(){
   $('mt').textContent='⏳ UMUR STOCK';
   $('mb').innerHTML='<div class="box"><div class="small">Usia dihitung dari tanggal penerimaan stock sampai hari ini. Stock SOLD tidak dihitung.</div>'+summary+'</div>'+distribution+'<div class="box"><b>🏬 Umur Stock per Outlet</b>'+(outletHtml||'<p class="small">Belum ada stock aktif.</p>')+'</div><div class="box"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>📦 Rincian Unit Stock</b><button type="button" class="secondary" onclick="window.hmFilterStockAge(null)">Tampilkan Semua</button></div><div id="hmStockAgeFilterLabel" class="small" style="margin:7px 0">Menampilkan semua '+rows.length+' unit</div><div id="hmStockAgeRows">'+(detail||'<p class="small">Belum ada stock aktif.</p>')+'</div></div>';
   window.hmFilterStockAge=function(bucket){
-   const root=$('mb');if(!root)return;
+   const root=document.getElementById('hmMenuPanelBody')||$('mb');if(!root)return;
    const items=root.querySelectorAll('[data-age-row]');
    let shown=0;
    items.forEach(el=>{const match=!bucket||el.getAttribute('data-age-row')===bucket;el.style.display=match?'':'none';if(match)shown++;});

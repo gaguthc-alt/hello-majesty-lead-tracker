@@ -1893,3 +1893,43 @@ window.openStockOut=openStockOut;
 window.confirmStockOut=confirmStockOut;
 
 setInterval(hmRestoreStockCardActions,1500);
+
+window.openStockAgeReport=async function(){
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const isManagement=!!profile?.is_management||role==='MANAGEMENT'||role==='DIVISI';
+ const isFacilitator=role==='FASILITATOR'||!!inventoryCanFacilitator||!!window.hmCanFacilitator;
+ if(!isManagement&&!isFacilitator)return alert('Menu Umur Stock hanya dapat diakses Management dan Fasilitator.');
+ try{
+  await loadInventoryData();
+  const now=new Date();
+  const eligible=(inventoryStock||[]).filter(s=>!['SOLD','CANCELLED','RETURNED'].includes(String(s.status||'').trim().toUpperCase()));
+  const rows=eligible.map(s=>{
+   const raw=s.received_at||s.created_at||s.stock_in_at||null;
+   const date=raw?new Date(raw):null;
+   const valid=date&&!Number.isNaN(date.getTime());
+   const days=valid?Math.max(0,Math.floor((now-date)/(24*60*60*1000))):null;
+   const bucket=days===null?'Tanggal tidak tersedia':days<=30?'0–30 hari':days<=60?'31–60 hari':days<=90?'61–90 hari':days<=180?'91–180 hari':'>180 hari';
+   return {...s,_ageDays:days,_ageBucket:bucket,_receivedDate:valid?date:null};
+  });
+  const buckets=['0–30 hari','31–60 hari','61–90 hari','91–180 hari','>180 hari','Tanggal tidak tersedia'];
+  const count=b=>rows.filter(x=>x._ageBucket===b).length;
+  const avg=rows.filter(x=>x._ageDays!==null);
+  const average=avg.length?Math.round(avg.reduce((n,x)=>n+x._ageDays,0)/avg.length):0;
+  const rp=n=>Number(n||0).toLocaleString('id-ID');
+  const summary='<div class="stats" style="margin:10px 0">'+invStat('Total Stock Aktif',rows.length)+invStat('Umur Rata-rata',average+' hari')+invStat('Di atas 90 hari',count('91–180 hari')+count('>180 hari'))+'</div>';
+  const distribution='<div class="box"><b>📊 Sebaran Umur Stock</b>'+buckets.map(b=>'<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #e2e8f0"><span>'+esc(b)+'</span><b>'+rp(count(b))+' unit</b></div>').join('')+'</div>';
+  const outletNames=[...new Set(rows.map(x=>String(x.outlet||'Tidak diketahui')))].sort();
+  const outletHtml=outletNames.map(o=>{
+   const list=rows.filter(x=>String(x.outlet||'Tidak diketahui')===o);
+   const old=list.filter(x=>x._ageDays!==null&&x._ageDays>90).length;
+   return '<div class="lead"><b>'+esc(o)+'</b><div class="small">Total '+list.length+' unit • Lebih dari 90 hari: '+old+' unit</div></div>';
+  }).join('');
+  const detail=rows.slice().sort((a,b)=>(b._ageDays??-1)-(a._ageDays??-1)).map((s,i)=>{
+   const product=[s.product,s.variant,s.color].filter(Boolean).join(' — ')||'Produk';
+   return '<div class="lead"><div class="row" style="justify-content:space-between;gap:8px"><b>'+String(i+1).padStart(2,'0')+'. '+esc(product)+'</b><b>'+ (s._ageDays===null?'—':rp(s._ageDays)+' hari')+'</b></div><div class="small">Outlet: <b>'+esc(s.outlet||'-')+'</b> • Status: '+esc(s.status||'-')+'</div><div class="small">Masuk: '+(s._receivedDate?s._receivedDate.toLocaleDateString('id-ID'):'Tanggal tidak tersedia')+' • Umur: '+esc(s._ageBucket)+'</div></div>';
+  }).join('');
+  $('mt').textContent='⏳ UMUR STOCK';
+  $('mb').innerHTML='<div class="box"><div class="small">Usia dihitung dari tanggal penerimaan stock sampai hari ini. Stock SOLD tidak dihitung.</div>'+summary+'</div>'+distribution+'<div class="box"><b>🏬 Umur Stock per Outlet</b>'+(outletHtml||'<p class="small">Belum ada stock aktif.</p>')+'</div><div class="box"><b>📦 Rincian Unit Stock ('+rows.length+')</b>'+(detail||'<p class="small">Belum ada stock aktif.</p>')+'</div>';
+  $('modal').classList.remove('hidden');
+ }catch(e){alert('Gagal memuat Umur Stock: '+(e?.message||e));}
+};

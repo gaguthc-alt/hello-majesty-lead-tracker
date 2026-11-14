@@ -8593,7 +8593,36 @@ async function renderContentPerformance(){
  }
  const d=data||{}, fmt=n=>Number(n||0).toLocaleString('id-ID');
  if(d.management){
-   host.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🎬 CONTENT PERFORMANCE</h3><div class="small">Monitoring proses • target utama tetap WA outlet</div></div><div class="row"><select onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select><button class="secondary" onclick="showContentManagementDetail()">Lihat Detail →</button></div></div><div class="stats" style="margin-top:10px"><div class="stat"><div class="small">🎬 Konten</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.content_count||0),0))+'</div></div><div class="stat"><div class="small">👁️ Views</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.views||0),0))+'</div></div><div class="stat"><div class="small">💬 Comments</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.comments||0),0))+'</div></div><div class="stat"><div class="small">📩 DM</div><div class="num">'+fmt((d.outlets||[]).reduce((a,o)=>a+Number(o.dms||0),0))+'</div></div></div>';
+    const month=String(contentSelectedMonth||new Date().toISOString().slice(0,7));
+    const startDate=month+'-01';
+    const endDate=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),1).toISOString().slice(0,10);
+    let leadRows=[],leadErr=null,from=0;
+    while(true){
+      const page=await sb.from('leads').select('lead_id,content_creator,source_platform,source_campaign,source_confidence,created_at').gte('created_at',startDate+'T00:00:00').lt('created_at',endDate+'T00:00:00').range(from,from+499);
+      if(page.error){leadErr=page.error;break;}
+      leadRows=leadRows.concat(page.data||[]);
+      if(!page.data||page.data.length<500)break;
+      from+=500;
+    }
+    if(leadErr){
+      host.innerHTML='<h3>🎬 PENCAPAIAN CONTENT CREATOR</h3><p class="small" style="color:#b91c1c">Gagal memuat lead: '+esc(leadErr.message)+'</p>';
+    }else{
+      const groups={};
+      leadRows.forEach(r=>{
+        const tracked=String(r.source_confidence||'').toUpperCase()==='TRACKED_LINK';
+        const creator=tracked?(String(r.content_creator||'').trim()||'—'):'—';
+        const platform=tracked?(String(r.source_platform||'').trim().toUpperCase()||'LINK CONTENT CREATOR'):'WHATSAPP';
+        const campaign=tracked?(String(r.source_campaign||'').trim()||'Tanpa kampanye'):'Tidak diketahui';
+        const key=[creator,platform,campaign].join('|');
+        if(!groups[key])groups[key]={creator,platform,campaign,leads:0};
+        groups[key].leads++;
+      });
+      const list=Object.values(groups).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
+      const trackedTotal=leadRows.filter(r=>String(r.source_confidence||'').toUpperCase()==='TRACKED_LINK').length;
+      const creatorTotal=new Set(list.filter(x=>x.creator!=='—').map(x=>x.creator)).size;
+      host.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h3 style="margin:0">🎬 PENCAPAIAN CONTENT CREATOR</h3><div class="small">Lead yang berhasil dihadirkan berdasarkan platform dan kampanye</div></div><select style="max-width:150px" onchange="contentSelectedMonth=this.value;renderContentPerformance()">'+contentMonthOptions()+'</select></div><div class="stats" style="margin-top:12px"><div class="stat"><div class="small">Total Lead</div><div class="num">'+fmt(leadRows.length)+'</div></div><div class="stat"><div class="small">Content Creator</div><div class="num">'+fmt(creatorTotal)+'</div></div><div class="stat"><div class="small">Lead Link Terlacak</div><div class="num">'+fmt(trackedTotal)+'</div></div><div class="stat"><div class="small">WhatsApp / Belum Teratribusi</div><div class="num">'+fmt(leadRows.length-trackedTotal)+'</div></div></div><div class="small" style="margin:12px 0">Periode '+esc(month)+' · berdasarkan tanggal lead dibuat. Lead yang diarsipkan tetap dihitung.</div>'+(list.length?list.map(x=>'<div class="lead" style="margin-top:10px"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><b style="font-size:16px">🎬 '+esc(x.creator)+'</b><span class="badge">'+fmt(x.leads)+' lead</span></div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px"><div><div class="small">Sumber / Platform</div><b>'+esc(x.platform)+'</b></div><div><div class="small">Kampanye</div><b>'+esc(x.campaign)+'</b></div></div></div>').join(''):'<div class="small">Belum ada lead pada periode ini.</div>');
+    }
+
  }else{
    const t=d.team||{},o=d.own||{};
    const can=await canContentCreator();

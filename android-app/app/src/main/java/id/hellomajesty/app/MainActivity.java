@@ -14,6 +14,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import org.json.JSONObject;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends Activity {
@@ -40,6 +41,10 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
         webView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                registerNativePushToken(view);
+            }
             @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme() == null ? "" : uri.getScheme();
@@ -67,6 +72,54 @@ public class MainActivity extends Activity {
         });
         if (savedInstanceState == null) webView.loadUrl(APP_URL);
         else webView.restoreState(savedInstanceState);
+    }
+
+
+    private void registerNativePushToken(WebView view) {
+        String token = getSharedPreferences("hello_majesty_native", MODE_PRIVATE).getString("fcm_token", null);
+        if (token == null || token.isEmpty()) return;
+        String script = """
+            (function() {
+              let attempts = 0;
+              const fcm = __FCM_TOKEN__;
+              const timer = setInterval(async () => {
+                try {
+                  attempts++;
+                  let session = null;
+                  for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.includes('auth-token')) {
+                      try {
+                        const value = JSON.parse(localStorage.getItem(key));
+                        if (value && value.access_token && value.user && value.user.id) { session = value; break; }
+                      } catch (e) {}
+                    }
+                  }
+                  if (!session) { if (attempts >= 120) clearInterval(timer); return; }
+                  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(fcm));
+                  const endpointHash = Array.from(new Uint8Array(digest)).map(v => v.toString(16).padStart(2, '0')).join('');
+                  const response = await fetch(
+                    'https://ksowzhhmzrumyciehuyv.supabase.co/rest/v1/hm_push_subscriptions?on_conflict=user_id,endpoint_hash',
+                    { method: 'POST',
+                      headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtzb3d6aGhtenJ1bXljaWVodXl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NzQ2OTUsImV4cCI6MjEwNjE1MDY5NX0.5FcqCIiSTXvZuwmkGZnPOL_LpXJA9hM07qOdPB48s4',
+                        'Authorization': 'Bearer ' + session.access_token,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'resolution=merge-duplicates,return=minimal'
+                      },
+                      body: JSON.stringify({
+                        user_id: session.user.id, endpoint_hash: endpointHash, fcm_token: fcm,
+                        device_label: 'Hello Majesty Android', platform: 'android', enabled: true,
+                        last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString()
+                      })
+                    });
+                  if (response.ok) clearInterval(timer);
+                } catch (error) { console.log('Native push registration failed', error); }
+                if (attempts >= 120) clearInterval(timer);
+              }, 3000);
+            })();
+            """.replace("__FCM_TOKEN__", JSONObject.quote(token));
+        view.evaluateJavascript(script, null);
     }
 
     private void requestNotificationPermission() {

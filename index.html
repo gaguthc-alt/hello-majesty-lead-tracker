@@ -3834,9 +3834,9 @@ async function hmRenderHomePerformance(){
    if(targetError)throw targetError;
    let hasHelloMajestyAssignment=false;
    if(!isManagement){
-     const {data:{user:currentUser}}=await db.auth.getUser();
-     if(currentUser?.id){
-       const {data:unitAssignments,error:unitAssignmentError}=await db.from('team_unit_assignments').select('outlet').eq('user_id',currentUser.id).eq('active',true);
+     const currentUserId=profile?.user_id||null;
+     if(currentUserId){
+       const {data:unitAssignments,error:unitAssignmentError}=await db.from('team_unit_assignments').select('outlet').eq('user_id',currentUserId).eq('active',true);
        if(unitAssignmentError)throw unitAssignmentError;
        hasHelloMajestyAssignment=(unitAssignments||[]).some(x=>String(x.outlet||'').trim().toLowerCase()==='hello majesty');
      }

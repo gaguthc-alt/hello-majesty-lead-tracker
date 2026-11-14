@@ -16,7 +16,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import org.json.JSONObject;
 import com.google.firebase.messaging.FirebaseMessaging;
-import androidx.core.view.WindowCompat;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -32,7 +31,6 @@ public class MainActivity extends Activity {
         FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token ->
             getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", token).apply()
         );
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         webView = new WebView(this);
         setContentView(webView);
         WebSettings settings = webView.getSettings();

@@ -1920,7 +1920,7 @@ window.openStockAgeReport=async function(){
   const over7=rows.filter(x=>x._ageDays!==null&&x._ageDays>7).length;
   const over30=rows.filter(x=>x._ageDays!==null&&x._ageDays>30).length;
   const summary='<div class="stats" style="margin:10px 0">'+invStat('Total Stock Aktif',rows.length)+invStat('Umur Rata-rata',average+' hari')+invStat('Di atas 7 hari',over7)+invStat('Di atas 30 hari',over30)+'</div>';
-  const distribution='<div class="box"><b>📊 Sebaran Umur Stock</b>'+buckets.map(b=>'<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #e2e8f0"><span>'+esc(b)+'</span><b>'+rp(count(b))+' unit</b></div>').join('')+'</div>';
+  const distribution='<div class="box"><b>📊 Sebaran Umur Stock</b><div class="small">Ketuk kelompok umur untuk memfilter daftar unit di bawah.</div>'+buckets.map(b=>'<button type="button" data-age-filter="'+esc(b)+'" onclick="window.hmFilterStockAge(\''+b+'\')" style="width:100%;display:flex;justify-content:space-between;gap:10px;padding:11px 12px;margin-top:7px;text-align:left;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#172033"><span>'+esc(b)+'</span><b>'+rp(count(b))+' unit ›</b></button>').join('')+'</div>';
   const outletNames=[...new Set(rows.map(x=>String(x.outlet||'Tidak diketahui')))].sort();
   const outletHtml=outletNames.map(o=>{
    const list=rows.filter(x=>String(x.outlet||'Tidak diketahui')===o);
@@ -1928,12 +1928,22 @@ window.openStockAgeReport=async function(){
    const over30=list.filter(x=>x._ageDays!==null&&x._ageDays>30).length;
    return '<div class="lead"><b>'+esc(o)+'</b><div class="small">Total '+list.length+' unit • Di atas 7 hari: '+over7+' unit • Di atas 30 hari: '+over30+' unit</div></div>';
   }).join('');
-  const detail=rows.slice().sort((a,b)=>(b._ageDays??-1)-(a._ageDays??-1)).map((s,i)=>{
+  const sortedRows=rows.slice().sort((a,b)=>(b._ageDays??-1)-(a._ageDays??-1));
+  const detail=sortedRows.map((s,i)=>{
    const product=[s.product,s.variant,s.color].filter(Boolean).join(' — ')||'Produk';
-   return '<div class="lead"><div class="row" style="justify-content:space-between;gap:8px"><b>'+String(i+1).padStart(2,'0')+'. '+esc(product)+'</b><b>'+ (s._ageDays===null?'—':rp(s._ageDays)+' hari')+'</b></div><div class="small">Outlet: <b>'+esc(s.outlet||'-')+'</b> • Status: '+esc(s.status||'-')+'</div><div class="small">Masuk: '+(s._receivedDate?s._receivedDate.toLocaleDateString('id-ID'):'Tanggal tidak tersedia')+' • Umur: '+esc(s._ageBucket)+'</div></div>';
+   return '<div class="lead" data-age-row="'+esc(s._ageBucket)+'"><div class="row" style="justify-content:space-between;gap:8px"><b>'+String(i+1).padStart(2,'0')+'. '+esc(product)+'</b><b>'+ (s._ageDays===null?'—':rp(s._ageDays)+' hari')+'</b></div><div class="small">Outlet: <b>'+esc(s.outlet||'-')+'</b> • Status: '+esc(s.status||'-')+'</div><div class="small">Masuk: '+(s._receivedDate?s._receivedDate.toLocaleDateString('id-ID'):'Tanggal tidak tersedia')+' • Umur: '+esc(s._ageBucket)+'</div></div>';
   }).join('');
   $('mt').textContent='⏳ UMUR STOCK';
-  $('mb').innerHTML='<div class="box"><div class="small">Usia dihitung dari tanggal penerimaan stock sampai hari ini. Stock SOLD tidak dihitung.</div>'+summary+'</div>'+distribution+'<div class="box"><b>🏬 Umur Stock per Outlet</b>'+(outletHtml||'<p class="small">Belum ada stock aktif.</p>')+'</div><div class="box"><b>📦 Rincian Unit Stock ('+rows.length+')</b>'+(detail||'<p class="small">Belum ada stock aktif.</p>')+'</div>';
+  $('mb').innerHTML='<div class="box"><div class="small">Usia dihitung dari tanggal penerimaan stock sampai hari ini. Stock SOLD tidak dihitung.</div>'+summary+'</div>'+distribution+'<div class="box"><b>🏬 Umur Stock per Outlet</b>'+(outletHtml||'<p class="small">Belum ada stock aktif.</p>')+'</div><div class="box"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>📦 Rincian Unit Stock</b><button type="button" class="secondary" onclick="window.hmFilterStockAge(null)">Tampilkan Semua</button></div><div id="hmStockAgeFilterLabel" class="small" style="margin:7px 0">Menampilkan semua '+rows.length+' unit</div><div id="hmStockAgeRows">'+(detail||'<p class="small">Belum ada stock aktif.</p>')+'</div></div>';
+  window.hmFilterStockAge=function(bucket){
+   const root=$('mb');if(!root)return;
+   const items=root.querySelectorAll('[data-age-row]');
+   let shown=0;
+   items.forEach(el=>{const match=!bucket||el.getAttribute('data-age-row')===bucket;el.style.display=match?'':'none';if(match)shown++;});
+   const label=$('hmStockAgeFilterLabel');if(label)label.textContent=bucket?'Filter: '+bucket+' • '+shown+' unit':'Menampilkan semua '+shown+' unit';
+   root.querySelectorAll('[data-age-filter]').forEach(btn=>{const active=!!bucket&&btn.getAttribute('data-age-filter')===bucket;btn.style.background=active?'#dbeafe':'#f8fafc';btn.style.borderColor=active?'#2563eb':'#cbd5e1';btn.style.fontWeight=active?'700':'400';});
+   const section=$('hmStockAgeRows');if(section)section.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
   $('modal').classList.remove('hidden');
  }catch(e){alert('Gagal memuat Umur Stock: '+(e?.message||e));}
 };

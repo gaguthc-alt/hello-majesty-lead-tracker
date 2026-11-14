@@ -1909,10 +1909,10 @@ window.openStockAgeReport=async function(){
    const date=raw?new Date(raw):null;
    const valid=date&&!Number.isNaN(date.getTime());
    const days=valid?Math.max(0,Math.floor((now-date)/(24*60*60*1000))):null;
-   const bucket=days===null?'Tanggal tidak tersedia':days<=7?'0–7 hari':days<=30?'8–30 hari':days<=60?'31–60 hari':days<=90?'61–90 hari':days<=180?'91–180 hari':'>180 hari';
+   const bucket=days===null?'Tanggal tidak tersedia':days<=7?'0–7 hari':days<=30?'8–30 hari':days<=90?'31–90 hari':'>90 hari';
    return {...s,_ageDays:days,_ageBucket:bucket,_receivedDate:valid?date:null};
   });
-  const buckets=['0–7 hari','8–30 hari','31–60 hari','61–90 hari','91–180 hari','>180 hari','Tanggal tidak tersedia'];
+  const buckets=['0–7 hari','8–30 hari','31–90 hari','>90 hari','Tanggal tidak tersedia'];
   const count=b=>rows.filter(x=>x._ageBucket===b).length;
   const avg=rows.filter(x=>x._ageDays!==null);
   const average=avg.length?Math.round(avg.reduce((n,x)=>n+x._ageDays,0)/avg.length):0;

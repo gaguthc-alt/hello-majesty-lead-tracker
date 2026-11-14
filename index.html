@@ -2701,8 +2701,7 @@ if(!window.__hmStockAgeSingleClickCapture){
   if(typeof hmCloseMainMenu==='function')hmCloseMainMenu();
   hmActiveMainMenu='Umur Stock';
   if(typeof hmSetMainMenuButtonOpen==='function')hmSetMainMenuButtonOpen('Umur Stock');
-  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),pt=document.getElementById('hmMenuPanelTitle');
-  if(panel&&body){if(pt)pt.textContent='Umur Stock';body.innerHTML='<div class="box">⏳ Memuat Umur Stock...</div>';panel.classList.remove('hidden');}
+  // Laporan Umur Stock memakai satu modal saja; jangan tampilkan panel loading kedua.
   Promise.resolve().then(async()=>{
    if(typeof window.openStockAgeReport!=='function'){
     let loader=window.__hmInventoryModulePromise;
@@ -2716,8 +2715,7 @@ if(!window.__hmStockAgeSingleClickCapture){
    await window.openStockAgeReport();
   }).catch(ex=>{
    console.error('[HM] Umur Stock single-click gagal:',ex);
-   if(panel&&body){if(pt)pt.textContent='Umur Stock';body.innerHTML='<div class="box" style="color:#b42318"><b>Umur Stock gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:10px" onclick="window.location.reload()">Muat ulang aplikasi</button></div>';panel.classList.remove('hidden');}
-   else alert('Umur Stock gagal dibuka: '+(ex?.message||ex));
+   alert('Umur Stock gagal dibuka: '+(ex?.message||ex));
   });
  },true);
 }

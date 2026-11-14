@@ -6981,7 +6981,7 @@ async function shareWalkinApprovalWA(stockId,salePrice){
  }catch(e){console.warn('[HM] gagal membaca data persetujuan Walk-In:',e);}
  if(!salesNames.length)salesNames=[profile?.name||'Sales'];
  const sales=salesNames.join(', ');
- const approvalLink=window.location.origin+window.location.pathname+'?open=walkin&approval='+encodeURIComponent(approvalId||'');
+ const approvalLink='https://app.hello-majesty.com/?open=walkin&approval='+encodeURIComponent(approvalId||'');
  const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh tim Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👥 *Seluruh Tim Sales/Closing:* '+sales,...(requesterName?['🧾 Pengaju/PIC Utama: '+requesterName]:[]),'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
  if(!approvalId){alert('ID persetujuan Walk-In belum ditemukan. Pengajuan mungkin belum tersimpan pada daftar persetujuan. Silakan cek menu Persetujuan Walk-In.');return;}
  window.location.href='https://wa.me/?text='+encodeURIComponent(msg);

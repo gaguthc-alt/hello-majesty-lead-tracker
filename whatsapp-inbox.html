@@ -6,7 +6,7 @@
 </style></head><body><header class="top"><div><b>Hello Majesty · WhatsApp Inbox</b><br><small>Customer Service Workspace</small></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">Database Kontak</button><button onclick="location.href='push-setup.html'">🔔 Aktifkan Alarm</button><button onclick="location.href='index.html'">Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan WhatsApp melalui Sambungan · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
 const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co',SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
-let sb,me,profile=null,maskPhoneNumbers=true,isInboxManagement=false,rows=[],active=null,realtimeChannel=null,realtimeConnected=false,realtimeRefreshTimer=null;
+let sb,me,profile=null,maskPhoneNumbers=true,isInboxManagement=false,canInboxCS=false,canInboxSales=false,rows=[],active=null,realtimeChannel=null,realtimeConnected=false,realtimeRefreshTimer=null;
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function displayPhone(value){
@@ -31,6 +31,7 @@ async function loadInboxProfile(){
   }catch(_e){}
   const management=profile.is_management===true||role.includes('MANAGEMENT')||role==='DIVISI'||role.includes('DEVELOPER');
   isInboxManagement=management;
+  canInboxCS=canCS;canInboxSales=canSales;
   maskPhoneNumbers=!management;
   const contactsLink=$('contactsLink');if(contactsLink)contactsLink.style.display=management?'inline-block':'none';
 }
@@ -70,10 +71,20 @@ async function init(){try{
   window.addEventListener('focus',()=>load(true));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);});
 }catch(e){$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
-async function load(quiet=false){try{const {data,error}=await sb.from('chat_conversations').select('*').order('updated_at',{ascending:false}).limit(200);if(error)throw error;rows=(data||[]);renderList();if(active){const fresh=rows.find(x=>x.id===active.id);if(fresh){active=fresh;await loadMessages(true);renderHead();}}}catch(e){if(!quiet)$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
-function renderList(){const q=$('search').value.toLowerCase();const filtered=rows.filter(c=>(c.customer_phone||'').toLowerCase().includes(q)||(c.customer_name||'').toLowerCase().includes(q));$('list').innerHTML=filtered.map(c=>'<div class="item '+(active?.id===c.id?'sel':'')+'" data-id="'+c.id+'"><strong>'+esc(c.customer_name||displayPhone(c.customer_phone)||'Percakapan lama')+'</strong><div class="muted">'+esc(c.customer_phone?displayPhone(c.customer_phone):'Nomor belum tersedia')+'</div><div style="margin-top:7px"><span class="tag '+(c.claimed_by?'lock':'')+'">'+(c.customer_phone?(c.claimed_by?'PIC: '+esc(c.claimed_name||'CS'):'BELUM DI-CLAIM'):'NOMOR BELUM TERCATAT')+'</span> <span class="muted">'+esc(c.status||'NEW')+'</span></div></div>').join('')||'<div class="empty">Belum ada percakapan WhatsApp.</div>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));}
-async function openChat(id){active=rows.find(c=>c.id===id);renderList();renderHead();await loadMessages();}
-function renderHead(){if(!active)return;const mine=active.claimed_by===me.id;const free=!active.claimed_by;$('head').innerHTML='<div><b>'+esc(active.customer_name||displayPhone(active.customer_phone)||'Customer')+'</b><div class="muted">'+esc(active.customer_phone?displayPhone(active.customer_phone):'Nomor tidak tersedia')+' · '+esc(active.status||'NEW')+'</div><div class="muted">'+(active.claimed_by?'PIC: '+esc(active.claimed_name||'CS'):'Belum ada PIC')+'</div></div><div class="actions">'+(free?'<button id="claim" class="btn">Claim Chat</button>':mine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dikunci oleh '+esc(active.claimed_name||'CS lain')+'</span>')+'</div>';if($('claim'))$('claim').onclick=claim;renderComposer();renderLeadReview();}
+async function load(quiet=false){try{
+  const {data,error}=await sb.from('chat_conversations').select('*').order('updated_at',{ascending:false}).limit(200);
+  if(error)throw error;
+  rows=(data||[]);
+  if(canInboxCS&&!isInboxManagement){
+    const {data:queue,error:queueError}=await sb.rpc('hm_list_available_whatsapp_chats');
+    if(queueError)throw queueError;
+    const ownedIds=new Set(rows.map(x=>x.id));
+    rows.push(...(queue||[]).filter(x=>!ownedIds.has(x.id)).map(x=>({...x,_queue:true})));
+  }
+  renderList();if(active){const fresh=rows.find(x=>x.id===active.id);if(fresh){active=fresh;await loadMessages(true);renderHead();}}}catch(e){if(!quiet)$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
+function renderList(){const q=$('search').value.toLowerCase();const filtered=rows.filter(c=>(c.customer_phone||c.phone_hint||'').toLowerCase().includes(q)||(c.customer_name||'').toLowerCase().includes(q));$('list').innerHTML=filtered.map(c=>'<div class="item '+(active?.id===c.id?'sel':'')+'" data-id="'+c.id+'"><strong>'+esc(c.customer_name||displayPhone(c.customer_phone)||'Percakapan')+'</strong><div class="muted">'+esc(c._queue?(c.phone_hint||'Nomor disamarkan'):c.customer_phone?displayPhone(c.customer_phone):'Nomor belum tersedia')+'</div><div style="margin-top:7px"><span class="tag '+(c._queue?'':'lock')+'">'+(c._queue?'CHAT TERSEDIA':c.sales_claimed_by===me.id?'SALES PIC ANDA':c.claimed_by?'CS PIC: '+esc(c.claimed_name||'CS'):'BELUM DI-CLAIM')+'</span> <span class="muted">'+esc(c.status||'NEW')+'</span></div></div>').join('')||'<div class="empty">Tidak ada chat yang menjadi tanggung jawab Anda.</div>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));}
+async function openChat(id){active=rows.find(c=>c.id===id);renderList();renderHead();if(!active?._queue)await loadMessages();else $('msgs').innerHTML='<div class="empty">Chat baru tersedia. Claim untuk membuka isi percakapan.</div>';}
+function renderHead(){if(!active)return;const mine=active.claimed_by===me.id;const salesMine=active.sales_claimed_by===me.id;const free=!active.claimed_by&&!active.sales_claimed_by;$('head').innerHTML='<div><b>'+esc(active.customer_name||displayPhone(active.customer_phone)||'Customer')+'</b><div class="muted">'+esc(active.customer_phone?displayPhone(active.customer_phone):'Nomor tidak tersedia')+' · '+esc(active.status||'NEW')+'</div><div class="muted">'+(active.claimed_by?'PIC: '+esc(active.claimed_name||'CS'):'Belum ada PIC')+'</div></div><div class="actions">'+(free&&canInboxCS?'<button id="claim" class="btn">Claim Chat</button>':mine||salesMine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dipegang PIC lain</span>')+'</div>';if($('claim'))$('claim').onclick=claim;renderComposer();renderLeadReview();}
 
 function renderLeadReview(){
   const el=$('leadReview');if(!el)return;
@@ -212,7 +223,7 @@ async function loadMessages(quiet=false){if(!active)return;const {data,error}=aw
 
 function renderComposer(){
   const el=$('compose');if(!el)return;
-  if(!active||active.claimed_by!==me.id){el.innerHTML='';return;}
+  if(!active||(active.claimed_by!==me.id&&active.sales_claimed_by!==me.id)){el.innerHTML='';return;}
   const last=active.last_inbound_at?Date.parse(active.last_inbound_at):NaN;
   const open=Number.isFinite(last)&&Date.now()-last<=24*60*60*1000&&last<=Date.now()+5*60*1000;
   el.innerHTML='<div class="compose"><textarea id="replyText" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn" '+(open?'':'disabled')+'>Kirim</button></div><div class="muted compose-help '+(open?'':'compose-expired')+'">'+(open?'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.':'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.')+'</div>';

@@ -3938,6 +3938,8 @@ async function hmRenderHomePerformance(){
  }
 }
 function hmOpenHelloMajestyChat(){
+  // Bersihkan panel/menu dashboard sebelum membuka Inbox di tab terpisah.
+  if(typeof hmCloseMainMenu==='function')hmCloseMainMenu();
   const url='whatsapp-inbox.html';
   window.open(url,'_blank');
 }
@@ -6611,6 +6613,8 @@ async function hmOpenLeadChat(leadUuid){
     const {data,error}=await sb.from('chat_conversations').select('id').eq('lead_id',id).order('created_at',{ascending:false}).limit(1).maybeSingle();
     if(error)throw error;
     if(!data?.id)return alert('Percakapan Chat untuk lead ini belum tersedia.');
+    // Tutup panel dashboard agar saat kembali tidak tersisa overlay "Tutup".
+    if(typeof hmCloseMainMenu==='function')hmCloseMainMenu();
     const url='whatsapp-inbox.html';
     window.open(url,'_blank');
   }catch(e){

@@ -4853,6 +4853,7 @@ window.hmRunStockistJournalReclass = async function(){
      ['📊','Dashboard Inventory','Ringkasan stok dan inventory seluruh outlet','openInventoryDashboard()'],
           ['🧾','Master Produk','Database produk dan data master',"openInventorySection('products')"],
      ['📦','Stok Siap Jual','Stok READY yang tersedia per outlet',"openInventorySection('stock')"],
+     ['⏳','Umur Stock','Analisis usia stok berdasarkan tanggal barang masuk','openStockAgeReport()'],
      ['📥','Barang Masuk','Penerimaan dan input barang ke inventory','openReceiveStock()'],
    ['🗂️','Daftar Barang Masuk','Lihat, periksa, dan edit riwayat penerimaan stok (Management)','hmOpenReceivedStockList()'],
      ['🔔','Persetujuan Barang Masuk','Verifikasi barang yang sudah diinput dan menunggu persetujuan','window.openFinanceInventoryApprovals()'],
@@ -4994,6 +4995,10 @@ window.hmRunStockistJournalReclass = async function(){
    if(inventoryAccess && g[1]==='INVENTORY & STOCK'){
      const order=['Dashboard Inventory','Master Produk','Stok Siap Jual','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter & Checker','Persetujuan Walk-In'];
      allowed=order.map(name=>g[2].find(x=>x[1]===name)).filter(Boolean).filter(item=>cards.some(x=>x[1]===item[1]));
+   }
+   if(g[1]==='INVENTORY & STOCK'){
+     // Umur Stock bersifat internal: hanya Management/Divisi dan Fasilitator.
+     if(!mg && !facilitator) allowed=allowed.filter(item=>item[1]!=='Umur Stock');
    }
    if(!allowed.length)return '';
    return '<section class="role-home-menu role-home-category"><div class="role-home-category-title"><span>'+g[0]+' '+esc(g[1])+'</span></div><div class="role-home-submenu">'+allowed.map(item=>{

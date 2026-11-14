@@ -3939,7 +3939,7 @@ async function hmRenderHomePerformance(){
 }
 function hmOpenHelloMajestyChat(){
   const url='whatsapp-inbox.html';
-  window.open(url,'_blank','noopener');
+  window.open(url,'_blank');
 }
 function hmOpenDeveloperRolePreview(){
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
@@ -6612,7 +6612,7 @@ async function hmOpenLeadChat(leadUuid){
     if(error)throw error;
     if(!data?.id)return alert('Percakapan Chat untuk lead ini belum tersedia.');
     const url='whatsapp-inbox.html';
-    window.open(url,'_blank','noopener');
+    window.open(url,'_blank');
   }catch(e){
     console.error('[HM Lead Chat]',e);
     alert(e.message||'Percakapan Chat gagal dibuka.');

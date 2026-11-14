@@ -223,7 +223,12 @@ async function loadMessages(quiet=false){if(!active)return;const {data,error}=aw
 
 function renderComposer(){
   const el=$('compose');if(!el)return;
-  if(!active||(active.claimed_by!==me.id&&active.sales_claimed_by!==me.id)){el.innerHTML='';return;}
+  if(!active){el.innerHTML='';return;}
+  const mineCS=active.claimed_by===me.id;
+  const mineSales=active.sales_claimed_by===me.id;
+  const csMonitoring=mineCS&&!!active.sales_claimed_by;
+  if(!mineCS&&!mineSales){el.innerHTML='';return;}
+  if(csMonitoring){el.innerHTML='<div class="muted">Mode pemantauan CS: Anda dapat membaca seluruh percakapan sampai selesai, tetapi balasan setelah handover hanya dikirim oleh Sales PIC.</div>';return;}
   const last=active.last_inbound_at?Date.parse(active.last_inbound_at):NaN;
   const open=Number.isFinite(last)&&Date.now()-last<=24*60*60*1000&&last<=Date.now()+5*60*1000;
   el.innerHTML='<div class="compose"><textarea id="replyText" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn" '+(open?'':'disabled')+'>Kirim</button></div><div class="muted compose-help '+(open?'':'compose-expired')+'">'+(open?'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.':'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.')+'</div>';

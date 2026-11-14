@@ -20,8 +20,8 @@ window.renderContentPerformance=async function(){
    if(q.error)throw q.error;
    const rows=q.data||[],groups={};
    rows.forEach(r=>{
-    const creator=String(r.content_creator||'—').trim()||'—';
     const tracked=String(r.source_confidence||'').toUpperCase()==='TRACKED_LINK';
+    const creator=tracked?(String(r.content_creator||'').trim()||'—'):'—';
     const platform=tracked?(String(r.source_platform||'').trim().toUpperCase()||'LINK CONTENT CREATOR'):'WHATSAPP';
     const campaign=tracked?(String(r.source_campaign||'').trim()||'Tanpa kampanye'):'Tidak diketahui';
     const key=[creator,platform,campaign].join('|');

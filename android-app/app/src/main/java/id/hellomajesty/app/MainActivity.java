@@ -1,27 +1,35 @@
 package id.hellomajesty.app;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.WebResourceRequest;
-import android.content.Intent;
-import android.net.Uri;
-import android.view.View;
-import android.webkit.ValueCallback;
-import android.webkit.WebChromeClient.FileChooserParams;
-import android.content.ActivityNotFoundException;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private ValueCallback<Uri[]> uploadCallback;
     private static final int FILE_CHOOSER_REQUEST = 4102;
+    private static final int NOTIFICATION_PERMISSION_REQUEST = 4103;
     private static final String APP_URL = "https://hello-majesty-lead-tracker.pages.dev/";
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        HelloMajestyMessagingService.createNotificationChannel(this);
+        requestNotificationPermission();
+        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token ->
+            getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", token).apply()
+        );
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         webView = new WebView(this);
         setContentView(webView);
@@ -32,7 +40,7 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
         webView.setWebViewClient(new WebViewClient() {
-            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme() == null ? "" : uri.getScheme();
                 if ("https".equals(scheme) && uri.getHost() != null &&
@@ -59,6 +67,12 @@ public class MainActivity extends Activity {
         });
         if (savedInstanceState == null) webView.loadUrl(APP_URL);
         else webView.restoreState(savedInstanceState);
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST);
+        }
     }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {

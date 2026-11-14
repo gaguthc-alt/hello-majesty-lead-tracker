@@ -1895,7 +1895,8 @@ window.confirmStockOut=confirmStockOut;
 setInterval(hmRestoreStockCardActions,1500);
 
 window.openStockAgeReport=async function(){
- const currentProfile=window.profile||window.currentProfile||{};\n const role=String(currentProfile.role||'').trim().toUpperCase().replace(/_/g,' ');
+ const currentProfile=window.profile||window.currentProfile||{};
+ const role=String(currentProfile.role||'').trim().toUpperCase().replace(/_/g,' ');
  const isManagement=!!currentProfile.is_management||role==='MANAGEMENT'||role==='DIVISI';
  const isFacilitator=role==='FASILITATOR'||!!inventoryCanFacilitator||!!window.hmCanFacilitator;
  if(!isManagement&&!isFacilitator)throw new Error('Menu Umur Stock hanya dapat diakses Management dan Fasilitator.');

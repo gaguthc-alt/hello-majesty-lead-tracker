@@ -6668,7 +6668,7 @@ async function handoverSales(id){
  share(leadId);
 }
 function serviceHandoverMessage(l){
- const link=location.origin+location.pathname+'?claim='+encodeURIComponent(l.lead_id)+'&type=SERVICE';
+ const link='https://app.hello-majesty.com/?claim='+encodeURIComponent(l.lead_id)+'&type=SERVICE';
  const d=l.initial_data||{}; const nl=String.fromCharCode(10);
  return ['🔧 *HANDOVER SERVICE — SIAP DI-CLAIM TEKNISI*','','*Lead ID:* '+l.lead_id,'*Customer:* '+(l.customer||'-'),'*Outlet:* '+(l.outlet||'-'),'*CS:* '+(l.cs_claimed_by||'-'),'','📱 Perangkat: '+(d.device||l.product||'-'),'🔧 Keluhan: '+(d.complaint||l.need||'-'),'','👉 *CLAIM SERVICE DI SINI*',link,'','Silakan Teknisi yang tersedia melakukan Claim Service melalui link.','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
 }
@@ -6682,7 +6682,7 @@ async function handoverService(id){
 function share(id){
  const l=leads.find(x=>x.lead_id===id);
  if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');
- const link=location.origin+location.pathname+'?claim='+encodeURIComponent(id);
+ const link='https://app.hello-majesty.com/?claim='+encodeURIComponent(id);
  const d=l.initial_data||{};
  const nl=String.fromCharCode(10);
  const lines=['🚨 *LEAD QUALIFIED — SIAP DI-CLAIM SALES*','','*Lead ID:* '+l.lead_id,'*Kebutuhan:* '+(l.need_type||l.need||'-'),''];

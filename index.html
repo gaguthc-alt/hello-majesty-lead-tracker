@@ -4994,7 +4994,7 @@ window.hmRunStockistJournalReclass = async function(){
    // Fungsi inventory utama wajib tampil dengan urutan yang sama seperti menu utama.
    if(inventoryAccess && g[1]==='INVENTORY & STOCK'){
      const order=['Dashboard Inventory','Master Produk','Stok Siap Jual','Umur Stock','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter & Checker','Persetujuan Walk-In'];
-     if(facilitator&&!mg&&!cards.some(x=>x[1]==='Umur Stock'))cards.push(['⏳','Umur Stock','Analisis usia stok berdasarkan tanggal barang masuk','openStockAgeReport()']);
+     if((mg||facilitator)&&!cards.some(x=>x[1]==='Umur Stock'))cards.push(['⏳','Umur Stock','Analisis usia stok berdasarkan tanggal barang masuk','openStockAgeReport()']);
      allowed=order.map(name=>g[2].find(x=>x[1]===name)).filter(Boolean).filter(item=>cards.some(x=>x[1]===item[1]));
    }
    if(g[1]==='INVENTORY & STOCK'){

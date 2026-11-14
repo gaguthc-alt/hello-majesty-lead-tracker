@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "439732318734",
+    "project_id": "hello-majesty-notification",
+    "storage_bucket": "hello-majesty-notification.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:439732318734:android:a8e677cecb385e0c37425f",
+        "android_client_info": {
+          "package_name": "id.hellomajesty.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6eAqimmthpbMwHKsFoqSGb72c27pseTs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

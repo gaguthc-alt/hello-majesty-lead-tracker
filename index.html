@@ -2691,6 +2691,36 @@ function hmResetMainMenuButtonLabels(){
   if(b&&item)b.innerHTML=item[0]+' '+esc(item[1]);
  });
 }
+// UMUR STOCK: single delegated capture handler, independent of menu re-render.
+if(!window.__hmStockAgeSingleClickCapture){
+ window.__hmStockAgeSingleClickCapture=true;
+ document.addEventListener('click',function(e){
+  const btn=e.target&&e.target.closest?e.target.closest('[data-hm-menu-title="Umur Stock"]'):null;
+  if(!btn)return;
+  e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+  if(typeof hmCloseMainMenu==='function')hmCloseMainMenu();
+  hmActiveMainMenu='Umur Stock';
+  if(typeof hmSetMainMenuButtonOpen==='function')hmSetMainMenuButtonOpen('Umur Stock');
+  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),pt=document.getElementById('hmMenuPanelTitle');
+  if(panel&&body){if(pt)pt.textContent='Umur Stock';body.innerHTML='<div class="box">⏳ Memuat Umur Stock...</div>';panel.classList.remove('hidden');}
+  Promise.resolve().then(async()=>{
+   if(typeof window.openStockAgeReport!=='function'){
+    let loader=window.__hmInventoryModulePromise;
+    if(!loader){
+     loader=typeof window.hmLoadModule==='function'?window.hmLoadModule('inventory'):Promise.reject(new Error('Loader Inventory tidak tersedia.'));
+     window.__hmInventoryModulePromise=loader;
+    }
+    await loader;
+   }
+   if(typeof window.openStockAgeReport!=='function')throw new Error('Fungsi Umur Stock tidak tersedia setelah modul Inventory dimuat.');
+   await window.openStockAgeReport();
+  }).catch(ex=>{
+   console.error('[HM] Umur Stock single-click gagal:',ex);
+   if(panel&&body){if(pt)pt.textContent='Umur Stock';body.innerHTML='<div class="box" style="color:#b42318"><b>Umur Stock gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:10px" onclick="window.location.reload()">Muat ulang aplikasi</button></div>';panel.classList.remove('hidden');}
+   else alert('Umur Stock gagal dibuka: '+(ex?.message||ex));
+  });
+ },true);
+}
 // PUSAT PERSEDIAAN CLICK FIX: route cards explicitly, including lazy-loading Inventory.
 if(!window.__hmStockistClickCapture){
  window.__hmStockistClickCapture=true;

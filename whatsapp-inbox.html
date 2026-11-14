@@ -93,7 +93,7 @@ function renderLeadReview(){
     '<div class="review-note">Form ini mengikuti mekanisme WA Masuk / Lead Baru. Setelah disimpan, lead masuk ke Lead Tracker dengan status awal CS LOCK. Kualifikasi, penilaian Qualified/Potensial, follow-up, dan handover dilakukan melalui alur Lead Tracker yang sama.</div>'+
     '<div class="lead-review-grid">'+
       '<label><span class="field-label">Nama Customer *</span><input id="lrName" maxlength="120" value="'+esc(active.customer_name||'')+'" placeholder="Nama customer"></label>'+
-      '<label><span class="field-label">No. WhatsApp</span><input value="'+esc(displayPhone(active.customer_phone||''))+'" readonly></label>'+
+
       '<label><span class="field-label">Lokasi Customer</span><input id="lrLocation" maxlength="180" placeholder="Desa / kelurahan, kecamatan"></label>'+
       '<label><span class="field-label">Kebutuhan *</span><select id="lrNeedType" onchange="renderInboxNeedFields()"><option value="">— Pilih Kebutuhan —</option><option value="PEMBELIAN">PEMBELIAN</option><option value="SERVICE">SERVICE</option><option value="TUKAR TAMBAH">TUKAR TAMBAH</option><option value="KREDIT/CICILAN">KREDIT/CICILAN</option></select></label>'+
     '</div><div id="lrNeedFields"></div>'+

@@ -8593,7 +8593,8 @@ async function renderContentPerformance(){
  }
  const d=data||{}, fmt=n=>Number(n||0).toLocaleString('id-ID');
  if(d.management){
-    const month=String(contentSelectedMonth||new Date().toISOString().slice(0,7));
+    // Selector bulan dapat mengirim YYYY-MM atau YYYY-MM-DD; normalisasi agar tidak menggandakan tanggal.
+    const month=String(contentSelectedMonth||new Date().toISOString().slice(0,7)).slice(0,7);
     const startDate=month+'-01';
     const endDate=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),1).toISOString().slice(0,10);
     let leadRows=[],leadErr=null,from=0;

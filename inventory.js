@@ -1933,7 +1933,7 @@ window.openStockAgeReport=async function(){
    const product=[s.product,s.variant,s.color].filter(Boolean).join(' — ')||'Produk';
    const received=s._receivedDate?s._receivedDate.toLocaleDateString('id-ID'):'Tanggal tidak tersedia';
    const age=s._ageDays===null?'Tidak diketahui':rp(s._ageDays)+' hari';
-   const waText='📦 KOORDINASI UMUR STOCK — HELLO MAJESTY\\n\\nProduk: '+product+'\\nUmur stock: '+age+'\\nOutlet: '+(s.outlet||'-')+'\\nStatus: '+(s.status||'-')+'\\nTanggal masuk: '+received+'\\n\\nMohon koordinasi tindak lanjut untuk unit ini. Terima kasih.';
+   const waText='📦 KOORDINASI UMUR STOCK — HELLO MAJESTY\n\nProduk: '+product+'\nUmur stock: '+age+'\nOutlet: '+(s.outlet||'-')+'\nStatus: '+(s.status||'-')+'\nTanggal masuk: '+received+'\n\nMohon koordinasi tindak lanjut untuk unit ini. Terima kasih.';
    return '<div class="lead" data-age-row="'+esc(s._ageBucket)+'"><div class="row" style="justify-content:space-between;gap:8px"><b>'+String(i+1).padStart(2,'0')+'. '+esc(product)+'</b><b>'+ (s._ageDays===null?'—':rp(s._ageDays)+' hari')+'</b></div><div class="small">Outlet: <b>'+esc(s.outlet||'-')+'</b> • Status: '+esc(s.status||'-')+'</div><div class="small">Masuk: '+received+' • Umur: '+esc(s._ageBucket)+'</div><button type="button" class="secondary" style="margin-top:10px;width:100%" data-wa-text="'+esc(waText)+'" onclick="window.hmShareStockAgeToWhatsApp(this)">🟢 Kirim ke WA</button></div>';
   }).join('');
   window.hmShareStockAgeToWhatsApp=async function(button){

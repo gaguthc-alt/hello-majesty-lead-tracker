@@ -9,6 +9,10 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -33,14 +37,25 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(android.graphics.Color.rgb(5, 16, 32));
         getWindow().setNavigationBarColor(android.graphics.Color.rgb(5, 16, 32));
         getWindow().getDecorView().setSystemUiVisibility(0);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         HelloMajestyMessagingService.createNotificationChannel(this);
         requestNotificationPermission();
         FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token ->
             getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", token).apply()
         );
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(android.graphics.Color.rgb(5, 16, 32));
         webView = new WebView(this);
-        setContentView(webView);
+        root.addView(webView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            androidx.core.graphics.Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
+        setContentView(root);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);

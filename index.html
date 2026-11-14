@@ -3832,6 +3832,15 @@ async function hmRenderHomePerformance(){
    const scopeLabel=isManagement?'Seluruh outlet':'Outlet • '+(profile.outlet||'-');
    const {data:targetRows,error:targetError}=await db.from('monthly_outlet_targets').select('outlet,wa_target,qualified_target,closing_target').eq('month_start',monthKey).eq('active',true).order('outlet');
    if(targetError)throw targetError;
+   let hasHelloMajestyAssignment=false;
+   if(!isManagement){
+     const {data:{user:currentUser}}=await db.auth.getUser();
+     if(currentUser?.id){
+       const {data:unitAssignments,error:unitAssignmentError}=await db.from('team_unit_assignments').select('outlet').eq('user_id',currentUser.id).eq('active',true);
+       if(unitAssignmentError)throw unitAssignmentError;
+       hasHelloMajestyAssignment=(unitAssignments||[]).some(x=>String(x.outlet||'').trim().toLowerCase()==='hello majesty');
+     }
+   }
    const ownOutletTarget=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()===String(profile.outlet||'').trim().toLowerCase())||{};
    const outletTargets={claim_cs:Number(ownOutletTarget.wa_target||0),handover:Number(ownOutletTarget.qualified_target||0),cs_closing:Number(ownOutletTarget.closing_target||0),sales_closing:Number(ownOutletTarget.closing_target||0)};
    let outletSections='';
@@ -3863,25 +3872,27 @@ async function hmRenderHomePerformance(){
    }
    let spaceSection='';
    const isRefillTeam=!isManagement&&String(profile.outlet||'').trim().toLowerCase()==='majesty refill phone';
-   if(isRefillTeam){
+   if(isRefillTeam || hasHelloMajestyAssignment){
+     const helloOutlet=isRefillTeam?'Majesty Space':'Hello Majesty';
+     const helloTitle=isRefillTeam?'PERFORMA TIM • HELLO MAJESTY':'PERFORMA TIM • HELLO MAJESTY';
      const {data:spaceData,error:spaceError}=await db.rpc('home_performance_summary_scoped',{
        p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),
-       p_employee_name:'',p_outlet:'Majesty Space',p_all_outlets:false
+       p_employee_name:'',p_outlet:helloOutlet,p_all_outlets:false
      });
      if(spaceError)throw spaceError;
      const sr=Array.isArray(spaceData)?spaceData[0]:spaceData;
      const spaceTotal={claim_cs:Number(sr?.total_claim_cs||0),handover:Number(sr?.total_handover||0),cs_closing:Number(sr?.total_cs_closing||0),sales_closing:Number(sr?.total_sales_closing||0)};
-     const spaceTarget=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()==='majesty space')||{};
+     const spaceTarget=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()===helloOutlet.toLowerCase())||{};
      const spaceTargets={claim_cs:Number(spaceTarget.wa_target||0),handover:Number(spaceTarget.qualified_target||0),cs_closing:Number(spaceTarget.closing_target||0),sales_closing:Number(spaceTarget.closing_target||0)};
-     spaceSection=section('PERFORMA TIM • HELLO MAJESTY',spaceTotal,'Tim Pusat • Sales, Hunter & Checker',spaceTargets);
+     spaceSection=section(helloTitle,spaceTotal,'Tim Pusat • Sales, Hunter & Checker',spaceTargets);
    }
    let personalSections='';
    if(!isManagement){
      personalSections=section('PERFORMA SAYA • '+(profile.outlet||'-'),own,'Aktivitas pribadi di outlet ini',null,false);
-     if(String(profile.outlet||'').trim().toLowerCase()==='majesty refill phone'){
+     if(String(profile.outlet||'').trim().toLowerCase()==='majesty refill phone' || hasHelloMajestyAssignment){
        const {data:mySpaceData,error:mySpaceError}=await db.rpc('home_performance_summary_scoped',{
          p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),
-         p_employee_name:profile.name||'',p_outlet:'Majesty Space',p_all_outlets:false
+         p_employee_name:profile.name||'',p_outlet:(String(profile.outlet||'').trim().toLowerCase()==='majesty refill phone'?'Majesty Space':'Hello Majesty'),p_all_outlets:false
        });
        if(mySpaceError)throw mySpaceError;
        const mr=Array.isArray(mySpaceData)?mySpaceData[0]:mySpaceData;

@@ -15,6 +15,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import org.json.JSONObject;
+import androidx.core.view.WindowCompat;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends Activity {
@@ -26,6 +27,13 @@ public class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
+                | android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        getWindow().setStatusBarColor(android.graphics.Color.rgb(5, 16, 32));
+        getWindow().setNavigationBarColor(android.graphics.Color.rgb(5, 16, 32));
+        getWindow().getDecorView().setSystemUiVisibility(0);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         HelloMajestyMessagingService.createNotificationChannel(this);
         requestNotificationPermission();
         FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token ->

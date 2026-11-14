@@ -2799,7 +2799,7 @@ function hmCloseMainMenu(){
 function hmInlineIdsForMenu(key){
  const k=String(key||'').trim().toLowerCase();
  // Tentukan panel berdasarkan TUJUAN aksi, bukan judul tombol.
- // Ini mencegah "Tanya AI" / "Content Performance" tertukar dengan menu lain.
+ // Ini mencegah "Tanya AI" / "Pencapaian Content Creator" tertukar dengan menu lain.
  if(k==='hmopentargetoutlet()')return ['targetBoard'];
  if(k==='openaccountingmodule("journal")'||k==='openaccountingmodule("ledger")'||k==='openaccountingmodule("balance")'||k==='openaccountingmodule("profit")'||k==='openaccountingmodule("health")'||k==='openaccountingmodule("transfer")')return ['accountingDetail'];
  if(k==='hmopencontentperformance()')return ['contentPerformance'];
@@ -3081,8 +3081,8 @@ async function hmOpenContentPerformance(){
   const title=document.getElementById('hmMenuPanelTitle');
   if(!panel||!body)throw new Error('Panel Menu Utama belum siap.');
   const node=document.getElementById('contentPerformance');
-  if(!node)throw new Error('Panel Content Performance tidak ditemukan.');
-  if(title)title.textContent='🎬 Content Performance';
+  if(!node)throw new Error('Panel Pencapaian Content Creator tidak ditemukan.');
+  if(title)title.textContent='🎬 Pencapaian Content Creator';
   if(node.parentNode!==body){
     const placeholder=document.createComment('HM_INLINE_contentPerformance');
     node.parentNode?.insertBefore(placeholder,node);
@@ -3093,7 +3093,7 @@ async function hmOpenContentPerformance(){
   panel.classList.remove('hidden');
   const modal=document.getElementById('modal');
   if(modal)modal.classList.add('hidden');
-  node.innerHTML='<div class="small">⏳ Memuat Content Performance...</div>';
+  node.innerHTML='<div class="small">⏳ Memuat Pencapaian Content Creator...</div>';
   try{
     await ensureSupabase();
     if(!profile?.user_id)throw new Error('Session belum siap. Silakan coba lagi.');
@@ -3102,16 +3102,16 @@ async function hmOpenContentPerformance(){
         const s=document.createElement('script');
         s.src='content-performance-v3.js?v=20261006-1';
         s.onload=resolve;
-        s.onerror=()=>reject(new Error('Modul Content Performance gagal dimuat.'));
+        s.onerror=()=>reject(new Error('Modul Pencapaian Content Creator gagal dimuat.'));
         document.head.appendChild(s);
       });
     }
-    if(typeof window.renderContentPerformance!=='function')throw new Error('Modul Content Performance belum siap.');
+    if(typeof window.renderContentPerformance!=='function')throw new Error('Modul Pencapaian Content Creator belum siap.');
     await window.renderContentPerformance();
     if(openSeq!==hmMenuActionSeq)return;
   }catch(ex){
     if(openSeq!==hmMenuActionSeq)return;
-    console.error('[HM] Content Performance:',ex);
+    console.error('[HM] Pencapaian Content Creator:',ex);
     node.innerHTML='<h3 style="margin-top:0">🎬 CONTENT PERFORMANCE</h3><div class="small" style="color:#b91c1c">Gagal memuat data: '+esc(ex?.message||'Terjadi kesalahan')+'</div><div class="row" style="margin-top:10px"><button class="secondary" type="button" onclick="hmOpenContentPerformance()">↻ Coba Lagi</button><button class="secondary" type="button" onclick="hmCloseMainMenu()">✖ Tutup</button></div>';
   }
   node.classList.remove('hidden');
@@ -4062,7 +4062,7 @@ function renderRoleHome(){
    add('📋','Riwayat Stok','Riwayat aktivitas barang masuk, keluar & mutasi',"hmOpenInventoryFeature('riwayat')");
    add('⚠️','Penyesuaian Stok','Koreksi selisih stok dengan alasan',"hmOpenInventoryFeature('penyesuaian')");
    add('🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')");
-   add('🎬','Content Performance','Monitoring seluruh content','hmOpenContentPerformance()');
+   add('🎬','Pencapaian Content Creator','Pencapaian lead Content Creator','hmOpenContentPerformance()');
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('📊','Dashboard Inventory Mitra','Posisi stok READY, modal belum disetor & settlement mitra','window.openCellFinanceReport()');
    add('🤝','Pengelolaan Unit Bisnis','Modal, kewajiban & settlement antarunit bisnis','window.openPartnerSettlement()');
@@ -4083,7 +4083,7 @@ function renderRoleHome(){
    add('👥','Lead & Handover','Koordinasi lead tim','hmOpenLeadHandover()');
    add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Product & Stock','Stock & approval','openInventorySection(\'stock\')');
-   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
+   add('🎬','Pencapaian Content Creator','Pencapaian Content Creator','hmOpenContentPerformance()');
    add('📊','Laporan Fasilitator','Penjualan & Stock READY','hmOpenFacilitatorReportsInline()');
     add('🤝','Pengelolaan Unit Bisnis','Penerimaan stok, verifikasi IMEI, barang terjual & persiapan settlement sesuai outlet','window.openPartnerSettlement()');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
@@ -4099,7 +4099,7 @@ function renderRoleHome(){
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');
    add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');
    add('📋','Closing Saya','Semua closing saya: Lead, Walk-In & Closing Stock','openMyClosings()');
-   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
+   add('🎬','Pencapaian Content Creator','Pencapaian Content Creator','hmOpenContentPerformance()');
    add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan sales','openAI()');
@@ -4109,7 +4109,7 @@ function renderRoleHome(){
    add('📖','Brosur','Materi produk & promosi','openBrochures()');
    add('👥','Lead Tracker','Follow-up customer','hmOpenLeadTracker()');
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');
-   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
+   add('🎬','Pencapaian Content Creator','Pencapaian Content Creator','hmOpenContentPerformance()');
    add('📦','Product & Stock','Ketersediaan produk','openInventorySection(\'stock\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan CS','openAI()');
@@ -4119,10 +4119,10 @@ function renderRoleHome(){
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
    add('🔴','Perlu Perhatian','Lead aktif yang perlu segera ditindaklanjuti','showNeedsAttention()');
  }else if(creator){
-   add('🎬','Content Performance','Views, comments & DM','hmOpenContentPerformance()');
+   add('🎬','Pencapaian Content Creator','Lead berdasarkan sumber dan kampanye','hmOpenContentPerformance()');
    add('📖','Brosur','Materi produk','openBrochures()');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
-   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
+   add('🎬','Pencapaian Content Creator','Pencapaian Content Creator','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Ide content & DM','openAI()');
    add('💰','Komisi Saya','Komisi pribadi bulan ini & sebelumnya','openCommission()');
  }else if(has('ADMIN FINANCE MAJESTY CELL')){
@@ -4139,11 +4139,11 @@ function renderRoleHome(){
    add('🤝','Hutang & Piutang','Hutang, piutang & jatuh tempo','openFinanceSection("payable")');
    add('💰','Komisi Tim','Perhitungan komisi dan reward tim','openFinanceSection("payroll")');
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
-   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
+   add('🎬','Pencapaian Content Creator','Pencapaian Content Creator','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Bantuan finance','openAI()');
  }else{
    add('📦','Product & Stock','Produk & ketersediaan stock','openInventorySection(\'stock\')');
-   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
+   add('🎬','Pencapaian Content Creator','Pencapaian Content Creator','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
   // Ensure authorized facilitators always receive the Pengelolaan Unit Bisnis card.
@@ -4201,7 +4201,7 @@ function renderRoleHome(){
    add('📱','Lead Baru','Input lead customer','hmOpenLeadNewInline()');
    add('📦','Product & Stock','Produk siap dijual','openInventorySection(\'stock\')');
    if(sales)add('📋','Closing Saya','Semua closing saya: Lead, Walk-In & Closing Stock','openMyClosings()');
-   add('🎬','Content Performance','Aktivitas content','hmOpenContentPerformance()');
+   add('🎬','Pencapaian Content Creator','Pencapaian Content Creator','hmOpenContentPerformance()');
    add('📊','Laporan Penjualan','Hasil penjualan','openInventorySection(\'sales\')');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan CS & Sales','openAI()');
@@ -4893,7 +4893,7 @@ window.hmRunStockistJournalReclass = async function(){
         ['🔎','Stock Opname','Pengecekan stok fisik vs sistem',"hmOpenInventoryFeature('opname')"]
    ]],
    ['🎬','CONTENT & PROMOTION',[
-     ['🎬','Content Performance','Views, comments & DM','hmOpenContentPerformance()'],
+     ['🎬','Pencapaian Content Creator','Lead berdasarkan sumber dan kampanye','hmOpenContentPerformance()'],
      ['📖','Brosur','Materi produk & promosi','openBrochures()']
    ]],
    ['💎','KOMISI',[
@@ -5751,8 +5751,8 @@ window.hmOpenCriticalMainMenu=hmOpenCriticalMainMenu;
      const item=cards.find(x=>String(x[1]||'')===title);
      if(!item)return;
      const action=String(item[3]||'').trim();
-     if(title==='Content Performance'){
-       // Content Performance tetap memakai jalur inline khusus.
+     if(title==='Pencapaian Content Creator'){
+       // Pencapaian Content Creator tetap memakai jalur inline khusus.
        hmCloseMainMenu();
        hmActiveMainMenu=title;
        hmSetMainMenuButtonOpen(title);
@@ -5864,7 +5864,7 @@ function applyRoleVisibility(){
  // Lead/Stats tetap tersedia melalui menu masing-masing.
  toggle('leadTrackerBox',false);
  toggle('stats',false);
- toggle('contentPerformance',hmActiveMainMenu==='Content Performance');
+ toggle('contentPerformance',hmActiveMainMenu==='Pencapaian Content Creator');
  toggle('inventorySection',false);
  toggle('managementStockSummary',false);
  toggle('inventoryDashboardBtn',mg||facilitator||cs);
@@ -8550,7 +8550,7 @@ function toggleContentPerformance(ev){
 }
 window.toggleContentPerformance=toggleContentPerformance;
 function decorateContentPerformance(){
-  // Content Performance ditampilkan langsung tanpa state toggle.
+  // Pencapaian Content Creator ditampilkan langsung tanpa state toggle.
   // Sengaja dibuat sederhana agar tidak bergantung pada inisialisasi UI tambahan.
   return;
 }
@@ -8576,7 +8576,7 @@ async function renderContentPerformance(){
    const qx=profile?.is_management?q:q.eq('outlet',profile?.outlet||'');
    const fb=await qx;
    if(fb.error){
-     host.innerHTML='<h3>🎬 Content Performance</h3><p class="small">Gagal memuat data: '+esc(x.error.message)+'</p>';
+     host.innerHTML='<h3>🎬 Pencapaian Content Creator</h3><p class="small">Gagal memuat data: '+esc(x.error.message)+'</p>';
      return;
    }
    const rows=fb.data||[];
@@ -8689,7 +8689,7 @@ async function showContentManagementDetail(){
  const locks=await sb.from('content_monthly_locks').select('outlet').eq('month_start',month);
  const locked=new Set((locks.data||[]).map(x=>x.outlet));
  const outlets=[...new Set(posts.filter(p=>p.month_start===month).map(p=>p.outlet))];
- $('mt').textContent='🎬 Content Performance — '+month.slice(0,7);
+ $('mt').textContent='🎬 Pencapaian Content Creator — '+month.slice(0,7);
  $('mb').innerHTML=outlets.sort().map(outlet=>{
    const people=Object.entries(groups).filter(([k])=>k.startsWith(outlet+' • '));
    const total=posts.filter(p=>p.month_start===month&&p.outlet===outlet);

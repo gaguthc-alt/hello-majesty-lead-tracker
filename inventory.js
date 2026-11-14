@@ -1909,21 +1909,24 @@ window.openStockAgeReport=async function(){
    const date=raw?new Date(raw):null;
    const valid=date&&!Number.isNaN(date.getTime());
    const days=valid?Math.max(0,Math.floor((now-date)/(24*60*60*1000))):null;
-   const bucket=days===null?'Tanggal tidak tersedia':days<=30?'0–30 hari':days<=60?'31–60 hari':days<=90?'61–90 hari':days<=180?'91–180 hari':'>180 hari';
+   const bucket=days===null?'Tanggal tidak tersedia':days<=7?'0–7 hari':days<=30?'8–30 hari':days<=60?'31–60 hari':days<=90?'61–90 hari':days<=180?'91–180 hari':'>180 hari';
    return {...s,_ageDays:days,_ageBucket:bucket,_receivedDate:valid?date:null};
   });
-  const buckets=['0–30 hari','31–60 hari','61–90 hari','91–180 hari','>180 hari','Tanggal tidak tersedia'];
+  const buckets=['0–7 hari','8–30 hari','31–60 hari','61–90 hari','91–180 hari','>180 hari','Tanggal tidak tersedia'];
   const count=b=>rows.filter(x=>x._ageBucket===b).length;
   const avg=rows.filter(x=>x._ageDays!==null);
   const average=avg.length?Math.round(avg.reduce((n,x)=>n+x._ageDays,0)/avg.length):0;
   const rp=n=>Number(n||0).toLocaleString('id-ID');
-  const summary='<div class="stats" style="margin:10px 0">'+invStat('Total Stock Aktif',rows.length)+invStat('Umur Rata-rata',average+' hari')+invStat('Di atas 90 hari',count('91–180 hari')+count('>180 hari'))+'</div>';
+  const over7=rows.filter(x=>x._ageDays!==null&&x._ageDays>7).length;
+  const over30=rows.filter(x=>x._ageDays!==null&&x._ageDays>30).length;
+  const summary='<div class="stats" style="margin:10px 0">'+invStat('Total Stock Aktif',rows.length)+invStat('Umur Rata-rata',average+' hari')+invStat('Di atas 7 hari',over7)+invStat('Di atas 30 hari',over30)+'</div>';
   const distribution='<div class="box"><b>📊 Sebaran Umur Stock</b>'+buckets.map(b=>'<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #e2e8f0"><span>'+esc(b)+'</span><b>'+rp(count(b))+' unit</b></div>').join('')+'</div>';
   const outletNames=[...new Set(rows.map(x=>String(x.outlet||'Tidak diketahui')))].sort();
   const outletHtml=outletNames.map(o=>{
    const list=rows.filter(x=>String(x.outlet||'Tidak diketahui')===o);
-   const old=list.filter(x=>x._ageDays!==null&&x._ageDays>90).length;
-   return '<div class="lead"><b>'+esc(o)+'</b><div class="small">Total '+list.length+' unit • Lebih dari 90 hari: '+old+' unit</div></div>';
+   const over7=list.filter(x=>x._ageDays!==null&&x._ageDays>7).length;
+   const over30=list.filter(x=>x._ageDays!==null&&x._ageDays>30).length;
+   return '<div class="lead"><b>'+esc(o)+'</b><div class="small">Total '+list.length+' unit • Di atas 7 hari: '+over7+' unit • Di atas 30 hari: '+over30+' unit</div></div>';
   }).join('');
   const detail=rows.slice().sort((a,b)=>(b._ageDays??-1)-(a._ageDays??-1)).map((s,i)=>{
    const product=[s.product,s.variant,s.color].filter(Boolean).join(' — ')||'Produk';

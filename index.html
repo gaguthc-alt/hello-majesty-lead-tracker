@@ -5380,27 +5380,43 @@ window.hmRunStockistJournalReclass = async function(){
        });
        return;
      }
-     // UMUR STOCK: dispatch sebelum handler Inventory generik.
+     // UMUR STOCK: satu jalur klik, gunakan loader modul bersama agar klik pertama langsung membuka laporan.
      if(title==='Umur Stock' || action==='openStockAgeReport()'){
        hmCloseMainMenu();
        hmActiveMainMenu=title;
        hmSetMainMenuButtonOpen(title);
        void (async()=>{
          if(typeof window.openStockAgeReport!=='function'){
-           await new Promise((resolve,reject)=>{
-             const sc=document.createElement('script');
-             sc.src='inventory.js?v=20261115-stock-age-menu-fix-2';
-             sc.onload=resolve;
-             sc.onerror=()=>reject(new Error('Modul Umur Stock gagal dimuat.'));
-             document.head.appendChild(sc);
-           });
+           if(typeof window.hmLoadModule==='function'){
+             await window.hmLoadModule('inventory');
+           }else{
+             let loader=window.__hmInventoryModulePromise;
+             if(!loader){
+               loader=new Promise((resolve,reject)=>{
+                 const existing=[...document.scripts].find(x=>/inventory\.js(?:\?|$)/.test(x.src));
+                 if(existing){
+                   if(existing.dataset.hmLoaded==='1'){resolve();return;}
+                   existing.addEventListener('load',resolve,{once:true});
+                   existing.addEventListener('error',()=>reject(new Error('Modul Inventory gagal dimuat.')),{once:true});
+                   return;
+                 }
+                 const sc=document.createElement('script');
+                 sc.src='inventory.js?v=20261115-stock-age-single-click-1';
+                 sc.onload=()=>{sc.dataset.hmLoaded='1';resolve();};
+                 sc.onerror=()=>reject(new Error('Modul Inventory gagal dimuat.'));
+                 document.head.appendChild(sc);
+               });
+               window.__hmInventoryModulePromise=loader;
+             }
+             await loader;
+           }
          }
-         if(typeof window.openStockAgeReport!=='function')throw new Error('Fungsi Umur Stock tidak tersedia.');
+         if(typeof window.openStockAgeReport!=='function')throw new Error('Fungsi Umur Stock tidak tersedia setelah modul Inventory dimuat.');
          await window.openStockAgeReport();
        })().catch(ex=>{
          console.error('[HM] Umur Stock gagal dibuka:',ex);
          const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),titleEl=document.getElementById('hmMenuPanelTitle');
-         if(panel&&body){if(titleEl)titleEl.textContent='⚠️ Umur Stock';body.innerHTML='<div class="box" style="color:#b42318"><b>Umur Stock gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div></div>';panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}
+         if(panel&&body){if(titleEl)titleEl.textContent='⚠️ Umur Stock';body.innerHTML='<div class="box" style="color:#b42318"><b>Umur Stock gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:10px" onclick="window.location.reload()">Muat ulang aplikasi</button></div>';panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}
          else alert('Umur Stock gagal dibuka: '+(ex?.message||ex));
        });
        return;

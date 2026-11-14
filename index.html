@@ -6255,11 +6255,12 @@ function waNumber(v){
  return d;
 }
 function waShare(text){
- // Normalisasi newline sebelum dikirim ke WhatsApp.
- // Menangani newline asli dan teks literal "\\n".
+ // Buka WhatsApp pada tab aktif agar tidak ditolak popup blocker Chrome,
+ // terutama saat fungsi dipanggil setelah proses async. Pengguna tetap
+ // memilih sendiri kontak atau grup tujuan di WhatsApp.
  const normalized=String(text??'').replace(/\\n/g,'\n');
  const url='https://wa.me/?text='+encodeURIComponent(normalized);
- window.open(url,'_blank');
+ window.location.assign(url);
 }
 function rupiahReport(v){return 'Rp'+Number(v||0).toLocaleString('id-ID')}
 async function getFacilitatorReport(period){

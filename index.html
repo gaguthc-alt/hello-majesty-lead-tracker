@@ -2624,6 +2624,25 @@ function hmResetMainMenuButtonLabels(){
      });
    },true);
  }
+ const stockAgeBtn=host.querySelector('[data-hm-menu-title="Umur Stock"]');
+ if(stockAgeBtn && !stockAgeBtn.dataset.hmStockAgeCapture){
+   stockAgeBtn.dataset.hmStockAgeCapture='1';
+   stockAgeBtn.addEventListener('click',function(e){
+     e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+     hmCloseMainMenu();hmActiveMainMenu='Umur Stock';hmSetMainMenuButtonOpen('Umur Stock');
+     const run=async()=>{
+       if(typeof window.openStockAgeReport!=='function')await hmLoadModule('inventory');
+       if(typeof window.openStockAgeReport!=='function')throw new Error('Fungsi Umur Stock belum tersedia setelah modul Inventory dimuat.');
+       await window.openStockAgeReport();
+     };
+     void run().catch(ex=>{
+       console.error('[HM] Umur Stock direct gagal:',ex);
+       const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
+       if(panel&&body){if(title)title.textContent='⚠️ Umur Stock';body.innerHTML='<div class="box" style="color:#b42318"><b>Umur Stock gagal dibuka</b><div style="margin-top:6px">'+esc(ex?.message||String(ex))+'</div><button type="button" class="secondary" style="margin-top:10px" onclick="window.location.reload()">Muat ulang aplikasi</button></div>';panel.classList.remove('hidden');panel.scrollIntoView({behavior:'smooth',block:'start'});}
+       else alert('Umur Stock gagal dibuka: '+(ex?.message||ex));
+     });
+   },true);
+ }
  const stockReceiveBtn=host.querySelector('[data-hm-menu-title="Barang Masuk"]');
  if(stockReceiveBtn && !stockReceiveBtn.dataset.hmStockReceiveCapture){
    stockReceiveBtn.dataset.hmStockReceiveCapture='1';

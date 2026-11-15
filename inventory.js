@@ -184,9 +184,8 @@ async function reviewUnifiedWalkin(id,kind,action){
    note=prompt(kind==='STOCK'?'Alasan penolakan Closing Stock:':'Alasan penolakan Walk-In:')||'';
    if(!note.trim())return alert('Alasan wajib diisi.');
  }
- // Siapkan tab WhatsApp saat gesture klik masih aktif agar Chrome Android tidak memblokir pop-up setelah proses async.
- const sendWA=confirm('Proses '+(kind==='STOCK'?'Closing Stock':'Walk-In')+(action==='APPROVE'?' untuk disetujui':' untuk ditolak')+'.\n\nJika berhasil, buka WhatsApp untuk mengirim pemberitahuan?');
- const waTab=sendWA?window.open('about:blank','_blank'):null;
+ // Hindari tab about:blank; di Chrome Android tab kosong dapat tertinggal setelah proses async.
+ const sendWA=confirm('Proses '+(kind==='STOCK'?'Closing Stock':'Walk-In')+(action==='APPROVE'?' untuk disetujui':' untuk ditolak')+'.\\n\\nJika berhasil, tampilkan tombol untuk mengirim pemberitahuan WhatsApp?');
  const rpcName=kind==='STOCK'?'review_stock_sale_approval':'review_walkin_sale_approval';
  try{
    const r=await sb.rpc(rpcName,{p_approval_id:id,p_action:action,p_note:note});
@@ -249,12 +248,15 @@ async function reviewUnifiedWalkin(id,kind,action){
      panelBody.prepend(notice);
    }
    if(sendWA){
-     if(waTab&&!waTab.closed)waTab.location.href='https://wa.me/?text='+encodeURIComponent(msg);
-     else alert('WhatsApp tidak dapat dibuka otomatis oleh browser. Izinkan pop-up untuk situs Hello Majesty, lalu coba lagi.');
+     window.hmApprovalWhatsAppMessage=msg;
+     const waButton=document.createElement('button');
+     waButton.type='button';
+     waButton.className='success';
+     waButton.style.cssText='width:100%;margin-top:10px;min-height:46px;font-weight:800';
+     waButton.textContent='🟢 Buka WhatsApp & Kirim Pemberitahuan';
+     waButton.addEventListener('click',()=>window.open('https://wa.me/?text='+encodeURIComponent(window.hmApprovalWhatsAppMessage||''),'_blank'));
+     if(panelBody)panelBody.prepend(waButton);
    }
- }catch(e){
-   if(waTab&&!waTab.closed)waTab.close();
-   alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+String(e?.message||e));
  }
 }
 async function reviewWalkinSale(id,action){

@@ -129,7 +129,7 @@ window.renderContentPerformance=async function(){
       '',
       '*Rincian sumber & kampanye*',
       ...d.items.filter(x=>x.creator!=='—').map(x=>'• '+x.creator+': '+x.platform+' / '+x.campaign+' — '+cpFmt(x.leads)+' lead')
-     ].join('\\n');
+     ].join('\n');
      const combined=[
       '🎬 *LAPORAN PENCAPAIAN CONTENT CREATOR*',
       '*HELLO MAJESTY — Built on Trust*','',
@@ -137,7 +137,7 @@ window.renderContentPerformance=async function(){
       section('📊 PERFORMA BULAN INI (BERJALAN)',monthP,month),'',
       'Laporan dibuat dari Lead Tracker berdasarkan tanggal lead dibuat. Penyesuaian manual ditandai pada rincian.',
       '— HELLO MAJESTY'
-     ].join('\\n');
+     ].join('\n');
      window.location.href='https://wa.me/?text='+encodeURIComponent(combined);
     }catch(err){alert('Gagal menyiapkan laporan: '+(err?.message||err));shareButton.disabled=false;shareButton.textContent='🟢 Kirim Laporan ke WhatsApp (Management)';}
    };

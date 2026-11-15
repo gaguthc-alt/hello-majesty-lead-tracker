@@ -41,11 +41,11 @@ window.renderContentPerformance=async function(){
    const manualLeadOverrides={'Aca':7};
    Object.entries(manualLeadOverrides).forEach(([name,count])=>{
     const existing=Object.values(groups).find(x=>x.creator.toLocaleLowerCase('id')===name.toLocaleLowerCase('id'));
-    if(existing){existing.leads=count;existing.platform='INPUT MANUAL';existing.campaign='Penyesuaian manual';existing.manual=true;}
+    if(existing){existing.leads+=count;existing.platform='INPUT MANUAL';existing.campaign='Penyesuaian manual';existing.manual=true;}
     else groups[[name,'INPUT MANUAL','Penyesuaian manual'].join('|')]={creator:name,platform:'INPUT MANUAL',campaign:'Penyesuaian manual',leads:count,manual:true};
    });
    const list=Object.values(groups).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
-   const creatorCount=activeCreators.length;
+   const creatorCount=new Set(list.map(x=>String(x.creator||'').trim().toLocaleLowerCase('id')).filter(x=>x&&x!=='—')).size;
    const total=rows.length+Object.values(manualLeadOverrides).reduce((sum,n)=>sum+Number(n||0),0);
    body.innerHTML='<div class="stats"><div class="stat"><div class="small">Total Lead</div><div class="num">'+cpFmt(total)+'</div></div><div class="stat"><div class="small">Content Creator</div><div class="num">'+cpFmt(creatorCount)+'</div></div><div class="stat"><div class="small">Lead dari Link Terlacak</div><div class="num">'+cpFmt(rows.filter(r=>String(r.source_confidence||'').toUpperCase()==='TRACKED_LINK').length)+'</div></div><div class="stat"><div class="small">Lead WhatsApp / Belum Teratribusi</div><div class="num">'+cpFmt(rows.filter(r=>String(r.source_confidence||'').toUpperCase()!=='TRACKED_LINK').length)+'</div></div></div><div class="small" style="margin:12px 0">Periode: <b>'+p.label+'</b> · dihitung dari lead yang dibuat pada periode tersebut.</div>'+
    (list.length?list.map(x=>'<div class="lead" style="margin-top:10px"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><b style="font-size:16px">🎬 '+cpEsc(x.creator)+'</b><span class="badge">'+cpFmt(x.leads)+' lead</span></div><div style="margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><div><div class="small">Sumber / Platform</div><b>'+cpEsc(x.platform)+'</b></div><div><div class="small">Kampanye</div><b>'+cpEsc(x.campaign)+'</b></div></div></div>').join(''):'<div class="small">Belum ada lead pada periode ini.</div>');

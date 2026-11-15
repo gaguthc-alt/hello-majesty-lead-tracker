@@ -92,10 +92,22 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
-        if (savedInstanceState == null) webView.loadUrl(APP_URL);
+        if (savedInstanceState == null) webView.loadUrl(resolveNotificationUrl(getIntent()));
         else webView.restoreState(savedInstanceState);
     }
 
+    private String resolveNotificationUrl(Intent intent) {
+        String target = intent == null ? null : intent.getStringExtra("hm_notification_url");
+        if (target != null && target.startsWith("https://hello-majesty-lead-tracker.pages.dev/")) return target;
+        return APP_URL;
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String target = resolveNotificationUrl(intent);
+        if (webView != null) webView.loadUrl(target);
+    }
 
     private void registerNativePushToken(WebView view) {
         String token = getSharedPreferences("hello_majesty_native", MODE_PRIVATE).getString("fcm_token", null);

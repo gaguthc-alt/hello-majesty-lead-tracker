@@ -7,6 +7,18 @@ android {
     namespace 'id.hellomajesty.app'
     compileSdk 35
 
+    signingConfigs {
+        release {
+            def keystorePath = System.getenv('HM_ANDROID_KEYSTORE_FILE')
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword System.getenv('HM_ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('HM_ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('HM_ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -16,8 +28,15 @@ android {
         applicationId 'id.hellomajesty.app'
         minSdk 23
         targetSdk 35
-        versionCode 3
-        versionName '1.2.0'
+        versionCode 4
+        versionName '1.2.1'
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
     }
 }
 

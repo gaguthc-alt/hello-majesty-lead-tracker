@@ -172,24 +172,35 @@ window.openPartnerSettlementWorkflow=async function(){
     const activeSettlementIds=new Set((linked.data||[]).filter(v=>!['CANCELLED','REJECTED','VOID'].includes(String(v.status||'').toUpperCase())).map(v=>String(v.id)));
     const used=new Set((existing.data||[]).filter(v=>activeSettlementIds.has(String(v.settlement_id))).flatMap(v=>[v.stock_unit_id,v.historical_stock_detail_id]).filter(Boolean).map(String));
     const eligible=items.filter(v=>!used.has(String(v.stock_unit_id||v.historical_stock_detail_id))&&(!v.partner_name||String(v.partner_name).toLowerCase()===partner.toLowerCase()));
-    host.innerHTML=eligible.length?eligible.map((v,i)=>'<label style="display:block;padding:10px;border-bottom:1px solid #ddd"><input type="checkbox" class="hm-set-item" data-index="'+i+'" style="width:auto"> <b>'+esc(v.product_name||'Produk')+(v.variant?' — '+esc(v.variant):'')+'</b><br><span class="small">'+esc(v.color||'')+' • Modal '+money(v.capital_due||v.cost)+(v.battery_health!=null?' • BH '+Number(v.battery_health)+'%':'')+(v.imei_1?' • IMEI '+esc(v.imei_1):'')+(v.sold_at?' • '+new Date(v.sold_at).toLocaleDateString('id-ID'):'')+'</span></label>').join(''):'<div class="small">Tidak ada barang SOLD yang eligible untuk mitra/outlet ini.</div>';
-    window.__hmSettlementEligible=eligible;
-    const total=()=>{const chosen=[...host.querySelectorAll('.hm-set-item:checked')].map(el=>eligible[Number(el.dataset.index)]),sum=chosen.reduce((n,v)=>n+Number(v.capital_due||v.cost||0),0);document.getElementById('hmSetTotal').textContent=chosen.length+' unit dipilih • '+money(sum);document.getElementById('hmCreateSetDraft').disabled=!chosen.length;};
+    const adj=await window.sb.rpc('get_pending_partner_settlement_adjustments',{p_partner:partner,p_outlet:o});
+    if(adj.error)throw adj.error;
+    window.__hmSettlementEligible=eligible;window.__hmSettlementAdjustments=adj.data||[];
+    const adjustmentTotal=window.__hmSettlementAdjustments.reduce((n,v)=>n+Number(v.amount||0),0);
+    host.innerHTML=(eligible.length?eligible.map((v,i)=>'<label style="display:block;padding:10px;border-bottom:1px solid #ddd"><input type="checkbox" class="hm-set-item" data-index="'+i+'" style="width:auto"> <b>'+esc(v.product_name||'Produk')+(v.variant?' — '+esc(v.variant):'')+'</b><br><span class="small">'+esc(v.color||'')+' • Modal '+money(v.capital_due||v.cost)+(v.battery_health!=null?' • BH '+Number(v.battery_health)+'%':'')+(v.imei_1?' • IMEI '+esc(v.imei_1):'')+(v.sold_at?' • '+new Date(v.sold_at).toLocaleDateString('id-ID'):'')+'</span></label>').join(''):'<div class="small">Tidak ada barang SOLD baru yang eligible.</div>')+(window.__hmSettlementAdjustments.length?'<div class="box" style="margin-top:10px;border:1px solid #d6a84b"><b>Penyesuaian settlement tertunda</b>'+window.__hmSettlementAdjustments.map(v=>'<div class="small" style="margin-top:6px">+ '+money(v.amount)+' — '+esc(v.reason)+(v.reference_number?' • Ref: '+esc(v.reference_number):'')+'</div>').join('')+'<div><b>Total penyesuaian: '+money(adjustmentTotal)+'</b></div></div>':'<div class="small" style="margin-top:8px">Tidak ada penyesuaian tertunda untuk mitra/outlet ini.</div>');
+    const total=()=>{const chosen=[...host.querySelectorAll('.hm-set-item:checked')].map(el=>eligible[Number(el.dataset.index)]),base=chosen.reduce((n,v)=>n+Number(v.capital_due||v.cost||0),0);document.getElementById('hmSetTotal').textContent=chosen.length+' unit dipilih • Modal '+money(base)+' + Penyesuaian '+money(adjustmentTotal)+' = Total '+money(base+adjustmentTotal);document.getElementById('hmCreateSetDraft').disabled=!(chosen.length||window.__hmSettlementAdjustments.length);};
     host.querySelectorAll('.hm-set-item').forEach(el=>el.onchange=total);total();
    }catch(err){host.innerHTML='<div class="small">Gagal memuat: '+esc(err.message||err)+'</div>';}
   };
   const create=document.getElementById('hmCreateSetDraft');
   if(create)create.onclick=async()=>{
    const host=document.getElementById('hmSetEligible'),eligible=window.__hmSettlementEligible||[],chosen=[...host.querySelectorAll('.hm-set-item:checked')].map(el=>eligible[Number(el.dataset.index)]);
-   if(!chosen.length)return;
-   const o=document.getElementById('hmSetOutlet').value,partner=document.getElementById('hmSetPartner').value,amount=chosen.reduce((n,v)=>n+Number(v.capital_due||v.cost||0),0),user=await window.sb.auth.getUser();
-   if(user.error||!user.data.user)return alert('Sesi login tidak ditemukan.');
-   const header=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet:o,settlement_type:'CAPITAL',settlement_date:new Date().toISOString().slice(0,10),amount,status:'DRAFT',created_by:user.data.user.id,note:'Draft pengajuan barang SOLD; menunggu transfer Management/Admin.'}).select('id').single();
+   const o=document.getElementById('hmSetOutlet').value,partner=document.getElementById('hmSetPartner').value,baseAmount=chosen.reduce((n,v)=>n+Number(v.capital_due||v.cost||0),0),pending=window.__hmSettlementAdjustments||[];
+   if(!chosen.length&&!pending.length)return;
+   const user=await window.sb.auth.getUser();if(user.error||!user.data.user)return alert('Sesi login tidak ditemukan.');
+   const header=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet:o,settlement_type:'CAPITAL',settlement_date:new Date().toISOString().slice(0,10),amount:baseAmount,status:'DRAFT',created_by:user.data.user.id,note:'Draft pengajuan barang SOLD dan penyesuaian settlement; menunggu transfer Management/Admin.'}).select('id').single();
    if(header.error)return alert('Gagal membuat draft: '+header.error.message);
-   const itemRows=chosen.map(v=>({settlement_id:header.data.id,stock_unit_id:v.stock_unit_id||null,historical_stock_detail_id:v.historical_stock_detail_id||null,capital_amount:Number(v.capital_due||v.cost||0),profit_amount:0,partner_profit_share:0}));
-   const ins=await window.sb.from('partner_settlement_items').insert(itemRows);
-   if(ins.error){await window.sb.from('partner_settlements').delete().eq('id',header.data.id);return alert('Draft belum tersimpan karena rincian gagal: '+ins.error.message);}
-   const msg='*PERMINTAAN KONFIRMASI SETTLEMENT*\n*HELLO MAJESTY*\n\nYth. '+partner+', mohon konfirmasi nominal settlement berikut:\n\n• Outlet: '+o+'\n• Tanggal: '+new Date().toLocaleDateString('id-ID')+'\n• Jumlah unit: '+chosen.length+'\n• Nominal: '+money(amount)+'\n\n*REKENING TUJUAN TRANSFER*\nBank BCA\nNo. Rekening: 3850541492\nAtas Nama: Dwi Prasetyawan\n\nMohon konfirmasi nominal sebelum transfer dilakukan.\n\n*HELLO MAJESTY*\n— Built on Trust.\nID: '+header.data.id;
+   if(chosen.length){
+    const itemRows=chosen.map(v=>({settlement_id:header.data.id,stock_unit_id:v.stock_unit_id||null,historical_stock_detail_id:v.historical_stock_detail_id||null,capital_amount:Number(v.capital_due||v.cost||0),profit_amount:0,partner_profit_share:0}));
+    const ins=await window.sb.from('partner_settlement_items').insert(itemRows);
+    if(ins.error){await window.sb.from('partner_settlements').delete().eq('id',header.data.id);return alert('Draft belum tersimpan karena rincian gagal: '+ins.error.message);}
+   }
+   const reserved=await window.sb.rpc('reserve_partner_settlement_adjustments',{p_settlement_id:header.data.id});
+   if(reserved.error){await window.sb.from('partner_settlements').delete().eq('id',header.data.id);return alert('Penyesuaian belum berhasil dikunci. Draft dibatalkan: '+reserved.error.message);}
+   const adjustmentAmount=Number(reserved.data||0),amount=baseAmount+adjustmentAmount;
+   const amountUpdate=await window.sb.from('partner_settlements').update({amount,note:'Draft pengajuan barang SOLD'+(adjustmentAmount?' + penyesuaian koreksi modal Rp '+adjustmentAmount.toLocaleString('id-ID'):'')+'; menunggu transfer Management/Admin.'}).eq('id',header.data.id);
+   if(amountUpdate.error)return alert('Draft tersimpan tetapi total belum berhasil diperbarui. Jangan lakukan transfer; hubungi Management. '+amountUpdate.error.message);
+   const adjustmentText=adjustmentAmount?'\\n• Penyesuaian koreksi: '+money(adjustmentAmount):'';
+   const msg='*PERMINTAAN KONFIRMASI SETTLEMENT*\\n*HELLO MAJESTY*\\n\\nYth. '+partner+', mohon konfirmasi nominal settlement berikut:\\n\\n• Outlet: '+o+'\\n• Tanggal: '+new Date().toLocaleDateString('id-ID')+'\\n• Jumlah unit: '+chosen.length+adjustmentText+'\\n• Modal barang: '+money(baseAmount)+'\\n• Total settlement: '+money(amount)+'\\n\\n*REKENING TUJUAN TRANSFER*\\nBank BCA\\nNo. Rekening: 3850541492\\nAtas Nama: Dwi Prasetyawan\\n\\nMohon konfirmasi nominal sebelum transfer dilakukan.\\n\\n*HELLO MAJESTY*\\n— Built on Trust.\\nID: '+header.data.id;
    await waCopy(msg);alert('Draft berhasil dibuat. Barang sudah dikunci agar tidak diajukan dua kali.');window.openPartnerSettlementWorkflow();
   };
   x.b.querySelectorAll('[data-set-transfer]').forEach(b=>b.onclick=async()=>{

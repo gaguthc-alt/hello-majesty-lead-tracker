@@ -60,6 +60,31 @@ function scheduleRealtimeRefresh(conversationId=null){
     if(active&&(!conversationId||active.id===conversationId))await loadMessages(true);
   },120);
 }
+async function notifyInboundMessage(payload){
+  const message=payload?.new;
+  if(payload?.eventType!=='INSERT'||String(message?.sender_type||'').toUpperCase()!=='CUSTOMER')return;
+  if(!('Notification'in window)||Notification.permission!=='granted')return;
+  const conversationId=message.conversation_id;
+  if(!conversationId)return;
+  try{
+    let conversation=rows.find(x=>x.id===conversationId);
+    if(!conversation){
+      const {data,error}=await sb.from('chat_conversations').select('id,customer_name,customer_phone,claimed_by').eq('id',conversationId).maybeSingle();
+      if(error||!data)return;
+      conversation=data;
+    }
+    let eligible=conversation.claimed_by===me.id;
+    if(!conversation.claimed_by&&canInboxCS){
+      const {data:assignment,error}=await sb.from('hm_central_cs_assignments').select('user_id').eq('user_id',me.id).eq('active',true).maybeSingle();
+      eligible=!error&&!!assignment&&String(profile?.role||'').toUpperCase()==='CS';
+    }
+    if(!eligible)return;
+    const title=conversation.claimed_by===me.id?'Pesan baru dari '+(conversation.customer_name||'Customer'):'Chat WhatsApp baru';
+    const body=String(message.message||'Customer mengirim pesan baru').slice(0,120);
+    const notice=new Notification(title,{body,icon:'/favicon.ico',tag:'hm-chat-'+message.id,renotify:true});
+    notice.onclick=()=>{window.focus();openChat(conversationId);notice.close();};
+  }catch(error){console.warn('[HM] inbound notification failed',error);}
+}
 function connectInboxRealtime(){
   if(realtimeChannel)sb.removeChannel(realtimeChannel);
   realtimeChannel=sb.channel('hm-whatsapp-inbox-live')
@@ -68,6 +93,7 @@ function connectInboxRealtime(){
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'chat_messages'},payload=>{
       const conversationId=payload?.new?.conversation_id||payload?.old?.conversation_id||null;
+      if(payload?.eventType==='INSERT')notifyInboundMessage(payload);
       scheduleRealtimeRefresh(conversationId);
     })
     .subscribe(status=>{
@@ -83,6 +109,8 @@ async function init(){try{
   if(error)throw error;me=data.user;if(!me)throw Error('Sesi login tidak valid.');
   await loadInboxProfile();
   await load();
+  const requestedConversation=new URLSearchParams(location.search).get('conversation');
+  if(requestedConversation&&rows.some(x=>x.id===requestedConversation))await openChat(requestedConversation);
   connectInboxRealtime();
   // Fallback polling only when Realtime is disconnected; no routine 12-second polling.
   setInterval(()=>{if(!realtimeConnected)load(true);},15000);

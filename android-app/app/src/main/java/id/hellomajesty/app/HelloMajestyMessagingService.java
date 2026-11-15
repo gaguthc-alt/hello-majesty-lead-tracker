@@ -24,6 +24,9 @@ public class HelloMajestyMessagingService extends FirebaseMessagingService {
         createNotificationChannel(this);
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        String targetUrl = message.getData().getOrDefault("url",
+            "https://hello-majesty-lead-tracker.pages.dev/");
+        intent.putExtra("hm_notification_url", targetUrl);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
             PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
         NotificationCompat.Builder notification = new NotificationCompat.Builder(this, CHANNEL_ID)

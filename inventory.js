@@ -768,7 +768,8 @@ function renderInventoryDashboardBody(){
  const body=document.getElementById('inventoryBody');if(!body)return;
  if(!canViewInventoryDashboard()){inventoryView='stock';renderInventoryBody();return;}
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),isAdminFinance=role==='ADMIN FINANCE';
- const canViewCost=!!profile?.is_management||role==='FASILITATOR'||role==='DIVISI'||inventoryCanFacilitator;
+ const hasFreelanceInternal=role==='FREELANCE INTERNAL'||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r||'').trim().toUpperCase().replace(/[_-]+/g,' ')==='FREELANCE INTERNAL'));
+ const canViewCost=!!profile?.is_management||role==='FASILITATOR'||role==='DIVISI'||inventoryCanFacilitator||hasFreelanceInternal;
  const outletSel=isAdminFinance?(profile?.outlet||''):($('invDashOutlet')?.value||'');
  const catSel=$('invDashCat')?.value||'';
  const sourceSel=$('invDashSource')?.value||'';
@@ -1006,7 +1007,7 @@ function receiveProductCategory(p){
 }
 function masterProductLabel(p){let product=String(p.product||'').trim();const suffix=/(?:\s+)(NEW|SECOND)$/i.exec(product)?.[1]?.toUpperCase()||'';if(suffix)product=product.replace(/\s+(NEW|SECOND)$/i,'').trim();let grade=String(p.grade||'').trim();product=product.replace(/\s+\d{1,4}\s*GB\b/ig,'').replace(/\s+Grade\s*([A-Z][+-]?)\b/ig,(_,g)=>{if(!grade)grade=g.toUpperCase();return '';}).replace(/\s+/g,' ').trim();const variant=String(p.variant||'').replace(/\s*GB\b/ig,'').trim();return [product,variant,p.color,grade?( /^grade\s/i.test(grade)?grade:'Grade '+grade):'',suffix].filter(Boolean).join(' — ')}
 function stockCard(s){
- const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),isOwnStockist=isOwnedStockistUnit(s),canViewCost=management||facilitator||isOwnStockist,ready=s.status==='READY',sales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')),c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
+ const management=!!profile?.is_management,facilitator=inventoryCanFacilitator,contentCreator=!!inventoryCanContentCreator || String(profile?.role||'').toUpperCase()==='CONTENT CREATOR' || String(profile?.role||'').toUpperCase()==='CONTENT_CREATOR',roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),hasFreelanceInternal=roleRaw==='FREELANCE INTERNAL'||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r||'').trim().toUpperCase().replace(/[_-]+/g,' ')==='FREELANCE INTERNAL')),isOwnStockist=isOwnedStockistUnit(s),canViewCost=management||facilitator||isOwnStockist||hasFreelanceInternal,ready=s.status==='READY',sales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')),c=s.category,isSecond=c==='IPHONE_SECOND'||c==='ANDROID_SECOND';
  const rawTitle=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(rawTitle)?.[1]?.toUpperCase()||'';
  const cleanProduct=rawTitle.replace(/\s+(NEW|SECOND)$/i,'').trim();
  const title=[cleanProduct,s.variant,s.color,suffix].filter(Boolean).join(' — ');

@@ -5,7 +5,7 @@ function cpPeriod(mode){
  const now=new Date(),y=now.getFullYear(),m=now.getMonth();
  if(mode==='today')return {start:new Date(y,m,now.getDate()),end:new Date(y,m,now.getDate()+1),label:'HARI INI'};
  if(mode==='last_month')return {start:new Date(y,m-1,1),end:new Date(y,m,1),label:'BULAN KEMARIN'};
- return {start:new Date(y,m,1),end:new Date(y,m+1,1),label:'BULAN INI'};
+ return {start:new Date(y,m,1),end:new Date(y,m,now.getDate()+1),label:'BULAN INI'};
 }
 window.renderContentPerformance=async function(){
  const node=document.getElementById('contentPerformance');
@@ -84,7 +84,62 @@ window.renderContentPerformance=async function(){
    (list.length?list.map(x=>'<div class="lead" style="margin-top:10px"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><b style="font-size:16px">🎬 '+cpEsc(x.creator)+'</b><span class="badge">'+cpFmt(x.leads)+' lead</span></div><div style="margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><div><div class="small">Sumber / Platform</div><b>'+cpEsc(x.platform)+'</b></div><div><div class="small">Kampanye</div><b>'+cpEsc(x.campaign)+'</b></div></div></div>').join(''):'<div class="small">Belum ada lead pada periode ini.</div>')+
    (isManagement?'<div style="margin-top:16px"><button id="cpShareWa" type="button" style="width:100%;background:#128c7e;color:#fff;border:0;border-radius:12px;padding:13px 16px;font-weight:700">🟢 Kirim Laporan ke WhatsApp (Management)</button><div class="small" style="margin-top:6px">WhatsApp akan terbuka dengan laporan siap dikirim. Pilih grup atau kontak Management.</div></div>':'');
    const shareButton=document.getElementById('cpShareWa');
-   if(shareButton)shareButton.onclick=()=>{window.location.href='https://wa.me/?text='+encodeURIComponent(reportMessage);};
+   if(shareButton)shareButton.onclick=async()=>{
+    try{
+     shareButton.disabled=true;shareButton.textContent='⏳ Menyiapkan laporan...';
+     const todayMode='today',monthMode='month';
+     const [todayQ,monthQ]=await Promise.all([
+      sb.from('leads').select('lead_id,content_creator,source_platform,source_campaign,source_confidence,created_at').gte('created_at',cpPeriod(todayMode).start.toISOString()).lt('created_at',cpPeriod(todayMode).end.toISOString()),
+      sb.from('leads').select('lead_id,content_creator,source_platform,source_campaign,source_confidence,created_at').gte('created_at',cpPeriod(monthMode).start.toISOString()).lt('created_at',cpPeriod(monthMode).end.toISOString())
+     ]);
+     if(todayQ.error)throw todayQ.error;if(monthQ.error)throw monthQ.error;
+     const summarize=(sourceRows,mode)=>{
+      const gs={};
+      (sourceRows||[]).forEach(r=>{
+       const tracked=String(r.source_confidence||'').toUpperCase()==='TRACKED_LINK';
+       const creator=String(r.content_creator||'').trim()||'—';
+       const platform=String(r.source_platform||'').trim().toUpperCase()||(tracked?'LINK CONTENT CREATOR':'WHATSAPP');
+       const campaign=String(r.source_campaign||'').trim()||(tracked?'Tanpa kampanye':(creator==='—'?'Tidak diketahui':'Atribusi tersimpan'));
+       const key=[creator,platform,campaign].join('|');
+       if(!gs[key])gs[key]={creator,platform,campaign,leads:0};gs[key].leads++;
+      });
+      if(mode==='month'&&cpPeriod('month').start.getFullYear()===2026&&cpPeriod('month').start.getMonth()===10){
+       const ex=Object.values(gs).find(x=>x.creator.toLocaleLowerCase('id')==='aca');
+       if(ex){ex.leads+=7;ex.platform='INPUT MANUAL';ex.campaign='Penyesuaian manual';}
+       else gs['Aca|INPUT MANUAL|Penyesuaian manual']={creator:'Aca',platform:'INPUT MANUAL',campaign:'Penyesuaian manual',leads:7};
+      }
+      const items=Object.values(gs).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
+      const totals={};items.forEach(x=>{if(x.creator!=='—')totals[x.creator]=(totals[x.creator]||0)+x.leads;});
+      return {items,total:(sourceRows||[]).length+(mode==='month'&&cpPeriod('month').start.getFullYear()===2026&&cpPeriod('month').start.getMonth()===10?7:0),creatorCount:Object.keys(totals).length,tracked:(sourceRows||[]).filter(r=>String(r.source_confidence||'').toUpperCase()==='TRACKED_LINK').length,unattributed:(sourceRows||[]).filter(r=>!String(r.content_creator||'').trim()).length,totals};
+     };
+     const dateFmt=d=>d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+     const todayP=cpPeriod('today'),monthP=cpPeriod('month');
+     const today=summarize(todayQ.data,'today'),month=summarize(monthQ.data,'month');
+     const section=(heading,p,d)=>[
+      '*'+heading+'*',
+      '*Periode:* '+dateFmt(p.start)+' – '+dateFmt(new Date(p.end.getTime()-86400000)),
+      '*Total lead:* '+cpFmt(d.total),
+      '*Content Creator tercatat:* '+cpFmt(d.creatorCount),
+      '*Lead dari link terlacak:* '+cpFmt(d.tracked),
+      '*Lead WhatsApp / belum teratribusi:* '+cpFmt(d.unattributed),
+      '',
+      '*PERFORMA TIM CONTENT*',
+      ...Object.entries(d.totals).sort((a,b)=>b[1]-a[1]).map(([name,count],i)=>(i+1)+'. '+name+' — *'+cpFmt(count)+' lead*'),
+      '',
+      '*Rincian sumber & kampanye*',
+      ...d.items.filter(x=>x.creator!=='—').map(x=>'• '+x.creator+': '+x.platform+' / '+x.campaign+' — '+cpFmt(x.leads)+' lead')
+     ].join('\\n');
+     const combined=[
+      '🎬 *LAPORAN PENCAPAIAN CONTENT CREATOR*',
+      '*HELLO MAJESTY — Built on Trust*','',
+      section('📅 PERFORMA HARI INI',todayP,today),'',
+      section('📊 PERFORMA BULAN INI (BERJALAN)',monthP,month),'',
+      'Laporan dibuat dari Lead Tracker berdasarkan tanggal lead dibuat. Penyesuaian manual ditandai pada rincian.',
+      '— HELLO MAJESTY'
+     ].join('\\n');
+     window.location.href='https://wa.me/?text='+encodeURIComponent(combined);
+    }catch(err){alert('Gagal menyiapkan laporan: '+(err?.message||err));shareButton.disabled=false;shareButton.textContent='🟢 Kirim Laporan ke WhatsApp (Management)';}
+   };
   }catch(e){body.innerHTML='<div style="color:#b42318">Gagal memuat pencapaian: '+cpEsc(e?.message||e)+'</div>'}
  };
  node.querySelectorAll('[data-cp-mode]').forEach(b=>b.onclick=()=>load(b.getAttribute('data-cp-mode')||'month'));

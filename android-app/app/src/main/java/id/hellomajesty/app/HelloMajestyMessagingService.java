@@ -47,7 +47,7 @@ public class HelloMajestyMessagingService extends FirebaseMessagingService {
     public static void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
-                "Hello Majesty Alerts", NotificationManager.IMPORTANCE_HIGH);
+                "Notifikasi Hello Majesty", NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription("Notifikasi lead dan aktivitas penting Hello Majesty");
             channel.enableVibration(true);
             channel.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),

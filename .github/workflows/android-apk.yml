@@ -7,6 +7,9 @@ on:
       - 'android-app/**'
       - '.github/workflows/android-apk.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,9 +23,33 @@ jobs:
       - name: Build debug APK
         working-directory: android-app
         run: gradle assembleDebug
-      - name: Upload APK
+      - name: Read app version
+        id: app
+        shell: bash
+        run: |
+          VERSION_NAME=$(sed -n "s/.*versionName '\\([^']*\\)'.*/\\1/p" app/build.gradle | head -n1)
+          VERSION_CODE=$(sed -n 's/.*versionCode \\([0-9]*\\).*/\\1/p' app/build.gradle | head -n1)
+          echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hello-majesty-debug-apk
+          name: hello-majesty-android-v${{ steps.app.outputs.name }}-build${{ steps.app.outputs.code }}
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+      - name: Publish APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-v${{ steps.app.outputs.name }}
+          name: Hello Majesty Android v${{ steps.app.outputs.name }}
+          body: |
+            Rilis resmi aplikasi Hello Majesty Android.
+
+            - Versi: ${{ steps.app.outputs.name }}
+            - Build: ${{ steps.app.outputs.code }}
+            - File: app-debug.apk
+          files: android-app/app/build/outputs/apk/debug/app-debug.apk
+          make_latest: true
+          generate_release_notes: false
+          fail_on_unmatched_files: true
+          overwrite_files: true

@@ -40,7 +40,10 @@ window.renderContentPerformance=async function(){
      groups[key]={creator:name,platform:'—',campaign:'—',leads:0};
     }
    });
-   const manualLeadOverrides={'Aca':7};
+   // Aca's 7 manually reported leads belong to November 2026 only.
+   // Never carry this adjustment into today-only or previous-month reports.
+   const isNovember2026=p.start.getFullYear()===2026&&p.start.getMonth()===10&&mode==='month';
+   const manualLeadOverrides=isNovember2026?{'Aca':7}:{};
    Object.entries(manualLeadOverrides).forEach(([name,count])=>{
     const existing=Object.values(groups).find(x=>x.creator.toLocaleLowerCase('id')===name.toLocaleLowerCase('id'));
     if(existing){existing.leads+=count;existing.platform='INPUT MANUAL';existing.campaign='Penyesuaian manual';existing.manual=true;}

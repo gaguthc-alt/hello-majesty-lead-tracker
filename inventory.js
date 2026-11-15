@@ -254,7 +254,7 @@ async function reviewUnifiedWalkin(id,kind,action){
      waButton.className='success';
      waButton.style.cssText='width:100%;margin-top:10px;min-height:46px;font-weight:800';
      waButton.textContent='🟢 Buka WhatsApp & Kirim Pemberitahuan';
-     waButton.addEventListener('click',()=>window.open('https://wa.me/?text='+encodeURIComponent(window.hmApprovalWhatsAppMessage||''),'_blank'));
+     waButton.addEventListener('click',()=>{const url='https://wa.me/?text='+encodeURIComponent(window.hmApprovalWhatsAppMessage||'');window.location.href=url;});
      if(panelBody)panelBody.prepend(waButton);
    }
  }catch(e){

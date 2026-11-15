@@ -4,6 +4,8 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.app.AlertDialog;
+import android.provider.Settings;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -39,7 +41,6 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(0);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         HelloMajestyMessagingService.createNotificationChannel(this);
-        requestNotificationPermission();
         FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token ->
             getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", token).apply()
         );
@@ -56,6 +57,7 @@ public class MainActivity extends Activity {
         });
         ViewCompat.requestApplyInsets(root);
         setContentView(root);
+        root.post(this::requestNotificationPermission);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -165,8 +167,36 @@ public class MainActivity extends Activity {
     }
 
     private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        if (Build.VERSION.SDK_INT < 33 ||
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return;
+        if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+            new AlertDialog.Builder(this)
+                .setTitle("Izin Notifikasi Hello Majesty")
+                .setMessage("Izinkan notifikasi agar CS menerima pemberitahuan WhatsApp masuk dan Sales menerima handover, termasuk saat aplikasi tidak sedang dibuka. Notifikasi dapat disertai suara sesuai pengaturan perangkat.")
+                .setNegativeButton("Nanti", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("Izinkan", (dialog, which) ->
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST))
+                .show();
+        } else {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST);
+        }
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != NOTIFICATION_PERMISSION_REQUEST) return;
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) return;
+        if (Build.VERSION.SDK_INT >= 33 &&
+            !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+            new AlertDialog.Builder(this)
+                .setTitle("Notifikasi Belum Diizinkan")
+                .setMessage("Agar pemberitahuan Hello Majesty dapat diterima, aktifkan izin Notifikasi melalui Pengaturan Android.")
+                .setNegativeButton("Nanti", (dialog, which) -> dialog.dismiss())
+                .setPositiveButton("Buka Pengaturan", (dialog, which) -> {
+                    Intent settings = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                    settings.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+                    startActivity(settings);
+                }).show();
         }
     }
 

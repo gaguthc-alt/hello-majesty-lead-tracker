@@ -3097,15 +3097,16 @@ async function hmOpenContentPerformance(){
   try{
     await ensureSupabase();
     if(!profile?.user_id)throw new Error('Session belum siap. Silakan coba lagi.');
-    if(typeof window.renderContentPerformance!=='function'){
-      await new Promise((resolve,reject)=>{
-        const s=document.createElement('script');
-        s.src='content-performance-v4.js?v=20261115-aca-182';
-        s.onload=resolve;
-        s.onerror=()=>reject(new Error('Modul Pencapaian Content Creator gagal dimuat.'));
-        document.head.appendChild(s);
-      });
-    }
+    // Always load the current dedicated module. The legacy inline
+    // renderContentPerformance defined earlier in index.html must not
+    // prevent the corrected module from replacing it.
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='content-performance-v4.js?v=20261115-aca-183';
+      s.onload=resolve;
+      s.onerror=()=>reject(new Error('Modul Pencapaian Content Creator gagal dimuat.'));
+      document.head.appendChild(s);
+    });
     if(typeof window.renderContentPerformance!=='function')throw new Error('Modul Pencapaian Content Creator belum siap.');
     await window.renderContentPerformance();
     if(openSeq!==hmMenuActionSeq)return;

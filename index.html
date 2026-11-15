@@ -4032,11 +4032,11 @@ function renderRoleHome(){
  
 
  if(cs && !mg && !developer){
-   add('💬','WhatsApp Inbox','Percakapan WhatsApp • claim dan kelola chat','hmOpenHelloMajestyChat()');
+   add('💬','Lead Chatting','Percakapan pelanggan • claim dan kelola chat','hmOpenHelloMajestyChat()');
  }
  if(mg || developer){
    add('📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()');
-   add('💬','WhatsApp Inbox','Percakapan WhatsApp • kualifikasi CS → Lead','hmOpenHelloMajestyChat()');
+   add('💬','Lead Chatting','Percakapan pelanggan • kualifikasi CS → Lead','hmOpenHelloMajestyChat()');
    add('👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()');
    add('📋','Data Lead','Seluruh lead: AVAILABLE sampai HASIL','hmOpenLeadTracker()');
    add('🤝','Lead Handover','Qualified/Potensial → handover & share ke Sales','hmOpenLeadHandover()');
@@ -4880,7 +4880,7 @@ window.hmRunStockistJournalReclass = async function(){
  const menuGroups=[
    ['🎯','LEAD TRACKER',[
      ['📱','WA Masuk / Lead Baru','Input lead baru dari WhatsApp atau customer','hmOpenLeadNewInline()'],
-     ['💬','WhatsApp Inbox','Percakapan WhatsApp • claim & kelola chat','hmOpenHelloMajestyChat()'],
+     ['💬','Lead Chatting','Percakapan pelanggan • claim & kelola chat','hmOpenHelloMajestyChat()'],
      ['👥','Lead Aktif','Claim CS, Qualification, follow-up & status lead','hmOpenLeadTracker()'],
      ['🤝','Lead Handover','Qualified/Potensial → handover & share ke Sales','hmOpenLeadHandover()'],
      ['🔔','Perlu Perhatian','Follow-up yang harus segera ditindaklanjuti','showNeedsAttention()'],
@@ -6719,7 +6719,7 @@ function card(l){
  (canServiceClose?'<button type="button" class="success" onclick="openServiceClosing(\''+esc(l.lead_id)+'\')">✅ Closing Service</button>':'')+
  (canAskPIC?'<button class="secondary" type="button" onclick="sharePICQuestion(\''+esc(l.lead_id)+'\')">📲 Tanyakan PIC via WA Group</button>':'')+
  (hasChat?'<button class="secondary" type="button" onclick="window.hmOpenLeadChat(\''+esc(l.id||'')+'\')">💬 Chat</button>':'')+
-  (canContactCustomer&&isCentralInboxLead&&inboxConversationId?'<button class="success" type="button" onclick="window.hmOpenLeadWhatsAppInbox(\''+encodeURIComponent(inboxConversationId)+'\')">💬 Buka WhatsApp Inbox</button>':'')+
+  (canContactCustomer&&isCentralInboxLead&&inboxConversationId?'<button class="success" type="button" onclick="window.hmOpenLeadWhatsAppInbox(\''+encodeURIComponent(inboxConversationId)+'\')">💬 Buka Lead Chatting</button>':'')+
   (canContactCustomer&&plazaWhatsApp&&l.whatsapp?'<a style="display:inline-block;padding:10px;border-radius:8px;background:#e5e7eb;color:#111;text-decoration:none" href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank" rel="noopener">📱 Hubungi via WhatsApp Pribadi</a>':'')+
  (own?'<button class="secondary" onclick="editLead(\''+esc(l.lead_id)+'\')">Buka / Update</button>':'')+
  (canAI?'<button class="secondary" type="button" data-lead-ai="'+esc(l.lead_id)+'" onclick="window.openAI(this.dataset.leadAi)">🤖 Tanya AI</button>':'')+
@@ -8827,7 +8827,7 @@ async function askAI(leadId){
  finally{if(btn)btn.disabled=false}
 }
 window.openAI=openAI;window.askAI=askAI;
-window.hmOpenLeadWhatsAppInbox=function(id){const conversationId=String(id||'').trim();if(!conversationId)return alert('Percakapan WhatsApp Inbox belum terhubung dengan lead ini.');window.open('whatsapp-inbox.html?conversation='+encodeURIComponent(conversationId),'_blank','noopener');};
+window.hmOpenLeadWhatsAppInbox=function(id){const conversationId=String(id||'').trim();if(!conversationId)return alert('Percakapan Lead Chatting belum terhubung dengan lead ini.');window.open('whatsapp-inbox.html?conversation='+encodeURIComponent(conversationId),'_blank','noopener');};
 // Login fallback binding — only attach when the primary login handler is ready.
 window.addEventListener('DOMContentLoaded',function(){
  const b=document.getElementById('loginBtn');

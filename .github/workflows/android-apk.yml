@@ -20,9 +20,25 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build debug APK
+      - name: Prepare permanent Android signing key
+        env:
+          HM_ANDROID_KEYSTORE_BASE64: ${{ secrets.HM_ANDROID_KEYSTORE_BASE64 }}
+          HM_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.HM_ANDROID_KEYSTORE_PASSWORD }}
+          HM_ANDROID_KEY_ALIAS: ${{ secrets.HM_ANDROID_KEY_ALIAS }}
+          HM_ANDROID_KEY_PASSWORD: ${{ secrets.HM_ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$HM_ANDROID_KEYSTORE_BASE64" || (echo "Missing HM_ANDROID_KEYSTORE_BASE64 GitHub secret" && exit 1)
+          test -n "$HM_ANDROID_KEYSTORE_PASSWORD" || (echo "Missing HM_ANDROID_KEYSTORE_PASSWORD GitHub secret" && exit 1)
+          test -n "$HM_ANDROID_KEY_ALIAS" || (echo "Missing HM_ANDROID_KEY_ALIAS GitHub secret" && exit 1)
+          test -n "$HM_ANDROID_KEY_PASSWORD" || (echo "Missing HM_ANDROID_KEY_PASSWORD GitHub secret" && exit 1)
+          echo "$HM_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/hello-majesty-release.jks"
+          echo "HM_ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/hello-majesty-release.jks" >> "$GITHUB_ENV"
+          echo "HM_ANDROID_KEY_ALIAS=$HM_ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "HM_ANDROID_KEYSTORE_PASSWORD=$HM_ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "HM_ANDROID_KEY_PASSWORD=$HM_ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+      - name: Build signed release APK
         working-directory: android-app
-        run: gradle assembleDebug
+        run: gradle assembleRelease
       - name: Read app version
         id: app
         shell: bash
@@ -35,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hello-majesty-android-v${{ steps.app.outputs.name }}-build${{ steps.app.outputs.code }}
-          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          path: android-app/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
       - name: Publish APK to GitHub Releases
         uses: softprops/action-gh-release@v2
@@ -47,8 +63,9 @@ jobs:
 
             - Versi: ${{ steps.app.outputs.name }}
             - Build: ${{ steps.app.outputs.code }}
-            - File: app-debug.apk
-          files: android-app/app/build/outputs/apk/debug/app-debug.apk
+            - File: app-release.apk
+            - Tanda tangan: keystore permanen Hello Majesty
+          files: android-app/app/build/outputs/apk/release/app-release.apk
           make_latest: true
           generate_release_notes: false
           fail_on_unmatched_files: true

@@ -7556,7 +7556,11 @@ function buildEditInitialData(){
 }
 function editLead(id){
  const l=leads.find(x=>x.lead_id===id);if(!l)return;window.hmEditingLead=l;
- const isServiceLead=String(l.need_type||'').trim().toUpperCase()==='SERVICE';const wa=profile?.is_management||l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name||(isServiceLead&&l.service_pic===profile?.name),t=l.need_type||'INFORMASI',d=l.initial_data||{};
+ const sourceData=l.initial_data||{};
+ const centralInboxLead=String(l.outlet||'').trim().toLowerCase()==='hello majesty'&&(String(sourceData.origin||'').toUpperCase()==='WHATSAPP_INBOX'||String(sourceData.intake_source||'').toUpperCase()==='WHATSAPP_INBOX'||!!sourceData.conversation_id);
+ const plazaManualLead=String(l.outlet||'').trim().toLowerCase()==='majesty plaza iphone'&&!centralInboxLead;
+ const isLeadPIC=l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
+ const wa=!!profile?.is_management||(!centralInboxLead&&plazaManualLead&&isLeadPIC)||( !centralInboxLead&&!plazaManualLead&&isServiceLead&&l.service_pic===profile?.name),t=l.need_type||'INFORMASI',d=sourceData;
  $('mt').textContent='Lead '+l.lead_id;
  $('mb').innerHTML='<div class="small">'+esc(l.customer)+' • '+(wa?'<a href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank">📱 '+esc(l.whatsapp)+'</a>':'WhatsApp tersembunyi sampai menjadi tanggung jawab Anda.')+'</div>'+(l.qualification_result==='GAGAL'?'<div style="margin:10px 0;padding:10px;background:#fef2f2;border-radius:8px"><b>Keterangan Gagal</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+'<label>Produk Ringkas</label><input id="ep" value="'+esc(l.product||'')+'"><label>Kebutuhan / Ringkasan</label><textarea id="en">'+esc(l.need||'')+'</textarea><label>Budget Ringkas</label><input id="eb" value="'+esc(l.budget||'')+'"><label>Preference Ringkas</label><textarea id="epr">'+esc(l.preference||'')+'</textarea>'+editNeedFields(t,d)+'<label>Catatan</label><textarea id="ec">'+esc(l.catatan||'')+'</textarea><button id="updateBtn" class="success">Simpan Update</button>';
  $('updateBtn').onclick=()=>updateLead(id);$('modal').classList.remove('hidden');renderEditNeedFields();

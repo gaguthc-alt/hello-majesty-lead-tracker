@@ -16,7 +16,7 @@ window.renderContentPerformance=async function(){
   body.innerHTML='<div class="small">⏳ Memuat pencapaian...</div>';
   try{
    const p=cpPeriod(mode);
-   const q=await sb.from('leads').select('lead_id,content_creator,source_platform,source_campaign,source_confidence,created_at').gte('created_at',p.start.toISOString()).lt('created_at',p.end.toISOString()).is('archived_at',null);
+   const q=await sb.from('leads').select('lead_id,content_creator,source_platform,source_campaign,source_confidence,created_at').gte('created_at',p.start.toISOString()).lt('created_at',p.end.toISOString());
    if(q.error)throw q.error;
    const rows=q.data||{};
    const teamQ=await sb.from('team_profiles').select('name').eq('active',true).ilike('role','%CONTENT CREATOR%');

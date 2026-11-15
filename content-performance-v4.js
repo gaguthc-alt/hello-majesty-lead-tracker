@@ -24,10 +24,12 @@ window.renderContentPerformance=async function(){
    const activeCreators=[...new Set((teamQ.data||[]).map(x=>String(x.name||'').trim()).filter(Boolean))];
    const groups={};
    rows.forEach(r=>{
+    // Preserve historical/manual creator attribution even when the lead
+    // does not carry the newer TRACKED_LINK confidence marker.
     const tracked=String(r.source_confidence||'').toUpperCase()==='TRACKED_LINK';
-    const creator=tracked?(String(r.content_creator||'').trim()||'—'):'—';
-    const platform=tracked?(String(r.source_platform||'').trim().toUpperCase()||'LINK CONTENT CREATOR'):'WHATSAPP';
-    const campaign=tracked?(String(r.source_campaign||'').trim()||'Tanpa kampanye'):'Tidak diketahui';
+    const creator=String(r.content_creator||'').trim()||'—';
+    const platform=String(r.source_platform||'').trim().toUpperCase()||(tracked?'LINK CONTENT CREATOR':(creator==='—'?'WHATSAPP':'WHATSAPP'));
+    const campaign=String(r.source_campaign||'').trim()||(tracked?'Tanpa kampanye':(creator==='—'?'Tidak diketahui':'Atribusi tersimpan'));
     const key=[creator,platform,campaign].join('|');
     if(!groups[key])groups[key]={creator,platform,campaign,leads:0};
     groups[key].leads++;
@@ -47,7 +49,7 @@ window.renderContentPerformance=async function(){
    const list=Object.values(groups).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
    const creatorCount=new Set(list.map(x=>String(x.creator||'').trim().toLocaleLowerCase('id')).filter(x=>x&&x!=='—')).size;
    const total=rows.length+Object.values(manualLeadOverrides).reduce((sum,n)=>sum+Number(n||0),0);
-   body.innerHTML='<div class="stats"><div class="stat"><div class="small">Total Lead</div><div class="num">'+cpFmt(total)+'</div></div><div class="stat"><div class="small">Content Creator</div><div class="num">'+cpFmt(creatorCount)+'</div></div><div class="stat"><div class="small">Lead dari Link Terlacak</div><div class="num">'+cpFmt(rows.filter(r=>String(r.source_confidence||'').toUpperCase()==='TRACKED_LINK').length)+'</div></div><div class="stat"><div class="small">Lead WhatsApp / Belum Teratribusi</div><div class="num">'+cpFmt(rows.filter(r=>String(r.source_confidence||'').toUpperCase()!=='TRACKED_LINK').length)+'</div></div></div><div class="small" style="margin:12px 0">Periode: <b>'+p.label+'</b> · dihitung dari lead yang dibuat pada periode tersebut.</div>'+
+   body.innerHTML='<div class="stats"><div class="stat"><div class="small">Total Lead</div><div class="num">'+cpFmt(total)+'</div></div><div class="stat"><div class="small">Content Creator</div><div class="num">'+cpFmt(creatorCount)+'</div></div><div class="stat"><div class="small">Lead dari Link Terlacak</div><div class="num">'+cpFmt(rows.filter(r=>String(r.source_confidence||'').toUpperCase()==='TRACKED_LINK').length)+'</div></div><div class="stat"><div class="small">Lead WhatsApp / Belum Teratribusi</div><div class="num">'+cpFmt(rows.filter(r=>!String(r.content_creator||'').trim()).length)+'</div></div></div><div class="small" style="margin:12px 0">Periode: <b>'+p.label+'</b> · dihitung dari lead yang dibuat pada periode tersebut.</div>'+
    (list.length?list.map(x=>'<div class="lead" style="margin-top:10px"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><b style="font-size:16px">🎬 '+cpEsc(x.creator)+'</b><span class="badge">'+cpFmt(x.leads)+' lead</span></div><div style="margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><div><div class="small">Sumber / Platform</div><b>'+cpEsc(x.platform)+'</b></div><div><div class="small">Kampanye</div><b>'+cpEsc(x.campaign)+'</b></div></div></div>').join(''):'<div class="small">Belum ada lead pada periode ini.</div>');
   }catch(e){body.innerHTML='<div style="color:#b42318">Gagal memuat pencapaian: '+cpEsc(e?.message||e)+'</div>'}
  };

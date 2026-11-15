@@ -4535,6 +4535,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
     if(request!==hmAdjustmentRequest)return;
     if(res.error)throw res.error;
     hmPendingAdjustments=res.data||[];
+    updateSelection();
     const sum=hmPendingAdjustments.reduce((n,x)=>n+Number(x.amount||0),0);
     info.innerHTML=hmPendingAdjustments.length
      ?'<b>Penyesuaian settlement tertunda</b>'+hmPendingAdjustments.map(x=>'<div style="margin-top:5px">+ '+money(x.amount)+' · '+safe(x.reason||'Koreksi modal')+(x.reference_number?' · Ref: '+safe(x.reference_number):'')+'</div>').join('')+'<div style="font-weight:800;margin-top:7px">Total koreksi: '+money(sum)+'</div>'

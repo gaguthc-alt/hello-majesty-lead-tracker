@@ -5515,13 +5515,15 @@ window.hmRunStockistJournalReclass = async function(){
        hmCloseMainMenu();
        hmActiveMainMenu='';
        void Promise.resolve().then(async()=>{
-         await new Promise((resolve,reject)=>{
-           const s=document.createElement('script');
-           s.src='finance-cell.js?v=20261108-stock-out-form-2';
-           s.onload=resolve;
-           s.onerror=()=>reject(new Error('Modul Dashboard Inventory Mitra gagal dimuat.'));
-           document.head.appendChild(s);
-         });
+         if(typeof window.openCellFinanceReport!=='function'){
+          await new Promise((resolve,reject)=>{
+            const s=document.createElement('script');
+            s.src='finance-cell.js?v=20261115-settlement-adjustment-v1';
+            s.onload=resolve;
+            s.onerror=()=>reject(new Error('Modul Dashboard Inventory Mitra gagal dimuat.'));
+            document.head.appendChild(s);
+          });
+        }
          if(typeof window.openCellFinanceReport!=='function')throw new Error('Modul Dashboard Inventory Mitra tidak berhasil dimuat.');
          return window.openCellFinanceReport();
        }).catch(ex=>{

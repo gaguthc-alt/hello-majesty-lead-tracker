@@ -1379,7 +1379,7 @@ async function saveStock(){
  const hunters=selectedReceivePeople('sthunter');
  const checkers=selectedReceivePeople('stchecker');
  const hunter=hunters[0]||null,checker=checkers[0]||null;
- const currentRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const partnerName=$('stpartner')?.value||(currentRole==='ADMIN FINANCE MAJESTY CELL'?'Majesty Cell':currentRole==='MITRA STOCKIST'?String(profile?.outlet||'').trim():null);
+ const currentRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');const requiresApproval=source==='STOCKIST'||(currentRole==='FASILITATOR'&&source==='MANAGEMENT');const partnerName=$('stpartner')?.value||(currentRole==='ADMIN FINANCE MAJESTY CELL'?'Majesty Cell':currentRole==='MITRA STOCKIST'?String(profile?.outlet||'').trim():null);
  if(source==='STOCKIST'&&!partnerName)return alert('Unit Bisnis asal barang wajib dipilih.');
  if(String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='ADMIN FINANCE MAJESTY CELL'&&source==='STOCKIST'&&partnerName!=='Majesty Cell')return alert('Admin Finance Majesty Cell hanya dapat menginput barang dari Majesty Cell.');
  if(!receiveOutlet)return alert('Outlet tujuan barang masuk wajib dipilih.');
@@ -1428,6 +1428,9 @@ async function saveStock(){
   data.partner_name=selectedStockist;
   data.received_source_note=selectedStockist;
   // Stockist harus masuk antrean persetujuan sejak insert, tidak pernah READY langsung.
+  data.status='PENDING_APPROVAL';
+ }else if(currentRole==='FASILITATOR'&&source==='MANAGEMENT'){
+  // Barang Masuk oleh Facilitator harus menunggu review Management/Facilitator lain.
   data.status='PENDING_APPROVAL';
  }
 
@@ -1485,7 +1488,7 @@ async function saveStock(){
    }
   }
   // Hanya stok dari Stockist yang wajib melalui persetujuan. Stok Management langsung READY.
-  if(source==='STOCKIST'){
+  if(requiresApproval){
    const ap=await sb.rpc('submit_inventory_receive_approval',{p_stock_unit_id:stockId});
    if(ap.error){
     // Jika respons RPC bermasalah, cek dulu apakah pengajuan sebenarnya sudah tercatat.
@@ -1497,11 +1500,11 @@ async function saveStock(){
    }
   }
   closeModal();
-  if(source==='STOCKIST'){
+  if(requiresApproval){
    const productRow=inventoryProducts.find(p=>String(p.id)===String(data.product_id))||{};
    const productLabel=[productRow.product||data.product||'Produk',productRow.variant||data.variant,productRow.color||data.color].filter(Boolean).join(' — ');
    const nl=String.fromCharCode(10);
-   const waMessage=['🔔 *PENGAJUAN PERSETUJUAN BARANG MASUK*','','Produk: '+productLabel,'IMEI: '+(data.imei_1||'-'),'IMEI 2/EID: '+(data.imei_2||'-'),'Modal: Rp '+Number(data.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(data.outlet||'-'),'Sumber: '+(data.partner_name||data.received_source_note||data.source_type||'-'),'Status: *MENUNGGU PERSETUJUAN*','','Mohon buka Hello Majesty → Persetujuan Barang Masuk untuk memeriksa dan menyetujui.'].join(nl);
+   const waMessage=['🔔 *PENGAJUAN PERSETUJUAN BARANG MASUK*','','Penginput: '+(profile?.name||'-'),'Produk: '+productLabel,'IMEI: '+(data.imei_1||'-'),'IMEI 2/EID: '+(data.imei_2||'-'),'Modal: Rp '+Number(data.cost||0).toLocaleString('id-ID'),'Outlet tujuan: '+(data.outlet||'-'),'Sumber: '+(data.partner_name||data.received_source_note||data.source_type||'-'),'Status: *MENUNGGU PERSETUJUAN*','','Mohon periksa dan proses melalui menu Persetujuan Barang Masuk di Hello Majesty.'].join(nl);
    alert('Barang Masuk berhasil diajukan. Status: MENUNGGU PERSETUJUAN.');
    if(confirm('Buka WhatsApp untuk mengirim pengajuan Barang Masuk sekarang?'))window.location.href='https://wa.me/?text='+encodeURIComponent(waMessage);
   }else{
@@ -1509,7 +1512,8 @@ async function saveStock(){
   }
   await renderInventory();
  }catch(e){
-  alert(e?.message||e);
+  console.error('[HM] saveStock gagal:',e);
+  alert('Barang Masuk gagal disimpan/diajukan: '+(e?.message||e));
  }finally{
   window.hmSavingStock=false;
   if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=source==='STOCKIST'?'Kirim untuk Persetujuan':'Simpan Stock Ready';}

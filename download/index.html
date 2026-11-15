@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#075e54">
+<title>Download Aplikasi • Hello Majesty</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f6f6;color:#14232b;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}.top{background:#075e54;color:#fff;padding:18px 22px;font-weight:800;letter-spacing:.2px}.wrap{max-width:680px;margin:48px auto;padding:0 18px}.card{background:#fff;border:1px solid #e0e8e8;border-radius:22px;padding:30px;box-shadow:0 12px 36px #102a4310}.brand{display:flex;align-items:center;gap:13px;margin-bottom:24px}.logo{width:48px;height:48px;border-radius:14px;background:#e3f3ef;color:#087f70;display:grid;place-items:center;font-size:25px;font-weight:900}.eyebrow{font-size:12px;font-weight:800;letter-spacing:1.2px;color:#087f70}.title{font-size:29px;line-height:1.15;margin:0 0 10px}.muted{color:#64748b;line-height:1.65}.version{display:inline-flex;gap:8px;align-items:center;background:#e7f5ef;color:#08734f;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:750;margin:16px 0 20px}.download{display:flex;justify-content:center;align-items:center;gap:10px;width:100%;padding:16px 18px;border-radius:13px;background:#087f70;color:#fff;text-decoration:none;font-size:16px;font-weight:800}.download[aria-disabled=true]{opacity:.55;pointer-events:none}.small{font-size:12px;color:#64748b;margin-top:12px}.steps{margin-top:28px;padding-top:22px;border-top:1px solid #e8eeee}.steps h2{font-size:17px;margin:0 0 12px}.steps ol{padding-left:20px;margin:0;color:#475569;line-height:1.8}.foot{text-align:center;color:#94a3b8;font-size:12px;margin:20px 0 36px}.status{font-size:13px;color:#64748b;margin-top:12px}
+</style>
+</head>
+<body>
+<header class="top">HELLO MAJESTY · BUILT ON TRUST</header>
+<main class="wrap">
+<section class="card">
+  <div class="brand"><div class="logo">HM</div><div><div class="eyebrow">APLIKASI RESMI INTERNAL</div><strong>Hello Majesty</strong></div></div>
+  <h1 class="title">Download Aplikasi Android</h1>
+  <p class="muted">Unduh aplikasi Hello Majesty Lead Tracker untuk perangkat Android tim. Gunakan halaman ini setiap kali ingin memasang atau memperbarui aplikasi.</p>
+  <div class="version" id="version">Memeriksa versi terbaru…</div>
+  <a class="download" id="download" href="https://github.com/gaguthc-alt/hello-majesty-lead-tracker/releases/latest/download/app-debug.apk" aria-disabled="true">↓ &nbsp; Download APK Terbaru</a>
+  <p class="small">File resmi diambil dari GitHub Releases Hello Majesty. Jika tombol belum aktif, muat ulang halaman beberapa saat lagi.</p>
+  <div class="status" id="status" aria-live="polite"></div>
+  <div class="steps">
+    <h2>Cara memasang di Android</h2>
+    <ol>
+      <li>Tekan tombol <b>Download APK Terbaru</b>.</li>
+      <li>Buka file APK yang sudah selesai diunduh.</li>
+      <li>Jika diminta, izinkan instalasi aplikasi dari sumber ini.</li>
+      <li>Tekan <b>Install</b> atau <b>Update</b>.</li>
+      <li>Buka Hello Majesty dan izinkan notifikasi agar pemberitahuan dapat diterima.</li>
+    </ol>
+  </div>
+</section>
+<p class="foot">HELLO MAJESTY · Akses download resmi untuk tim</p>
+</main>
+<script>
+(async function(){
+ const button=document.getElementById('download');
+ const version=document.getElementById('version');
+ const status=document.getElementById('status');
+ try{
+  const response=await fetch('https://api.github.com/repos/gaguthc-alt/hello-majesty-lead-tracker/releases/latest',{headers:{'Accept':'application/vnd.github+json'}});
+  if(!response.ok) throw new Error('Rilis terbaru belum tersedia.');
+  const release=await response.json();
+  const apk=(release.assets||[]).find(a=>a.name.toLowerCase().endsWith('.apk'));
+  if(!apk) throw new Error('File APK belum tersedia pada rilis terbaru.');
+  version.textContent=(release.tag_name||release.name||'Versi terbaru').replace('android-','')+(release.published_at?' · '+new Date(release.published_at).toLocaleDateString('id-ID'):'');
+  button.href=apk.browser_download_url;
+  button.setAttribute('aria-disabled','false');
+  status.textContent='Siap diunduh · '+(apk.size?((apk.size/1024/1024).toFixed(1)+' MB'):'APK');
+ }catch(error){
+  version.textContent='Rilis terbaru sedang disiapkan';
+  button.setAttribute('aria-disabled','true');
+  status.textContent=error.message;
+ }
+})();
+</script>
+</body>
+</html>

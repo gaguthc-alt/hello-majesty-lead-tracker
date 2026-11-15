@@ -18,7 +18,7 @@
   <p class="muted">Unduh aplikasi Hello Majesty Lead Tracker untuk perangkat Android tim. Gunakan halaman ini setiap kali ingin memasang atau memperbarui aplikasi.</p>
   <div class="version" id="version">Memeriksa versi terbaru…</div>
   <a class="download" id="download" href="https://github.com/gaguthc-alt/hello-majesty-lead-tracker/releases/latest/download/app-debug.apk" aria-disabled="true">↓ &nbsp; Download APK Terbaru</a>
-  <p class="small">File resmi diambil dari GitHub Releases Hello Majesty. Jika tombol belum aktif, muat ulang halaman beberapa saat lagi.</p>
+  <p class="small">File instalasi resmi disediakan oleh Hello Majesty. Jika tombol belum aktif, coba muat ulang halaman beberapa saat lagi.</p>
   <div class="status" id="status" aria-live="polite"></div>
   <div class="steps">
     <h2>Cara memasang di Android</h2>
@@ -40,7 +40,7 @@
  const status=document.getElementById('status');
  try{
   const response=await fetch('https://api.github.com/repos/gaguthc-alt/hello-majesty-lead-tracker/releases/latest',{headers:{'Accept':'application/vnd.github+json'}});
-  if(!response.ok) throw new Error('Rilis terbaru belum tersedia.');
+  if(!response.ok) throw new Error('Versi terbaru belum tersedia.');
   const release=await response.json();
   const apk=(release.assets||[]).find(a=>a.name.toLowerCase().endsWith('.apk'));
   if(!apk) throw new Error('File APK belum tersedia pada rilis terbaru.');
@@ -49,7 +49,7 @@
   button.setAttribute('aria-disabled','false');
   status.textContent='Siap diunduh · '+(apk.size?((apk.size/1024/1024).toFixed(1)+' MB'):'APK');
  }catch(error){
-  version.textContent='Rilis terbaru sedang disiapkan';
+  version.textContent='Versi terbaru sedang disiapkan';
   button.setAttribute('aria-disabled','true');
   status.textContent=error.message;
  }

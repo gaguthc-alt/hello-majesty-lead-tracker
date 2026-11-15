@@ -69,7 +69,7 @@ async function notifyInboundMessage(payload){
   try{
     let conversation=rows.find(x=>x.id===conversationId);
     if(!conversation){
-      const {data,error}=await sb.from('chat_conversations').select('id,customer_name,customer_phone,claimed_by').eq('id',conversationId).maybeSingle();
+      const {data,error}=await sb.from('chat_conversations').select('id,customer_name,claimed_by').eq('id',conversationId).maybeSingle();
       if(error||!data)return;
       conversation=data;
     }
@@ -88,9 +88,6 @@ async function notifyInboundMessage(payload){
 function connectInboxRealtime(){
   if(realtimeChannel)sb.removeChannel(realtimeChannel);
   realtimeChannel=sb.channel('hm-whatsapp-inbox-live')
-    .on('postgres_changes',{event:'*',schema:'public',table:'chat_conversations'},payload=>{
-      scheduleRealtimeRefresh(payload?.new?.id||payload?.old?.id||null);
-    })
     .on('postgres_changes',{event:'*',schema:'public',table:'chat_messages'},payload=>{
       const conversationId=payload?.new?.conversation_id||payload?.old?.conversation_id||null;
       if(payload?.eventType==='INSERT')notifyInboundMessage(payload);
@@ -128,12 +125,12 @@ async function init(){try{
   if(requestedConversation&&rows.some(x=>x.id===requestedConversation))await openChat(requestedConversation);
   connectInboxRealtime();
   // Fallback polling only when Realtime is disconnected; no routine 12-second polling.
-  setInterval(()=>{if(!realtimeConnected)load(true);},15000);
+  setInterval(()=>load(true),15000);
   window.addEventListener('focus',()=>load(true));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);});
 }catch(e){$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
 async function load(quiet=false){try{
-  const {data,error}=await sb.from('chat_conversations').select('*').order('updated_at',{ascending:false}).limit(200);
+  const {data,error}=await sb.from('chat_conversations').select('id,customer_name,source,content_creator,status,claimed_by,claimed_name,claimed_at,lead_id,created_at,updated_at,original_source,last_touch_source,source_code,source_owner,source_confidence,source_platform,source_campaign,first_inbound_at,last_inbound_at,claim_warning_at,claim_expires_at,first_response_at,customer_user_id,lead_decision,lead_decision_at,lead_decision_by,lead_decision_note,lead_qualification_score,lead_qualification,sales_claimed_by,sales_claimed_name,sales_claimed_at').order('updated_at',{ascending:false}).limit(200);
   if(error)throw error;
   rows=(data||[]);
   if(canInboxCS&&!isInboxManagement){
@@ -143,14 +140,14 @@ async function load(quiet=false){try{
     rows.push(...(queue||[]).filter(x=>!ownedIds.has(x.id)).map(x=>({...x,_queue:true})));
   }
   renderList();if(active){const fresh=rows.find(x=>x.id===active.id);if(fresh){active=fresh;await loadMessages(true);renderHead();}}}catch(e){if(!quiet)$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
-function renderList(){const q=$('search').value.toLowerCase();const filtered=rows.filter(c=>(c.customer_phone||c.phone_hint||'').toLowerCase().includes(q)||(c.customer_name||'').toLowerCase().includes(q));$('list').innerHTML=filtered.map(c=>'<div class="item '+(active?.id===c.id?'sel':'')+'" data-id="'+c.id+'"><strong>'+esc(c.customer_name||displayPhone(c.customer_phone)||'Percakapan')+'</strong><div class="muted">'+esc(c._queue?(c.phone_hint||'Nomor disamarkan'):c.customer_phone?displayPhone(c.customer_phone):'Nomor belum tersedia')+'</div><div style="margin-top:7px"><span class="tag '+(c._queue?'':'lock')+'">'+(c._queue?'CHAT TERSEDIA':c.sales_claimed_by===me.id?'SALES PIC ANDA':c.claimed_by?'CS PIC: '+esc(c.claimed_name||'CS'):'BELUM DI-CLAIM')+'</span> <span class="muted">'+esc(c.status||'NEW')+'</span></div></div>').join('')||'<div class="empty">Tidak ada chat yang menjadi tanggung jawab Anda.</div>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));}
+function renderList(){const q=$('search').value.toLowerCase();const filtered=rows.filter(c=>(c.customer_name||'').toLowerCase().includes(q));$('list').innerHTML=filtered.map(c=>'<div class="item '+(active?.id===c.id?'sel':'')+'" data-id="'+c.id+'"><strong>'+esc(c.customer_name||'Percakapan')+'</strong><div class="muted">Nomor WhatsApp dirahasiakan</div><div style="margin-top:7px"><span class="tag '+(c._queue?'':'lock')+'">'+(c._queue?'CHAT TERSEDIA':c.sales_claimed_by===me.id?'SALES PIC ANDA':c.claimed_by?'CS PIC: '+esc(c.claimed_name||'CS'):'BELUM DI-CLAIM')+'</span> <span class="muted">'+esc(c.status||'NEW')+'</span></div></div>').join('')||'<div class="empty">Tidak ada chat yang menjadi tanggung jawab Anda.</div>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));}
 async function openChat(id){active=rows.find(c=>c.id===id);renderList();renderHead();if(!active?._queue)await loadMessages();else $('msgs').innerHTML='<div class="empty">Chat baru tersedia. Claim untuk membuka isi percakapan.</div>';}
-function renderHead(){if(!active){$('head').innerHTML='<div class="empty">Pilih percakapan untuk melihat detail.</div>';return;}const mine=active.claimed_by===me.id;const salesMine=active.sales_claimed_by===me.id;const free=!active.claimed_by&&!active.sales_claimed_by;$('head').innerHTML='<div><b>'+esc(active.customer_name||displayPhone(active.customer_phone)||'Customer')+'</b><div class="muted">'+esc(active.customer_phone?displayPhone(active.customer_phone):'Nomor tidak tersedia')+' · '+esc(active.status||'NEW')+'</div><div class="muted">'+(active.claimed_by?'PIC: '+esc(active.claimed_name||'CS'):'Belum ada PIC')+'</div></div><div class="actions">'+(free&&canInboxCS?'<button id="claim" class="btn">Claim Chat</button>':mine||salesMine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dipegang PIC lain</span>')+(isInboxManagement?'<button id="deleteConversation" class="danger" type="button">🗑 Hapus Percakapan</button>':'')+'</div>';if($('claim'))$('claim').onclick=claim;if($('deleteConversation'))$('deleteConversation').onclick=deleteConversation;renderComposer();renderLeadReview();}
+function renderHead(){if(!active){$('head').innerHTML='<div class="empty">Pilih percakapan untuk melihat detail.</div>';return;}const mine=active.claimed_by===me.id;const salesMine=active.sales_claimed_by===me.id;const free=!active.claimed_by&&!active.sales_claimed_by;$('head').innerHTML='<div><b>'+esc(active.customer_name||'Customer')+'</b><div class="muted">Nomor WhatsApp dirahasiakan · '+esc(active.status||'NEW')+'</div><div class="muted">'+(active.claimed_by?'PIC: '+esc(active.claimed_name||'CS'):'Belum ada PIC')+'</div></div><div class="actions">'+(free&&canInboxCS?'<button id="claim" class="btn">Claim Chat</button>':mine||salesMine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dipegang PIC lain</span>')+(isInboxManagement?'<button id="deleteConversation" class="danger" type="button">🗑 Hapus Percakapan</button>':'')+'</div>';if($('claim'))$('claim').onclick=claim;if($('deleteConversation'))$('deleteConversation').onclick=deleteConversation;renderComposer();renderLeadReview();}
 
 async function deleteConversation(){
  if(!isInboxManagement||!active)return;
  const conversationId=active.id;
- const customer=active.customer_name||displayPhone(active.customer_phone)||'percakapan ini';
+ const customer=active.customer_name||'percakapan ini';
  if(!window.confirm('HAPUS PERMANEN dari Hello Majesty?\\n\\n'+customer+' dan seluruh pesan percakapan akan dihapus dari database aplikasi.\\n\\nSambungan dan Inbox WhatsApp di HP TIDAK akan dihapus. Data Lead Tracker dan data pelanggan tetap aman.\\n\\nTindakan ini tidak dapat dibatalkan.'))return;
  const button=$('deleteConversation');if(button){button.disabled=true;button.textContent='Menghapus…';}
  try{
@@ -253,7 +250,6 @@ async function createLeadFromChat(){
   const type=$('lrNeedType')?.value||'',customer=$('lrName')?.value.trim()||'';
   if(!customer){alert('Nama customer wajib diisi.');return;}
   if(!type){alert('Kebutuhan wajib dipilih.');return;}
-  if(!active?.customer_phone){alert('Nomor WhatsApp customer belum tersedia.');return;}
   const d=buildInboxInitialData(),summary=buildInboxLeadSummary(type,d);
   const initialData={...d,customer_location:inboxValue('lrLocation'),origin:'WHATSAPP_INBOX',conversation_id:active.id};
   const button=$('makeLead');if(button){button.disabled=true;button.textContent='Menyimpan…';}
@@ -266,7 +262,7 @@ async function createLeadFromChat(){
     });
     if(error)throw error;
     await load(true);if(active)renderHead();
-    alert(data?.decision==='EXISTING_LEAD'?'Nomor ini sudah memiliki lead aktif. Percakapan dihubungkan ke lead tersebut.':'Lead berhasil disimpan. Data kontak tetap dikelola di database Hello Majesty dan nomor asli tidak diekspor ke HP CS.');
+    alert(data?.decision==='EXISTING_LEAD'?'Nomor ini sudah memiliki lead aktif. Percakapan dihubungkan ke lead tersebut.':'Lead berhasil disimpan. Data kontak tetap dikelola di database Hello Majesty.');
   }catch(e){alert(e.message||'Gagal membuat lead.');if(button){button.disabled=false;button.textContent='Simpan Lead';}}
 }
 async function markChatNotLead(){

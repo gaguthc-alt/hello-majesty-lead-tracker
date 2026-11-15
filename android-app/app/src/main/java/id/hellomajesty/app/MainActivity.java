@@ -108,13 +108,21 @@ public class MainActivity extends Activity {
                 try {
                   attempts++;
                   let session = null;
-                  for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key.includes('auth-token')) {
-                      try {
-                        const value = JSON.parse(localStorage.getItem(key));
-                        if (value && value.access_token && value.user && value.user.id) { session = value; break; }
-                      } catch (e) {}
+                  // Hello Majesty login stores the Supabase session in hm_auth_session.
+                  // Keep the auth-token fallback for older Supabase client storage formats.
+                  try {
+                    const value = JSON.parse(localStorage.getItem('hm_auth_session') || 'null');
+                    if (value && value.access_token && value.user && value.user.id) session = value;
+                  } catch (e) {}
+                  if (!session) {
+                    for (let i = 0; i < localStorage.length; i++) {
+                      const key = localStorage.key(i);
+                      if (key && key.includes('auth-token')) {
+                        try {
+                          const value = JSON.parse(localStorage.getItem(key));
+                          if (value && value.access_token && value.user && value.user.id) { session = value; break; }
+                        } catch (e) {}
+                      }
                     }
                   }
                   if (!session) { if (attempts >= 120) clearInterval(timer); return; }

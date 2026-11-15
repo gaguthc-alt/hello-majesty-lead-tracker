@@ -116,25 +116,19 @@ window.renderContentPerformance=async function(){
      const dateFmt=d=>d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
      const todayP=cpPeriod('today'),monthP=cpPeriod('month');
      const today=summarize(todayQ.data,'today'),month=summarize(monthQ.data,'month');
-     const section=(heading,p,d)=>[
+     const section=(heading,p,d,mode)=>[
       '*'+heading+'*',
-      '*Periode:* '+dateFmt(p.start)+' – '+dateFmt(new Date(p.end.getTime()-86400000)),
+      '*Periode:* '+(mode==='today'?dateFmt(p.start):dateFmt(p.start)+' – '+dateFmt(new Date(p.end.getTime()-86400000))),
       '*Total lead:* '+cpFmt(d.total),
-      '*Content Creator tercatat:* '+cpFmt(d.creatorCount),
-      '*Lead dari link terlacak:* '+cpFmt(d.tracked),
-      '*Lead WhatsApp / belum teratribusi:* '+cpFmt(d.unattributed),
       '',
       '*PERFORMA TIM CONTENT*',
-      ...Object.entries(d.totals).sort((a,b)=>b[1]-a[1]).map(([name,count],i)=>(i+1)+'. '+name+' — *'+cpFmt(count)+' lead*'),
-      '',
-      '*Rincian sumber & kampanye*',
-      ...d.items.filter(x=>x.creator!=='—').map(x=>'• '+x.creator+': '+x.platform+' / '+x.campaign+' — '+cpFmt(x.leads)+' lead')
-     ].join('\n');
+      ...Object.entries(d.totals).sort((a,b)=>b[1]-a[1]).map(([name,count],i)=>(i+1)+'. '+name+' — *'+cpFmt(count)+' lead*')
+     ].join('\\n');
      const combined=[
       '🎬 *LAPORAN PENCAPAIAN CONTENT CREATOR*',
       '*HELLO MAJESTY — Built on Trust*','',
-      section('📅 PERFORMA HARI INI',todayP,today),'',
-      section('📊 PERFORMA BULAN INI (BERJALAN)',monthP,month),'',
+      section('📅 PERFORMA HARI INI',todayP,today,'today'),'',
+      section('📊 PERFORMA BULAN INI (BERJALAN)',monthP,month,'month'),'',
       'Laporan dibuat dari Lead Tracker berdasarkan tanggal lead dibuat. Penyesuaian manual ditandai pada rincian.',
       '— HELLO MAJESTY'
      ].join('\n');

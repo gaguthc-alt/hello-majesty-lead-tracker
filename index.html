@@ -4512,7 +4512,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    '<label>Tanggal settlement<input id="hmSettleDate" type="date" required value="'+new Date().toISOString().slice(0,10)+'"></label>'+
    '<label>Catatan<textarea id="hmSettleNote" rows="2" placeholder="Referensi pembayaran atau catatan"></textarea></label>'+
    '</div><div style="margin-top:12px">'+(unitRows||'<div style="text-align:center;padding:22px 14px;border:1px dashed #d0d5dd;border-radius:14px;background:#f8fafc"><div style="font-size:26px">📦</div><b style="display:block;margin-top:7px">Tidak ada unit SOLD tersedia</b><div class="small" style="margin-top:4px">Semua unit yang memenuhi filter sudah masuk settlement atau belum ada penjualan.</div></div>')+'</div>'+
-   '<div class="box" style="margin-top:12px"><b id="hmSettleSelectedCount">0 unit dipilih</b><h3 id="hmSettleSelectedTotal">'+money(0)+'</h3><p class="small">Pilih unit sesuai pembayaran yang akan dilakukan. Settlement sebagian dilakukan dengan memilih sebagian unit; unit lain tetap tersedia untuk settlement berikutnya.</p><button type="button" id="hmSettleSaveDraft" '+(available.length?'':'disabled')+'>Simpan pilihan sebagai DRAFT</button></div></div>'+
+   '<div class="box" style="margin-top:12px"><b id="hmSettleSelectedCount">0 unit dipilih</b><h3 id="hmSettleSelectedTotal">'+money(0)+'</h3><div id="hmSettleAdjustmentInfo" class="small" style="margin:10px 0;padding:10px;border-radius:8px;background:#fff8e7">Pilih satu stockist dan outlet untuk memeriksa penyesuaian settlement tertunda.</div><p class="small">Pilih unit sesuai pembayaran yang akan dilakukan. Penyesuaian tertunda dapat dibuat sebagai draft tersendiri tanpa memilih unit SOLD.</p><button type="button" id="hmSettleSaveDraft" '+(available.length?'':'disabled')+'>Simpan pilihan sebagai DRAFT</button></div></div>'+
    (isStockistUser||isFacilitatorUser?'':   '<style>.hmSettleTable{width:100%;border-collapse:collapse;table-layout:fixed}.hmSettleTable th,.hmSettleTable td{overflow-wrap:anywhere;word-break:break-word;padding:10px 8px}.hmSettleTable td button{max-width:100%;white-space:normal}@media(max-width:700px){.hmSettleTable,.hmSettleTable tbody{display:block;width:100%}.hmSettleTable thead{display:none}.hmSettleTable tr{display:block;width:100%;margin:0 0 12px;border:1px solid #40536b;border-radius:10px;overflow:hidden}.hmSettleTable td{display:grid;grid-template-columns:minmax(88px,32%) minmax(0,1fr);gap:8px;width:100%;border:0;border-bottom:1px solid #40536b;text-align:left;white-space:normal}.hmSettleTable td:last-child{border-bottom:0}.hmSettleTable td:nth-child(1)::before{content:"Stockist";font-weight:700}.hmSettleTable td:nth-child(2)::before{content:"Outlet";font-weight:700}.hmSettleTable td:nth-child(3)::before{content:"Tanggal";font-weight:700}.hmSettleTable td:nth-child(4)::before{content:"Nominal";font-weight:700}.hmSettleTable td:nth-child(5)::before{content:"Status";font-weight:700}.hmSettleTable td:nth-child(6)::before{content:"Produk / IMEI";font-weight:700}.hmSettleTable td:nth-child(7)::before{content:"Aksi";font-weight:700}.hmSettleTable td[colspan]{display:block}.hmSettleTable td[colspan]::before{content:none}}@media(min-width:701px){.hmSettleTable th:nth-child(1){width:14%}.hmSettleTable th:nth-child(2){width:17%}.hmSettleTable th:nth-child(3){width:13%}.hmSettleTable th:nth-child(4){width:14%}.hmSettleTable th:nth-child(5){width:10%}.hmSettleTable th:nth-child(6){width:20%}.hmSettleTable th:nth-child(7){width:12%}}</style><div class="box"><h3>2. Riwayat settlement</h3><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0"><label style="font-weight:700">Filter bulan <input type="month" aria-label="Filter bulan riwayat settlement" onchange="window.hmFilterSettlementHistory(this)" style="padding:8px;border:1px solid #98a2b3;border-radius:8px"></label><button type="button" class="secondary" onclick="this.parentElement.querySelector(&quot;input&quot;).value=&quot;&quot;;window.hmFilterSettlementHistory(this.parentElement.querySelector(&quot;input&quot;))">Semua bulan</button></div><div style="width:100%;max-width:100%;overflow-x:hidden"><table class="hmSettleTable"><thead><tr><th>Stockist</th><th>Outlet</th><th>Tanggal</th><th>Nominal</th><th>Status</th><th>Produk / IMEI</th><th>Aksi</th></tr></thead><tbody>'+(historyRows||'<tr><td colspan="7">Belum ada riwayat settlement.</td></tr>')+'</tbody></table></div></div>'));
   // Form pemilihan unit SOLD hanya tersedia untuk Management. Akun mitra hanya melihat riwayat dan aksi konfirmasi.
   if(!isStockistUser){
@@ -4521,12 +4521,31 @@ window.hmOpenPartnerSettlementManagement=async function(){
   outletSel.value=isFacilitatorUser?facilitatorOutlet:'ALL';
   if(isFacilitatorUser){outletSel.disabled=true;outletSel.title='Pengajuan hanya untuk outlet Anda';}
   partnerSel.value='ALL';
+  let hmPendingAdjustments=[];
+  let hmAdjustmentKey='';
+  let hmAdjustmentRequest=0;
+  const hmLoadAdjustments=async()=>{
+   const partner=partnerSel.value,outlet=outletSel.value,info=document.getElementById('hmSettleAdjustmentInfo');
+   if(!info)return;
+   if(partner==='ALL'||outlet==='ALL'){hmPendingAdjustments=[];hmAdjustmentKey='';info.textContent='Pilih satu stockist dan satu outlet untuk memeriksa penyesuaian settlement tertunda.';return;}
+   const key=partner+'|'+outlet;if(key===hmAdjustmentKey)return;
+   hmAdjustmentKey=key;const request=++hmAdjustmentRequest;info.textContent='Memeriksa penyesuaian settlement…';
+   try{
+    const res=await window.sb.rpc('get_pending_partner_settlement_adjustments',{p_partner:partner,p_outlet:outlet});
+    if(request!==hmAdjustmentRequest)return;
+    if(res.error)throw res.error;
+    hmPendingAdjustments=res.data||[];
+    const sum=hmPendingAdjustments.reduce((n,x)=>n+Number(x.amount||0),0);
+    info.innerHTML=hmPendingAdjustments.length
+     ?'<b>Penyesuaian settlement tertunda</b>'+hmPendingAdjustments.map(x=>'<div style="margin-top:5px">+ '+money(x.amount)+' · '+safe(x.reason||'Koreksi modal')+(x.reference_number?' · Ref: '+safe(x.reference_number):'')+'</div>').join('')+'<div style="font-weight:800;margin-top:7px">Total koreksi: '+money(sum)+'</div>'
+     :'Tidak ada penyesuaian settlement tertunda untuk pilihan ini.';
+   }catch(e){hmPendingAdjustments=[];info.textContent='Gagal memuat penyesuaian: '+(e?.message||String(e));}
+  };
   const updateSelection=()=>{
    let count=0,total=0;
    b.querySelectorAll('[data-settle-unit]').forEach(row=>{
     const partner=row.getAttribute('data-partner'),outlet=row.getAttribute('data-outlet');
-    const selectedOutlet=document.getElementById('hmSettleOutlet').value;
-    const selectedPartner=partnerSel.value;
+    const selectedOutlet=outletSel.value,selectedPartner=partnerSel.value;
     const visible=(selectedPartner==='ALL'||partner.toLowerCase()===selectedPartner.toLowerCase())&&(selectedOutlet==='ALL'||outlet.toLowerCase()===selectedOutlet.toLowerCase());
     row.style.display=visible?'':'none';
     const cb=row.querySelector('.hmSettleUnitCheck');
@@ -4534,54 +4553,66 @@ window.hmOpenPartnerSettlementManagement=async function(){
    });
    document.getElementById('hmSettleSelectedCount').textContent=count+' unit dipilih';
    document.getElementById('hmSettleSelectedTotal').textContent=money(total);
-   document.getElementById('hmSettleSaveDraft').disabled=count===0;
+   document.getElementById('hmSettleSaveDraft').disabled=count===0&&hmPendingAdjustments.length===0;
   };
-  partnerSel.addEventListener('change',()=>{b.querySelectorAll('.hmSettleUnitCheck').forEach(cb=>cb.checked=false);updateSelection();});
-  document.getElementById('hmSettleOutlet').addEventListener('change',()=>{b.querySelectorAll('.hmSettleUnitCheck').forEach(cb=>cb.checked=false);updateSelection();});
+  partnerSel.addEventListener('change',()=>{b.querySelectorAll('.hmSettleUnitCheck').forEach(cb=>cb.checked=false);hmAdjustmentKey='';hmPendingAdjustments=[];updateSelection();hmLoadAdjustments();});
+  outletSel.addEventListener('change',()=>{b.querySelectorAll('.hmSettleUnitCheck').forEach(cb=>cb.checked=false);hmAdjustmentKey='';hmPendingAdjustments=[];updateSelection();hmLoadAdjustments();});
   b.querySelectorAll('.hmSettleUnitCheck').forEach(cb=>cb.addEventListener('change',()=>{
    const row=cb.closest('[data-settle-unit]');
    if(cb.checked&&partnerSel.value!=='ALL'&&row.getAttribute('data-partner').toLowerCase()!==partnerSel.value.toLowerCase()){cb.checked=false;alert('Pilih unit dari stockist yang sedang diproses.');}
-   if(cb.checked&&document.getElementById('hmSettleOutlet').value!=='ALL'&&row.getAttribute('data-outlet').toLowerCase()!==document.getElementById('hmSettleOutlet').value.toLowerCase()){cb.checked=false;alert('Unit ini bukan dari outlet yang sedang diproses.');}
+   if(cb.checked&&outletSel.value!=='ALL'&&row.getAttribute('data-outlet').toLowerCase()!==outletSel.value.toLowerCase()){cb.checked=false;alert('Unit ini bukan dari outlet yang sedang diproses.');}
    updateSelection();
   }));
+  hmLoadAdjustments();
   document.getElementById('hmSettleSaveDraft').addEventListener('click',async()=>{
    const selected=[...b.querySelectorAll('.hmSettleUnitCheck:checked')];
-   let partner=partnerSel.value,outlet=document.getElementById('hmSettleOutlet').value;
+   let partner=partnerSel.value,outlet=outletSel.value;
    const date=document.getElementById('hmSettleDate').value,note=document.getElementById('hmSettleNote').value.trim();
-   if(!selected.length){alert('Centang minimal satu unit SOLD.');return;}
    if(!date){alert('Tanggal settlement wajib diisi.');return;}
    const selectedKeys=selected.map(cb=>cb.closest('[data-settle-unit]')?.getAttribute('data-key')).filter(Boolean);
    const selectedUnits=units.filter(x=>selectedKeys.includes(x._key));
-   const selectedPartners=[...new Set(selectedUnits.map(x=>String(x._partner||x.partner_name||x.supplier||'')))];
-   const selectedOutlets=[...new Set(selectedUnits.map(x=>String(x._outlet||x.outlet||'')))];
-   if(selectedPartners.length!==1||selectedOutlets.length!==1){alert('Settlement harus dibuat untuk satu stockist dan satu outlet. Pilih unit dari satu kombinasi outlet + stockist saja.');return;}
-   partner=selectedPartners[0];outlet=selectedOutlets[0];
-   if((partnerSel.value!=='ALL'&&partnerSel.value!==partner)||(document.getElementById('hmSettleOutlet').value!=='ALL'&&document.getElementById('hmSettleOutlet').value!==outlet)){alert('Pilihan unit tidak sesuai filter outlet atau stockist.');return;}
+   if(selectedUnits.length){
+    const ps=[...new Set(selectedUnits.map(x=>String(x._partner||x.partner_name||x.supplier||'')))];
+    const os=[...new Set(selectedUnits.map(x=>String(x._outlet||x.outlet||'')))];
+    if(ps.length!==1||os.length!==1){alert('Settlement harus dibuat untuk satu stockist dan satu outlet saja.');return;}
+    partner=ps[0];outlet=os[0];
+    if((partnerSel.value!=='ALL'&&partnerSel.value!==partner)||(outletSel.value!=='ALL'&&outletSel.value!==outlet)){alert('Pilihan unit tidak sesuai filter.');return;}
+   }else if(partner==='ALL'||outlet==='ALL'){alert('Pilih satu stockist dan satu outlet untuk membuat draft koreksi.');return;}
+   const adjustmentRes=await window.sb.rpc('get_pending_partner_settlement_adjustments',{p_partner:partner,p_outlet:outlet});
+   if(adjustmentRes.error){alert('Gagal memeriksa koreksi settlement: '+adjustmentRes.error.message);return;}
+   const adjustmentRows=adjustmentRes.data||[];
+   const adjustmentTotal=adjustmentRows.reduce((n,x)=>n+Number(x.amount||0),0);
+   if(!selectedUnits.length&&!adjustmentRows.length){alert('Tidak ada unit SOLD atau penyesuaian tertunda untuk dibuatkan draft.');return;}
    const total=selectedUnits.reduce((n,x)=>n+Number(x._settlementCost??x.cost??0),0);
-   if(total<=0){alert('Total settlement '+money(total)+'. Pencairan finance bruto melebihi atau sama dengan modal unit. Nilai negatif ini menunjukkan kelebihan pencairan, bukan tagihan settlement biasa ke Stockist. Draft settlement biasa tidak dibuat; catat kelebihan tersebut sebagai kompensasi/piutang terpisah sesuai konfirmasi Management.');return;}
+   if(selectedUnits.length&&total<=0){alert('Total settlement unit '+money(total)+'. Periksa pencairan finance dan modal unit.');return;}
    const financeNetTotal=selectedUnits.reduce((n,x)=>n+Number(x._financeReceived||0),0);
-    const financeAppliedTotal=selectedUnits.reduce((n,x)=>n+Number(x._financeApplied||0),0);
-    if(!confirm('Simpan DRAFT settlement '+partner+' • '+outlet+' untuk '+selectedUnits.length+' unit? Modal / Harga Setoran '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0))+', pencairan ke rekening Majesty Cell (harga jual - tunai + tarik tunai) '+money(financeNetTotal)+', pengurang settlement '+money(financeAppliedTotal)+', sisa settlement '+money(total)+'. Draft belum dianggap pembayaran.'))return;
+   const financeAppliedTotal=selectedUnits.reduce((n,x)=>n+Number(x._financeApplied||0),0);
+   const preview=total+adjustmentTotal;
+   if(!confirm('Simpan DRAFT settlement '+partner+' • '+outlet+'? Unit SOLD: '+selectedUnits.length+'. Modal bersih unit: '+money(total)+'. Penyesuaian tertunda: '+money(adjustmentTotal)+'. Total draft: '+money(preview)+'. Draft belum dianggap pembayaran.'))return;
    try{
     if(!window.sb)throw new Error('Koneksi database belum siap. Muat ulang halaman lalu coba lagi.');
-    // Aplikasi menggunakan JWT access-token provider, bukan Supabase Auth JS session lokal.
-    // Ambil ID pengguna dari profil dashboard yang sudah diverifikasi saat bootstrap.
     const userId=profile?.user_id||window.hmProfile?.user_id||window.currentProfile?.user_id;
-    if(!userId)throw new Error('ID pengguna belum tersedia dari profil login. Muat ulang dashboard dan login kembali sebelum menyimpan draft.');
-    const {data:settlement,error:settleError}=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet,settlement_type:'CAPITAL',settlement_date:date,amount:total,note:[note||'Dipilih berdasarkan unit SOLD','Modal / Harga Setoran '+money(selectedUnits.reduce((n,x)=>n+Number(x.cost||0),0)),'Pengurang settlement (harga jual - tunai + tarik tunai) '+money(financeAppliedTotal)].join(' | '),status:'DRAFT',created_by:userId}).select('id').single();
-    if(settleError)throw new Error('Gagal menyimpan draft settlement: '+settleError.message);
-    if(!settlement?.id)throw new Error('Database tidak mengembalikan ID draft settlement.');
-    const itemRows=selectedUnits.map(x=>({settlement_id:settlement.id,stock_unit_id:x._source==='LIVE'?x.id:null,historical_stock_detail_id:x._source==='HISTORICAL'?x.id:null,sales_transaction_id:x._source==='LIVE'?(x._salesTransactionId||null):null,capital_amount:Number(x._settlementCost??x.cost??0),profit_amount:0,partner_profit_share:0}));
-    const {error:itemError}=await window.sb.from('partner_settlement_items').insert(itemRows);
-    if(itemError){
-     alert('Draft tersimpan dengan ID '+settlement.id+', tetapi rincian unit gagal disimpan: '+itemError.message+'. Jangan klik simpan lagi agar tidak ganda. Draft perlu direkonsiliasi.');
-     return;
+    if(!userId)throw new Error('ID pengguna belum tersedia dari profil login.');
+    const {data:settlement,error:settleError}=await window.sb.from('partner_settlements').insert({partner_name:partner,outlet,settlement_type:'CAPITAL',settlement_date:date,amount:preview,note:[note||'Settlement unit SOLD / koreksi modal','Modal bersih unit '+money(total),'Pengurang settlement '+money(financeAppliedTotal),adjustmentTotal?'Penyesuaian koreksi '+money(adjustmentTotal):''].filter(Boolean).join(' | '),status:'DRAFT',created_by:userId}).select('id').single();
+    if(settleError)throw new Error('Gagal menyimpan draft: '+settleError.message);
+    if(!settlement?.id)throw new Error('Database tidak mengembalikan ID draft.');
+    if(selectedUnits.length){
+     const itemRows=selectedUnits.map(x=>({settlement_id:settlement.id,stock_unit_id:x._source==='LIVE'?x.id:null,historical_stock_detail_id:x._source==='HISTORICAL'?x.id:null,sales_transaction_id:x._source==='LIVE'?(x._salesTransactionId||null):null,capital_amount:Number(x._settlementCost??x.cost??0),profit_amount:0,partner_profit_share:0}));
+     const {error:itemError}=await window.sb.from('partner_settlement_items').insert(itemRows);
+     if(itemError){alert('Draft '+settlement.id+' tersimpan, tetapi rincian unit gagal: '+itemError.message+'. Jangan simpan ulang; perlu rekonsiliasi.');return;}
     }
-    alert('Draft settlement tersimpan beserta unit terpilih. Belum dianggap pembayaran dan belum membuat jurnal Accurate.');
+    if(adjustmentRows.length){
+     const reserved=await window.sb.rpc('reserve_partner_settlement_adjustments',{p_settlement_id:settlement.id});
+     if(reserved.error)throw new Error('Draft tersimpan tetapi penguncian koreksi gagal: '+reserved.error.message+'. Jangan transfer sebelum diperiksa.');
+     const reservedAmount=Number(reserved.data||0);
+     const upd=await window.sb.from('partner_settlements').update({amount:total+reservedAmount,note:[note||'Settlement unit SOLD / koreksi modal','Modal bersih unit '+money(total),'Pengurang settlement '+money(financeAppliedTotal),'Penyesuaian koreksi '+money(reservedAmount)].join(' | ')}).eq('id',settlement.id);
+     if(upd.error)throw new Error('Koreksi sudah dikunci, tetapi nominal draft gagal diperbarui: '+upd.error.message);
+    }
+    alert('Draft settlement tersimpan. Penyesuaian koreksi: '+money(adjustmentTotal)+'. Total draft: '+money(preview)+'. Belum dianggap pembayaran dan belum membuat jurnal Accurate.');
     await window.hmOpenPartnerSettlementManagement();
    }catch(saveError){
     console.error('[HM] Gagal menyimpan draft settlement:',saveError);
-    alert('Draft settlement TIDAK berhasil dipastikan tersimpan. Detail: '+(saveError?.message||String(saveError))+'\nTidak ada pembayaran yang dicatat. Periksa pesan ini sebelum mencoba ulang.');
+    alert('Proses draft perlu diperiksa: '+(saveError?.message||String(saveError)));
    }
   });
   }

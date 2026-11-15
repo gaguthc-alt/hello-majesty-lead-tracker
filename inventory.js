@@ -257,6 +257,8 @@ async function reviewUnifiedWalkin(id,kind,action){
      waButton.addEventListener('click',()=>window.open('https://wa.me/?text='+encodeURIComponent(window.hmApprovalWhatsAppMessage||''),'_blank'));
      if(panelBody)panelBody.prepend(waButton);
    }
+ }catch(e){
+   alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+String(e?.message||e));
  }
 }
 async function reviewWalkinSale(id,action){

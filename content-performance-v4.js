@@ -103,6 +103,7 @@ window.renderContentPerformance=async function(){
        const key=[creator,platform,campaign].join('|');
        if(!gs[key])gs[key]={creator,platform,campaign,leads:0};gs[key].leads++;
       });
+      activeCreators.forEach(name=>{if(!Object.values(gs).some(x=>x.creator.toLocaleLowerCase('id')===name.toLocaleLowerCase('id')))gs[[name,'—','—'].join('|')]={creator:name,platform:'—',campaign:'—',leads:0};});
       if(mode==='month'&&cpPeriod('month').start.getFullYear()===2026&&cpPeriod('month').start.getMonth()===10){
        const ex=Object.values(gs).find(x=>x.creator.toLocaleLowerCase('id')==='aca');
        if(ex){ex.leads+=7;ex.platform='INPUT MANUAL';ex.campaign='Penyesuaian manual';}

@@ -3100,7 +3100,7 @@ async function hmOpenContentPerformance(){
     if(typeof window.renderContentPerformance!=='function'){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src='content-performance-v4.js?v=20261115-aca-180';
+        s.src='content-performance-v4.js?v=20261115-aca-181';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Modul Pencapaian Content Creator gagal dimuat.'));
         document.head.appendChild(s);

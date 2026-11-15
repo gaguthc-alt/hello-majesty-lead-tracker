@@ -383,6 +383,128 @@
     }
   }
 
+
+  // HM_PASSWORD_RECOVERY_HANDLER
+  // Supabase redirects recovery links with a short-lived access_token in the URL hash.
+  // This app uses a custom REST-based login flow with detectSessionInUrl:false, so
+  // recovery tokens must be handled explicitly before normal session restoration.
+  function handlePasswordRecovery(){
+    let params;
+    try{params=new URLSearchParams(String(location.hash||'').replace(/^#/,'').replace(/^\\?/,' '));}
+    catch(_e){return false;}
+    const query=new URLSearchParams(location.search||'');
+    const type=params.get('type')||query.get('type')||'';
+    const accessToken=params.get('access_token')||query.get('access_token')||'';
+    const recoveryError=params.get('error_description')||query.get('error_description')||'';
+    const hasRecovery=type==='recovery'||!!recoveryError;
+    if(!hasRecovery)return false;
+
+    // Remove credentials from the visible address bar immediately. Keep the token
+    // only in this closure and never persist it in localStorage/sessionStorage.
+    try{history.replaceState(null,document.title,location.pathname+location.search);}catch(_e){}
+
+    const loginPage=document.getElementById('login');
+    const appPage=document.getElementById('app');
+    if(loginPage)loginPage.classList.add('hidden');
+    if(appPage)appPage.classList.add('hidden');
+
+    const overlay=document.createElement('div');
+    overlay.id='hmPasswordRecoveryOverlay';
+    overlay.style.cssText='position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:20px;background:#07111f;color:#f8fafc;font-family:system-ui,-apple-system,sans-serif;';
+    const card=document.createElement('div');
+    card.style.cssText='width:100%;max-width:440px;box-sizing:border-box;padding:26px;border:1px solid #334155;border-radius:18px;background:#142238;box-shadow:0 18px 60px #0008;';
+    const heading=document.createElement('h2');
+    heading.textContent='Buat Password Baru';
+    heading.style.cssText='margin:0 0 8px;font-size:24px;color:#fff;';
+    const note=document.createElement('p');
+    note.style.cssText='margin:0 0 20px;color:#cbd5e1;line-height:1.5;';
+    const status=document.createElement('p');
+    status.style.cssText='margin:14px 0 0;color:#fca5a5;line-height:1.5;';
+    card.append(heading,note);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    const showError=(message)=>{
+      note.textContent=message;
+      status.textContent='';
+      if(!status.isConnected)card.appendChild(status);
+    };
+    const showLogin=()=>{
+      overlay.remove();
+      if(loginPage)loginPage.classList.remove('hidden');
+      if(appPage)appPage.classList.add('hidden');
+      const email=document.getElementById('email');
+      if(email)email.focus();
+    };
+
+    if(recoveryError){
+      showError('Tautan pemulihan tidak valid atau sudah kedaluwarsa. Minta email reset password yang baru.');
+      const back=document.createElement('button');
+      back.type='button';back.textContent='Kembali ke Login';
+      back.style.cssText='width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-weight:700;';
+      back.onclick=showLogin;card.appendChild(back);
+      return true;
+    }
+    if(!accessToken){
+      showError('Token pemulihan tidak ditemukan pada tautan. Minta email reset password yang baru.');
+      const back=document.createElement('button');
+      back.type='button';back.textContent='Kembali ke Login';
+      back.style.cssText='width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-weight:700;';
+      back.onclick=showLogin;card.appendChild(back);
+      return true;
+    }
+
+    const inputStyle='display:block;width:100%;box-sizing:border-box;margin:8px 0 14px;padding:13px;border:1px solid #64748b;border-radius:10px;background:#0b1728;color:#fff;font-size:16px;';
+    const label1=document.createElement('label');label1.textContent='Password baru';label1.style.cssText='display:block;color:#e2e8f0;font-weight:600;';
+    const password=document.createElement('input');password.type='password';password.autocomplete='new-password';password.placeholder='Minimal 8 karakter';password.style.cssText=inputStyle;
+    const label2=document.createElement('label');label2.textContent='Ulangi password baru';label2.style.cssText='display:block;color:#e2e8f0;font-weight:600;';
+    const confirm=document.createElement('input');confirm.type='password';confirm.autocomplete='new-password';confirm.placeholder='Masukkan ulang password';confirm.style.cssText=inputStyle;
+    const submit=document.createElement('button');submit.type='button';submit.textContent='Simpan Password Baru';submit.style.cssText='width:100%;margin-top:8px;padding:14px;border:0;border-radius:10px;background:#16a34a;color:#fff;font-size:16px;font-weight:700;';
+    card.append(label1,password,label2,confirm,submit,status);
+
+    const setStatus=(message,isError=true)=>{status.textContent=message;status.style.color=isError?'#fca5a5':'#86efac';};
+    const validate=async()=>{
+      const p=password.value;
+      if(p.length<8){setStatus('Password minimal 8 karakter.');return;}
+      if(p!==confirm.value){setStatus('Konfirmasi password belum sama.');return;}
+      submit.disabled=true;submit.textContent='Menyimpan...';
+      try{
+        const response=await fetch(SUPABASE_URL+'/auth/v1/user',{
+          method:'PUT',
+          headers:{apikey:KEY,Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+          body:JSON.stringify({password:p}),
+          cache:'no-store'
+        });
+        let data=null;try{data=await response.json();}catch(_e){}
+        if(!response.ok)throw new Error(data?.message||data?.msg||data?.error_description||'Password gagal diperbarui. Tautan mungkin sudah kedaluwarsa.');
+        heading.textContent='Password Berhasil Diperbarui';
+        note.textContent='Password akun berhasil diganti. Silakan kembali ke halaman login dan masuk menggunakan password baru.';
+        password.remove();confirm.remove();label1.remove();label2.remove();submit.remove();
+        setStatus('Berhasil. Histori closing, komisi, dan data akun tidak diubah.',false);
+        const back=document.createElement('button');back.type='button';back.textContent='Kembali ke Login';
+        back.style.cssText='width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-weight:700;';
+        back.onclick=showLogin;card.appendChild(back);
+      }catch(ex){
+        setStatus(ex?.message||'Terjadi kesalahan saat memperbarui password.');
+        submit.disabled=false;submit.textContent='Simpan Password Baru';
+      }
+    };
+    submit.addEventListener('click',validate);
+    confirm.addEventListener('keydown',e=>{if(e.key==='Enter')validate();});
+    password.addEventListener('keydown',e=>{if(e.key==='Enter')confirm.focus();});
+    note.textContent='Tautan pemulihan dikenali. Masukkan password baru untuk akun ini.';
+    // Verify the short-lived recovery access token before enabling password changes.
+    fetch(SUPABASE_URL+'/auth/v1/user',{headers:{apikey:KEY,Authorization:'Bearer '+accessToken},cache:'no-store'})
+      .then(async response=>{
+        if(!response.ok){let data=null;try{data=await response.json();}catch(_e){};throw new Error(data?.message||data?.msg||'Tautan reset sudah kedaluwarsa atau sudah pernah digunakan.');}
+      })
+      .catch(ex=>{
+        password.disabled=true;confirm.disabled=true;submit.disabled=true;
+        setStatus((ex?.message||'Token pemulihan tidak valid.')+' Minta email reset yang baru.');
+      });
+    return true;
+  }
+
   window.doLogin=doLogin;
   window.hmLoginClient=()=>getClient();
   window.hmRestoreLogin=restorePersistedSession;
@@ -394,8 +516,8 @@
       if(latest?.access_token&&latest?.refresh_token)activeSession={...(activeSession||{}),...latest};
     }catch(e){console.warn('[HM] session storage sync',e);}
   });
-  // Auto-restore the last authenticated session on page load.
-  setTimeout(()=>restorePersistedSession(),500);
+  // Recovery links must be handled before normal persisted-session restoration.
+  setTimeout(()=>{if(!handlePasswordRecovery())restorePersistedSession();},500);
 
   // Enter key should use the same protected login handler.
   document.addEventListener('keydown',function(e){

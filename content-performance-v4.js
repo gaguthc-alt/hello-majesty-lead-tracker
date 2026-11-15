@@ -123,13 +123,13 @@ window.renderContentPerformance=async function(){
       '',
       '*PERFORMA TIM CONTENT*',
       ...Object.entries(d.totals).sort((a,b)=>b[1]-a[1]).map(([name,count],i)=>(i+1)+'. '+name+' — *'+cpFmt(count)+' lead*')
-     ].join('\\n');
+     ].join('\n');
      const combined=[
       '🎬 *LAPORAN PENCAPAIAN CONTENT CREATOR*',
       '*HELLO MAJESTY — Built on Trust*','',
       section('📅 PERFORMA HARI INI',todayP,today,'today'),'',
       section('📊 PERFORMA BULAN INI (BERJALAN)',monthP,month,'month'),'',
-      'Laporan dibuat dari Lead Tracker berdasarkan tanggal lead dibuat. Penyesuaian manual ditandai pada rincian.',
+      'Laporan dibuat dari Lead Tracker berdasarkan tanggal lead dibuat.',
       '— HELLO MAJESTY'
      ].join('\n');
      window.location.href='https://wa.me/?text='+encodeURIComponent(combined);

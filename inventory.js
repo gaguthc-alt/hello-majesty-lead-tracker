@@ -57,7 +57,7 @@ async function loadInventoryData(){
   if(s.error) throw s.error;
   inventoryProducts=productRows; inventoryStock=s.data||[];
   try{hmApplyProductMasterAccess();}catch(_e){}
-  if((role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL') && inventoryStock.length){
+  if((role==='ADMIN FINANCE'||role==='ADMIN FINANCE MAJESTY CELL'||role==='FREELANCE INTERNAL'||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r||'').trim().toUpperCase().replace(/[_-]+/g,' ')==='FREELANCE INTERNAL'))) && inventoryStock.length){
     const ids=inventoryStock.map(x=>x.id).filter(Boolean);
     const costs=await sb.from('stock_units').select('id,cost').in('id',ids);
     if(!costs.error){const byId=Object.fromEntries((costs.data||[]).map(x=>[x.id,x.cost]));inventoryStock=inventoryStock.map(x=>({...x,cost:byId[x.id]??x.cost??null}));}

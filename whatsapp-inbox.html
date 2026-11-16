@@ -22,19 +22,8 @@ body{min-height:100vh;background:linear-gradient(180deg,#eaf2f2 0,#f4f7f8 260px,
 @media(max-width:760px){body{background:#f1f5f6}.top{position:relative;padding:14px 16px;align-items:flex-start;flex-direction:column;gap:12px}.top b{font-size:17px}.top-actions{width:100%;justify-content:flex-start;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.top button{width:100%;min-height:42px;padding:9px 10px;font-size:13px;white-space:normal}.wrap{display:flex;flex-direction:column;margin:13px auto;padding:0 12px;gap:13px}.panel{width:100%;border-radius:16px}.toolbar{padding:11px}.items{max-height:38vh;min-height:110px}.item{padding:14px 15px}.detail{min-height:54vh}.head{padding:14px 15px}.msgs{min-height:28vh;max-height:48vh;padding:13px}.bubble{max-width:88%;font-size:14px}.empty{min-height:150px;padding:20px}.lead-review{padding:13px 14px}.foot{padding:11px 12px}.compose{align-items:stretch}.compose textarea{min-height:46px}.compose button{min-width:76px;padding:9px 11px}}
 @media(max-width:380px){.top-actions{grid-template-columns:1fr}.top button{min-height:40px}.wrap{padding:0 9px}.msgs{padding:10px}.bubble{max-width:92%}}
 .actions .danger{border:1px solid #fecaca;background:#fff1f2;color:#b42318;border-radius:10px;padding:9px 12px;font-weight:700}.actions .danger:disabled{opacity:.6;cursor:wait}
-#notificationPrompt{display:none;position:fixed;inset:0;z-index:9999;background:#071b1acc;align-items:center;justify-content:center;padding:18px}
-#notificationPrompt .np-card{width:min(440px,100%);background:#fff;border-radius:18px;padding:24px;box-shadow:0 18px 60px #0004;color:#17212b}
-#notificationPrompt h2{margin:0 0 9px;font-size:21px}
-#notificationPrompt p{color:#536273;line-height:1.55;margin:0 0 16px}
-#notificationPrompt button{border:0;border-radius:11px;padding:13px 16px;font-weight:700;cursor:pointer}
-#notificationPrompt .np-primary{background:#087f70;color:#fff;width:100%}
-#notificationPrompt .np-later{background:#eef2f5;color:#334155;width:100%;margin-top:9px}
 </style></head><body>
-<div id="notificationPrompt" role="dialog" aria-modal="true" aria-labelledby="npTitle">
- <div class="np-card"><h2 id="npTitle">Aktifkan Notifikasi Hello Majesty</h2>
- <p id="npMessage">Izinkan notifikasi agar tim menerima pesan masuk dan handover sesuai tugasnya, meskipun Inbox tidak sedang dibuka.</p>
- <button class="np-primary" id="npEnable">Aktifkan Notifikasi</button>
- <button class="np-later" id="npLater">Nanti</button></div></div><header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="notificationEnableBtn" onclick="location.href='push-setup.html'">🔔 Aktifkan Notifikasi</button><span id="notificationActiveBadge" style="display:none;background:#e8f7ef;color:#17633b;border-radius:999px;padding:9px 13px;font-weight:700;font-size:13px">✓ Notifikasi Aktif</span><button type="button" onclick="if(window.opener&&!window.opener.closed){window.opener.focus();window.close();}else{window.close();}">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan melalui sistem resmi Hello Majesty · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
+<header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" onclick="if(window.opener&&!window.opener.closed){window.opener.focus();window.close();}else{window.close();}">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan melalui sistem resmi Hello Majesty · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
 const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co',SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 let sb,me,profile=null,maskPhoneNumbers=true,isInboxManagement=false,canInboxCS=false,canInboxSales=false,rows=[],active=null,realtimeChannel=null,realtimeConnected=false,realtimeRefreshTimer=null;
@@ -73,37 +62,11 @@ function scheduleRealtimeRefresh(conversationId=null){
     if(active&&(!conversationId||active.id===conversationId))await loadMessages(true);
   },120);
 }
-async function notifyInboundMessage(payload){
-  const message=payload?.new;
-  if(payload?.eventType!=='INSERT'||String(message?.sender_type||'').toUpperCase()!=='CUSTOMER')return;
-  if(!('Notification'in window)||Notification.permission!=='granted')return;
-  const conversationId=message.conversation_id;
-  if(!conversationId)return;
-  try{
-    let conversation=rows.find(x=>x.id===conversationId);
-    if(!conversation){
-      const {data,error}=await sb.from('chat_conversations').select('id,customer_name,claimed_by').eq('id',conversationId).maybeSingle();
-      if(error||!data)return;
-      conversation=data;
-    }
-    let eligible=conversation.claimed_by===me.id;
-    if(!conversation.claimed_by&&canInboxCS){
-      const {data:assignment,error}=await sb.from('hm_central_cs_assignments').select('user_id').eq('user_id',me.id).eq('active',true).maybeSingle();
-      eligible=!error&&!!assignment&&String(profile?.role||'').toUpperCase()==='CS';
-    }
-    if(!eligible)return;
-    const title=conversation.claimed_by===me.id?'Pesan baru dari '+(conversation.customer_name||'Customer'):'Chat baru';
-    const body=String(message.message||'Customer mengirim pesan baru').slice(0,120);
-    const notice=new Notification(title,{body,icon:'/favicon.ico',tag:'hm-chat-'+message.id,renotify:true});
-    notice.onclick=()=>{window.focus();openChat(conversationId);notice.close();};
-  }catch(error){console.warn('[HM] inbound notification failed',error);}
-}
 function connectInboxRealtime(){
   if(realtimeChannel)sb.removeChannel(realtimeChannel);
   realtimeChannel=sb.channel('hm-whatsapp-inbox-live')
     .on('postgres_changes',{event:'*',schema:'public',table:'chat_messages'},payload=>{
       const conversationId=payload?.new?.conversation_id||payload?.old?.conversation_id||null;
-      if(payload?.eventType==='INSERT')notifyInboundMessage(payload);
       scheduleRealtimeRefresh(conversationId);
     })
     .subscribe(status=>{
@@ -111,38 +74,6 @@ function connectInboxRealtime(){
       if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')realtimeConnected=false;
     });
 }
-let notificationPromptDismissed=false;
-async function updateNotifikasiStatus(){
-  const button=$('notificationEnableBtn'),badge=$('notificationActiveBadge'),prompt=$('notificationPrompt');
-  if(!button||!badge)return;
-  let active=false;
-  try{
-    if('Notification'in window && Notification.permission==='granted' && 'serviceWorker'in navigator){
-      const registration=await navigator.serviceWorker.getRegistration('/');
-      const subscription=registration?await registration.pushManager.getSubscription():null;
-      active=!!subscription;
-    }
-  }catch(error){console.warn('[HM] notifikasi status check',error);}
-  button.style.display=active?'none':'';
-  badge.style.display=active?'inline-flex':'none';
-  if(active){if(prompt)prompt.style.display='none';return;}
-  if(prompt&&!notificationPromptDismissed){
-    const message=$('npMessage');
-    if(!('Notification'in window)){
-      message.textContent='Browser ini belum mendukung notifikasi. Gunakan Chrome atau Edge terbaru.';
-      $('npEnable').textContent='Buka Pengaturan Notifikasi';
-    }else if(Notification.permission==='denied'){
-      message.textContent='Izin notifikasi untuk situs ini sedang diblokir. Ubah izin situs Hello Majesty menjadi Izinkan melalui ikon pengaturan di samping alamat situs, lalu muat ulang Inbox.';
-      $('npEnable').textContent='Saya Mengerti';
-    }else{
-      message.textContent='Izinkan notifikasi agar tim menerima pesan masuk dan handover sesuai tugasnya. Setelah aktif, pesan ini tidak akan muncul lagi pada perangkat dan browser ini.';
-      $('npEnable').textContent='Aktifkan Notifikasi';
-    }
-    prompt.style.display='flex';
-  }
-}
-$('npEnable').addEventListener('click',()=>{location.href='push-setup.html';});
-$('npLater').addEventListener('click',()=>{notificationPromptDismissed=true;$('notificationPrompt').style.display='none';});
 async function init(){try{
   const raw=localStorage.getItem('hm_auth_session');const s=raw?JSON.parse(raw):null;
   if(!s?.access_token)throw Error('Sesi login tidak ditemukan. Silakan login dari dashboard.');
@@ -150,7 +81,6 @@ async function init(){try{
   const {data,error}=await sb.auth.setSession({access_token:s.access_token,refresh_token:s.refresh_token||''});
   if(error)throw error;me=data.user;if(!me)throw Error('Sesi login tidak valid.');
   await loadInboxProfile();
-  await updateNotifikasiStatus();
   await load();
   const requestedConversation=new URLSearchParams(location.search).get('conversation');
   if(requestedConversation&&rows.some(x=>x.id===requestedConversation))await openChat(requestedConversation);

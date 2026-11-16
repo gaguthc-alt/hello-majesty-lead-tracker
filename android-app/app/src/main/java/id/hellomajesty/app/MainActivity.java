@@ -20,6 +20,13 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
+import android.util.Log;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import org.json.JSONObject;
 import androidx.core.view.WindowCompat;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -50,6 +57,7 @@ public class MainActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(android.graphics.Color.rgb(5, 16, 32));
         webView = new WebView(this);
+        webView.addJavascriptInterface(new NativePushBridge(), "HelloMajestyNative");
         root.addView(webView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
@@ -115,58 +123,89 @@ public class MainActivity extends Activity {
     }
 
     private void registerNativePushToken(WebView view) {
-        String token = getSharedPreferences("hello_majesty_native", MODE_PRIVATE).getString("fcm_token", null);
-        if (token == null || token.isEmpty()) return;
         String script = """
             (function() {
               let attempts = 0;
-              const fcm = __FCM_TOKEN__;
-              const timer = setInterval(async () => {
+              const timer = setInterval(() => {
                 try {
                   attempts++;
                   let session = null;
-                  // Hello Majesty login stores the Supabase session in hm_auth_session.
-                  // Keep the auth-token fallback for older Supabase client storage formats.
                   try {
                     const value = JSON.parse(localStorage.getItem('hm_auth_session') || 'null');
                     if (value && value.access_token && value.user && value.user.id) session = value;
                   } catch (e) {}
-                  if (!session) {
-                    for (let i = 0; i < localStorage.length; i++) {
-                      const key = localStorage.key(i);
-                      if (key && key.includes('auth-token')) {
-                        try {
-                          const value = JSON.parse(localStorage.getItem(key));
-                          if (value && value.access_token && value.user && value.user.id) { session = value; break; }
-                        } catch (e) {}
-                      }
-                    }
+                  if (session && window.HelloMajestyNative &&
+                      typeof window.HelloMajestyNative.registerPushSession === 'function') {
+                    window.HelloMajestyNative.registerPushSession(session.access_token, session.user.id);
+                    clearInterval(timer);
+                    return;
                   }
-                  if (!session) { if (attempts >= 120) clearInterval(timer); return; }
-                  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(fcm));
-                  const endpointHash = Array.from(new Uint8Array(digest)).map(v => v.toString(16).padStart(2, '0')).join('');
-                  const response = await fetch(
-                    'https://ksowzhhmzrumyciehuyv.supabase.co/rest/v1/hm_push_subscriptions?on_conflict=user_id,endpoint_hash',
-                    { method: 'POST',
-                      headers: {
-                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtzb3d6aGhtenJ1bXljaWVodXl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NzQ2OTUsImV4cCI6MjEwNjE1MDY5NX0.5FcqCIiSTXvZuwmkGZnPOL_LpXJA9hM07qOdPB48s4',
-                        'Authorization': 'Bearer ' + session.access_token,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'resolution=merge-duplicates,return=minimal'
-                      },
-                      body: JSON.stringify({
-                        user_id: session.user.id, endpoint_hash: endpointHash, fcm_token: fcm,
-                        device_label: 'Hello Majesty Android', platform: 'android', enabled: true,
-                        last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString()
-                      })
-                    });
-                  if (response.ok) clearInterval(timer);
-                } catch (error) { console.log('Native push registration failed', error); }
+                } catch (error) { console.log('Native push bridge unavailable', error); }
                 if (attempts >= 120) clearInterval(timer);
               }, 3000);
             })();
-            """.replace("__FCM_TOKEN__", JSONObject.quote(token));
+            """;
         view.evaluateJavascript(script, null);
+    }
+
+    private final class NativePushBridge {
+        @JavascriptInterface
+        public void registerPushSession(String accessToken, String userId) {
+            if (accessToken == null || accessToken.isEmpty() || userId == null || userId.isEmpty()) return;
+            String token = getSharedPreferences("hello_majesty_native", MODE_PRIVATE).getString("fcm_token", null);
+            if (token == null || token.isEmpty()) {
+                FirebaseMessaging.getInstance().getToken().addOnSuccessListener(fcmToken -> {
+                    getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", fcmToken).apply();
+                    postPushSubscription(accessToken, userId, fcmToken);
+                });
+                return;
+            }
+            postPushSubscription(accessToken, userId, token);
+        }
+    }
+
+    private void postPushSubscription(String accessToken, String userId, String fcmToken) {
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                byte[] digest = MessageDigest.getInstance("SHA-256").digest(fcmToken.getBytes(StandardCharsets.UTF_8));
+                StringBuilder hash = new StringBuilder();
+                for (byte value : digest) hash.append(String.format("%02x", value & 0xff));
+                JSONObject payload = new JSONObject();
+                payload.put("user_id", userId);
+                payload.put("endpoint_hash", hash.toString());
+                payload.put("fcm_token", fcmToken);
+                payload.put("device_label", "Hello Majesty Android");
+                payload.put("platform", "android");
+                payload.put("enabled", true);
+                payload.put("last_seen_at", java.time.Instant.now().toString());
+                payload.put("updated_at", java.time.Instant.now().toString());
+
+                URL url = new URL("https://ksowzhhmzrumyciehuyv.supabase.co/rest/v1/hm_push_subscriptions?on_conflict=user_id,endpoint_hash");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(15000);
+                connection.setDoOutput(true);
+                connection.setRequestProperty("apikey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtzb3d6aGhtenJ1bXljaWVodXl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NzQ2OTUsImV4cCI6MjEwNjE1MDY5NX0.5FcqCIiSTXvZuwmkGZnPOL_LpXJA9hM07qOdPB48s4");
+                connection.setRequestProperty("Authorization", "Bearer " + accessToken);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Prefer", "resolution=merge-duplicates,return=minimal");
+                try (OutputStream output = connection.getOutputStream()) {
+                    output.write(payload.toString().getBytes(StandardCharsets.UTF_8));
+                }
+                int status = connection.getResponseCode();
+                if (status >= 200 && status < 300) {
+                    Log.i("HelloMajestyPush", "Android push subscription registered for signed-in user.");
+                } else {
+                    Log.e("HelloMajestyPush", "Push registration failed with HTTP " + status);
+                }
+            } catch (Exception error) {
+                Log.e("HelloMajestyPush", "Push registration error", error);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
     }
 
     private void requestNotificationPermission() {

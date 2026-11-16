@@ -903,11 +903,28 @@ async function shareProduct(s){
      const ext=blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':'jpg';
      files.push(new File([blob],`foto-produk-${i+1}.${ext}`,{type:blob.type||'image/jpeg'}));
     }
+    // Coba berbagi semua foto terlebih dahulu. Beberapa browser iPhone
+    // (termasuk Chrome iOS pada konfigurasi tertentu) hanya menerima satu file.
     if(!navigator.canShare||navigator.canShare({files})){
      await navigator.share({title:'Info Produk Hello Majesty',text,files});
      return;
     }
-    throw new Error('Browser tidak mendukung berbagi beberapa foto sekaligus.');
+    // Fallback kompatibel: kirim foto pertama bersama deskripsi produk.
+    // Foto tambahan tidak dibuang; beri tahu pengguna agar dapat dikirim terpisah.
+    const firstFile=files[0];
+    if(firstFile&&(!navigator.canShare||navigator.canShare({files:[firstFile]}))){
+     await navigator.share({title:'Info Produk Hello Majesty',text,files:[firstFile]});
+     if(files.length>1){
+      alert('Deskripsi dan foto pertama berhasil dibagikan. Browser iPhone ini membatasi berbagi satu foto per proses. Untuk foto lainnya, ulangi Kirim ke WA dan pilih foto berikutnya dari Detail Produk.');
+     }
+     return;
+    }
+    // Jika browser bahkan tidak mendukung satu foto, jangan hentikan pengguna:
+    // siapkan deskripsi WhatsApp agar produk tetap dapat dibagikan.
+    await clipboardPromise;
+    window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
+    alert('Browser ini tidak dapat mengirim foto melalui menu berbagi. Deskripsi produk sudah disiapkan di WhatsApp. Foto dapat dikirim langsung dari Detail Produk.');
+    return;
    }
    await navigator.share({title:'Info Produk Hello Majesty',text});
    return;

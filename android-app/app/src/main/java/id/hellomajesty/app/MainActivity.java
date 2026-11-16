@@ -158,7 +158,11 @@ public class MainActivity extends Activity {
     public final class NativePushBridge {
         @JavascriptInterface
         public void registerPushSession(String accessToken, String userId) {
-            if (accessToken == null || accessToken.isEmpty() || userId == null || userId.isEmpty()) return;
+            if (accessToken == null || accessToken.isEmpty() || userId == null || userId.isEmpty()) {
+                Log.e("HelloMajestyPush", "Push registration skipped: missing authenticated session.");
+                return;
+            }
+            Log.i("HelloMajestyPush", "Authenticated session detected; requesting FCM token for current user.");
             String token = getSharedPreferences("hello_majesty_native", MODE_PRIVATE).getString("fcm_token", null);
             if (token == null || token.isEmpty()) {
                 FirebaseMessaging.getInstance().getToken().addOnSuccessListener(fcmToken -> {
@@ -204,9 +208,13 @@ public class MainActivity extends Activity {
                 }
                 int status = connection.getResponseCode();
                 if (status >= 200 && status < 300) {
-                    Log.i("HelloMajestyPush", "Android push subscription registered for signed-in user.");
+                    Log.i("HelloMajestyPush", "Android push subscription registered for signed-in user. HTTP " + status);
                 } else {
-                    Log.e("HelloMajestyPush", "Push registration failed with HTTP " + status);
+                    String errorBody = "";
+                    try (java.io.InputStream errorStream = connection.getErrorStream()) {
+                        if (errorStream != null) errorBody = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+                    } catch (Exception ignored) {}
+                    Log.e("HelloMajestyPush", "Push registration failed with HTTP " + status + ": " + errorBody);
                 }
             } catch (Exception error) {
                 Log.e("HelloMajestyPush", "Push registration error", error);

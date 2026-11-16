@@ -218,7 +218,7 @@ public class MainActivity extends Activity {
                 } else {
                     String errorBody = "";
                     try (java.io.InputStream errorStream = connection.getErrorStream()) {
-                        if (errorStream != null) errorBody = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+                        if (errorStream != null) { java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream(); byte[] chunk = new byte[1024]; int count; while ((count = errorStream.read(chunk)) != -1) buffer.write(chunk, 0, count); errorBody = buffer.toString(StandardCharsets.UTF_8.name()); }
                     } catch (Exception ignored) {}
                     Log.e("HelloMajestyPush", "Push registration failed with HTTP " + status + ": " + errorBody);
                 }

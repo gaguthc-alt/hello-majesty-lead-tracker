@@ -291,9 +291,9 @@ async function reviewInventoryReceive(stockId,action){
   note=prompt(label+' Barang Masuk. Catatan wajib diisi:')||'';
   if(!note.trim())return alert('Catatan wajib diisi.');
  }
- // Buka tab kosong selagi gesture klik masih aktif; URL WhatsApp diisi setelah status berhasil disimpan.
- const sendWA=confirm('Lanjutkan '+label.toLowerCase()+' Barang Masuk?\n\nJika berhasil, buka WhatsApp untuk mengirim pemberitahuan?');
- const waTab=sendWA?window.open('about:blank','_blank'):null;
+ // Persetujuan Barang Masuk wajib membuka WhatsApp setelah status berhasil disimpan.
+ // Siapkan tab tepat saat gesture klik berlangsung agar tidak diblokir browser mobile.
+ const waTab=action==='APPROVE'?window.open('about:blank','_blank'):null;
  const buttons=[...document.querySelectorAll('button[onclick*="'+String(stockId)+'"]')];
  buttons.forEach(btn=>{btn.disabled=true;btn.dataset.hmApprovalBusy='1';});
  try{
@@ -319,7 +319,7 @@ async function reviewInventoryReceive(stockId,action){
   await Promise.allSettled(jobs);
   if(typeof window.openInventoryApprovals==='function')await window.openInventoryApprovals();
   alert(action==='APPROVE'?'Barang Masuk disetujui dan menjadi Stock READY.':action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');
-  if(sendWA){
+  if(action==='APPROVE'){
    const waUrl='https://wa.me/?text='+encodeURIComponent(waMessage);
    if(waTab&&!waTab.closed)waTab.location.href=waUrl;
    else window.location.href=waUrl;

@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.webkit.ValueCallback;
@@ -36,6 +37,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends Activity {
     private WebView webView;
+    private volatile boolean pushResultToastShown = false;
     private ValueCallback<Uri[]> uploadCallback;
     private static final int FILE_CHOOSER_REQUEST = 4102;
     private static final int NOTIFICATION_PERMISSION_REQUEST = 4103;
@@ -170,10 +172,15 @@ public class MainActivity extends Activity {
             Log.i("HelloMajestyPush", "Authenticated session detected; requesting FCM token for current user.");
             String token = getSharedPreferences("hello_majesty_native", MODE_PRIVATE).getString("fcm_token", null);
             if (token == null || token.isEmpty()) {
-                FirebaseMessaging.getInstance().getToken().addOnSuccessListener(fcmToken -> {
-                    getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", fcmToken).apply();
-                    postPushSubscription(accessToken, userId, fcmToken);
-                });
+                FirebaseMessaging.getInstance().getToken()
+                    .addOnSuccessListener(fcmToken -> {
+                        getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", fcmToken).apply();
+                        postPushSubscription(accessToken, userId, fcmToken);
+                    })
+                    .addOnFailureListener(error -> {
+                        Log.e("HelloMajestyPush", "FCM token retrieval failed", error);
+                        showPushRegistrationResult("Token notifikasi gagal diambil: " + error.getMessage());
+                    });
                 return;
             }
             postPushSubscription(accessToken, userId, token);
@@ -215,19 +222,28 @@ public class MainActivity extends Activity {
                 String responseMessage = connection.getResponseMessage();
                 if (status >= 200 && status < 300) {
                     Log.i("HelloMajestyPush", "Android push subscription registered for signed-in user. HTTP " + status);
+                    showPushRegistrationResult("Notifikasi Android berhasil didaftarkan (HTTP " + status + ").");
                 } else {
                     String errorBody = "";
                     try (java.io.InputStream errorStream = connection.getErrorStream()) {
                         if (errorStream != null) { java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream(); byte[] chunk = new byte[1024]; int count; while ((count = errorStream.read(chunk)) != -1) buffer.write(chunk, 0, count); errorBody = buffer.toString(StandardCharsets.UTF_8.name()); }
                     } catch (Exception ignored) {}
                     Log.e("HelloMajestyPush", "Push registration failed with HTTP " + status + ": " + errorBody);
+                    showPushRegistrationResult("Registrasi notifikasi gagal (HTTP " + status + "): " + errorBody);
                 }
             } catch (Exception error) {
                 Log.e("HelloMajestyPush", "Push registration error", error);
+                showPushRegistrationResult("Kesalahan registrasi notifikasi: " + error.getMessage());
             } finally {
                 if (connection != null) connection.disconnect();
             }
         }).start();
+    }
+
+    private void showPushRegistrationResult(String message) {
+        if (pushResultToastShown) return;
+        pushResultToastShown = true;
+        runOnUiThread(() -> Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show());
     }
 
     private void requestNotificationPermission() {

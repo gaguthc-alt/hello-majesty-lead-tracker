@@ -6841,7 +6841,20 @@ async function openUrl(){
  let l=leads.find(x=>String(x.lead_id)===String(id));
  const fresh=await sb.from('leads').select('*').eq('lead_id',id).maybeSingle();
  if(fresh.error){alert('Lead dari notifikasi gagal dimuat: '+fresh.error.message);return;}
- if(!fresh.data){alert('Lead tidak ditemukan atau akun ini tidak memiliki akses.');return;}
+ if(!fresh.data){
+   // RLS may hide a lead already claimed by another Sales. Ask a narrow,
+   // permission-checked RPC for the owner name before showing "not found".
+   const status=await sb.rpc('get_sales_claim_status',{p_lead_id:String(id)});
+   const row=Array.isArray(status.data)?status.data[0]:status.data;
+   if(!status.error&&row?.is_claimed&&row?.claimed_by){
+     $('mt').textContent='Sales Claim — '+id;
+     $('mb').innerHTML='<div class="box" style="border:1px solid #fbbf24;background:#fffbeb"><h3 style="margin-top:0">🔒 Lead sudah di-claim</h3><p>Lead <b>'+esc(id)+'</b> sudah di-claim oleh Sales <b>'+esc(row.claimed_by)+'</b>.</p><p class="small">Lead ini tidak dapat di-claim kembali oleh Sales lain.</p></div><button type="button" class="secondary" onclick="closeModal()">Tutup</button>';
+     $('modal').classList.remove('hidden');
+     return;
+   }
+   alert('Lead tidak ditemukan atau akun ini tidak memiliki akses.');
+   return;
+ }
  l=fresh.data;
  const ix=leads.findIndex(x=>String(x.lead_id)===String(id));
  if(ix>=0)leads[ix]=l;else leads.push(l);

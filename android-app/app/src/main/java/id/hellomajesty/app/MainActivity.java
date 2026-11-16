@@ -131,6 +131,7 @@ public class MainActivity extends Activity {
               if (window.__hmNativePushWatcherStarted) return;
               window.__hmNativePushWatcherStarted = true;
               let lastRegisteredKey = '';
+              let lastAttemptAt = 0;
               setInterval(() => {
                 try {
                   let session = null;
@@ -143,10 +144,14 @@ public class MainActivity extends Activity {
                     return;
                   }
                   const key = session.user.id + ':' + session.access_token;
-                  if (key !== lastRegisteredKey && window.HelloMajestyNative &&
-                      typeof window.HelloMajestyNative.registerPushSession === 'function') {
-                    lastRegisteredKey = key;
-                    window.HelloMajestyNative.registerPushSession(session.access_token, session.user.id);
+                  const now = Date.now();
+                  if (key !== lastRegisteredKey || now - lastAttemptAt >= 15000) {
+                    if (window.HelloMajestyNative &&
+                        typeof window.HelloMajestyNative.registerPushSession === 'function') {
+                      lastRegisteredKey = key;
+                      lastAttemptAt = now;
+                      window.HelloMajestyNative.registerPushSession(session.access_token, session.user.id);
+                    }
                   }
                 } catch (error) { console.log('Native push registration watcher error', error); }
               }, 3000);
@@ -207,6 +212,7 @@ public class MainActivity extends Activity {
                     output.write(payload.toString().getBytes(StandardCharsets.UTF_8));
                 }
                 int status = connection.getResponseCode();
+                String responseMessage = connection.getResponseMessage();
                 if (status >= 200 && status < 300) {
                     Log.i("HelloMajestyPush", "Android push subscription registered for signed-in user. HTTP " + status);
                 } else {

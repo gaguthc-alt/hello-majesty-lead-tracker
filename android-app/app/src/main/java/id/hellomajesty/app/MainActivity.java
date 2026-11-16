@@ -151,7 +151,7 @@ public class MainActivity extends Activity {
         view.evaluateJavascript(script, null);
     }
 
-    private final class NativePushBridge {
+    public final class NativePushBridge {
         @JavascriptInterface
         public void registerPushSession(String accessToken, String userId) {
             if (accessToken == null || accessToken.isEmpty() || userId == null || userId.isEmpty()) return;

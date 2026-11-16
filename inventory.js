@@ -186,8 +186,9 @@ async function reviewUnifiedWalkin(id,kind,action){
    note=prompt(kind==='STOCK'?'Alasan penolakan Closing Stock:':'Alasan penolakan Walk-In:')||'';
    if(!note.trim())return alert('Alasan wajib diisi.');
  }
- // Hindari tab about:blank; di Chrome Android tab kosong dapat tertinggal setelah proses async.
- const sendWA=confirm('Proses '+(kind==='STOCK'?'Closing Stock':'Walk-In')+(action==='APPROVE'?' untuk disetujui':' untuk ditolak')+'.\\n\\nJika berhasil, tampilkan tombol untuk mengirim pemberitahuan WhatsApp?');
+ // Buka tab WhatsApp saat gesture persetujuan masih aktif agar tidak diblokir
+ // setelah proses RPC selesai. Jika persetujuan gagal, tab kosong ditutup.
+ const waTab=action==='APPROVE'?window.open('about:blank','_blank'):null;
  const rpcName=kind==='STOCK'?'review_stock_sale_approval':'review_walkin_sale_approval';
  try{
    const r=await sb.rpc(rpcName,{p_approval_id:id,p_action:action,p_note:note});
@@ -249,17 +250,23 @@ async function reviewUnifiedWalkin(id,kind,action){
      notice.innerHTML=action==='APPROVE'?'✅ <b>DISETUJUI</b><div class="small" style="margin-top:4px">Transaksi berhasil disetujui dan menjadi SOLD. Pengajuan sudah dihapus dari daftar menunggu.</div>':'🔴 <b>DITOLAK</b><div class="small" style="margin-top:4px">Pengajuan sudah diproses dan dihapus dari daftar menunggu.</div>';
      panelBody.prepend(notice);
    }
-   if(sendWA){
-     window.hmApprovalWhatsAppMessage=msg;
-     const waButton=document.createElement('button');
-     waButton.type='button';
-     waButton.className='success';
-     waButton.style.cssText='width:100%;margin-top:10px;min-height:46px;font-weight:800';
-     waButton.textContent='🟢 Buka WhatsApp & Kirim Pemberitahuan';
-     waButton.addEventListener('click',()=>{const url='https://wa.me/?text='+encodeURIComponent(window.hmApprovalWhatsAppMessage||'');window.location.href=url;});
-     if(panelBody)panelBody.prepend(waButton);
+   if(action==='APPROVE'){
+     const url='https://wa.me/?text='+encodeURIComponent(msg);
+     if(waTab&&!waTab.closed)waTab.location.href=url;
+     else {
+       // Popup mungkin diblokir browser; sediakan tombol fallback yang bisa ditekan langsung.
+       window.hmApprovalWhatsAppMessage=msg;
+       const waButton=document.createElement('button');
+       waButton.type='button';
+       waButton.className='success';
+       waButton.style.cssText='width:100%;margin-top:10px;min-height:46px;font-weight:800';
+       waButton.textContent='🟢 Buka WhatsApp & Kirim Pemberitahuan';
+       waButton.addEventListener('click',()=>{window.location.href='https://wa.me/?text='+encodeURIComponent(window.hmApprovalWhatsAppMessage||'');});
+       if(panelBody)panelBody.prepend(waButton);
+     }
    }
  }catch(e){
+   if(waTab&&!waTab.closed)waTab.close();
    alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+String(e?.message||e));
  }
 }

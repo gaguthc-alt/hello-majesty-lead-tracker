@@ -91,7 +91,7 @@ async function init(){try{
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);});
 }catch(e){$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
 async function load(quiet=false){try{
-  const {data,error}=await sb.from('chat_conversations').select('id,customer_name,source,content_creator,status,claimed_by,claimed_name,claimed_at,lead_id,created_at,updated_at,original_source,last_touch_source,source_code,source_owner,source_confidence,source_platform,source_campaign,first_inbound_at,last_inbound_at,claim_warning_at,claim_expires_at,first_response_at,customer_user_id,lead_decision,lead_decision_at,lead_decision_by,lead_decision_note,lead_qualification_score,lead_qualification,sales_claimed_by,sales_claimed_name,sales_claimed_at').order('updated_at',{ascending:false}).limit(200);
+  const {data,error}=await sb.from('chat_conversations').select('id,customer_name,source,content_creator,status,claimed_by,claimed_name,claimed_at,lead_id,created_at,updated_at,original_source,last_touch_source,source_code,source_owner,source_confidence,source_platform,source_campaign,first_inbound_at,last_inbound_at,claim_warning_at,claim_expires_at,first_response_at,customer_user_id,lead_decision,lead_decision_at,lead_decision_by,lead_decision_note,lead_qualification_score,lead_qualification,sales_claimed_by,sales_claimed_name,sales_claimed_at,sales_response_state,sales_sla_warning_at,sales_sla_overdue_at,sales_sla_released_at').order('updated_at',{ascending:false}).limit(200);
   if(error)throw error;
   rows=(data||[]);
   if(canInboxCS&&!isInboxManagement){
@@ -240,7 +240,7 @@ async function loadLinkedLeadStatus(){
   const target=$('leadLinkStatus');if(!target||!active?.lead_id)return;
   const {data,error}=await sb.from('leads').select('lead_id,qualification_result,sales_handover_at,sales_claimed_by').eq('lead_id',active.lead_id).maybeSingle();
   if(error||!data){target.textContent='Lead sudah terhubung. Status rinci dapat dilihat di Lead Tracker.';return;}
-  const q=data.qualification_result||'BELUM QUALIFIED';
+  const q=data.qualification_result||'BELUM QUALIFIED';if(active.sales_response_state==='RELEASED'&&!data.sales_claimed_by&&!data.sales_handover_at){target.innerHTML='⚠️ Sales sebelumnya dilepas otomatis karena tidak merespons dalam 10 menit. <b>Lead siap dilelang ulang.</b><br>';}
   if(data.sales_claimed_by){target.textContent='Sales sudah claim oleh '+data.sales_claimed_by+'. Lanjutkan tindak lanjut melalui Lead Tracker.';return;}
   if(data.sales_handover_at){target.textContent='Sudah di-handover ke Sales. Menunggu Sales melakukan Claim.';return;}
   if(['QUALIFIED','POTENSIAL'].includes(q)){

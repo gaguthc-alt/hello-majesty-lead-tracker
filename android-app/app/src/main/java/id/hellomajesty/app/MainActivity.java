@@ -41,9 +41,12 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(0);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         HelloMajestyMessagingService.createNotificationChannel(this);
-        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token ->
-            getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", token).apply()
-        );
+        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
+            getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", token).apply();
+            // Token retrieval is asynchronous and may finish after WebView onPageFinished.
+            // Retry registration as soon as both the native token and WebView are available.
+            if (webView != null) registerNativePushToken(webView);
+        });
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(android.graphics.Color.rgb(5, 16, 32));
         webView = new WebView(this);

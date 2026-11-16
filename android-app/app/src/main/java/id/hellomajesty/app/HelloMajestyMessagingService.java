@@ -14,7 +14,7 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 public class HelloMajestyMessagingService extends FirebaseMessagingService {
-    public static final String CHANNEL_ID = "hello_majesty_alerts";
+    public static final String CHANNEL_ID = "hello_majesty_alerts_v2";
 
     @Override public void onMessageReceived(RemoteMessage message) {
         String title = message.getNotification() != null && message.getNotification().getTitle() != null
@@ -35,7 +35,7 @@ public class HelloMajestyMessagingService extends FirebaseMessagingService {
             .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setAutoCancel(true).setContentIntent(pendingIntent);
+            .setAutoCancel(true).setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)).setContentIntent(pendingIntent);
         NotificationManagerCompat.from(this).notify((int) (System.currentTimeMillis() & 0x7fffffff), notification.build());
     }
 

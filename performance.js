@@ -109,12 +109,13 @@
     let rows=(x.data||[]).filter(r=>!isStockistOutlet(r.outlet));
     // Non-management users hanya melihat performa outlet/divisinya sendiri; jangan tampilkan tim Refill lintas outlet.
     const canViewAll=!!(profile?.is_management || window.isDeveloper || String(profile?.role||'').toUpperCase().includes('DEVELOPER'));
-    const ownOutlet=String(profile?.outlet||'').trim().toLowerCase();
-    if(!canViewAll && ownOutlet){ rows=rows.filter(r=>String(r.outlet||'').trim().toLowerCase()===ownOutlet); }
+    // RPC scoped sudah membatasi outlet berdasarkan profil utama + penugasan lintas unit.
+    // Jangan filter ulang berdasarkan outlet utama, karena satu orang dapat memiliki role berbeda di unit tugas lain.
+    const allowedOutlets=new Set(rows.map(r=>String(r.outlet||'').trim().toLowerCase()).filter(Boolean));
     const h=await sb.from('lead_events').select('employee_name,outlet').eq('event_type','BUYBACK_CLOSING').gte('event_at',start).lt('event_at',end);
     if(h.error)throw h.error;
     let hunterRows=(h.data||[]).filter(r=>!isStockistOutlet(r.outlet));
-    if(!canViewAll && ownOutlet){ hunterRows=hunterRows.filter(r=>String(r.outlet||'').trim().toLowerCase()===ownOutlet); }
+    if(!canViewAll){ hunterRows=hunterRows.filter(r=>allowedOutlets.has(String(r.outlet||'').trim().toLowerCase())); }
     // Pengajuan langsung tanpa Lead: hitung sebagai Hunter Closing dari stok yang diajukan.
     // Jika akses baca stock_units dibatasi oleh RLS, laporan utama tetap berjalan.
     try{

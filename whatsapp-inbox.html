@@ -84,6 +84,8 @@ async function init(){try{
   await load();
   const requestedConversation=new URLSearchParams(location.search).get('conversation');
   if(requestedConversation&&rows.some(x=>x.id===requestedConversation))await openChat(requestedConversation);
+   const stockDraft=new URLSearchParams(location.search).get('draft');
+   if(stockDraft&&requestedConversation&&active?.id===requestedConversation){const draftBox=$('replyText');if(draftBox){draftBox.value=stockDraft;draftBox.focus();}}
   connectInboxRealtime();
   // Fallback polling only when Realtime is disconnected; no routine 12-second polling.
   setInterval(()=>load(true),15000);

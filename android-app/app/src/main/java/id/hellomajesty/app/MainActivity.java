@@ -116,6 +116,7 @@ public class MainActivity extends Activity {
 
     private String resolveNotificationUrl(Intent intent) {
         String target = intent == null ? null : intent.getStringExtra("hm_notification_url");
+        if (target == null && intent != null) target = intent.getStringExtra("url");
         if (target != null && target.startsWith("https://hello-majesty-lead-tracker.pages.dev/")) return target;
         return APP_URL;
     }

@@ -1,0 +1,20 @@
+{
+  "name": "Hello Majesty — Management System",
+  "short_name": "Hello Majesty",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#101827",
+  "theme_color": "#111827",
+  "description": "Hello Majesty Lead Tracker dan Management System",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

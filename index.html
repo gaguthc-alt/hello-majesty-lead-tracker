@@ -3406,9 +3406,12 @@ function hmRunMainMenuAction(action){
   case 'hmOpenSellPhoneInline()': return hmOpenSellPhoneInline();
   case 'hmOpenFollowupTemplateInline()': return hmOpenFollowupTemplateInline();
   case 'hmOpenCustomerDatabase()': return hmOpenCustomerDatabase();
-  case "openInventorySection('sales')": return window.openInventorySection('sales');
-  case "openInventorySection('stock')": return window.openInventorySection('stock');
-  case "openInventorySection('products')": return window.openInventorySection('products');
+  case "openInventorySection('sales')":
+   return (typeof window.openInventorySection==='function' ? window.openInventorySection('sales') : hmLoadModule('inventory').then(()=>{if(typeof window.openInventorySection!=='function')throw new Error('Modul Inventory belum siap. Silakan coba lagi.');return window.openInventorySection('sales');}));
+  case "openInventorySection('stock')":
+   return (typeof window.openInventorySection==='function' ? window.openInventorySection('stock') : hmLoadModule('inventory').then(()=>{if(typeof window.openInventorySection!=='function')throw new Error('Modul Inventory belum siap. Silakan coba lagi.');return window.openInventorySection('stock');}));
+  case "openInventorySection('products')":
+   return (typeof window.openInventorySection==='function' ? window.openInventorySection('products') : hmLoadModule('inventory').then(()=>{if(typeof window.openInventorySection!=='function')throw new Error('Modul Inventory belum siap. Silakan coba lagi.');return window.openInventorySection('products');}));
   case 'openMyClosings()': return (typeof window.openMyClosings==='function' ? window.openMyClosings() : hmLoadModule('inventory').then(()=>window.openMyClosings()));
   case 'openReceiveStock()': return (typeof window.openReceiveStock==='function' ? window.openReceiveStock() : hmLoadModule('inventory').then(()=>{if(typeof window.openReceiveStock!=='function')throw new Error('Fungsi Barang Masuk tidak tersedia setelah modul dimuat.');return window.openReceiveStock();}));
   case 'openWalkinApprovals()':

@@ -211,7 +211,7 @@ public class MainActivity extends Activity {
                 connection.setConnectTimeout(15000);
                 connection.setReadTimeout(15000);
                 connection.setDoOutput(true);
-                connection.setRequestProperty("apikey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtzb3d6aGhtenJ1bXljaWVodXl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NzQ2OTUsImV4cCI6MjEwNjE1MDY5NX0.5FcqCIiSTXvZuwmkGZnPOL_LpXJA9hM07qOdPB48s4");
+                connection.setRequestProperty("apikey", "sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW");
                 connection.setRequestProperty("Authorization", "Bearer " + accessToken);
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setRequestProperty("Prefer", "resolution=merge-duplicates,return=minimal");

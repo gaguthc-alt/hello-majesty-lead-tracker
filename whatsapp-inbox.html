@@ -130,8 +130,14 @@ async function deleteConversation(){
  }
 }
 
+let leadDraftConversationId=null;
 function renderLeadReview(){
   const el=$('leadReview');if(!el)return;
+  let draft={};
+  if(active&&leadDraftConversationId===active.id){
+    el.querySelectorAll('input,textarea,select').forEach(node=>{if(node.id)draft[node.id]=node.value;});
+  }else if(active){leadDraftConversationId=active.id;}
+
   if(!active){el.style.display='none';return;}
   el.style.display='block';
   if(active.claimed_by!==me.id){el.innerHTML='<div class="muted">Keputusan lead hanya dapat dilakukan oleh PIC chat.</div>';return;}
@@ -158,6 +164,11 @@ function renderLeadReview(){
   $('makeLead').onclick=createLeadFromChat;
   $('notLead').onclick=()=>{$('notLeadReasonWrap').style.display='block';$('notLeadReason')?.focus();};
   $('saveNotLead').onclick=markChatNotLead;
+  if(draft.lrNeedType){
+    $('lrNeedType').value=draft.lrNeedType;
+    renderInboxNeedFields();
+  }
+  Object.entries(draft).forEach(([id,value])=>{const node=$(id);if(node)node.value=value;});
 }
 function renderInboxNeedFields(){
   const type=$('lrNeedType')?.value,host=$('lrNeedFields');if(!host)return;

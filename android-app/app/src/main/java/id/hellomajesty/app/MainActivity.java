@@ -212,6 +212,14 @@ public class MainActivity extends Activity {
         }
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
+            getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", token).apply();
+            if (webView != null) registerNativePushToken(webView);
+        });
+    }
+
     @Override protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (webView != null) webView.saveState(outState);

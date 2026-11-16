@@ -33,6 +33,7 @@
   };
 
   async function openMutasi(){
+    if(['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'].includes(role()))return alert('Mitra Stockist hanya dapat menyuplai outlet internal Hello Majesty. Mutasi antar-outlet/stockist dikelola Management.');
     if(!can())return alert('Anda tidak memiliki akses Mutasi Stok.');
     // Tujuan menentukan asal stok secara otomatis:
     // Plaza <- READY dari Refill | Refill <- READY dari Plaza.
@@ -44,6 +45,7 @@
   }
 
   window.hmReloadMutasi=async function(){
+    if(['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'].includes(role()))return alert('Akses mutasi hanya untuk Management.');
     const to=document.getElementById('hmMutasiDefault')?.value||'';
     const list=document.getElementById('hmMutasiList'),hint=document.getElementById('hmMutasiSourceHint');
     if(!list)return;
@@ -56,6 +58,7 @@
     list.innerHTML=(r.data||[]).length?(r.data||[]).map((s,i)=>{const p=pm[s.product_id]||{};return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+escx(p.product||'Produk')+(p.variant?' — '+escx(p.variant):'')+'</b><div class="small">'+escx(from)+' → '+escx(to)+' • '+escx(s.color||'-')+(s.battery_health!=null?' • BH '+escx(s.battery_health)+'%':'')+' • '+escx(s.imei_1?'IMEI ••••'+String(s.imei_1).slice(-4):'IMEI -')+'</div><div style="margin-top:5px">Harga jual: <b>'+money(s.asking_price)+'</b></div><button class="success" style="margin-top:8px" onclick="hmDoMutasi(\''+s.id+'\')">🔄 Mutasikan ke '+escx(to)+'</button></div>';}).join(''):'<div class="box"><b>Tidak ada Stock READY di '+escx(from)+' untuk dimutasi ke '+escx(to)+'.</b></div>';
   };
   window.hmDoMutasi=async function(id){
+    if(['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'].includes(role()))return alert('Akses mutasi hanya untuk Management.');
     const to=document.getElementById('hmMutasiDefault')?.value||'';
     if(!to.trim())return;
     const btn=[...document.querySelectorAll('#hmMenuPanelBody button')].find(b=>String(b.getAttribute('onclick')||'').includes("hmDoMutasi('"+id+"'"));

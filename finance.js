@@ -266,20 +266,28 @@ window.openFinanceInventoryApprovals=async function(){
   const p=window.profile||{};
   const role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');
   const roles=Array.isArray(window.hmRoles)?window.hmRoles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' ')):[role];
-  const canApprove=role==='FASILITATOR'||role==='ADMIN FINANCE MAJESTY CELL'||role==='MITRA STOCKIST'||roles.includes('FASILITATOR')||roles.includes('ADMIN FINANCE MAJESTY CELL')||roles.includes('MITRA STOCKIST');
-  if(!canApprove){alert('Persetujuan Barang Masuk hanya dapat dilakukan Fasilitator atau Admin Finance Majesty Cell.');return;}
+  const canApprove=!!p.is_management||['DIVISI','DEVELOPER','DEVELOPER APLIKASI','FASILITATOR','ADMIN FINANCE MAJESTY CELL','MITRA STOCKIST'].includes(role)||roles.some(x=>['FASILITATOR','ADMIN FINANCE MAJESTY CELL','MITRA STOCKIST'].includes(x));
+  if(!canApprove){alert('Persetujuan Barang Masuk hanya dapat dilakukan Management, Fasilitator, atau Admin Finance Majesty Cell.');return;}
   const fn=window.openInventoryApprovals;
-  if(typeof fn!=='function')throw new Error('Modul Inventory untuk approval belum siap.');
-  await fn();
-  const panel=document.getElementById('hmMenuPanel'),body=document.getElementById('hmMenuPanelBody'),title=document.getElementById('hmMenuPanelTitle');
-  const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');
-  if(panel&&body&&mt&&mb){
-    if(title)title.textContent=mt.textContent||'🔔 Persetujuan Barang Masuk';
-    body.replaceChildren(...Array.from(mb.childNodes));
-    panel.classList.remove('hidden');
-    requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
+  if(typeof fn!=='function'){alert('Modul Inventory untuk persetujuan belum siap. Silakan refresh aplikasi.');return;}
+  try{
+    // Inventory owns rendering into the shared menu panel/modal. Do not move
+    // the same DOM nodes a second time here; that could leave the approval
+    // surface empty on mobile browsers.
+    await fn();
+  }catch(e){
+    console.error('[HM] openFinanceInventoryApprovals:',e);
+    const panel=document.getElementById('hmMenuPanel');
+    const body=document.getElementById('hmMenuPanelBody');
+    const title=document.getElementById('hmMenuPanelTitle');
+    const message='Persetujuan Barang Masuk gagal dimuat: '+String(e?.message||e);
+    if(panel&&body){
+      if(title)title.textContent='🔔 Persetujuan Barang Masuk';
+      body.textContent=message;
+      panel.classList.remove('hidden');
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
+    }else alert(message);
   }
-  if(modal){modal.classList.add('hidden');modal.style.display='none';}
 };
 window.openFinance=async function(){
   const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' ');

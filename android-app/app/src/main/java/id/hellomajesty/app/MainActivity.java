@@ -128,23 +128,27 @@ public class MainActivity extends Activity {
     private void registerNativePushToken(WebView view) {
         String script = """
             (function() {
-              let attempts = 0;
-              const timer = setInterval(() => {
+              if (window.__hmNativePushWatcherStarted) return;
+              window.__hmNativePushWatcherStarted = true;
+              let lastRegisteredKey = '';
+              setInterval(() => {
                 try {
-                  attempts++;
                   let session = null;
                   try {
                     const value = JSON.parse(localStorage.getItem('hm_auth_session') || 'null');
                     if (value && value.access_token && value.user && value.user.id) session = value;
                   } catch (e) {}
-                  if (session && window.HelloMajestyNative &&
-                      typeof window.HelloMajestyNative.registerPushSession === 'function') {
-                    window.HelloMajestyNative.registerPushSession(session.access_token, session.user.id);
-                    clearInterval(timer);
+                  if (!session) {
+                    lastRegisteredKey = '';
                     return;
                   }
-                } catch (error) { console.log('Native push bridge unavailable', error); }
-                if (attempts >= 120) clearInterval(timer);
+                  const key = session.user.id + ':' + session.access_token;
+                  if (key !== lastRegisteredKey && window.HelloMajestyNative &&
+                      typeof window.HelloMajestyNative.registerPushSession === 'function') {
+                    lastRegisteredKey = key;
+                    window.HelloMajestyNative.registerPushSession(session.access_token, session.user.id);
+                  }
+                } catch (error) { console.log('Native push registration watcher error', error); }
               }, 3000);
             })();
             """;

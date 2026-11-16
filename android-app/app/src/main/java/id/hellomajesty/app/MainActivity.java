@@ -27,6 +27,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import org.json.JSONObject;
 import androidx.core.view.WindowCompat;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -178,8 +181,9 @@ public class MainActivity extends Activity {
                 payload.put("device_label", "Hello Majesty Android");
                 payload.put("platform", "android");
                 payload.put("enabled", true);
-                payload.put("last_seen_at", java.time.Instant.now().toString());
-                payload.put("updated_at", java.time.Instant.now().toString());
+                String now = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).format(new Date());
+                payload.put("last_seen_at", now);
+                payload.put("updated_at", now);
 
                 URL url = new URL("https://ksowzhhmzrumyciehuyv.supabase.co/rest/v1/hm_push_subscriptions?on_conflict=user_id,endpoint_hash");
                 connection = (HttpURLConnection) url.openConnection();

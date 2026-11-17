@@ -331,10 +331,31 @@ function renderComposer(){
   if(csMonitoring){el.innerHTML='<div class="muted">Mode pemantauan CS: Anda dapat membaca seluruh percakapan sampai selesai, tetapi balasan setelah handover hanya dikirim oleh Sales PIC.</div>';return;}
   const last=active.last_inbound_at?Date.parse(active.last_inbound_at):NaN;
   const open=Number.isFinite(last)&&Date.now()-last<=24*60*60*1000&&last<=Date.now()+5*60*1000;
-  el.innerHTML='<div class="compose"><textarea id="replyText" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn" '+(open?'':'disabled')+'>Kirim</button></div><div class="muted compose-help '+(open?'':'compose-expired')+'">'+(open?'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.':'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.')+'</div>';
+  // Pertahankan draft saat polling/realtime memperbarui header. Sebelumnya
+  // renderHead() memanggil renderComposer() setiap 5 detik dan menghapus teks.
+  const previous=$('replyText');
+  const draft=previous?previous.value:'';
+  const hadFocus=!!previous&&document.activeElement===previous;
+  const selectionStart=previous?.selectionStart??draft.length;
+  const selectionEnd=previous?.selectionEnd??draft.length;
+  const existing=el.querySelector('#replyText');
+  const desiredMode='reply';
+  if(existing&&existing.dataset.mode===desiredMode){
+    const button=$('sendReply');
+    if(button)button.disabled=!open;
+    const help=el.querySelector('.compose-help');
+    if(help){
+      help.className='muted compose-help '+(open?'':'compose-expired');
+      help.textContent=open?'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.':'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.';
+    }
+    return;
+  }
+  el.innerHTML='<div class="compose"><textarea id="replyText" data-mode="reply" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn" '+(open?'':'disabled')+'>Kirim</button></div><div class="muted compose-help '+(open?'':'compose-expired')+'">'+(open?'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.':'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.')+'</div>';
   const input=$('replyText');const button=$('sendReply');
+  input.value=draft;
   input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendReply();}});
   button.onclick=sendReply;
+  if(hadFocus){input.focus();try{input.setSelectionRange(selectionStart,selectionEnd);}catch(_e){}}
 }
 async function sendReply(){
   const input=$('replyText'),button=$('sendReply');if(!input||!button||!active)return;

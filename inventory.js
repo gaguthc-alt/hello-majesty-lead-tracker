@@ -324,7 +324,15 @@ async function reviewInventoryReceive(stockId,action){
   await Promise.allSettled(jobs);
   if(typeof window.openInventoryApprovals==='function')await window.openInventoryApprovals();
   alert(action==='APPROVE'?'Barang Masuk disetujui dan menjadi Stock READY.':action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');
-  // Jangan alihkan WebView ke wa.me setelah persetujuan; tetap di aplikasi.
+  if(action==='APPROVE'){
+   const waUrl='https://wa.me/?text='+encodeURIComponent(waMessage);
+   if(window.HelloMajestyNative&&typeof window.HelloMajestyNative.openWhatsAppMessage==='function'){
+    window.HelloMajestyNative.openWhatsAppMessage(waMessage);
+   }else{
+    const waWindow=window.open(waUrl,'_blank');
+    if(!waWindow)window.location.href=waUrl;
+   }
+  }
  }catch(e){
   console.error('[HM] reviewInventoryReceive:',e);
   alert('Persetujuan Barang Masuk gagal: '+String(e?.message||e));

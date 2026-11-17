@@ -87,8 +87,9 @@ async function init(){try{
    const stockDraft=new URLSearchParams(location.search).get('draft');
    if(stockDraft&&requestedConversation&&active?.id===requestedConversation){const draftBox=$('replyText');if(draftBox){draftBox.value=stockDraft;draftBox.focus();}}
   connectInboxRealtime();
-  // Fallback polling only when Realtime is disconnected; no routine 12-second polling.
-  setInterval(()=>load(true),15000);
+  // Poll the inbox frequently as a fallback for mobile browsers where Realtime may sleep.
+  // load() also refreshes the selected conversation's messages and keeps the list in sync.
+  setInterval(()=>{if(!document.hidden)load(true);},5000);
   window.addEventListener('focus',()=>load(true));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);});
 }catch(e){$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
@@ -273,7 +274,23 @@ async function handoverChatLead(){
   }catch(e){alert(e.message||'Handover gagal.');if(b)b.disabled=false;}
 }
 async function claim(){const b=$('claim');if(b)b.disabled=true;try{const {data,error}=await sb.rpc('hm_claim_chat_conversation',{p_conversation_id:active.id});if(error)throw error;active=data;await load();renderHead();alert('Chat berhasil di-claim. Anda menjadi PIC percakapan ini.');}catch(e){alert(e.message||'Claim gagal. Chat mungkin sudah diambil CS lain.');await load();}}
-async function loadMessages(quiet=false){if(!active)return;const {data,error}=await sb.from('chat_messages').select('*').eq('conversation_id',active.id).order('created_at',{ascending:true});if(error){if(!quiet)$('msgs').innerHTML='<div class="empty">'+esc(error.message)+'</div>';return;}const atBottom=$('msgs').scrollHeight-$('msgs').scrollTop-$('msgs').clientHeight<80;$('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(m.sender_type==='CS'?'cs':'')+'">'+esc(m.message)+'<div class="muted">'+esc(m.sender_type||'')+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';if(atBottom)$('msgs').scrollTop=$('msgs').scrollHeight;}
+async function loadMessages(quiet=false){
+ if(!active)return;
+ const conversationId=active.id;
+ const {data,error}=await sb.from('chat_messages').select('*').eq('conversation_id',conversationId).order('created_at',{ascending:true});
+ if(error){
+  console.error('HM_INBOX_MESSAGE_SYNC_FAILED',conversationId,error);
+  const warning='<div class="empty" style="color:#b42318">Gagal memuat pesan terbaru. Periksa koneksi lalu tekan tombol muat ulang. Detail: '+esc(error.message)+'</div>';
+  if(!quiet||!$('msgs').dataset.syncError)$('msgs').innerHTML=warning;
+  $('msgs').dataset.syncError='1';
+  return;
+ }
+ delete $('msgs').dataset.syncError;
+ if(!active||active.id!==conversationId)return;
+ const atBottom=$('msgs').scrollHeight-$('msgs').scrollTop-$('msgs').clientHeight<100;
+ $('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(m.sender_type==='CS'?'cs':'')+'">'+esc(m.message)+'<div class="muted">'+esc(m.sender_type||'')+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';
+ if(atBottom)$('msgs').scrollTop=$('msgs').scrollHeight;
+}
 
 function renderComposer(){
   const el=$('compose');if(!el)return;

@@ -936,10 +936,18 @@ async function shareProduct(s){
    return;
   }
  }
+ // Fallback untuk Android WebView/APK yang tidak menyediakan navigator.share.
+ // Buka WhatsApp dengan deskripsi dan tautan foto publik agar tim tetap bisa
+ // membagikan stok; foto dapat dibuka penerima dari tautan tersebut.
  await clipboardPromise;
- alert(urls.length
-  ?'Browser ini tidak mendukung fitur berbagi foto. Silakan gunakan Chrome atau Safari versi terbaru.'
-  :'Deskripsi produk sudah disiapkan untuk dibagikan.');
+ const photoLinks=urls.length?'\\n\\nFoto produk:\\n'+urls.join('\\n'):'';
+ const waText=text+photoLinks;
+ const waUrl='https://wa.me/?text='+encodeURIComponent(waText);
+ try{
+  window.location.href=waUrl;
+ }catch(e){
+  window.open(waUrl,'_blank');
+ }
 }
 function stockPhotoUrls(s){return [s?.photo_1,s?.photo_2,s?.photo_3,s?.photo_4,s?.photo_5].filter(Boolean)}
 async function prepareStockPhoto(file){

@@ -387,5 +387,5 @@ async function sendReply(){
   finally{if($('sendReply')){$('sendReply').disabled=false;$('sendReply').textContent='Kirim';}}
 }
 
-$('reload').onclick=()=>load();$('search').oninput=renderList;$('backToDashboard').onclick=()=>{if(window.opener&&!window.opener.closed){window.close();return;}window.location.replace('/');};init();
+$('reload').onclick=()=>load();$('search').oninput=renderList;$('backToDashboard').onclick=()=>{const dashboardUrl=new URL('index.html',window.location.href).href;if(window.opener&&!window.opener.closed){try{window.opener.focus();}catch(e){}window.close();setTimeout(()=>{if(!window.closed)window.location.replace(dashboardUrl);},300);return;}window.location.replace(dashboardUrl);};init();
 </script></body></html>

@@ -179,7 +179,7 @@ public class MainActivity extends Activity {
                     manager.createNotificationChannel(new NotificationChannel(channelId, "Pembaruan Aplikasi", NotificationManager.IMPORTANCE_DEFAULT));
                 }
                 NotificationCompat.Builder notification = new NotificationCompat.Builder(this, channelId)
-                    .setSmallIcon(id.hellomajesty.app.R.drawable.ic_notification)
+                    .setSmallIcon(id.hellomajesty.app.R.drawable.ic_launcher)
                     .setContentTitle(title + " · v" + version)
                     .setContentText(message)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(message))

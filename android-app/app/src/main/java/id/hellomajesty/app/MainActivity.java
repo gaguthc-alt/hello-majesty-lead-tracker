@@ -229,6 +229,32 @@ public class MainActivity extends Activity {
 
     public final class NativePushBridge {
         @JavascriptInterface
+        public void openWhatsAppMessage(String message) {
+            final String text = message == null ? "" : message;
+            runOnUiThread(() -> {
+                Intent share = new Intent(Intent.ACTION_SEND);
+                share.setType("text/plain");
+                share.putExtra(Intent.EXTRA_TEXT, text);
+                try {
+                    share.setPackage("com.whatsapp");
+                    startActivity(share);
+                } catch (ActivityNotFoundException personalUnavailable) {
+                    try {
+                        share.setPackage("com.whatsapp.w4b");
+                        startActivity(share);
+                    } catch (ActivityNotFoundException businessUnavailable) {
+                        share.setPackage(null);
+                        try {
+                            startActivity(Intent.createChooser(share, "Kirim pemberitahuan persetujuan via WhatsApp"));
+                        } catch (ActivityNotFoundException noShareApp) {
+                            Toast.makeText(MainActivity.this, "WhatsApp atau aplikasi berbagi pesan tidak ditemukan.", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void shareStockProduct(String productText, String photoUrlsJson) {
             new Thread(() -> {
                 ArrayList<Uri> imageUris = new ArrayList<>();

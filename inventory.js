@@ -266,8 +266,7 @@ async function reviewUnifiedWalkin(id,kind,action){
      }
    }
  }catch(e){
-   if(waTab&&!waTab.closed)waTab.close();
-   alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+String(e?.message||e));
+    alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+String(e?.message||e));
  }
 }
 async function reviewWalkinSale(id,action){
@@ -298,9 +297,8 @@ async function reviewInventoryReceive(stockId,action){
   note=prompt(label+' Barang Masuk. Catatan wajib diisi:')||'';
   if(!note.trim())return alert('Catatan wajib diisi.');
  }
- // Persetujuan Barang Masuk wajib membuka WhatsApp setelah status berhasil disimpan.
- // Siapkan tab tepat saat gesture klik berlangsung agar tidak diblokir browser mobile.
- const waTab=action==='APPROVE'?window.open('about:blank','_blank'):null;
+ // Jangan membuka about:blank sebelum RPC selesai.
+ // Pada Android WebView, tab kosong dapat tampil sebagai halaman putih dan membuat pengguna mengira persetujuan macet.
  const buttons=[...document.querySelectorAll('button[onclick*="'+String(stockId)+'"]')];
  buttons.forEach(btn=>{btn.disabled=true;btn.dataset.hmApprovalBusy='1';});
  try{
@@ -328,8 +326,7 @@ async function reviewInventoryReceive(stockId,action){
   alert(action==='APPROVE'?'Barang Masuk disetujui dan menjadi Stock READY.':action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');
   if(action==='APPROVE'){
    const waUrl='https://wa.me/?text='+encodeURIComponent(waMessage);
-   if(waTab&&!waTab.closed)waTab.location.href=waUrl;
-   else window.location.href=waUrl;
+   window.location.href=waUrl;
   }
  }catch(e){
   if(waTab&&!waTab.closed)waTab.close();

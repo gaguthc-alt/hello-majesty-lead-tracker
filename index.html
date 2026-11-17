@@ -8862,7 +8862,7 @@ async function askAI(leadId){
  finally{if(btn)btn.disabled=false}
 }
 window.openAI=openAI;window.askAI=askAI;
-window.hmOpenLeadWhatsAppInbox=function(id){const conversationId=String(id||'').trim();if(!conversationId)return alert('Percakapan Lead Chatting belum terhubung dengan lead ini.');window.open('whatsapp-inbox.html?conversation='+encodeURIComponent(conversationId),'_blank','noopener');};
+window.hmOpenLeadWhatsAppInbox=function(id){const conversationId=String(id||'').trim();if(!conversationId)return alert('Percakapan Lead Chatting belum terhubung dengan lead ini.');window.open('whatsapp-inbox.html?conversation='+encodeURIComponent(conversationId),'_blank');};
 // Login fallback binding — only attach when the primary login handler is ready.
 window.addEventListener('DOMContentLoaded',function(){
  const b=document.getElementById('loginBtn');

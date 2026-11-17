@@ -93,17 +93,46 @@ async function init(){try{
   window.addEventListener('focus',()=>load(true));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);});
 }catch(e){$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
-async function load(quiet=false){try{
-  const {data,error}=await sb.from('chat_conversations').select('id,customer_name,source,content_creator,status,claimed_by,claimed_name,claimed_at,lead_id,created_at,updated_at,original_source,last_touch_source,source_code,source_owner,source_confidence,source_platform,source_campaign,first_inbound_at,last_inbound_at,claim_warning_at,claim_expires_at,first_response_at,customer_user_id,lead_decision,lead_decision_at,lead_decision_by,lead_decision_note,lead_qualification_score,lead_qualification,sales_claimed_by,sales_claimed_name,sales_claimed_at,sales_response_state,sales_sla_warning_at,sales_sla_overdue_at,sales_sla_released_at').order('updated_at',{ascending:false}).limit(200);
-  if(error)throw error;
-  rows=(data||[]);
-  if(canInboxCS&&!isInboxManagement){
-    const {data:queue,error:queueError}=await sb.rpc('hm_list_available_whatsapp_chats');
-    if(queueError)throw queueError;
-    const ownedIds=new Set(rows.map(x=>x.id));
-    rows.push(...(queue||[]).filter(x=>!ownedIds.has(x.id)).map(x=>({...x,_queue:true})));
-  }
-  renderList();if(active){const fresh=rows.find(x=>x.id===active.id);if(fresh){active=fresh;await loadMessages(true);renderHead();}}}catch(e){if(!quiet)$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
+let inboxLoadPromise=null;
+async function withInboxTimeout(promise,label,ms=12000){
+  let timer;
+  try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timeout. Periksa koneksi lalu tekan tombol muat ulang.')),ms);})]);}
+  finally{clearTimeout(timer);}
+}
+async function load(quiet=false){
+  if(inboxLoadPromise)return inboxLoadPromise;
+  inboxLoadPromise=(async()=>{try{
+    const {data,error}=await withInboxTimeout(
+      sb.from('chat_conversations').select('id,customer_name,source,content_creator,status,claimed_by,claimed_name,claimed_at,lead_id,created_at,updated_at,original_source,last_touch_source,source_code,source_owner,source_confidence,source_platform,source_campaign,first_inbound_at,last_inbound_at,claim_warning_at,claim_expires_at,first_response_at,customer_user_id,lead_decision,lead_decision_at,lead_decision_by,lead_decision_note,lead_qualification_score,lead_qualification,sales_claimed_by,sales_claimed_name,sales_claimed_at,sales_response_state,sales_sla_warning_at,sales_sla_overdue_at,sales_sla_released_at').order('updated_at',{ascending:false}).limit(200),
+      'Memuat daftar percakapan',12000
+    );
+    if(error)throw error;
+    rows=(data||[]);
+    // Render chat milik PIC terlebih dahulu. Antrean chat tersedia tidak boleh
+    // menghambat chat yang sudah berhasil di-claim.
+    renderList();
+    if(canInboxCS&&!isInboxManagement){
+      try{
+        const {data:queue,error:queueError}=await withInboxTimeout(
+          sb.rpc('hm_list_available_whatsapp_chats'),
+          'Memuat antrean chat',8000
+        );
+        if(queueError)throw queueError;
+        const ownedIds=new Set(rows.map(x=>x.id));
+        rows.push(...(queue||[]).filter(x=>!ownedIds.has(x.id)).map(x=>({...x,_queue:true})));
+        renderList();
+      }catch(queueErr){
+        console.warn('Antrean chat tidak termuat:',queueErr);
+        if(!rows.length)$('list').innerHTML='<div class="empty">Antrean belum termuat: '+esc(queueErr.message)+'<br>Tekan tombol muat ulang.</div>';
+      }
+    }
+    if(active){const fresh=rows.find(x=>x.id===active.id);if(fresh){active=fresh;await loadMessages(true);renderHead();}}
+  }catch(e){
+    console.error('Inbox gagal dimuat:',e);
+    if(!quiet||!rows.length)$('list').innerHTML='<div class="empty">Gagal memuat percakapan: '+esc(e.message)+'<br>Tekan tombol ↻ untuk mencoba lagi.</div>';
+  }finally{inboxLoadPromise=null;}})();
+  return inboxLoadPromise;
+}
 function renderList(){const q=$('search').value.toLowerCase();const filtered=rows.filter(c=>(c.customer_name||'').toLowerCase().includes(q));$('list').innerHTML=filtered.map(c=>{const csTag=c.claimed_by?'CS PIC: '+esc(c.claimed_name||'CS'):'';const salesTag=c.sales_claimed_by?'Sales PIC: '+esc(c.sales_claimed_name||'Sales'):'';const ownerTag=c.sales_claimed_by===me.id?' · TANGGUNG JAWAB ANDA':c.claimed_by===me.id&&!c.sales_claimed_by?' · TANGGUNG JAWAB ANDA':'';return '<div class="item '+(active?.id===c.id?'sel':'')+'" data-id="'+c.id+'"><strong>'+esc(c.customer_name||'Percakapan')+'</strong><div class="muted"></div><div style="margin-top:7px">'+(c._queue?'<span class="tag">CHAT TERSEDIA</span>':(csTag?'<span class="tag lock">'+csTag+'</span> ':'')+(salesTag?'<span class="tag">'+salesTag+'</span> ':'')+(!csTag&&!salesTag?'<span class="tag lock">BELUM DI-CLAIM</span>':''))+'<span class="muted">'+esc(c.status||'NEW')+esc(ownerTag)+'</span></div></div>';}).join('')||'<div class="empty">Tidak ada chat yang menjadi tanggung jawab Anda.</div>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));}
 async function openChat(id){active=rows.find(c=>c.id===id);renderList();renderHead();if(!active?._queue)await loadMessages();else $('msgs').innerHTML='<div class="empty">Chat baru tersedia. Claim untuk membuka isi percakapan.</div>';}
 function renderHead(){if(!active){$('head').innerHTML='<div class="empty">Pilih percakapan untuk melihat detail.</div>';return;}const mine=active.claimed_by===me.id;const salesMine=active.sales_claimed_by===me.id;const free=!active.claimed_by&&!active.sales_claimed_by;$('head').innerHTML='<div><b>'+esc(active.customer_name||'Customer')+'</b><div class="muted"> · '+esc(active.status||'NEW')+'</div><div class="muted">'+(active.claimed_by?'CS PIC: '+esc(active.claimed_name||'CS'):'CS belum ditetapkan')+'</div><div class="muted">'+(active.sales_claimed_by?'Sales PIC: '+esc(active.sales_claimed_name||'Sales'):'Sales belum di-claim')+'</div></div><div class="actions">'+(free&&canInboxCS?'<button id="claim" class="btn">Claim Chat</button>':mine||salesMine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dipegang PIC lain</span>')+(isInboxManagement?'<button id="deleteConversation" class="danger" type="button">🗑 Hapus Percakapan</button>':'')+'</div>';if($('claim'))$('claim').onclick=claim;if($('deleteConversation'))$('deleteConversation').onclick=deleteConversation;renderComposer();renderLeadReview();}

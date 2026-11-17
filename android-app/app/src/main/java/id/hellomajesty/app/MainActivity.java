@@ -34,6 +34,9 @@ import java.util.Locale;
 import org.json.JSONObject;
 import androidx.core.view.WindowCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.app.NotificationCompat;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import org.json.JSONArray;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -59,6 +62,7 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(0);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         HelloMajestyMessagingService.createNotificationChannel(this);
+        checkForAppUpdate();
         FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
             getSharedPreferences("hello_majesty_native", MODE_PRIVATE).edit().putString("fcm_token", token).apply();
             // Token retrieval is asynchronous and may finish after WebView onPageFinished.
@@ -132,6 +136,60 @@ public class MainActivity extends Activity {
         setIntent(intent);
         String target = resolveNotificationUrl(intent);
         if (webView != null) webView.loadUrl(target);
+    }
+
+
+    private void checkForAppUpdate() {
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL("https://ksowzhhmzrumyciehuyv.supabase.co/rest/v1/hm_app_releases?select=version_name,version_code,title,message,download_url,mandatory&platform=eq.android&active=eq.true&order=version_code.desc&limit=1");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(10000);
+                connection.setRequestProperty("apikey", "sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW");
+                int status = connection.getResponseCode();
+                if (status < 200 || status >= 300) return;
+                StringBuilder body = new StringBuilder();
+                try (InputStream in = connection.getInputStream(); java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(in, StandardCharsets.UTF_8))) {
+                    String line; while ((line = reader.readLine()) != null) body.append(line);
+                }
+                JSONArray releases = new JSONArray(body.toString());
+                if (releases.length() == 0) return;
+                JSONObject release = releases.getJSONObject(0);
+                int latestCode = release.optInt("version_code", 0);
+                int installedCode = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+                if (latestCode <= installedCode) return;
+                String version = release.optString("version_name", "terbaru");
+                android.content.SharedPreferences prefs = getSharedPreferences("hello_majesty_updates", MODE_PRIVATE);
+                if (prefs.getInt("last_notified_version_code", 0) >= latestCode) return;
+                String title = release.optString("title", "Pembaruan Hello Majesty tersedia");
+                String message = release.optString("message", "Versi " + version + " tersedia. Silakan perbarui aplikasi.");
+                String downloadUrl = release.optString("download_url", "");
+                if (downloadUrl.isEmpty() || downloadUrl.equals("null")) message += " Hubungi Management untuk tautan APK terbaru.";
+                Intent open = new Intent(this, MainActivity.class);
+                open.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                open.putExtra("hm_notification_url", downloadUrl.startsWith("https://") ? downloadUrl : APP_URL);
+                android.app.PendingIntent pending = android.app.PendingIntent.getActivity(this, latestCode, open,
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? android.app.PendingIntent.FLAG_IMMUTABLE : 0));
+                NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                String channelId = "hm_app_updates";
+                if (Build.VERSION.SDK_INT >= 26 && manager.getNotificationChannel(channelId) == null) {
+                    manager.createNotificationChannel(new NotificationChannel(channelId, "Pembaruan Aplikasi", NotificationManager.IMPORTANCE_DEFAULT));
+                }
+                NotificationCompat.Builder notification = new NotificationCompat.Builder(this, channelId)
+                    .setSmallIcon(id.hellomajesty.app.R.drawable.ic_notification)
+                    .setContentTitle(title + " · v" + version)
+                    .setContentText(message)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                    .setAutoCancel(true).setContentIntent(pending).setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                manager.notify(7300, notification.build());
+                prefs.edit().putInt("last_notified_version_code", latestCode).apply();
+            } catch (Exception error) {
+                Log.w("HelloMajestyUpdate", "Pemeriksaan versi terbaru gagal", error);
+            } finally { if (connection != null) connection.disconnect(); }
+        }).start();
     }
 
     private void registerNativePushToken(WebView view) {
@@ -262,6 +320,8 @@ public class MainActivity extends Activity {
                 payload.put("endpoint_hash", hash.toString());
                 payload.put("fcm_token", fcmToken);
                 payload.put("device_label", "Hello Majesty Android");
+                payload.put("app_version", "1.3.3");
+                payload.put("app_version_code", 17);
                 payload.put("platform", "android");
                 payload.put("enabled", true);
                 String now = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).format(new Date());

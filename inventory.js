@@ -890,6 +890,12 @@ async function openStockLeadChat(stockId){
 window.openStockLeadChat=openStockLeadChat;
 async function shareProduct(s){
  const text=productShareText(s),urls=stockPhotoUrls(s);
+ // APK Android membagikan file gambar asli melalui native Android Share Sheet,
+ // bukan menempelkan URL foto ke teks WhatsApp.
+ if(urls.length&&window.HelloMajestyNative&&typeof window.HelloMajestyNative.shareStockProduct==='function'){
+  window.HelloMajestyNative.shareStockProduct(text,JSON.stringify(urls));
+  return;
+ }
  const clipboardPromise=navigator.clipboard?.writeText(text)
   .then(()=>true).catch(()=>false) || Promise.resolve(false);
  if(navigator.share){
@@ -940,14 +946,10 @@ async function shareProduct(s){
  // Buka WhatsApp dengan deskripsi dan tautan foto publik agar tim tetap bisa
  // membagikan stok; foto dapat dibuka penerima dari tautan tersebut.
  await clipboardPromise;
- const photoLinks=urls.length?'\\n\\nFoto produk:\\n'+urls.join('\\n'):'';
- const waText=text+photoLinks;
- const waUrl='https://wa.me/?text='+encodeURIComponent(waText);
- try{
-  window.location.href=waUrl;
- }catch(e){
-  window.open(waUrl,'_blank');
- }
+ const waUrl='https://wa.me/?text='+encodeURIComponent(text);
+ try{ window.location.href=waUrl; }
+ catch(e){ window.open(waUrl,'_blank'); }
+ if(urls.length)alert('Deskripsi sudah dibuka di WhatsApp. Browser ini tidak dapat melampirkan foto otomatis; gunakan tombol berbagi foto dari browser atau APK Hello Majesty terbaru.');
 }
 function stockPhotoUrls(s){return [s?.photo_1,s?.photo_2,s?.photo_3,s?.photo_4,s?.photo_5].filter(Boolean)}
 async function prepareStockPhoto(file){

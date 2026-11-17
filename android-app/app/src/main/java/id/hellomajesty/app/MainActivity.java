@@ -33,6 +33,12 @@ import java.util.Date;
 import java.util.Locale;
 import org.json.JSONObject;
 import androidx.core.view.WindowCompat;
+import androidx.core.content.FileProvider;
+import org.json.JSONArray;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends Activity {
@@ -164,6 +170,62 @@ public class MainActivity extends Activity {
     }
 
     public final class NativePushBridge {
+        @JavascriptInterface
+        public void shareStockProduct(String productText, String photoUrlsJson) {
+            new Thread(() -> {
+                ArrayList<Uri> imageUris = new ArrayList<>();
+                HttpURLConnection connection = null;
+                try {
+                    JSONArray urls = new JSONArray(photoUrlsJson == null ? "[]" : photoUrlsJson);
+                    File dir = new File(getCacheDir(), "shared-stock");
+                    if (!dir.exists() && !dir.mkdirs()) throw new Exception("Folder sementara tidak dapat dibuat.");
+                    for (int i = 0; i < urls.length(); i++) {
+                        String photoUrl = urls.getString(i);
+                        if (!photoUrl.startsWith("https://ksowzhhmzrumyciehuyv.supabase.co/storage/")) {
+                            throw new Exception("Alamat foto produk tidak valid.");
+                        }
+                        connection = (HttpURLConnection) new URL(photoUrl).openConnection();
+                        connection.setConnectTimeout(20000);
+                        connection.setReadTimeout(30000);
+                        connection.setInstanceFollowRedirects(true);
+                        connection.connect();
+                        int status = connection.getResponseCode();
+                        if (status < 200 || status >= 300) throw new Exception("Foto ke-" + (i + 1) + " gagal diunduh (HTTP " + status + ").");
+                        String type = connection.getContentType();
+                        if (type == null || !type.toLowerCase(Locale.US).startsWith("image/")) throw new Exception("File produk bukan gambar.");
+                        String ext = type.toLowerCase(Locale.US).contains("png") ? ".png" :
+                                     type.toLowerCase(Locale.US).contains("webp") ? ".webp" : ".jpg";
+                        File target = new File(dir, "hello-majesty-stock-" + System.currentTimeMillis() + "-" + i + ext);
+                        try (InputStream in = connection.getInputStream(); FileOutputStream out = new FileOutputStream(target)) {
+                            byte[] buffer = new byte[8192]; int count; long total = 0;
+                            while ((count = in.read(buffer)) != -1) {
+                                total += count;
+                                if (total > 12L * 1024 * 1024) throw new Exception("Ukuran foto terlalu besar.");
+                                out.write(buffer, 0, count);
+                            }
+                        } finally { connection.disconnect(); connection = null; }
+                        Uri uri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", target);
+                        imageUris.add(uri);
+                    }
+                    if (imageUris.isEmpty()) throw new Exception("Foto produk belum tersedia.");
+                    Intent share = new Intent(imageUris.size() == 1 ? Intent.ACTION_SEND : Intent.ACTION_SEND_MULTIPLE);
+                    share.setType("image/*");
+                    share.putExtra(Intent.EXTRA_TEXT, productText == null ? "" : productText);
+                    if (imageUris.size() == 1) share.putExtra(Intent.EXTRA_STREAM, imageUris.get(0));
+                    else share.putParcelableArrayListExtra(Intent.EXTRA_STREAM, imageUris);
+                    share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    runOnUiThread(() -> {
+                        try { startActivity(Intent.createChooser(share, "Bagikan stok Hello Majesty")); }
+                        catch (ActivityNotFoundException e) { Toast.makeText(MainActivity.this, "Tidak ada aplikasi untuk membagikan foto.", Toast.LENGTH_LONG).show(); }
+                    });
+                } catch (Exception error) {
+                    if (connection != null) connection.disconnect();
+                    Log.e("HelloMajestyShare", "Gagal menyiapkan foto stok", error);
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Foto stok gagal disiapkan: " + error.getMessage(), Toast.LENGTH_LONG).show());
+                }
+            }).start();
+        }
+
         @JavascriptInterface
         public void registerPushSession(String accessToken, String userId) {
             if (accessToken == null || accessToken.isEmpty() || userId == null || userId.isEmpty()) {

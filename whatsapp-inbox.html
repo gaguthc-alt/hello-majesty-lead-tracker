@@ -40,13 +40,13 @@ function displayPhone(value){
   return phone.replace(/\d/g,()=>{const current=index++;return current<keepStart||current>=digits.length-keepEnd?digits[current]:'x';});
 }
 async function loadInboxProfile(){
-  const {data,error}=await sb.from('team_profiles').select('*').eq('user_id',me.id).maybeSingle();
+  const {data,error}=await withInboxTimeout(sb.from('team_profiles').select('*').eq('user_id',me.id).maybeSingle(),'Memuat profil akun',10000);
   if(error)throw error;
   profile=data||{};
   const role=[profile.role,profile.position,profile.access_role,profile.account_role,profile.user_role,profile.department].filter(Boolean).join(' ').trim().toUpperCase().replace(/_/g,' ');
   let canCS=role.includes('CS'),canSales=role.includes('SALES');
   try{
-    const {data:permission,error:permissionError}=await sb.from('team_permissions').select('can_cs,can_sales').eq('name',profile.name||'').eq('outlet',profile.outlet||'').eq('active',true).limit(1).maybeSingle();
+    const {data:permission,error:permissionError}=await withInboxTimeout(sb.from('team_permissions').select('can_cs,can_sales').eq('name',profile.name||'').eq('outlet',profile.outlet||'').eq('active',true).limit(1).maybeSingle(),'Memuat izin akun',8000);
     if(!permissionError&&permission){canCS=canCS||permission.can_cs===true;canSales=canSales||permission.can_sales===true;}
   }catch(_e){}
   const management=profile.is_management===true||role.includes('MANAGEMENT')||role==='DIVISI'||role.includes('DEVELOPER');
@@ -111,7 +111,7 @@ async function load(quiet=false){
     // Render chat milik PIC terlebih dahulu. Antrean chat tersedia tidak boleh
     // menghambat chat yang sudah berhasil di-claim.
     renderList();
-    if(canInboxCS&&!isInboxManagement){
+    if(canInboxCS||isInboxManagement){
       try{
         const {data:queue,error:queueError}=await withInboxTimeout(
           sb.rpc('hm_list_available_whatsapp_chats'),

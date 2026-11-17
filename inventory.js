@@ -324,12 +324,8 @@ async function reviewInventoryReceive(stockId,action){
   await Promise.allSettled(jobs);
   if(typeof window.openInventoryApprovals==='function')await window.openInventoryApprovals();
   alert(action==='APPROVE'?'Barang Masuk disetujui dan menjadi Stock READY.':action==='REJECT'?'Barang Masuk ditolak.':'Barang Masuk dikembalikan untuk koreksi.');
-  if(action==='APPROVE'){
-   const waUrl='https://wa.me/?text='+encodeURIComponent(waMessage);
-   window.location.href=waUrl;
-  }
+  // Jangan alihkan WebView ke wa.me setelah persetujuan; tetap di aplikasi.
  }catch(e){
-  if(waTab&&!waTab.closed)waTab.close();
   console.error('[HM] reviewInventoryReceive:',e);
   alert('Persetujuan Barang Masuk gagal: '+String(e?.message||e));
   if(typeof loadInventoryApprovalCount==='function')await loadInventoryApprovalCount().catch(()=>{});

@@ -2484,7 +2484,7 @@ if(typeof hmRenderHomePerformance==='function'){ void hmRenderHomePerformance();
   // Re-apply only the safe dashboard render path; do not let a module
   // visibility error blank the authenticated home screen.
   try{applyRoleVisibility();}catch(e){console.warn('[HM] Final visibility pass skipped:',e);}
-  try{await loadLeads();openUrl();}
+  try{await loadLeads();await openUrl();}
   catch(ex){
    console.error('[HM] Dashboard load error',ex);
    $('loginErr').textContent='Login berhasil, tetapi dashboard gagal dimuat: '+(ex?.message||ex);
@@ -6837,7 +6837,17 @@ function share(id){
 async function openUrl(){
  const params=new URLSearchParams(location.search);
  const id=params.get('claim')||params.get('lead_id');
- if(!id||!profile||!sb)return;
+ if(!id)return;
+ // Deep links from push may arrive while the authenticated shell is still booting.
+ if(!profile||!sb){
+   if(!window.hmPendingClaimRetry){
+     window.hmPendingClaimRetry=setInterval(()=>{
+       if(profile&&sb){clearInterval(window.hmPendingClaimRetry);window.hmPendingClaimRetry=null;openUrl();}
+     },400);
+     setTimeout(()=>{if(window.hmPendingClaimRetry){clearInterval(window.hmPendingClaimRetry);window.hmPendingClaimRetry=null;}},20000);
+   }
+   return;
+ }
  let l=leads.find(x=>String(x.lead_id)===String(id));
  const fresh=await sb.from('leads').select('*').eq('lead_id',id).maybeSingle();
  if(fresh.error){alert('Lead dari notifikasi gagal dimuat: '+fresh.error.message);return;}

@@ -279,7 +279,7 @@
       try{
         const starter=await waitForAppStarter();
         const startPromise=Promise.resolve().then(()=>starter(session.user,sb));
-        const startTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Proses dashboard tidak merespons selama 12 detik. Kemungkinan permintaan profil/database macet atau modul dashboard bermasalah.')),12000));
+        const startTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Proses dashboard tidak merespons selama 28 detik. Periksa koneksi database atau modul dashboard.')),28000));
         Promise.race([startPromise,startTimeout]).catch(ex=>{
           console.error('[HM] Dashboard start error:',ex);
           showBootError('Dashboard gagal dibuka.',ex?.message||'Terjadi kesalahan saat memulai dashboard.');
@@ -341,7 +341,7 @@
       if(appPage)appPage.classList.remove('hidden');
       if(roleHome)roleHome.classList.remove('hidden');
       const startPromise=Promise.resolve().then(()=>starter(session.user,sb));
-      const startTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Dashboard tidak merespons dalam 12 detik saat memulihkan sesi login.')),12000));
+      const startTimeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Dashboard tidak merespons dalam 28 detik saat memulihkan sesi login.')),28000));
       Promise.race([startPromise,startTimeout]).catch(showRestoreBootError);
       return true;
     }catch(ex){

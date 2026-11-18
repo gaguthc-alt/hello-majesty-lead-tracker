@@ -3894,7 +3894,7 @@ async function hmRenderHomePerformance(){
      const isStockistOnlyLeadOutlet=name=>/^(majesty cell|majesty gadget|majesty store)$/i.test(String(name||'').trim());
      const outletSet=new Set((targetRows||[]).map(x=>String(x.outlet||'').trim()).filter(name=>name&&!isStockistOnlyLeadOutlet(name)));
      try{
-       const {data:profileOutlets,error:profileOutletError}=await db.from('team_profiles').select('outlet,active');
+       const {data:profileOutlets,error:profileOutletError}=await db.from('team_profiles').select('outlet').eq('active',true);
        if(profileOutletError)console.warn('[HM] Tidak dapat membaca outlet dari team_profiles:',profileOutletError);
        (profileOutlets||[]).forEach(x=>{const name=String(x.outlet||'').trim();if(name&&!isStockistOnlyLeadOutlet(name))outletSet.add(name);});
      }catch(outletLookupError){console.warn('[HM] Fallback daftar outlet tidak tersedia:',outletLookupError);}

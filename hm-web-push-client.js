@@ -20,7 +20,8 @@
       const title=payload?.notification?.title||payload?.data?.title||'Hello Majesty';
       const body=payload?.notification?.body||payload?.data?.body||'Ada aktivitas baru.';
       const data=payload?.data||{};
-      const target=String(data.url||'https://app.hello-majesty.com/');
+      let target=String(data.url||'https://app.hello-majesty.com/');
+      try { const u=new URL(target,'https://app.hello-majesty.com/'); if(u.hostname==='hello-majesty-lead-tracker.pages.dev') { u.protocol='https:'; u.host='app.hello-majesty.com'; } target=u.toString(); } catch { target='https://app.hello-majesty.com/'; }
       if(Notification.permission!=='granted')return;
       const options={
         body,

@@ -21,7 +21,22 @@ async function init(){
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data,error}=await sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token||''});if(error)throw error;user=data.user;if(!user)throw Error('Sesi login tidak valid.');
   firebase.initializeApp(firebaseConfig);$('device').textContent='Perangkat: '+navigator.userAgent;
-  show(isIOS?'Mode aplikasi iPhone terdeteksi. Tekan tombol untuk mengaktifkan notifikasi.':'Siap. Tekan tombol untuk meminta izin notifikasi dan mendaftarkan perangkat ini.','good');$('enable').disabled=false;
+  $('enable').disabled=false;
+  if(Notification.permission==='granted'){
+   try{
+    const registration=await navigator.serviceWorker.register('/firebase-messaging-sw.js',{scope:'/'});
+    await navigator.serviceWorker.ready;
+    const token=await firebase.messaging().getToken({vapidKey:VAPID_PUBLIC_KEY,serviceWorkerRegistration:registration});
+    if(token){
+     const endpointHash=await digest(token);
+     const {data:sub,error:subError}=await sb.from('hm_push_subscriptions').select('enabled').eq('user_id',user.id).eq('endpoint_hash',endpointHash).maybeSingle();
+     if(subError)throw subError;
+     if(sub&&sub.enabled){show('AKTIF ✓ Notifikasi Hello Majesty sudah aktif dan perangkat ini terdaftar. Tidak perlu aktivasi ulang.','good');$('enable').textContent='Notifikasi Sudah Aktif ✓';return;}
+    }
+   }catch(checkError){console.warn('Pemeriksaan status notifikasi:',checkError);}
+  }
+  if(Notification.permission==='denied'){show('IZIN DIBLOKIR. Izinkan notifikasi untuk Hello Majesty melalui pengaturan iPhone/browser, lalu coba lagi.','bad');}
+  else show(isIOS?'Mode aplikasi iPhone terdeteksi. Tekan tombol untuk mengaktifkan notifikasi.':'Belum aktif. Tekan tombol untuk meminta izin notifikasi dan mendaftarkan perangkat ini.','');
  }catch(e){show(e.message,'bad');$('enable').disabled=true;}
 }
 async function enablePush(){
@@ -39,7 +54,7 @@ async function enablePush(){
   const deviceLabel=(platform==='android'?'Android':platform==='ios'?'iPhone/iPad':'Desktop / PC')+' · '+(navigator.userAgentData?.platform||navigator.platform||'');
   const {error}=await sb.from('hm_push_subscriptions').upsert({user_id:user.id,endpoint_hash:endpointHash,fcm_token:token,device_label:deviceLabel,platform,enabled:true,last_seen_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id,endpoint_hash'});
   if(error)throw error;
-  show('BERHASIL! Perangkat ini sudah terdaftar untuk menerima notifikasi Hello Majesty. Ulangi aktivasi pada perangkat lain yang digunakan akun ini.','good');
+  show('AKTIF ✓ Notifikasi Hello Majesty sudah aktif dan perangkat ini terdaftar. Tidak perlu aktivasi ulang.','good');$('enable').textContent='Notifikasi Sudah Aktif ✓';
  }catch(e){show('Belum berhasil: '+(e.message||e),'bad');}
  finally{$('enable').disabled=false;}
 }

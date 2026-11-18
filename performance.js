@@ -254,7 +254,9 @@
     try{
     // Siapkan laporan terlebih dahulu, lalu navigasikan tab aktif langsung ke WhatsApp.
     // Menggunakan tab about:blank sering meninggalkan halaman kosong pada browser mobile/iOS.
-    const [monthRows,todayRows]=await Promise.all([getFunnel('month'),getFunnel('today')]);
+    // Jalankan laporan bulanan dan harian berurutan agar tombol Share tidak memicu dua rangkaian query berat bersamaan.
+    const monthRows=await getFunnel('month');
+    const todayRows=await getFunnel('today');
     const normalize=source=>source.map(r=>({
       name:String(r.employee_name||'-'),outlet:String(r.outlet||r.outlet_name||'-'),
       claim:Number(r.claim_cs||0),handover:Number(r.handover||0),claimSales:Number(r.claim_sales||0),

@@ -26,7 +26,9 @@ messaging.onBackgroundMessage((payload)=>{
 });
 self.addEventListener('notificationclick',(event)=>{
   event.notification.close();
-  const target=event.notification.data?.url||'/index.html';
+  const rawTarget=event.notification.data?.url||'/index.html';
+  let target=rawTarget;
+  try { const u=new URL(rawTarget,self.location.origin); if(u.hostname==='hello-majesty-lead-tracker.pages.dev') { u.protocol='https:'; u.host='app.hello-majesty.com'; } target=u.toString(); } catch { target='/index.html'; }
   event.waitUntil((async()=>{
     const windows=await clients.matchAll({type:'window',includeUncontrolled:true});
     for(const client of windows){if('focus' in client){await client.focus();if('navigate' in client)await client.navigate(target);return;}}

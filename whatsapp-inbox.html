@@ -417,7 +417,8 @@ async function sendReply(){
           serverCode=String(body?.code||'');
         }
       }catch(_e){}
-      if(!error.context || serverCode==='SEND_STATUS_UNKNOWN'){
+      const responseStatus=Number(error.context?.status||0);
+      if(!error.context || responseStatus>=500 || serverCode==='SEND_STATUS_UNKNOWN'){
         replyBlockedAfterUnknown=true;
         button.textContent='Periksa Status Pesan';
         button.disabled=true;

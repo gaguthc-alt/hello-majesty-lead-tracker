@@ -88,6 +88,7 @@ function brochureCard(b){
     '<div class="row" style="margin-top:8px">'+
       '<a class="secondary" style="display:inline-block;text-decoration:none;padding:10px;border-radius:8px;color:#111" href="'+esc(url+'?download='+encodeURIComponent((b.title||b.brand||'brosur').replace(/[^a-z0-9-_ ]/gi,'')+'.jpg'))+'" target="_blank" rel="noopener">⬇️ Download</a>'+
       '<button class="success" type="button" onclick="shareBrochure('+JSON.stringify(b.id).replace(/"/g,"&quot;")+')">📲 Kirim ke WA</button>'+
+      '<button class="primary" type="button" onclick="openBrochureLeadChat('+JSON.stringify(b.id).replace(/"/g,"&quot;")+')">💬 Kirim ke Lead Chat</button>'+
       (can?'<button class="danger" type="button" onclick="deleteBrochure('+JSON.stringify(b.id).replace(/"/g,"&quot;")+')">🗑️ Hapus</button>':'')+
     '</div></div>';
 }
@@ -143,6 +144,35 @@ async function shareBrochure(id){
   const wa='https://wa.me/?text='+encodeURIComponent(text+'\\n'+url);
   window.open(wa,'_blank');
 }
+async function openBrochureLeadChat(id){
+  const b=hmBrochures.find(x=>x.id===id);if(!b)return;
+  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+  const roles=Array.isArray(window.hmRoles)?window.hmRoles.map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' ')):[];
+  const isSales=role.includes('SALES')||roles.some(x=>x.includes('SALES'));
+  const isManagement=!!profile?.is_management||role.includes('MANAGEMENT')||role==='DIVISI'||role.includes('DEVELOPER');
+  if(!isSales&&!isManagement)return alert('Fitur Kirim ke Lead Chat hanya untuk Sales atau Management.');
+  const query=sb.from('chat_conversations')
+    .select('id,customer_name,status,claimed_by,claimed_name,sales_claimed_by,sales_claimed_name,updated_at')
+    .order('updated_at',{ascending:false}).limit(100);
+  const {data,error}=isManagement?await query:await query.or('sales_claimed_by.eq.'+profile.user_id+',claimed_by.eq.'+profile.user_id);
+  if(error)return alert('Daftar Lead Chat gagal dimuat: '+error.message);
+  const chats=isManagement?(data||[]):(data||[]).filter(c=>c.sales_claimed_by===profile.user_id||(!c.sales_claimed_by&&c.claimed_by===profile.user_id));
+  if(!chats.length)return alert(isManagement?'Belum ada percakapan Lead Chat.':'Belum ada Lead Chat yang sedang menjadi tanggung jawab Anda.');
+  const url=hmBrochureUrl(b.storage_path);
+  const nl=String.fromCharCode(10);
+  const message='📖 Brosur '+(b.brand||'')+(b.title?' — '+b.title:'')+nl+nl+url+nl+nl+'Hello Majesty';
+  $('mt').textContent='💬 Kirim Brosur ke Lead Chat';
+  $('mb').innerHTML='<div class="small" style="margin-bottom:10px">'+(isManagement?'Management dapat memilih seluruh percakapan tanpa mengambil alih kepemilikan lead. Pesan disiapkan atas nama MANAGEMENT. ':'Pilih pelanggan yang sedang Anda tangani. Brosur akan dimasukkan sebagai draft pesan. ')+'</div><input id="hmBrochureChatSearch" placeholder="Cari nama pelanggan..." style="margin-bottom:10px"><div id="hmBrochureChatList">'+chats.map(c=>'<button type="button" class="secondary" style="display:block;width:100%;text-align:left;margin:6px 0;padding:12px;color:#17202a" data-chat-id="'+esc(c.id)+'"><b>'+esc(c.customer_name||'Customer')+'</b><div class="small">'+esc(c.status||'NEW')+' · CS: '+esc(c.claimed_name||'Belum ada')+' · Sales: '+esc(c.sales_claimed_name||'Belum ada')+'</div></button>').join('')+'</div>';
+  const search=$('hmBrochureChatSearch'),list=$('hmBrochureChatList');
+  if(search)search.oninput=()=>{const q=search.value.toLowerCase();list.querySelectorAll('button').forEach(btn=>btn.style.display=btn.textContent.toLowerCase().includes(q)?'block':'none');};
+  list?.querySelectorAll('button[data-chat-id]').forEach(btn=>btn.onclick=()=>{
+    const target=new URL('whatsapp-inbox.html',location.href);
+    target.searchParams.set('conversation',btn.dataset.chatId);
+    target.searchParams.set('draft',message);
+    location.href=target.toString();
+  });
+  $('modal').classList.remove('hidden');
+}
 async function deleteBrochure(id){
   if(!(await hmEnsureBrochureAccess()))return alert('Hanya Management atau Facilitator yang dapat menghapus brosur.');
   const b=hmBrochures.find(x=>x.id===id);if(!b)return;
@@ -159,4 +189,5 @@ window.showBrochureBrand=showBrochureBrand;
 window.openBrochureUpload=openBrochureUpload;
 window.saveBrochure=saveBrochure;
 window.shareBrochure=shareBrochure;
+window.openBrochureLeadChat=openBrochureLeadChat;
 window.deleteBrochure=deleteBrochure;

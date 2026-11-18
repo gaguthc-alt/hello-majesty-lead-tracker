@@ -284,7 +284,7 @@ function startCsRealtimeWatchdog(){
         await subscribeChatNotifications();
       }
     }catch(e){console.warn('[HM Chat CS realtime watchdog]',e);}
-  },5000);
+  },30000);
 }
 async function stopRealtime(){if(realtimeChannel){try{await sb.removeChannel(realtimeChannel)}catch(_e){}realtimeChannel=null;}if(csMessageChannel){try{await sb.removeChannel(csMessageChannel)}catch(_e){}csMessageChannel=null;}if(csNotificationChannel){try{await sb.removeChannel(csNotificationChannel)}catch(_e){}csNotificationChannel=null;}stopCsInboxPolling();subscribedConversationId=null;stopCsRealtimeWatchdog();}
 async function subscribeConversationRealtime(conversationId, targetBoxId, channelPrefix){
@@ -342,7 +342,7 @@ function startCsInboxPolling(){
   csInboxPollTimer=setInterval(async()=>{
     try{await loadCsInbox();}
     catch(e){console.warn('[HM Chat CS inbox fallback]',e);}
-  },3000);
+  },30000);
 }
 
 async function subscribeChatNotifications(){

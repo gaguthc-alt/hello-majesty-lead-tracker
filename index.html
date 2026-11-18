@@ -3831,6 +3831,11 @@ async function hmRenderHomePerformance(){
  if(!host)return;
  const block=document.getElementById('hmHomePerformance');
  if(!block||!profile)return;
+ // Cache ringkasan beranda per pengguna selama 2 menit agar render ulang menu tidak
+ // memanggil RPC dan tabel target berulang kali. Data tetap diperbarui saat cache kedaluwarsa.
+ const perfCacheKey=[profile?.user_id||profile?.id||profile?.name||'user',profile?.outlet||'',profile?.role||'',(typeof getActiveRoles==='function'?getActiveRoles():[]).join(','),new Date().toISOString().slice(0,7)].join('|');
+ const perfCache=window.__hmHomePerformanceCache;
+ if(perfCache&&perfCache.key===perfCacheKey&&perfCache.expires_at>Date.now()&&perfCache.html){block.innerHTML=perfCache.html;return;}
  const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
  if(!db)return;
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
@@ -3936,6 +3941,7 @@ async function hmRenderHomePerformance(){
    }
    if(renderToken!==(window.__hmPerfRenderToken||0))return;
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+personalSections+section(isManagement?'PERFORMA TIM • SELURUH OUTLET':'PERFORMA TIM • '+(profile.outlet||'-'),total,scopeLabel,isManagement?null:outletTargets)+spaceSection+(isManagement?outletSections:'');
+   window.__hmHomePerformanceCache={key:perfCacheKey,expires_at:Date.now()+2*60*1000,html:block.innerHTML};
  }catch(e){
    console.error('[HM] Home performance:',e);
    if(renderToken!==(window.__hmPerfRenderToken||0))return;

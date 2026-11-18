@@ -2417,7 +2417,17 @@ async function start(u,authClient){
     try{
      const res=await fetch(url,{headers:apiHeaders,signal:ctl.signal,cache:'no-store'});
      let data=null;try{data=await res.json()}catch(_e){}
-     if(!res.ok)throw new Error(label+': '+(data?.message||data?.hint||data?.details||'akses database ditolak.'));
+     if(!res.ok){
+      const detail=data?.message||data?.hint||data?.details||'akses database ditolak.';
+      const err=new Error(label+' gagal (HTTP '+res.status+'): '+detail);
+      err.status=res.status;
+      // Retry sekali hanya untuk gangguan gateway sementara.
+      if([502,503,504].includes(res.status)&&attempt===0){
+       await new Promise(resolve=>setTimeout(resolve,1200));
+       continue;
+      }
+      throw err;
+     }
      return data;
     }catch(e){
      if(e?.name==='AbortError')throw new Error(label+' terlalu lama. Server Supabase tidak merespons dalam 12 detik.');
@@ -2430,7 +2440,8 @@ async function start(u,authClient){
    }
    throw lastError||new Error(label+' gagal dimuat.');
   };
-  const profileRows=await fetchJson(SUPABASE_URL+'/rest/v1/team_profiles?user_id=eq.'+encodeURIComponent(u.id)+'&select=*','Profile akun');
+  // Ambil hanya kolom profil yang dipakai saat bootstrap agar respons lebih ringan.
+  const profileRows=await fetchJson(SUPABASE_URL+'/rest/v1/team_profiles?user_id=eq.'+encodeURIComponent(u.id)+'&select=user_id,name,role,outlet,is_management,must_change_password','Profile akun');
   if(!Array.isArray(profileRows)||!profileRows.length)throw new Error('Profile akun belum terdaftar.');
   profile=profileRows[0];
   $('login').classList.add('hidden');$('app').classList.remove('hidden');

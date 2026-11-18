@@ -16,12 +16,12 @@ function b64urlToBytes(base64){const pad='='.repeat((4-base64.length%4)%4);const
 async function digest(value){const bytes=new TextEncoder().encode(value);const hash=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 async function init(){
  try{
-  if(!('serviceWorker'in navigator)||!('Notification'in window)||!('PushManager'in window))throw Error('Browser ini belum mendukung Web Push. Gunakan Chrome atau Edge terbaru.');
+  const ua=navigator.userAgent||'';const isIOS=/iPhone|iPad|iPod/i.test(ua);const isStandalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;if(isIOS&&!isStandalone)throw Error('Untuk iPhone, buka Hello Majesty dari ikon Home Screen (Add to Home Screen), bukan dari tab Safari atau WhatsApp.');if(!('serviceWorker'in navigator)||!('Notification'in window)||!('PushManager'in window))throw Error(isIOS?'Web Push belum tersedia pada mode aplikasi iPhone ini. Pastikan iOS 16.4+ dan aplikasi dibuka dari Home Screen.':'Browser ini belum mendukung Web Push. Gunakan Chrome atau Edge terbaru.');
   const raw=localStorage.getItem('hm_auth_session');const session=raw?JSON.parse(raw):null;if(!session?.access_token)throw Error('Sesi login tidak ditemukan. Login dahulu melalui Dashboard Hello Majesty.');
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data,error}=await sb.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token||''});if(error)throw error;user=data.user;if(!user)throw Error('Sesi login tidak valid.');
   firebase.initializeApp(firebaseConfig);$('device').textContent='Perangkat: '+navigator.userAgent;
-  show('Siap. Tekan tombol untuk meminta izin notifikasi dan mendaftarkan perangkat ini.','good');$('enable').disabled=false;
+  show(isIOS?'Mode aplikasi iPhone terdeteksi. Tekan tombol untuk mengaktifkan notifikasi.':'Siap. Tekan tombol untuk meminta izin notifikasi dan mendaftarkan perangkat ini.','good');$('enable').disabled=false;
  }catch(e){show(e.message,'bad');$('enable').disabled=true;}
 }
 async function enablePush(){
@@ -34,7 +34,7 @@ async function enablePush(){
   const token=await messaging.getToken({vapidKey:VAPID_PUBLIC_KEY,serviceWorkerRegistration:registration});
   if(!token)throw Error('Token FCM belum berhasil dibuat. Periksa konfigurasi Firebase dan VAPID.');
   const endpointHash=await digest(token);
-  const ua=navigator.userAgent;const platform=/Android/i.test(ua)?'android':/iPhone|iPad|iPod/i.test(ua)?'ios':'desktop';
+  const platform=/Android/i.test(ua)?'android':/iPhone|iPad|iPod/i.test(ua)?'ios':'desktop';
   const deviceLabel=(platform==='android'?'Android':platform==='ios'?'iPhone/iPad':'Desktop / PC')+' · '+(navigator.userAgentData?.platform||navigator.platform||'');
   const {error}=await sb.from('hm_push_subscriptions').upsert({user_id:user.id,endpoint_hash:endpointHash,fcm_token:token,device_label:deviceLabel,platform,enabled:true,last_seen_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id,endpoint_hash'});
   if(error)throw error;

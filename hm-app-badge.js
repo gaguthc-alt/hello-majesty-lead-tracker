@@ -1,15 +1,17 @@
-/* Hello Majesty App Badge — per-user unread count from app_notifications.
- * Reads only the signed-in user's rows (RLS enforced); does not change native Android push.
+/* Hello Majesty App Badge — reuse the dashboard's authenticated client.
+ * No second Supabase client, no Auth setSession/refresh, and no extra Realtime channel.
+ * The badge is reconciled on startup, focus/visibility, pageshow, and every 60 seconds.
  */
 (function(){
  'use strict';
- const URL='https://ksowzhhmzrumyciehuyv.supabase.co';
- const KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
- let db=null,uid=null,timer=null;
+ let db=null,uid=null,timer=null,reconcileTimer=null,started=false;
+ const schedule=()=>{clearTimeout(timer);timer=setTimeout(refresh,300);};
  async function refresh(){
   if(!db||!uid||typeof navigator.setAppBadge!=='function')return;
   try{
-   const {count,error}=await db.from('app_notifications').select('id',{count:'exact',head:true}).eq('recipient_user_id',uid).is('read_at',null);
+   const {count,error}=await db.from('app_notifications')
+    .select('id',{count:'exact',head:true})
+    .eq('recipient_user_id',uid).is('read_at',null);
    if(error)throw error;
    const n=Math.max(0,Number(count||0));
    if(n)await navigator.setAppBadge(n);
@@ -17,23 +19,31 @@
    window.dispatchEvent(new CustomEvent('hm:app-badge-updated',{detail:{unread:n}}));
   }catch(e){console.warn('[HM Badge] refresh failed',e);}
  }
- function schedule(){clearTimeout(timer);timer=setTimeout(refresh,250);}
- async function start(){
-  try{
-   if(!window.supabase?.createClient)return;
-   const raw=localStorage.getItem('hm_auth_session'),s=raw?JSON.parse(raw):null;
-   if(!s?.access_token)return;
-   db=window.supabase.createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:false}});
-   const {data,error}=await db.auth.setSession({access_token:s.access_token,refresh_token:s.refresh_token||''});
-   if(error||!data?.user)return;
-   uid=data.user.id;await refresh();
-   db.channel('hm-badge-'+uid).on('postgres_changes',{event:'*',schema:'public',table:'app_notifications',filter:'recipient_user_id=eq.'+uid},schedule).subscribe();
-   document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
-   window.addEventListener('focus',schedule);
-   window.addEventListener('pageshow',schedule);
-   // Reconcile periodically so the badge also recovers after missed realtime events.
-   setInterval(refresh,60000);
-  }catch(e){console.warn('[HM Badge] setup failed',e);}
+ function start(){
+  if(started)return true;
+  // login-v9.js publishes its authenticated, token-managed client as window.sb.
+  const client=window.sb;
+  let session=null;
+  try{session=JSON.parse(localStorage.getItem('hm_auth_session')||'null');}catch(_e){}
+  if(!client||!session?.user?.id)return false;
+  db=client;uid=session.user.id;started=true;
+  refresh();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
+  window.addEventListener('focus',schedule);
+  window.addEventListener('pageshow',schedule);
+  // Reconcile periodically without opening another Realtime connection.
+  reconcileTimer=setInterval(refresh,60000);
+  return true;
  }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+ function boot(){
+  if(start())return;
+  // The badge script loads before a user logs in; wait for login-v9 to publish window.sb.
+  let attempts=0;
+  const wait=setInterval(()=>{
+   attempts++;
+   if(start()||attempts>=180)clearInterval(wait);
+  },1000);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+ else boot();
 })();

@@ -7,15 +7,14 @@ self.addEventListener('notificationclick',(event)=>{
   const ndata=event.notification.data||{};
   const fcm=ndata.FCM_MSG||ndata.fcmMessage||{};
   const data={...(fcm.data||{}),...(ndata.data||{}),...ndata};
-  const type=String(data.type||data.notification_type||'').toUpperCase();
-  let raw=String(data.url||data.link||'');
-  if(!raw&&type==='NEW_INBOUND_MESSAGE'&&data.conversation_id){
-    raw='/whatsapp-inbox.html?conversation='+encodeURIComponent(data.conversation_id);
-  }else if(!raw&&type==='SALES_HANDOVER'&&data.lead_id){
-    raw='/?claim='+encodeURIComponent(data.lead_id);
-  }else if(!raw&&data.route){
-    raw=data.route;
-  }
+  const type=String(data.type||data.notification_type||fcm?.data?.type||'').toUpperCase();
+  const leadId=String(data.lead_id||data.leadId||data.lead_uuid||'').trim();
+  const conversationId=String(data.conversation_id||data.conversationId||'').trim();
+  let raw=String(data.url||data.link||fcm?.fcmOptions?.link||fcm?.notification?.click_action||'').trim();
+  // For handover, the lead identifier is authoritative: never fall back to dashboard.
+  if(type==='SALES_HANDOVER'&&leadId)raw='/?claim='+encodeURIComponent(leadId);
+  else if(type==='NEW_INBOUND_MESSAGE'&&conversationId)raw='/whatsapp-inbox.html?conversation='+encodeURIComponent(conversationId);
+  else if(!raw&&data.route)raw=String(data.route);
   const targetUrl=new URL(raw||'/', 'https://app.hello-majesty.com/');
   if(targetUrl.hostname==='hello-majesty-lead-tracker.pages.dev'||targetUrl.hostname==='app.hello-majesty.com'){
     targetUrl.protocol='https:';targetUrl.host='app.hello-majesty.com';

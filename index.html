@@ -38,7 +38,7 @@ window.hmOpenBrochuresInline=window.hmOpenBrochuresInline||async function(){
   if(typeof window.openBrochures!=='function'){
     await new Promise((resolve,reject)=>{
       const s=document.createElement('script');
-      s.src='brochures-v3.js?v=20261006-1';
+      s.src='brochures-v3.js?v=20261118-1';
       s.onload=resolve;
       s.onerror=()=>reject(new Error('File brochures.js gagal dimuat.'));
       document.head.appendChild(s);

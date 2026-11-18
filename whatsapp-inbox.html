@@ -188,6 +188,10 @@ function renderLeadReview(){
     el.innerHTML='<div class="statusline"><b>Terhubung ke Lead:</b><span class="decision">'+label+'</span><b>'+esc(active.lead_id)+'</b></div><div id="leadLinkStatus" class="review-note">Memeriksa status lead…</div>';
     loadLinkedLeadStatus();return;
   }
+  // Polling/realtime may call renderHead() every few seconds. Keep the existing
+  // form DOM alive while this same conversation is still awaiting lead review.
+  // Rebuilding inputs here caused Android keyboards to lose focus after typing.
+  if(el.dataset.formConversationId===active.id && el.querySelector('#lrName'))return;
   el.innerHTML=
     '<div class="statusline"><h3>Data Lead Awal</h3><span class="decision warn">BELUM DIDAFTARKAN</span></div>'+
     '<div class="review-note">Form ini mengikuti mekanisme WA Masuk / Lead Baru. Setelah disimpan, lead masuk ke Lead Tracker dengan status awal CS LOCK. Kualifikasi, penilaian Qualified/Potensial, follow-up, dan handover dilakukan melalui alur Lead Tracker yang sama.</div>'+
@@ -200,6 +204,7 @@ function renderLeadReview(){
     '<label style="display:block;margin-top:10px"><span class="field-label">Catatan Awal</span><textarea id="lrNotes" maxlength="1000" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea></label>'+
     '<div class="review-actions"><button id="makeLead" class="btn">Simpan Lead</button><button id="notLead">Tandai Bukan Lead</button></div>'+
     '<div id="notLeadReasonWrap" style="display:none;margin-top:8px"><span class="field-label">Alasan Bukan Lead *</span><input id="notLeadReason" maxlength="300" placeholder="Contoh: hanya bertanya jam operasional"><button id="saveNotLead" style="margin-top:8px">Simpan Keputusan</button></div>';
+  el.dataset.formConversationId=active.id;
   $('makeLead').onclick=createLeadFromChat;
   $('notLead').onclick=()=>{$('notLeadReasonWrap').style.display='block';$('notLeadReason')?.focus();};
   $('saveNotLead').onclick=markChatNotLead;
@@ -390,21 +395,54 @@ function renderComposer(){
   button.onclick=sendReply;
   if(hadFocus){input.focus();try{input.setSelectionRange(selectionStart,selectionEnd);}catch(_e){}}
 }
+let replySendInFlight=false;
+let replyBlockedAfterUnknown=false;
 async function sendReply(){
   const input=$('replyText'),button=$('sendReply');if(!input||!button||!active)return;
+  if(replySendInFlight||replyBlockedAfterUnknown)return;
   const message=input.value.trim();if(!message){alert('Ketik pesan terlebih dahulu.');return;}
   if(message.length>1000){alert('Pesan maksimal 1.000 karakter.');return;}
+  replySendInFlight=true;
   button.disabled=true;button.textContent='Mengirim…';
   try{
     const {data,error}=await sb.functions.invoke('sambungan-whatsapp-send',{body:{conversation_id:active.id,message}});
-    if(error)throw new Error(data?.error||error.message||'Pesan gagal dikirim.');
+    if(error) {
+      // A transport failure can happen after Sambungan accepted the message.
+      // Never invite an immediate retry when the provider outcome is uncertain.
+      let serverCode='';
+      try{
+        const response=error.context;
+        if(response && typeof response.clone==='function'){
+          const body=await response.clone().json();
+          serverCode=String(body?.code||'');
+        }
+      }catch(_e){}
+      if(!error.context || serverCode==='SEND_STATUS_UNKNOWN'){
+        replyBlockedAfterUnknown=true;
+        button.textContent='Periksa Status Pesan';
+        button.disabled=true;
+        alert('Status pengiriman belum dapat dipastikan. Jangan kirim ulang dulu agar tidak terjadi pesan ganda. Periksa percakapan WhatsApp pelanggan, lalu muat ulang Inbox.');
+        return;
+      }
+      throw new Error(data?.error||error.message||'Pesan ditolak. Periksa isi pesan sebelum mencoba kembali.');
+    }
     if(!data?.success)throw new Error(data?.error||'Pesan gagal dikirim.');
     input.value='';
+    replyBlockedAfterUnknown=false;
     await loadMessages();
     await load(true);
     if(data.warning)alert(data.warning);
-  }catch(e){alert(e.message||'Pesan gagal dikirim.');}
-  finally{if($('sendReply')){$('sendReply').disabled=false;$('sendReply').textContent='Kirim';}}
+  }catch(e){
+    alert(e.message||'Pesan gagal dikirim.');
+    const current=$('sendReply');
+    if(current){current.disabled=false;current.textContent='Kirim';}
+  }finally{
+    replySendInFlight=false;
+    if(!replyBlockedAfterUnknown){
+      const current=$('sendReply');
+      if(current){current.disabled=false;current.textContent='Kirim';}
+    }
+  }
 }
 
 $('reload').onclick=()=>load();$('search').oninput=renderList;$('backToDashboard').onclick=()=>{const dashboardUrl=new URL('index.html',window.location.href).href;if(window.opener&&!window.opener.closed){try{window.opener.focus();}catch(e){}window.close();setTimeout(()=>{if(!window.closed)window.location.replace(dashboardUrl);},300);return;}window.location.replace(dashboardUrl);};init();

@@ -89,6 +89,11 @@
   async function getFunnel(mode){
     const bounds=mode==='today'?localDayBounds():{start:monthStart(mode).toISOString(),end:monthEnd(mode).toISOString()};
     const start=bounds.start, end=bounds.end;
+    // Cache singkat untuk mencegah RPC + query hunter berulang saat laporan dibuka/dirender berdekatan.
+    // Cache dipisah per user, outlet, role, dan rentang tanggal; hanya hasil sukses yang disimpan.
+    const cacheKey=[profile?.user_id||profile?.id||profile?.name||'user',profile?.outlet||'',profile?.role||'',(typeof getActiveRoles==='function'?getActiveRoles():[]).join(','),start,end].join('|');
+    const cache=window.__hmTeamPerformanceCache;
+    if(cache&&cache.key===cacheKey&&cache.expiresAt>Date.now()&&Array.isArray(cache.rows))return cache.rows;
     let x=null,lastError=null;
     for(let attempt=0;attempt<3;attempt++){
       try{
@@ -150,7 +155,9 @@
         ['claim_cs','handover','claim_sales','cs_closing','sales_closing','hunter_closing'].forEach(k=>x[k]=Number(x[k]||0)+Number(r[k]||0));
       }
     });
-    return [...byPerson.values()];
+    const result=[...byPerson.values()];
+    window.__hmTeamPerformanceCache={key:cacheKey,expiresAt:Date.now()+30000,rows:result};
+    return result;
   }
   async function showPerson(name,role,mode){
     const body=document.getElementById('perfBody'); if(!body)return;

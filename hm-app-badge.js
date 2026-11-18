@@ -30,6 +30,9 @@
    db.channel('hm-badge-'+uid).on('postgres_changes',{event:'*',schema:'public',table:'app_notifications',filter:'recipient_user_id=eq.'+uid},schedule).subscribe();
    document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
    window.addEventListener('focus',schedule);
+   window.addEventListener('pageshow',schedule);
+   // Reconcile periodically so the badge also recovers after missed realtime events.
+   setInterval(refresh,60000);
   }catch(e){console.warn('[HM Badge] setup failed',e);}
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();

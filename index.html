@@ -3826,6 +3826,11 @@ async function hmRenderManagementMessage(){
 }
 
 async function hmRenderHomePerformance(){
+ const callKey=[profile?.user_id||profile?.id||profile?.name||'user',profile?.outlet||'',profile?.role||'',(typeof getActiveRoles==='function'?getActiveRoles():[]).join(','),new Date().toISOString().slice(0,7)].join('|');
+ // Hindari pemanggilan berulang akibat beberapa render menu dalam rentang singkat.
+ const lastCall=window.__hmPerfLastCall;
+ if(lastCall&&lastCall.key===callKey&&Date.now()-lastCall.at<15000)return;
+ window.__hmPerfLastCall={key:callKey,at:Date.now()};
  const renderToken=(window.__hmPerfRenderToken=(window.__hmPerfRenderToken||0)+1);
  const host=document.getElementById('roleHome');
  if(!host)return;
@@ -3941,7 +3946,7 @@ async function hmRenderHomePerformance(){
    }
    if(renderToken!==(window.__hmPerfRenderToken||0))return;
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+personalSections+section(isManagement?'PERFORMA TIM • SELURUH OUTLET':'PERFORMA TIM • '+(profile.outlet||'-'),total,scopeLabel,isManagement?null:outletTargets)+spaceSection+(isManagement?outletSections:'');
-   window.__hmHomePerformanceCache={key:perfCacheKey,expires_at:Date.now()+2*60*1000,html:block.innerHTML};
+   window.__hmHomePerformanceCache={key:perfCacheKey,expires_at:Date.now()+5*60*1000,html:block.innerHTML};
  }catch(e){
    console.error('[HM] Home performance:',e);
    if(renderToken!==(window.__hmPerfRenderToken||0))return;

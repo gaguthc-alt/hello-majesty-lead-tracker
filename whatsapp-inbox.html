@@ -321,7 +321,7 @@ const chatMessageCache=new Map();
 const messageLoadPromises=new Map();
 function renderChatMessages(data){
  const atBottom=$('msgs').scrollHeight-$('msgs').scrollTop-$('msgs').clientHeight<100;
- $('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(m.sender_type==='CS'?'cs':'')+'">'+esc(m.message)+'<div class="muted">'+esc(m.sender_type||'')+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';
+ $('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(['CS','SALES','MANAGEMENT'].includes(m.sender_type)?'cs':'')+'">'+esc(m.message)+'<div class="muted">'+esc(m.sender_type||'')+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';
  if(atBottom)$('msgs').scrollTop=$('msgs').scrollHeight;
 }
 async function loadMessages(quiet=false){
@@ -364,9 +364,10 @@ function renderComposer(){
   if(!active){el.innerHTML='';return;}
   const mineCS=active.claimed_by===me.id;
   const mineSales=active.sales_claimed_by===me.id;
+  const management=isInboxManagement===true;
   const csMonitoring=mineCS&&!!active.sales_claimed_by;
-  if(!mineCS&&!mineSales){el.innerHTML='';return;}
-  if(csMonitoring){el.innerHTML='<div class="muted">Mode pemantauan CS: Anda dapat membaca seluruh percakapan sampai selesai, tetapi balasan setelah handover hanya dikirim oleh Sales PIC.</div>';return;}
+  if(!management&&!mineCS&&!mineSales){el.innerHTML='';return;}
+  if(!management&&csMonitoring){el.innerHTML='<div class="muted">Mode pemantauan CS: Anda dapat membaca seluruh percakapan sampai selesai, tetapi balasan setelah handover hanya dikirim oleh Sales PIC.</div>';return;}
   const last=active.last_inbound_at?Date.parse(active.last_inbound_at):NaN;
   const open=Number.isFinite(last)&&Date.now()-last<=24*60*60*1000&&last<=Date.now()+5*60*1000;
   // Pertahankan draft saat polling/realtime memperbarui header. Sebelumnya
@@ -384,11 +385,11 @@ function renderComposer(){
     const help=el.querySelector('.compose-help');
     if(help){
       help.className='muted compose-help '+(open?'':'compose-expired');
-      help.textContent=open?'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.':'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.';
+      help.textContent=open?(isInboxManagement?'Mode Management · pesan tercatat atas nama MANAGEMENT · PIC lead tidak berubah. Maksimal 1.000 karakter.':'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.'):'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.';
     }
     return;
   }
-  el.innerHTML='<div class="compose"><textarea id="replyText" data-mode="reply" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn" '+(open?'':'disabled')+'>Kirim</button></div><div class="muted compose-help '+(open?'':'compose-expired')+'">'+(open?'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.':'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.')+'</div>';
+  el.innerHTML='<div class="compose"><textarea id="replyText" data-mode="reply" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn" '+(open?'':'disabled')+'>Kirim</button></div><div class="muted compose-help '+(open?'':'compose-expired')+'">'+(open?(isInboxManagement?'Mode Management · pesan tercatat atas nama MANAGEMENT · PIC lead tidak berubah. Maksimal 1.000 karakter.':'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.'):'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.')+'</div>';
   const input=$('replyText');const button=$('sendReply');
   input.value=draft;
   input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendReply();}});

@@ -33,34 +33,37 @@
   };
 
   async function openMutasi(){
-    if(['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'].includes(role()))return alert('Mitra Stockist hanya dapat menyuplai outlet internal Hello Majesty. Mutasi antar-outlet/stockist dikelola Management.');
+    if(['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'].includes(role()))return alert('Mitra Stockist hanya dapat mengajukan barang masuk/keluar melalui alur kemitraan. Mutasi lokasi internal dikelola Management.');
     if(!can())return alert('Anda tidak memiliki akses Mutasi Stok.');
-    // Tujuan menentukan asal stok secara otomatis:
-    // Plaza <- READY dari Refill | Refill <- READY dari Plaza.
-    const targetOptions=[['Majesty Plaza iPhone','Plaza'],['Majesty Refill Phone','Refill']];
-    const html='<div class="small" style="margin-bottom:10px">Pilih tujuan. Sistem hanya menampilkan Stock READY dari outlet lawan.</div>'+
-      '<div class="box"><label>Tujuan Mutasi</label><select id="hmMutasiDefault" onchange="hmReloadMutasi()"><option value="">— pilih tujuan —</option>'+targetOptions.map(o=>'<option value="'+escx(o[0])+'">'+escx(o[1])+'</option>').join('')+'</select><div id="hmMutasiSourceHint" class="small" style="margin-top:7px"></div></div>'+
-      '<div id="hmMutasiList"><div class="box">Pilih tujuan terlebih dahulu.</div></div>';
+    const r=await sb.from('stock_units').select('outlet').not('outlet','is',null);
+    if(r.error)throw r.error;
+    const locations=[...new Set(['Central Stock','Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space',...(r.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean)])].sort((x,y)=>x.localeCompare(y,'id'));
+    const options=locations.map(x=>'<option value="'+escx(x)+'">'+escx(x)+'</option>').join('');
+    const html='<div class="small" style="margin-bottom:10px">Pilih lokasi asal dan tujuan. Hanya unit READY yang dapat dipindahkan. Mutasi lokasi tidak mengubah pemilik atau sumber kepemilikan stok.</div>'+
+      '<div class="box"><label>Lokasi Asal</label><select id="hmMutasiFrom" onchange="hmReloadMutasi()"><option value="">— pilih lokasi asal —</option>'+options+'</select><label>Lokasi Tujuan</label><select id="hmMutasiDefault" onchange="hmReloadMutasi()"><option value="">— pilih lokasi tujuan —</option>'+options+'</select><div id="hmMutasiSourceHint" class="small" style="margin-top:7px"></div></div>'+
+      '<div id="hmMutasiList"><div class="box">Pilih lokasi asal dan tujuan terlebih dahulu.</div></div>';
     panel('🔄 Mutasi Stok',html);
   }
 
   window.hmReloadMutasi=async function(){
     if(['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'].includes(role()))return alert('Akses mutasi hanya untuk Management.');
+    const from=document.getElementById('hmMutasiFrom')?.value||'';
     const to=document.getElementById('hmMutasiDefault')?.value||'';
     const list=document.getElementById('hmMutasiList'),hint=document.getElementById('hmMutasiSourceHint');
     if(!list)return;
-    if(!to){if(hint)hint.textContent='';list.innerHTML='<div class="box">Pilih tujuan terlebih dahulu.</div>';return;}
-    const from=to==='Majesty Plaza iPhone'?'Majesty Refill Phone':'Majesty Plaza iPhone';
-    if(hint)hint.textContent='Sumber stok: '+from+' • hanya status READY';
-    const r=await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,asking_price,battery_health,status').eq('status','READY').eq('outlet',from).order('created_at',{ascending:false});
+    if(!from||!to){if(hint)hint.textContent='';list.innerHTML='<div class="box">Pilih lokasi asal dan tujuan terlebih dahulu.</div>';return;}
+    if(from===to){if(hint)hint.textContent='';list.innerHTML='<div class="box">Lokasi asal dan tujuan harus berbeda.</div>';return;}
+    if(hint)hint.textContent='Stok READY dari '+from+' akan dipindahkan ke '+to+'.';
+    const r=await sb.from('stock_units').select('id,product_id,outlet,color,imei_1,asking_price,battery_health,status,source_type,partner_name').eq('status','READY').eq('outlet',from).order('created_at',{ascending:false});
     if(r.error){list.innerHTML='<div class="box"><b>Gagal memuat stok.</b><div class="small">'+escx(r.error.message)+'</div></div>';return;}
     const pm=await products((r.data||[]).map(x=>x.product_id));
-    list.innerHTML=(r.data||[]).length?(r.data||[]).map((s,i)=>{const p=pm[s.product_id]||{};return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+escx(p.product||'Produk')+(p.variant?' — '+escx(p.variant):'')+'</b><div class="small">'+escx(from)+' → '+escx(to)+' • '+escx(s.color||'-')+(s.battery_health!=null?' • BH '+escx(s.battery_health)+'%':'')+' • '+escx(s.imei_1?'IMEI ••••'+String(s.imei_1).slice(-4):'IMEI -')+'</div><div style="margin-top:5px">Harga jual: <b>'+money(s.asking_price)+'</b></div><button class="success" style="margin-top:8px" onclick="hmDoMutasi(\''+s.id+'\')">🔄 Mutasikan ke '+escx(to)+'</button></div>';}).join(''):'<div class="box"><b>Tidak ada Stock READY di '+escx(from)+' untuk dimutasi ke '+escx(to)+'.</b></div>';
+    list.innerHTML=(r.data||[]).length?(r.data||[]).map((s,i)=>{const p=pm[s.product_id]||{};return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+escx(p.product||'Produk')+(p.variant?' — '+escx(p.variant):'')+'</b><div class="small">'+escx(from)+' → '+escx(to)+' • '+escx(s.color||'-')+(s.battery_health!=null?' • BH '+escx(s.battery_health)+'%':'')+' • '+escx(s.imei_1?'IMEI ••••'+String(s.imei_1).slice(-4):'IMEI -')+'</div><div class="small">Kepemilikan: '+escx(String(s.source_type||'MANAGEMENT')==='STOCKIST'?'Stockist — '+(s.partner_name||'Mitra belum diketahui'):'Internal')+'</div><div style="margin-top:5px">Harga jual: <b>'+money(s.asking_price)+'</b></div><button class="success" style="margin-top:8px" onclick="hmDoMutasi(\''+s.id+'\')">🔄 Mutasikan ke '+escx(to)+'</button></div>';}).join(''):'<div class="box"><b>Tidak ada Stock READY di '+escx(from)+' untuk dimutasi.</b></div>';
   };
   window.hmDoMutasi=async function(id){
     if(['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'].includes(role()))return alert('Akses mutasi hanya untuk Management.');
+    const from=document.getElementById('hmMutasiFrom')?.value||'';
     const to=document.getElementById('hmMutasiDefault')?.value||'';
-    if(!to.trim())return;
+    if(!from||!to||from===to)return;
     const btn=[...document.querySelectorAll('#hmMenuPanelBody button')].find(b=>String(b.getAttribute('onclick')||'').includes("hmDoMutasi('"+id+"'"));
     if(btn?.disabled)return;
     const note=prompt('Catatan mutasi (opsional):')||null;
@@ -69,7 +72,6 @@
       const r=await sb.rpc('create_stock_transfer',{p_stock_unit_id:id,p_to_outlet:to.trim(),p_notes:note});
       if(r.error)throw r.error;
       alert('Mutasi berhasil: '+(r.data?.transfer_no||'OK'));
-      // Pertahankan tujuan mutasi dan panel yang sedang dibuka; cukup muat ulang daftar stok.
       await window.hmReloadMutasi();
     }catch(e){
       alert('Mutasi gagal: '+(e?.message||e));

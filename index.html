@@ -3860,23 +3860,24 @@ async function hmRenderManagementMessage(){
 }
 
 async function hmRenderHomePerformance(){
- const callKey=[profile?.user_id||profile?.id||profile?.name||'user',profile?.outlet||'',profile?.role||'',(typeof getActiveRoles==='function'?getActiveRoles():[]).join(','),new Date().toISOString().slice(0,7)].join('|');
- // Hindari pemanggilan berulang akibat beberapa render menu dalam rentang singkat.
- const lastCall=window.__hmPerfLastCall;
- if(lastCall&&lastCall.key===callKey&&Date.now()-lastCall.at<15000)return;
- window.__hmPerfLastCall={key:callKey,at:Date.now()};
- const renderToken=(window.__hmPerfRenderToken=(window.__hmPerfRenderToken||0)+1);
  const host=document.getElementById('roleHome');
  if(!host)return;
  const block=document.getElementById('hmHomePerformance');
  if(!block||!profile)return;
+ const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
+ if(!db)return;
+ const callKey=[profile?.user_id||profile?.id||profile?.name||'user',profile?.outlet||'',profile?.role||'',(typeof getActiveRoles==='function'?getActiveRoles():[]).join(','),new Date().toISOString().slice(0,7)].join('|');
+ // Catat pemanggilan hanya setelah elemen, profil, dan koneksi siap.
+ // Pemanggilan awal yang terlalu dini tidak boleh menahan render berikutnya.
+ const lastCall=window.__hmPerfLastCall;
+ if(lastCall&&lastCall.key===callKey&&Date.now()-lastCall.at<15000)return;
+ window.__hmPerfLastCall={key:callKey,at:Date.now()};
+ const renderToken=(window.__hmPerfRenderToken=(window.__hmPerfRenderToken||0)+1);
  // Cache ringkasan beranda per pengguna selama 2 menit agar render ulang menu tidak
  // memanggil RPC dan tabel target berulang kali. Data tetap diperbarui saat cache kedaluwarsa.
  const perfCacheKey=[profile?.user_id||profile?.id||profile?.name||'user',profile?.outlet||'',profile?.role||'',(typeof getActiveRoles==='function'?getActiveRoles():[]).join(','),new Date().toISOString().slice(0,7)].join('|');
  const perfCache=window.__hmHomePerformanceCache;
  if(perfCache&&perfCache.key===perfCacheKey&&perfCache.expires_at>Date.now()&&perfCache.html){block.innerHTML=perfCache.html;return;}
- const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
- if(!db)return;
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
  // DIVISI bukan otomatis Management lintas outlet. Akses lintas outlet hanya untuk akun Management yang ditandai secara eksplisit.

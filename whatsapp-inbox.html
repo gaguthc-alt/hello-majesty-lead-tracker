@@ -395,10 +395,8 @@ function renderComposer(){
   const csMonitoring=mineCS&&!!active.sales_claimed_by;
   if(!management&&!mineCS&&!mineSales){el.innerHTML='';return;}
   if(!management&&csMonitoring){el.innerHTML='<div class="muted">Mode pemantauan CS: Anda dapat membaca seluruh percakapan sampai selesai, tetapi balasan setelah handover hanya dikirim oleh Sales PIC.</div>';return;}
-  const last=active.last_inbound_at?Date.parse(active.last_inbound_at):NaN;
-  const open=Number.isFinite(last)&&Date.now()-last<=24*60*60*1000&&last<=Date.now()+5*60*1000;
-  // Pertahankan draft saat polling/realtime memperbarui header. Sebelumnya
-  // renderHead() memanggil renderComposer() setiap 5 detik dan menghapus teks.
+  // Status jendela WhatsApp tidak dihitung di aplikasi. Sambungan menjadi pemeriksa
+  // final saat pengiriman dan akan menolak pesan bebas jika jendela telah berakhir.
   const previous=$('replyText');
   const draft=previous?previous.value:'';
   const hadFocus=!!previous&&document.activeElement===previous;
@@ -408,15 +406,17 @@ function renderComposer(){
   const desiredMode='reply';
   if(existing&&existing.dataset.mode===desiredMode){
     const button=$('sendReply');
-    if(button)button.disabled=!open;
+    if(button)button.disabled=false;
     const help=el.querySelector('.compose-help');
     if(help){
-      help.className='muted compose-help '+(open?'':'compose-expired');
-      help.textContent=open?(isInboxManagement?'Mode Management · pesan tercatat atas nama MANAGEMENT · PIC lead tidak berubah. Maksimal 1.000 karakter.':'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.'):'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.';
+      help.className='muted compose-help';
+      help.textContent=isInboxManagement
+        ?'Mode Management · pesan tercatat atas nama MANAGEMENT · status pengiriman divalidasi Sambungan.'
+        :'Pesan dikirim melalui Sambungan. Jika jendela layanan WhatsApp berakhir, Sambungan akan menolak pesan bebas.';
     }
     return;
   }
-  el.innerHTML='<div class="compose"><textarea id="replyText" data-mode="reply" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn" '+(open?'':'disabled')+'>Kirim</button></div><div class="muted compose-help '+(open?'':'compose-expired')+'">'+(open?(isInboxManagement?'Mode Management · pesan tercatat atas nama MANAGEMENT · PIC lead tidak berubah. Maksimal 1.000 karakter.':'Maksimal 1.000 karakter · balasan bebas tersedia selama 24 jam sejak pesan pelanggan terakhir.'):'Jendela balasan 24 jam sudah berakhir. Pelanggan perlu mengirim pesan baru atau gunakan template yang disetujui.')+'</div>';
+  el.innerHTML='<div class="compose"><textarea id="replyText" data-mode="reply" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn">Kirim</button></div><div class="muted compose-help">'+(isInboxManagement?'Mode Management · pesan tercatat atas nama MANAGEMENT · status pengiriman divalidasi Sambungan.':'Pesan dikirim melalui Sambungan. Jika jendela layanan WhatsApp berakhir, Sambungan akan menolak pesan bebas.')+'</div>';
   const input=$('replyText');const button=$('sendReply');
   input.value=draft;
   input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendReply();}});

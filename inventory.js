@@ -894,8 +894,16 @@ async function refreshStandaloneInventoryDashboard(btn){
 }
 
 async function hmRequestStockTransfer(stockId){
- const s=inventoryStock.find(x=>String(x.id)===String(stockId));
- if(!s||s.status!=='READY')return alert('Hanya stok READY yang dapat diajukan mutasi.');
+ let s=inventoryStock.find(x=>String(x.id)===String(stockId));
+ // Dashboard Inventory Mitra memakai dataset finance-cell, bukan inventoryStock.
+ // Jika stok tidak ada di cache inventory utama, ambil record yang sama langsung dari Supabase.
+ if(!s){
+  const lookup=await sb.from('stock_units').select('*').eq('id',stockId).maybeSingle();
+  if(lookup.error)return alert('Data stok gagal diperiksa: '+lookup.error.message);
+  s=lookup.data;
+ }
+ if(!s||String(s.status||'').trim().toUpperCase()!=='READY')return alert('Hanya stok READY yang dapat diajukan mutasi.');
+
  const targets=['Majesty Plaza iPhone','Majesty Refill Phone','Majesty Cell','Majesty Gadget','Majesty Store'].filter(x=>x!==s.outlet);
  const choice=prompt('Ketik nama outlet tujuan: '+targets.join(', '));
  if(!choice)return;

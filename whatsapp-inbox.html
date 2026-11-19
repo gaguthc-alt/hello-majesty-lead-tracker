@@ -457,10 +457,14 @@ async function refreshInboxManually(){
   button.textContent='…';
   button.title='Memuat ulang percakapan…';
   try{
+    // Jika polling/permintaan sebelumnya masih berjalan, tunggu selesai lalu
+    // jalankan query baru agar klik manual selalu memicu pengambilan data terbaru.
+    if(inboxLoadPromise) await inboxLoadPromise;
     await load(false);
+    renderList();
     if(active){
       const fresh=rows.find(x=>x.id===active.id);
-      if(fresh){active=fresh;renderHead();await loadMessages(true);}
+      if(fresh){active=fresh;renderHead();await loadMessages(false);}
     }
   }catch(error){
     console.error('Refresh Inbox gagal:',error);

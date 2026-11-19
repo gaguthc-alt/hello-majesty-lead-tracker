@@ -1091,7 +1091,7 @@ function stockCard(s){
    '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
-   (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+(ready&&(sales||management)?'<button class="secondary" onclick="openStockLeadChat(\''+s.id+'\')">💬 Kirim ke Lead Chat</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI'))?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
+   (ready&&(sales||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+(ready&&(sales||management)?'<button class="secondary" onclick="openStockLeadChat(\''+s.id+'\')">💬 Kirim ke Lead Chat</button>':'')+((ready&&facilitator&&['STOCKIST','MAJESTY_CELL'].includes(String(s.source_type||'').trim().toUpperCase())&&String(s.partner_name||'').trim().toUpperCase()==='MAJESTY CELL'&&String(s.outlet||'').trim().toUpperCase()==='MAJESTY REFILL PHONE')?'<button class="danger" onclick="openConsignmentReturn(\\''+s.id+'\\')">↩️ Ajukan Retur Konsinyasi</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI')&&String(s.source_type||'').toUpperCase()!=='STOCKIST')?'<button class="danger" onclick="openSupplierReturn(\\''+s.id+'\\')">↩️ Retur Supplier</button>':'')+
    (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(ready&&String(s.source_type||'').toUpperCase()==='STOCKIST'&&(isOwnStockist||management||facilitator)?'<button class="danger" onclick="openStockOut(\''+s.id+'\')">📤 Stock Keluar</button>':'')+(ready&&(isOwnStockist||management||facilitator)?'<button class="secondary" onclick="hmRequestStockTransfer(\''+s.id+'\')">⇄ Ajukan Mutasi</button>':'')+(management||contentCreator||isOwnStockist?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto Unit</button>':'')+
    '</div></div>';
 }
@@ -1135,6 +1135,32 @@ async function confirmStockOut(id){
  await cleanupTerminalStockPhotos(id);
  alert('Stock Keluar berhasil dicatat. Status unit sekarang OUT.');
  $('modal').classList.add('hidden');
+ await loadInventoryData();
+ renderInventoryBody();
+}
+async function openConsignmentReturn(id){
+ const s=inventoryStock.find(x=>String(x.id)===String(id));
+ if(!s)return alert('Stock tidak ditemukan.');
+ if(s.status!=='READY')return alert('Hanya stok READY yang dapat diajukan retur.');
+ const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+ if(!(role==='FASILITATOR'||inventoryCanFacilitator))return alert('Pengajuan retur konsinyasi hanya untuk Fasilitator.');
+ if(!['STOCKIST','MAJESTY_CELL'].includes(String(s.source_type||'').trim().toUpperCase())||String(s.partner_name||'').trim().toUpperCase()!=='MAJESTY CELL'||String(s.outlet||'').trim().toUpperCase()!=='MAJESTY REFILL PHONE')return alert('Unit ini bukan stok konsinyasi Majesty Cell di Majesty Refill Phone.');
+ const label=[s.product,s.variant,s.color,s.grade?'Grade '+s.grade:''].filter(Boolean).join(' — ');
+ $('mt').textContent='↩️ Ajukan Retur Konsinyasi';
+ $('mb').innerHTML='<div class="notice"><b>Barang:</b> '+esc(label)+'<br><b>Pemilik:</b> Majesty Cell<br><b>Dari outlet:</b> Majesty Refill Phone<br><b>IMEI:</b> '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+'</div>'+
+ '<label>Alasan Retur</label><textarea id="consignmentRetReason" rows="3" placeholder="Contoh: pengembalian stok ke Majesty Cell"></textarea>'+
+ '<div class="small">Pengajuan akan menunggu persetujuan akun Mitra Majesty Cell. Stok tidak dapat dijual selama menunggu persetujuan.</div>'+
+ '<button class="danger" onclick="confirmConsignmentReturn(\\''+String(id).replace(/'/g,"\\\\'")+'\\')">↩️ Konfirmasi Pengajuan Retur</button>';
+ $('modal').classList.remove('hidden');
+}
+async function confirmConsignmentReturn(id){
+ const reason=String($('consignmentRetReason')?.value||'').trim();
+ if(!reason)return alert('Alasan retur wajib diisi.');
+ if(!confirm('Ajukan pengembalian unit ini ke Majesty Cell? Unit akan masuk status menunggu persetujuan.'))return;
+ const r=await sb.rpc('hm_request_consignment_return',{p_stock_unit_id:id,p_reason:reason});
+ if(r.error)return alert('Pengajuan retur konsinyasi gagal: '+r.error.message);
+ alert('✅ Pengajuan retur konsinyasi berhasil. Menunggu persetujuan Mitra Majesty Cell.');
+ closeModal();
  await loadInventoryData();
  renderInventoryBody();
 }

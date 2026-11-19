@@ -48,7 +48,7 @@ window.hmLoadConsignmentReturnInbox=async function(){
  const box=document.getElementById('hmConsignmentReturnInbox');if(!box)return;
  const p=window.profile||{},role=String(p.role||'').trim().toUpperCase().replace(/_/g,' '),outlet=String(p.outlet||'').trim().toUpperCase();
  const requester=String(p.name||'').trim().toUpperCase()==='SAKA'&&role==='FASILITATOR'&&outlet==='MAJESTY REFILL PHONE';
- const approver=role==='FASILITATOR'&&outlet==='MAJESTY CELL';
+ const approver=String(p.name||'').trim().toUpperCase()==='MAJESTY CELL'&&role==='MITRA STOCKIST'&&outlet==='MAJESTY CELL';
  if(!requester&&!approver){box.innerHTML='';return;}
  box.innerHTML='<div class="box"><div class="small">Memuat pengajuan retur konsinyasi...</div></div>';
  const r=await window.sb.rpc('hm_list_consignment_returns');

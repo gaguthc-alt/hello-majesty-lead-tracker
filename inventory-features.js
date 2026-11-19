@@ -37,7 +37,7 @@
     if(!can())return alert('Anda tidak memiliki akses Mutasi Stok.');
     const r=await sb.from('stock_units').select('outlet').not('outlet','is',null);
     if(r.error)throw r.error;
-    const locations=[...new Set(['Central Stock','Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space',...(r.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean)])].sort((x,y)=>x.localeCompare(y,'id'));
+    const locations=[...new Set(['Central Stock','Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space','Majesty Cell','Majesty Gadget','Majesty Store',...(r.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean)])].sort((x,y)=>x.localeCompare(y,'id'));
     const options=locations.map(x=>'<option value="'+escx(x)+'">'+escx(x)+'</option>').join('');
     const html='<div class="small" style="margin-bottom:10px">Pilih lokasi asal dan tujuan. Hanya unit READY yang dapat dipindahkan. Mutasi lokasi tidak mengubah pemilik atau sumber kepemilikan stok.</div>'+
       '<div class="box"><label>Lokasi Asal</label><select id="hmMutasiFrom" onchange="hmReloadMutasi()"><option value="">— pilih lokasi asal —</option>'+options+'</select><label>Lokasi Tujuan</label><select id="hmMutasiDefault" onchange="hmReloadMutasi()"><option value="">— pilih lokasi tujuan —</option>'+options+'</select><div id="hmMutasiSourceHint" class="small" style="margin-top:7px"></div></div>'+

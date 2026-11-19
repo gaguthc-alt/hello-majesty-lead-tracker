@@ -188,7 +188,7 @@ async function reviewUnifiedWalkin(id,kind,action){
  }
  // Buka tab WhatsApp saat gesture persetujuan masih aktif agar tidak diblokir
  // setelah proses RPC selesai. Jika persetujuan gagal, tab kosong ditutup.
- const waTab=action==='APPROVE'?window.open('about:blank','_blank'):null;
+ const waTab=null;
  const rpcName=kind==='STOCK'?'review_stock_sale_approval':'review_walkin_sale_approval';
  try{
    const r=await sb.rpc(rpcName,{p_approval_id:id,p_action:action,p_note:note});
@@ -260,8 +260,15 @@ async function reviewUnifiedWalkin(id,kind,action){
      waButton.className='success';
      waButton.style.cssText='width:100%;margin-top:10px;min-height:48px;font-weight:800';
      waButton.textContent='🟢 Bagikan Pemberitahuan ke WhatsApp';
-     waButton.addEventListener('click',()=>{
-       window.location.href='https://wa.me/?text='+encodeURIComponent(window.hmApprovalWhatsAppMessage||'');
+     waButton.addEventListener('click',async()=>{
+       const shareText=window.hmApprovalWhatsAppMessage||'';
+       // Gunakan Android share sheet agar pengguna dapat memilih WhatsApp dan tujuan chat.
+       if(navigator.share){
+         try{await navigator.share({text:shareText});return;}
+         catch(err){if(err?.name==='AbortError')return;console.warn('[HM] Native share gagal, gunakan fallback WhatsApp:',err);}
+       }
+       // Fallback untuk browser yang tidak mendukung Web Share API.
+       window.location.href='https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
      });
      if(panelBody)panelBody.prepend(waButton);
      if(waTab&&!waTab.closed)waTab.location.href=url;

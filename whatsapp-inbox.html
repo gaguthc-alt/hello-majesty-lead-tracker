@@ -338,7 +338,7 @@ const chatMessageCache=new Map();
 const messageLoadPromises=new Map();
 function renderChatMessages(data){
  const atBottom=$('msgs').scrollHeight-$('msgs').scrollTop-$('msgs').clientHeight<100;
- $('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(['CS','SALES','MANAGEMENT'].includes(m.sender_type)?'cs':'')+'">'+esc(m.message)+'<div class="muted">'+esc(m.sender_type||'')+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';
+ $('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(['CS','SALES','MANAGEMENT'].includes(m.sender_type)?'cs':'')+'">'+(m.message?'<div>'+esc(m.message)+'</div>':'')+(m.media_url?'<a href="'+esc(m.media_url)+'" target="_blank" rel="noopener"><img src="'+esc(m.media_url)+'" alt="Foto produk" loading="lazy" style="display:block;max-width:min(260px,100%);max-height:320px;object-fit:contain;border-radius:10px;margin-top:6px"></a>':'')+'<div class="muted">'+esc(m.sender_type||'')+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';
  if(atBottom)$('msgs').scrollTop=$('msgs').scrollHeight;
 }
 async function loadMessages(quiet=false){

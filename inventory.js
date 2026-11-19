@@ -1159,10 +1159,18 @@ async function confirmConsignmentReturn(id){
  if(!confirm('Ajukan pengembalian unit ini ke Majesty Cell? Unit akan masuk status menunggu persetujuan.'))return;
  const r=await sb.rpc('hm_request_consignment_return',{p_stock_unit_id:id,p_reason:reason});
  if(r.error)return alert('Pengajuan retur konsinyasi gagal: '+r.error.message);
- alert('✅ Pengajuan retur konsinyasi berhasil. Menunggu persetujuan Mitra Majesty Cell.');
+ const info=await sb.from('stock_units').select('product_id,color,imei_1,outlet').eq('id',id).maybeSingle();
+ const st=info.data||{};
+ let product='Unit stok';
+ if(st.product_id){const p=await sb.from('product_master').select('product,variant').eq('id',st.product_id).maybeSingle();if(!p.error&&p.data)product=[p.data.product,p.data.variant,st.color].filter(Boolean).join(' — ');}
+ const msg=['🔔 *PERMINTAAN PERSETUJUAN RETUR KONSINYASI*','', 'No. Pengajuan: '+(r.data?.return_no||'-'),'Barang: '+product,'IMEI: '+(st.imei_1||'-'),'Dari: Majesty Refill Phone','Tujuan: Majesty Cell','Alasan: '+reason,'','Mohon buka aplikasi Hello Majesty → menu *Persetujuan Barang Masuk* untuk meninjau dan memilih SETUJUI atau TOLAK.','Persetujuan dapat dilakukan oleh Mitra Majesty Cell atau Management.','','— *HELLO MAJESTY*','_Built on Trust._'].join(String.fromCharCode(10));
  closeModal();
  await loadInventoryData();
  renderInventoryBody();
+ const wa='https://wa.me/?text='+encodeURIComponent(msg);
+ const opened=window.open(wa,'_blank');
+ if(!opened){window.hmConsignmentWaMessage=msg;alert('Pengajuan tersimpan. Popup WhatsApp diblokir browser. Tekan tombol Kirim ke WhatsApp pada panel Persetujuan Barang Masuk.');}
+ else alert('✅ Pengajuan tersimpan. WhatsApp terbuka; pilih kontak Mitra Majesty Cell atau grup Management lalu kirim pesan.');
 }
 async function openSupplierReturn(id){
  const s=inventoryStock.find(x=>x.id===id);

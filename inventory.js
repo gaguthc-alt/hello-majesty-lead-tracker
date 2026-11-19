@@ -1210,7 +1210,7 @@ async function confirmConsignmentReturn(id){
  renderInventoryBody();
  const wa='https://wa.me/?text='+encodeURIComponent(msg);
  const opened=window.open(wa,'_blank');
- if(!opened){window.hmConsignmentWaMessage=msg;alert('Pengajuan tersimpan. Popup WhatsApp diblokir browser. Tekan tombol Kirim ke WhatsApp pada panel Persetujuan Barang Masuk.');}
+ if(!opened){window.hmConsignmentWaMessage=msg;alert('Pengajuan berhasil disimpan. WhatsApp akan dibuka agar kita memilih kontak atau grup tujuan.');window.location.href=wa;}
  else alert('✅ Pengajuan tersimpan. WhatsApp terbuka; pilih kontak Mitra Majesty Cell atau grup Management lalu kirim pesan.');
 }
 async function openSupplierReturn(id){

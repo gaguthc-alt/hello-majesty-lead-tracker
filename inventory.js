@@ -937,15 +937,20 @@ async function openStockLeadChat(stockId){
  $('mb').innerHTML='<div class="small" style="margin-bottom:10px">'+(isManagement?'Management dapat memilih seluruh percakapan tanpa mengambil alih kepemilikan lead. Pesan dikirim atas nama MANAGEMENT dan PIC tetap tidak berubah. ':'Pilih pelanggan yang sedang Anda tangani. Pesan produk akan dimasukkan sebagai draft dan tidak dikirim otomatis. ')+'</div><input id="hmStockChatSearch" placeholder="Cari nama pelanggan..." style="margin-bottom:10px"><div id="hmStockChatList">'+chats.map(c=>'<button type="button" class="secondary" style="display:block;width:100%;text-align:left;margin:6px 0;padding:12px;color:#17202a" data-chat-id="'+esc(c.id)+'"><b>'+esc(c.customer_name||'Customer')+'</b><div class="small">'+esc(c.status||'NEW')+' · CS: '+esc(c.claimed_name||'Belum ada')+' · Sales: '+esc(c.sales_claimed_name||'Belum ada')+'</div></button>').join('')+'</div>';
  const search=$('hmStockChatSearch'),list=$('hmStockChatList');
  if(search)search.oninput=()=>{const q=search.value.toLowerCase();list.querySelectorAll('button').forEach(b=>b.style.display=b.textContent.toLowerCase().includes(q)?'block':'none');};
- list?.querySelectorAll('button[data-chat-id]').forEach(btn=>btn.onclick=()=>{
-  const mediaUrls=stockPhotoUrls(s).slice(0,5);
-  const transferKey='hm_stock_share_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-  try{sessionStorage.setItem(transferKey,JSON.stringify({message,media_urls:mediaUrls,stock_id:s.id,created_at:Date.now()}));}
-  catch(e){return alert('Foto stok belum dapat diteruskan ke Lead Chat. Periksa penyimpanan perangkat lalu coba lagi.');}
-  const url=new URL('whatsapp-inbox.html',location.href);
-  url.searchParams.set('conversation',btn.dataset.chatId);
-  url.searchParams.set('stock_share',transferKey);
-  location.href=url.toString();
+ list?.querySelectorAll('button[data-chat-id]').forEach(btn=>btn.onclick=async()=>{
+  try{
+   // Ambil foto langsung dari stock_units; objek view/card tidak selalu memuat kolom foto.
+   const photoRes=await sb.from('stock_units').select('photo_1,photo_2,photo_3,photo_4,photo_5').eq('id',s.id).maybeSingle();
+   if(photoRes.error)throw photoRes.error;
+   const mediaUrls=[photoRes.data?.photo_1,photoRes.data?.photo_2,photoRes.data?.photo_3,photoRes.data?.photo_4,photoRes.data?.photo_5].filter(x=>typeof x==='string'&&x.startsWith('https://')).slice(0,5);
+   if(!mediaUrls.length)return alert('Stok ini belum memiliki foto yang tersimpan. Upload foto pada Detail Produk terlebih dahulu.');
+   const transferKey='hm_stock_share_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+   sessionStorage.setItem(transferKey,JSON.stringify({message,media_urls:mediaUrls,stock_id:s.id,created_at:Date.now()}));
+   const url=new URL('whatsapp-inbox.html',location.href);
+   url.searchParams.set('conversation',btn.dataset.chatId);
+   url.searchParams.set('stock_share',transferKey);
+   location.href=url.toString();
+  }catch(e){console.error('[HM] transfer stock photos to Lead Chat',e);alert('Foto stok gagal disiapkan: '+(e?.message||'Periksa koneksi lalu coba lagi.'));}
 });
  $('modal').classList.remove('hidden');
 }

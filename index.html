@@ -3879,7 +3879,8 @@ async function hmRenderHomePerformance(){
  if(!db)return;
  const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const roles=typeof getActiveRoles==='function'?getActiveRoles():[];
- // DIVISI bukan otomatis Management lintas outlet. Akses lintas outlet hanya untuk akun Management yang ditandai secara eksplisit.\n const isManagement=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT');
+ // DIVISI bukan otomatis Management lintas outlet. Akses lintas outlet hanya untuk akun Management yang ditandai secara eksplisit.
+ const isManagement=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT');
  // Mitra Stockist bukan kanal lead/closing. Samakan beranda Majesty Cell, Gadget, dan Store dengan workspace stockist Atmadita.
  const isStockistHome=!isManagement&&(roles.includes('MITRA STOCKIST')||rawRole==='MITRA STOCKIST'||rawRole.includes('STOCKIST'));
  if(isStockistHome){

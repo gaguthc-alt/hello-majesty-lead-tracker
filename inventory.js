@@ -949,6 +949,7 @@ async function openStockLeadChat(stockId){
    const url=new URL('whatsapp-inbox.html',location.href);
    url.searchParams.set('conversation',btn.dataset.chatId);
    url.searchParams.set('stock_share',transferKey);
+   url.searchParams.set('stock_id',s.id);
    location.href=url.toString();
   }catch(e){console.error('[HM] transfer stock photos to Lead Chat',e);alert('Foto stok gagal disiapkan: '+(e?.message||'Periksa koneksi lalu coba lagi.'));}
 });

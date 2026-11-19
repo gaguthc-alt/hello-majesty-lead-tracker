@@ -86,12 +86,11 @@ async function init(){try{
   if(requestedConversation&&rows.some(x=>x.id===requestedConversation))await openChat(requestedConversation);
    const stockDraft=new URLSearchParams(location.search).get('draft');
    if(stockDraft&&requestedConversation&&active?.id===requestedConversation){const draftBox=$('replyText');if(draftBox){draftBox.value=stockDraft;draftBox.focus();}}
-  connectInboxRealtime();
-  // Poll the inbox frequently as a fallback for mobile browsers where Realtime may sleep.
-  // load() also refreshes the selected conversation's messages and keeps the list in sync.
-  setInterval(()=>{if(!document.hidden)load(true);},5000);
-  window.addEventListener('focus',()=>load(true));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);});
+  // Mode hemat database: tanpa polling otomatis dan tanpa Supabase Realtime.
+  // Inbox dimuat saat dibuka, dapat diperbarui manual, dan refresh saat tab kembali terlihat.
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden)load(true);
+  });
 }catch(e){$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
 let inboxLoadPromise=null;
 async function withInboxTimeout(promise,label,ms=12000){
@@ -447,7 +446,7 @@ async function sendReply(){
   }
 }
 
-$('reload').onclick=()=>load();$('search').oninput=renderList;$('backToDashboard').onclick=()=>{const dashboardUrl=new URL('index.html',window.location.href).href;if(window.opener&&!window.opener.closed){try{window.opener.focus();}catch(e){}window.close();setTimeout(()=>{if(!window.closed)window.location.replace(dashboardUrl);},300);return;}window.location.replace(dashboardUrl);};const HM_CHAT_TEMP_PAUSED = true;
+$('reload').onclick=()=>load();$('reload').title='Muat ulang percakapan';$('search').oninput=renderList;$('backToDashboard').onclick=()=>{const dashboardUrl=new URL('index.html',window.location.href).href;if(window.opener&&!window.opener.closed){try{window.opener.focus();}catch(e){}window.close();setTimeout(()=>{if(!window.closed)window.location.replace(dashboardUrl);},300);return;}window.location.replace(dashboardUrl);};const HM_CHAT_TEMP_PAUSED = false;
 if (HM_CHAT_TEMP_PAUSED) {
   document.title = 'Leads Chat — Jeda Sementara';
   document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#f3f6f7;font-family:Inter,system-ui,Arial,sans-serif;color:#172536"><section style="max-width:520px;width:100%;padding:32px;border:1px solid #dfe8eb;border-radius:20px;background:#fff;text-align:center;box-shadow:0 8px 26px #1c34420b"><div style="font-size:34px;margin-bottom:12px">💬</div><h2 style="margin:0 0 10px">Leads Chat sedang dijeda</h2><p style="line-height:1.6;color:#64748b;margin:0 0 22px">Workspace percakapan Hello Majesty dinonaktifkan sementara selama pemulihan layanan database. Riwayat chat tidak dihapus. Untuk sementara, tangani pesan melalui Sambungan jika tersedia.</p><a href="index.html" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#087f70;color:#fff;text-decoration:none;font-weight:700">Kembali ke Dashboard</a></section></main>';

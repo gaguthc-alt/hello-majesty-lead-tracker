@@ -22,6 +22,7 @@ body{min-height:100vh;background:linear-gradient(180deg,#eaf2f2 0,#f4f7f8 260px,
 @media(max-width:760px){body{background:#f1f5f6}.top{position:relative;padding:14px 16px;align-items:flex-start;flex-direction:column;gap:12px}.top b{font-size:17px}.top-actions{width:100%;justify-content:flex-start;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.top button{width:100%;min-height:42px;padding:9px 10px;font-size:13px;white-space:normal}.wrap{display:flex;flex-direction:column;margin:13px auto;padding:0 12px;gap:13px}.panel{width:100%;border-radius:16px}.toolbar{padding:11px}.items{max-height:38vh;min-height:110px}.item{padding:14px 15px}.detail{min-height:54vh}.head{padding:14px 15px}.msgs{min-height:28vh;max-height:48vh;padding:13px}.bubble{max-width:88%;font-size:14px}.empty{min-height:150px;padding:20px}.lead-review{padding:13px 14px}.foot{padding:11px 12px}.compose{align-items:stretch}.compose textarea{min-height:46px}.compose button{min-width:76px;padding:9px 11px}}
 @media(max-width:380px){.top-actions{grid-template-columns:1fr}.top button{min-height:40px}.wrap{padding:0 9px}.msgs{padding:10px}.bubble{max-width:92%}}
 .actions .danger{border:1px solid #fecaca;background:#fff1f2;color:#b42318;border-radius:10px;padding:9px 12px;font-weight:700}.actions .danger:disabled{opacity:.6;cursor:wait}
+.item-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.item-title-row strong{display:block;min-width:0;flex:1;margin:0}.item-title-meta{display:flex;align-items:center;gap:7px;flex:0 0 auto}.item-time{font-size:11px;color:#84919b;white-space:nowrap}.unread-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#0b8f78;color:#fff;font-size:11px;font-weight:800}.item.has-unread .item-title-row strong{font-weight:800;color:#142b2a}
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan melalui sistem resmi Hello Majesty · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
@@ -55,9 +56,10 @@ async function loadInboxProfile(){
   maskPhoneNumbers=!management;
   const contactsLink=$('contactsLink');if(contactsLink)contactsLink.style.display=management?'inline-block':'none';
 }
-function scheduleRealtimeRefresh(conversationId=null){
+function scheduleRealtimeRefresh(conversationId=null,senderType=null){
   if(realtimeRefreshTimer)clearTimeout(realtimeRefreshTimer);
   realtimeRefreshTimer=setTimeout(async()=>{
+    if(senderType==='CUSTOMER'&&active&&(!conversationId||active.id===conversationId))await markConversationRead(active.id);
     await load(true);
     if(active&&(!conversationId||active.id===conversationId))await loadMessages(true);
   },120);
@@ -67,6 +69,10 @@ function connectInboxRealtime(){
   realtimeChannel=sb.channel('hm-whatsapp-inbox-live')
     .on('postgres_changes',{event:'*',schema:'public',table:'chat_messages'},payload=>{
       const conversationId=payload?.new?.conversation_id||payload?.old?.conversation_id||null;
+      scheduleRealtimeRefresh(conversationId,payload?.new?.sender_type||null);
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'chat_conversations'},payload=>{
+      const conversationId=payload?.new?.id||payload?.old?.id||null;
       scheduleRealtimeRefresh(conversationId);
     })
     .subscribe(status=>{
@@ -106,13 +112,13 @@ async function init(){try{
        }
      }catch(e){console.warn('Stock share draft could not be restored',e);alert('Gagal menyiapkan foto stok: '+(e?.message||e));}
    }
-  // Refresh ringan setiap 30 detik saat tab aktif agar pesan baru terbaca tanpa refresh manual.
-  // Tidak memakai Supabase Realtime; tab tersembunyi tidak melakukan polling.
+  connectInboxRealtime();
   document.addEventListener('visibilitychange',()=>{
     if(!document.hidden)load(true);
   });
+  // Polling hanya menjadi cadangan jika koneksi Realtime terputus.
   setInterval(()=>{
-    if(!document.hidden)load(true);
+    if(!document.hidden&&!realtimeConnected)load(true);
   },30000);
 }catch(e){$('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
 let inboxLoadPromise=null;
@@ -152,7 +158,10 @@ async function load(quiet=false,force=false){
         if(!rows.length)$('list').innerHTML='<div class="empty">Antrean belum termuat: '+esc(queueErr.message)+'<br>Tekan tombol muat ulang.</div>';
       }
     }
-    if(active){const fresh=rows.find(x=>x.id===active.id);if(fresh){active=fresh;await loadMessages(true);renderHead();}}
+    rows.sort((a,b)=>new Date(b.updated_at||b.last_inbound_at||b.created_at||0)-new Date(a.updated_at||a.last_inbound_at||a.created_at||0));
+    if(active){const fresh=rows.find(x=>x.id===active.id);if(fresh){active=fresh;await loadMessages(true);if(!fresh._queue)await markConversationRead(active.id);renderHead();}}
+    await refreshUnreadCounts();
+    renderList();
   }catch(e){
     console.error('Inbox gagal dimuat:',e);
     if(!quiet||!rows.length)$('list').innerHTML='<div class="empty">Gagal memuat percakapan: '+esc(e.message)+'<br>Tekan tombol ↻ untuk mencoba lagi.</div>';
@@ -161,7 +170,23 @@ async function load(quiet=false,force=false){
   return inboxLoadPromise;
 }
 function sourceLabel(c){const channel=String(c?.whatsapp_account_name||'').trim();if(channel)return channel;if(c?.whatsapp_account_id)return 'Sumber belum dipetakan';if(c?.source_platform==='WHATSAPP'&&c?.source_confidence==='WHATSAPP_NUMBER')return 'Sumber belum dipetakan';const raw=String(c?.source||c?.source_owner||c?.source_code||'').trim();if(!raw)return 'Sumber belum ditandai';const key=raw.toUpperCase().replace(/[ -]+/g,'_');const labels={HELLO_MAJESTY_CHAT:'Hello Majesty',MAJESTY_REFILL_PHONE:'Majesty Refill Phone',MAJESTY_PLAZA_IPHONE:'Majesty Plaza iPhone',MAJESTY_CELL:'Majesty Cell',SAMBUNGAN_WHATSAPP:'WhatsApp'};return labels[key]||raw.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,ch=>ch.toUpperCase());}
-function renderList(){const q=$('search').value.toLowerCase();const filtered=rows.filter(c=>(c.customer_name||'').toLowerCase().includes(q));$('list').innerHTML=filtered.map(c=>{const csTag=c.claimed_by?'CS PIC: '+esc(c.claimed_name||'CS'):'';const salesTag=c.sales_claimed_by?'Sales PIC: '+esc(c.sales_claimed_name||'Sales'):'';const ownerTag=c.sales_claimed_by===me.id?' · TANGGUNG JAWAB ANDA':c.claimed_by===me.id&&!c.sales_claimed_by?' · TANGGUNG JAWAB ANDA':'';return '<div class="item '+(active?.id===c.id?'sel':'')+'" data-id="'+c.id+'"><strong>'+esc(c.customer_name||c.customer_phone||'Kontak WhatsApp')+'</strong><div style="margin-top:6px"><span class="tag">Sumber: '+esc(sourceLabel(c))+'</span></div><div style="margin-top:7px">'+(c._queue?'<span class="tag">CHAT TERSEDIA</span>':(csTag?'<span class="tag lock">'+csTag+'</span> ':'')+(salesTag?'<span class="tag">'+salesTag+'</span> ':'')+(!csTag&&!salesTag?'<span class="tag lock">BELUM ADA PIC</span>':''))+'<span class="muted">'+esc(c.status||'NEW')+esc(ownerTag)+'</span></div></div>';}).join('')||'<div class="empty">Tidak ada chat yang menjadi tanggung jawab Anda.</div>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));}
+function inboxTime(value){if(!value)return '';const d=new Date(value);if(Number.isNaN(d.getTime()))return '';const today=new Date();const sameDay=d.toDateString()===today.toDateString();return sameDay?d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'});}
+async function refreshUnreadCounts(){
+  try{
+    const {data,error}=await withInboxTimeout(sb.rpc('hm_get_chat_unread_counts'),'Memuat status pesan belum dibaca',8000);
+    if(error)throw error;
+    const counts=new Map((data||[]).map(x=>[x.conversation_id,Number(x.unread_count)||0]));
+    rows.forEach(c=>{c.unread_count=counts.get(c.id)||0;});
+  }catch(error){console.warn('Status unread belum termuat:',error);}
+}
+async function markConversationRead(conversationId){
+  if(!me?.id||!conversationId)return;
+  try{
+    const {error}=await withInboxTimeout(sb.from('chat_conversation_reads').upsert({conversation_id:conversationId,user_id:me.id,last_read_at:new Date().toISOString()},{onConflict:'conversation_id,user_id'}),'Memperbarui status baca',8000);
+    if(error)throw error;
+  }catch(error){console.warn('Status baca belum tersimpan:',error);}
+}
+function renderList(){const q=$('search').value.toLowerCase();const filtered=rows.filter(c=>(c.customer_name||'').toLowerCase().includes(q));$('list').innerHTML=filtered.map(c=>{const csTag=c.claimed_by?'CS PIC: '+esc(c.claimed_name||'CS'):'';const salesTag=c.sales_claimed_by?'Sales PIC: '+esc(c.sales_claimed_name||'Sales'):'';const ownerTag=c.sales_claimed_by===me.id?' · TANGGUNG JAWAB ANDA':c.claimed_by===me.id&&!c.sales_claimed_by?' · TANGGUNG JAWAB ANDA':'';const unread=Number(c.unread_count||0);const timestamp=inboxTime(c.updated_at||c.last_inbound_at||c.created_at);return '<div class="item '+(active?.id===c.id?'sel ':'')+(unread?'has-unread':'')+'" data-id="'+c.id+'"><div class="item-title-row"><strong>'+esc(c.customer_name||c.customer_phone||'Kontak WhatsApp')+'</strong><span class="item-title-meta">'+(timestamp?'<span class="item-time">'+esc(timestamp)+'</span>':'')+(unread?'<span class="unread-badge">'+(unread>99?'99+':unread)+'</span>':'')+'</span></div><div style="margin-top:6px"><span class="tag">Sumber: '+esc(sourceLabel(c))+'</span></div><div style="margin-top:7px">'+(c._queue?'<span class="tag">CHAT TERSEDIA</span>':(csTag?'<span class="tag lock">'+csTag+'</span> ':'')+(salesTag?'<span class="tag">'+salesTag+'</span> ':'')+(!csTag&&!salesTag?'<span class="tag lock">BELUM ADA PIC</span>':''))+'<span class="muted">'+esc(c.status||'NEW')+esc(ownerTag)+'</span></div></div>';}).join('')||'<div class="empty">Tidak ada chat yang menjadi tanggung jawab Anda.</div>';document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));}
 async function openChat(id){
  const selected=rows.find(c=>c.id===id);if(!selected)return;
  active=selected;renderList();renderHead();
@@ -169,7 +194,10 @@ async function openChat(id){
  const cached=chatMessageCache.get(id);
  if(cached)renderChatMessages(cached);
  else $('msgs').innerHTML='<div class="empty">Memuat pesan…</div>';
- loadMessages(true);
+ await loadMessages(true);
+ await markConversationRead(id);
+ await refreshUnreadCounts();
+ renderList();
 }
 function renderHead(){if(!active){$('head').innerHTML='<div class="empty">Pilih percakapan untuk melihat detail.</div>';return;}const mine=active.claimed_by===me.id;const salesMine=active.sales_claimed_by===me.id;const free=!active.claimed_by&&!active.sales_claimed_by;$('head').innerHTML='<div><b>'+esc(active.customer_name||'Customer')+'</b><div style="margin-top:6px"><span class="tag">Sumber: '+esc(sourceLabel(active))+'</span></div><div class="muted"> · '+esc(active.status||'NEW')+'</div><div class="muted">'+(active.claimed_by?'CS PIC: '+esc(active.claimed_name||'CS'):'CS belum ditetapkan')+'</div><div class="muted">'+(active.sales_claimed_by?'Sales PIC: '+esc(active.sales_claimed_name||'Sales'):'Sales belum di-claim')+'</div></div><div class="actions">'+(free?(canInboxCS?'<button id="claim" class="btn" type="button">Claim Chat</button>':'<span class="tag lock">BELUM ADA PIC</span>'):mine||salesMine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dipegang PIC lain</span>')+(isInboxManagement?'<button id="deleteConversation" class="danger" type="button">🗑 Hapus Percakapan</button>':'')+'</div>';if($('claim'))$('claim').onclick=claim;if($('deleteConversation'))$('deleteConversation').onclick=deleteConversation;renderComposer();renderLeadReview();}
 

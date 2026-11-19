@@ -3866,12 +3866,8 @@ async function hmRenderHomePerformance(){
  if(!block||!profile)return;
  const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
  if(!db)return;
- const callKey=[profile?.user_id||profile?.id||profile?.name||'user',profile?.outlet||'',profile?.role||'',(typeof getActiveRoles==='function'?getActiveRoles():[]).join(','),new Date().toISOString().slice(0,7)].join('|');
- // Catat pemanggilan hanya setelah elemen, profil, dan koneksi siap.
- // Pemanggilan awal yang terlalu dini tidak boleh menahan render berikutnya.
- const lastCall=window.__hmPerfLastCall;
- if(lastCall&&lastCall.key===callKey&&Date.now()-lastCall.at<15000)return;
- window.__hmPerfLastCall={key:callKey,at:Date.now()};
+ // Jangan menahan render beranda yang lebih baru dengan debounce berbasis waktu.
+ // Cache RPC di hmGetCachedHomePerformanceSummary sudah membatasi beban query.
  const renderToken=(window.__hmPerfRenderToken=(window.__hmPerfRenderToken||0)+1);
  // Cache ringkasan beranda per pengguna selama 2 menit agar render ulang menu tidak
  // memanggil RPC dan tabel target berulang kali. Data tetap diperbarui saat cache kedaluwarsa.

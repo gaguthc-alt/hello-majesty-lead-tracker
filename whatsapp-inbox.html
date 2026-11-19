@@ -101,8 +101,12 @@ async function withInboxTimeout(promise,label,ms=12000){
   try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timeout. Periksa koneksi lalu tekan tombol muat ulang.')),ms);})]);}
   finally{clearTimeout(timer);}
 }
-async function load(quiet=false){
-  if(inboxLoadPromise)return inboxLoadPromise;
+async function load(quiet=false,force=false){
+  // Refresh manual menunggu request aktif selesai, lalu selalu menjalankan query baru.
+  if(inboxLoadPromise){
+    if(!force)return inboxLoadPromise;
+    await inboxLoadPromise;
+  }
   inboxLoadPromise=(async()=>{try{
     const {data,error}=await withInboxTimeout(
       sb.from('chat_conversations').select('id,customer_name,source,whatsapp_account_id,whatsapp_account_name,whatsapp_account_owner,content_creator,status,claimed_by,claimed_name,claimed_at,lead_id,created_at,updated_at,original_source,last_touch_source,source_code,source_owner,source_confidence,source_platform,source_campaign,first_inbound_at,last_inbound_at,claim_warning_at,claim_expires_at,first_response_at,customer_user_id,lead_decision,lead_decision_at,lead_decision_by,lead_decision_note,lead_qualification_score,lead_qualification,sales_claimed_by,sales_claimed_name,sales_claimed_at,sales_response_state,sales_sla_warning_at,sales_sla_overdue_at,sales_sla_released_at').order('updated_at',{ascending:false}).limit(200),
@@ -132,6 +136,7 @@ async function load(quiet=false){
   }catch(e){
     console.error('Inbox gagal dimuat:',e);
     if(!quiet||!rows.length)$('list').innerHTML='<div class="empty">Gagal memuat percakapan: '+esc(e.message)+'<br>Tekan tombol ↻ untuk mencoba lagi.</div>';
+    if(force)throw e;
   }finally{inboxLoadPromise=null;}})();
   return inboxLoadPromise;
 }
@@ -460,7 +465,7 @@ async function refreshInboxManually(){
     // Jika polling/permintaan sebelumnya masih berjalan, tunggu selesai lalu
     // jalankan query baru agar klik manual selalu memicu pengambilan data terbaru.
     if(inboxLoadPromise) await inboxLoadPromise;
-    await load(false);
+    await load(false,true);
     renderList();
     if(active){
       const fresh=rows.find(x=>x.id===active.id);

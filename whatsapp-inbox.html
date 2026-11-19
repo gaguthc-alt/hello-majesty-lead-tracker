@@ -84,8 +84,18 @@ async function init(){try{
   await load();
   const requestedConversation=new URLSearchParams(location.search).get('conversation');
   if(requestedConversation&&rows.some(x=>x.id===requestedConversation))await openChat(requestedConversation);
-   const stockDraft=new URLSearchParams(location.search).get('draft');
-   if(stockDraft&&requestedConversation&&active?.id===requestedConversation){const draftBox=$('replyText');if(draftBox){draftBox.value=stockDraft;draftBox.focus();}}
+   const stockShareKey=new URLSearchParams(location.search).get('stock_share');
+   if(stockShareKey&&requestedConversation&&active?.id===requestedConversation){
+     try{
+       const raw=sessionStorage.getItem(stockShareKey);
+       const stockShare=raw?JSON.parse(raw):null;
+       if(stockShare&&Date.now()-Number(stockShare.created_at||0)<10*60*1000){
+         window.hmPendingStockShare={key:stockShareKey,message:String(stockShare.message||''),media_urls:Array.isArray(stockShare.media_urls)?stockShare.media_urls.slice(0,5):[]};
+         const draftBox=$('replyText');
+         if(draftBox){draftBox.value=window.hmPendingStockShare.message;draftBox.focus();}
+       }
+     }catch(e){console.warn('Stock share draft could not be restored',e);}
+   }
   // Refresh ringan setiap 30 detik saat tab aktif agar pesan baru terbaca tanpa refresh manual.
   // Tidak memakai Supabase Realtime; tab tersembunyi tidak melakukan polling.
   document.addEventListener('visibilitychange',()=>{
@@ -405,6 +415,7 @@ function renderComposer(){
 }
 let replySendInFlight=false;
 let replyBlockedAfterUnknown=false;
+window.hmPendingStockShare=window.hmPendingStockShare||null;
 async function sendReply(){
   const input=$('replyText'),button=$('sendReply');if(!input||!button||!active)return;
   if(replySendInFlight||replyBlockedAfterUnknown)return;
@@ -413,7 +424,9 @@ async function sendReply(){
   replySendInFlight=true;
   button.disabled=true;button.textContent='Mengirim…';
   try{
-    const {data,error}=await sb.functions.invoke('sambungan-whatsapp-send',{body:{conversation_id:active.id,message}});
+    const pendingStock=window.hmPendingStockShare;
+    const mediaUrls=pendingStock&&pendingStock.media_urls?.length?pendingStock.media_urls:[];
+    const {data,error}=await sb.functions.invoke('sambungan-whatsapp-send',{body:{conversation_id:active.id,message,media_urls:mediaUrls}});
     if(error) {
       // A transport failure can happen after Sambungan accepted the message.
       // Never invite an immediate retry when the provider outcome is uncertain.
@@ -437,10 +450,12 @@ async function sendReply(){
     }
     if(!data?.success)throw new Error(data?.error||'Pesan gagal dikirim.');
     input.value='';
+    if(pendingStock){try{sessionStorage.removeItem(pendingStock.key);}catch(_e){}window.hmPendingStockShare=null;}
     replyBlockedAfterUnknown=false;
     await loadMessages();
     await load(true);
     if(data.warning)alert(data.warning);
+    if(data.media_sent>0)alert('Deskripsi dan '+data.media_sent+' foto stok berhasil dikirim ke pelanggan.');
   }catch(e){
     alert(e.message||'Pesan gagal dikirim.');
     const current=$('sendReply');

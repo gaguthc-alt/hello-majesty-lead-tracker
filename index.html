@@ -3879,75 +3879,35 @@ async function hmRenderHomePerformance(){
  const fmt=n=>Number(n||0).toLocaleString('id-ID');
  const escH=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const period=monthStart.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
- const cacheKey=[profile?.user_id||profile?.id||profile?.name||'user',profile?.role||'',isManagement?'management':'member',monthKey].join('|');
+ const cacheKey=[profile?.user_id||profile?.id||profile?.name||'user',isManagement?'management':'member',monthKey].join('|');
  const cached=window.__hmHomePerformanceCache;
  if(cached&&cached.key===cacheKey&&cached.expires_at>Date.now()&&cached.html){block.innerHTML=cached.html;return;}
  const section=(title,data,sub,targets,showPercent=true)=>{
-   const metrics=[
-     ['Claim CS','claim_cs','📲'],
-     ['Handover CS','handover','🤝'],
-     ['CS Closing','cs_closing','💬'],
-     ['Sales Closing','sales_closing','🏆']
-   ];
+   const metrics=[['Claim CS','claim_cs','📲'],['Handover CS','handover','🤝'],['CS Closing','cs_closing','💬'],['Sales Closing','sales_closing','🏆']];
    const cards=metrics.map(([label,key,icon])=>{
      const actual=Number(data?.[key]||0),target=Number(targets?.[key]||0);
      return '<div class="hm-home-perf-card"><div class="hm-home-perf-icon">'+icon+'</div><div class="hm-home-perf-label">'+label+'</div><div class="hm-home-perf-value">'+fmt(actual)+(target>0?' <span style="font-size:12px;color:#667085;font-weight:600">/ '+fmt(target)+'</span>':'')+'</div>'+(showPercent&&target>0?'<div class="small" style="margin-top:3px">'+Math.round(actual/target*100)+'%</div>':'')+'</div>';
    }).join('');
    return '<div class="hm-home-perf-section"><div class="hm-home-perf-head"><div><b>'+escH(title)+'</b><span>'+escH(sub||'')+'</span></div></div><div class="hm-home-perf-grid">'+cards+'</div></div>';
  };
- const targetsFrom=t=>({claim_cs:Number(t?.wa_target||0),handover:Number(t?.qualified_target||0),cs_closing:Number(t?.closing_target||0),sales_closing:Number(t?.closing_target||0)});
- const ownFrom=r=>({claim_cs:Number(r?.own_claim_cs||0),handover:Number(r?.own_handover||0),cs_closing:Number(r?.own_cs_closing||0),sales_closing:Number(r?.own_sales_closing||0)});
- const totalFrom=r=>({claim_cs:Number(r?.total_claim_cs||0),handover:Number(r?.total_handover||0),cs_closing:Number(r?.total_cs_closing||0),sales_closing:Number(r?.total_sales_closing||0)});
- const isStockistOnly=name=>/^(majesty cell|majesty gadget|majesty store)$/i.test(String(name||'').trim());
  try{
-   const {data:targetRows,error:targetError}=await db.from('monthly_outlet_targets').select('outlet,wa_target,qualified_target,closing_target').eq('month_start',monthKey).eq('active',true).order('outlet');
-   if(targetError)throw targetError;
+   const {data,error}=await db.rpc('home_performance_dashboard',{p_start:monthStart.toISOString(),p_end:monthEnd.toISOString()});
+   if(error)throw error;
+   if(!data||!Array.isArray(data.outlets))throw new Error('Format data performa tidak valid');
    let personalSections='',teamSections='',overallSection='';
-   if(isManagement){
-     const {data:allData,error:allError}=await hmGetCachedHomePerformanceSummary(db,{
-       p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),
-       p_employee_name:'',p_outlet:'',p_all_outlets:true
-     },profile?.user_id||profile?.id||profile?.name);
-     if(allError)throw allError;
-     const allRow=Array.isArray(allData)?allData[0]:allData;
-     if(!allRow)throw new Error('Data total seluruh outlet kosong');
-     overallSection=section('PERFORMA TIM • TOTAL SELURUH OUTLET',totalFrom(allRow),'Akumulasi seluruh outlet',null,false);
-     const outletSet=new Set((targetRows||[]).map(x=>String(x.outlet||'').trim()).filter(x=>x&&!isStockistOnly(x)));
-     const {data:profileOutlets,error:profileOutletError}=await db.from('team_profiles').select('outlet').eq('active',true);
-     if(profileOutletError)throw profileOutletError;
-     (profileOutlets||[]).forEach(x=>{const name=String(x.outlet||'').trim();if(name&&!isStockistOnly(name))outletSet.add(name);});
-     const outlets=Array.from(outletSet).sort((a,b)=>a.localeCompare(b,'id'));
-     for(const outlet of outlets){
-       const {data,error}=await hmGetCachedHomePerformanceSummary(db,{
-         p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),
-         p_employee_name:'',p_outlet:outlet,p_all_outlets:false
-       },profile?.user_id||profile?.id||profile?.name);
-       if(error)throw error;
-       const row=Array.isArray(data)?data[0]:data;
-       const target=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()===outlet.toLowerCase());
-       teamSections+=section('PERFORMA TIM • '+outlet,totalFrom(row),'Seluruh anggota tim di outlet ini',targetsFrom(target));
+   for(const item of data.outlets){
+     const outlet=String(item?.outlet||'').trim();
+     if(!outlet)continue;
+     if(!data.is_management&&item.own){
+       personalSections+=section('PERFORMA SAYA • '+outlet,item.own,'Aktivitas pribadi '+String(profile?.name||''),null,false);
      }
-   }else{
-     const employeeName=String(profile?.name||'').trim();
-     if(!employeeName)throw new Error('Nama anggota tim pada profil belum tersedia');
-     const {data:assignments,error:assignmentError}=await db.from('team_permissions').select('outlet').eq('name',employeeName).eq('active',true).order('outlet');
-     if(assignmentError)throw assignmentError;
-     const assignedOutlets=[...new Set((assignments||[]).map(x=>String(x.outlet||'').trim()).filter(x=>x&&!isStockistOnly(x)))];
-     if(!assignedOutlets.length)throw new Error('Belum ada penugasan outlet aktif untuk '+employeeName);
-     for(const outlet of assignedOutlets){
-       const {data,error}=await hmGetCachedHomePerformanceSummary(db,{
-         p_start:monthStart.toISOString(),p_end:monthEnd.toISOString(),
-         p_employee_name:employeeName,p_outlet:outlet,p_all_outlets:false
-       },profile?.user_id||profile?.id||profile?.name);
-       if(error)throw error;
-       const row=Array.isArray(data)?data[0]:data;
-       if(!row)throw new Error('Data performa tidak ditemukan untuk '+outlet);
-       const target=(targetRows||[]).find(x=>String(x.outlet||'').trim().toLowerCase()===outlet.toLowerCase());
-       personalSections+=section('PERFORMA SAYA • '+outlet,ownFrom(row),'Aktivitas pribadi '+employeeName, null,false);
-       teamSections+=section('PERFORMA TIM • '+outlet,totalFrom(row),'Seluruh anggota tim di outlet ini',targetsFrom(target));
-     }
+     teamSections+=section('PERFORMA TIM • '+outlet,item.team,'Seluruh anggota tim di outlet ini',item.targets||null);
+   }
+   if(data.is_management&&data.overall){
+     overallSection=section('PERFORMA TIM • TOTAL SELURUH OUTLET',data.overall,'Akumulasi seluruh outlet',null,false);
    }
    if(renderToken!==(window.__hmPerfRenderToken||0))return;
+   if(!personalSections&&!teamSections&&!overallSection)throw new Error('Belum ada data penugasan outlet aktif');
    block.innerHTML='<div class="hm-home-perf-title">📊 PERFORMA '+escH(period).toUpperCase()+'</div>'+personalSections+teamSections+overallSection;
    window.__hmHomePerformanceCache={key:cacheKey,expires_at:Date.now()+2*60*1000,html:block.innerHTML};
  }catch(e){

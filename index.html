@@ -6900,19 +6900,38 @@ async function claimFromLink(id){
    }
    return alert('Claim gagal: '+x.error.message);
  }
- const claimed=leads.find(x=>x.lead_id===id);
+ const claimed=leads.find(x=>String(x.lead_id)===String(id));
  history.replaceState({},'',location.pathname);
  closeModal();
  await loadLeads();
- const fresh=leads.find(x=>x.lead_id===id)||claimed;
+ // Verify the committed claim by ID after refreshing. RLS/list refresh may
+ // temporarily omit the row from the local array even though claim_lead succeeded.
+ let verified=null;
+ try{
+   const check=await sb.from('leads').select('*').eq('lead_id',String(id)).maybeSingle();
+   if(!check.error&&check.data)verified=check.data;
+   else if(check.error)console.warn('[HM] Claim committed; detail re-read deferred:',check.error.message);
+ }catch(e){console.warn('[HM] Claim detail re-read deferred:',e?.message||e);}
+ const fresh=verified||leads.find(x=>String(x.lead_id)===String(id))||claimed;
  if(fresh){
+   const ix=leads.findIndex(x=>String(x.lead_id)===String(id));
+   if(ix>=0)leads[ix]=fresh;else leads.push(fresh);
    if(isService){
      alert('Service berhasil di-claim oleh Teknisi '+(profile?.name||'')+'.');
    }else{
-     shareSalesClaim(fresh);
+     waShare(salesClaimMessage(fresh));
    }
+   if(verified)editLead(id);
+   else{
+     $('mt').textContent='Claim Berhasil — '+id;
+     $('mb').innerHTML='<div class="box" style="border:1px solid #86efac;background:#f0fdf4"><b>✅ Lead berhasil di-claim.</b><p>PIC: <b>'+esc(profile?.name||'-')+'</b></p><p class="small">Data lead sedang disinkronkan. Silakan refresh Lead Tracker untuk membuka detailnya.</p></div>';
+     $('modal').classList.remove('hidden');
+   }
+ }else{
+   $('mt').textContent='Claim Berhasil — '+id;
+   $('mb').innerHTML='<div class="box" style="border:1px solid #86efac;background:#f0fdf4"><b>✅ Claim sudah diproses oleh database.</b><p class="small">Data lead belum tersedia di daftar lokal. Silakan refresh Lead Tracker.</p></div>';
+   $('modal').classList.remove('hidden');
  }
- editLead(id);
 }
 async function salesResult(id){
  const leadId=String(id||'').trim();

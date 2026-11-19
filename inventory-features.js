@@ -126,7 +126,7 @@
     html+=(open.data||[]).map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>🔎 '+escx(x.opname_no)+'</b><span class="badge">'+escx(x.status)+'</span></div><div class="small">'+escx(x.outlet)+' • '+new Date(x.created_at).toLocaleString('id-ID')+'</div><button class="secondary" style="margin-top:8px" onclick="hmOpenOpname(\''+x.id+'\')">Buka Opname</button></div>').join('');
     panel('🔎 Stock Opname',html||'<div class="box">Belum ada opname.</div>');
   }
-  async function getOutlets(){const r=await sb.from('stock_units').select('outlet').not('outlet','is',null);if(r.error)throw r.error;return [...new Set((r.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean))].sort();}
+  async function getOutlets(){const [r,m]=await Promise.all([sb.from('stock_units').select('outlet').not('outlet','is',null),sb.from('outlets').select('name').eq('active',true)]);if(r.error)throw r.error;if(m.error)throw m.error;return [...new Set(['Central Stock',...(m.data||[]).map(x=>String(x.name||'').trim()),...(r.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean)])].filter(Boolean).sort();}
   window.hmCreateOpname=async function(){
     const outlet=document.getElementById('hmOpOutlet')?.value||'',note=document.getElementById('hmOpNote')?.value||null;
     if(!outlet)return alert('Pilih outlet terlebih dahulu.');

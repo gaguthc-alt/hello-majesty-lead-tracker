@@ -50,7 +50,7 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> uploadCallback;
     private static final int FILE_CHOOSER_REQUEST = 4102;
     private static final int NOTIFICATION_PERMISSION_REQUEST = 4103;
-    private static final String APP_URL = "https://hello-majesty-lead-tracker.pages.dev/";
+    private static final String APP_URL = "https://app.hello-majesty.com/";
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -99,7 +99,7 @@ public class MainActivity extends Activity {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme() == null ? "" : uri.getScheme();
                 if ("https".equals(scheme) && uri.getHost() != null &&
-                    (uri.getHost().equals("hello-majesty-lead-tracker.pages.dev") ||
+                    (uri.getHost().equals("app.hello-majesty.com") || uri.getHost().equals("hello-majesty-lead-tracker.pages.dev") ||
                      uri.getHost().equals("ksowzhhmzrumyciehuyv.supabase.co"))) return false;
                 if ("http".equals(scheme) || "https".equals(scheme) ||
                     "whatsapp".equals(scheme) || "mailto".equals(scheme) ||
@@ -127,7 +127,7 @@ public class MainActivity extends Activity {
     private String resolveNotificationUrl(Intent intent) {
         String target = intent == null ? null : intent.getStringExtra("hm_notification_url");
         if (target == null && intent != null) target = intent.getStringExtra("url");
-        if (target != null && target.startsWith("https://hello-majesty-lead-tracker.pages.dev/")) return target;
+        if (target != null && (target.startsWith("https://app.hello-majesty.com/") || target.startsWith("https://hello-majesty-lead-tracker.pages.dev/"))) return target;
         return APP_URL;
     }
 

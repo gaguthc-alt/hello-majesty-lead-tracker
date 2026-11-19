@@ -186,9 +186,6 @@ async function reviewUnifiedWalkin(id,kind,action){
    note=prompt(kind==='STOCK'?'Alasan penolakan Closing Stock:':'Alasan penolakan Walk-In:')||'';
    if(!note.trim())return alert('Alasan wajib diisi.');
  }
- // Buka tab WhatsApp saat gesture persetujuan masih aktif agar tidak diblokir
- // setelah proses RPC selesai. Jika persetujuan gagal, tab kosong ditutup.
- const waTab=null;
  const rpcName=kind==='STOCK'?'review_stock_sale_approval':'review_walkin_sale_approval';
  try{
    const r=await sb.rpc(rpcName,{p_approval_id:id,p_action:action,p_note:note});
@@ -251,7 +248,6 @@ async function reviewUnifiedWalkin(id,kind,action){
      panelBody.prepend(notice);
    }
    if(action==='APPROVE'){
-     const url='https://wa.me/?text='+encodeURIComponent(msg);
      // Selalu sediakan tombol manual; perpindahan aplikasi setelah RPC async
      // dapat diblokir browser Android/PWA.
      window.hmApprovalWhatsAppMessage=msg;
@@ -260,18 +256,23 @@ async function reviewUnifiedWalkin(id,kind,action){
      waButton.className='success';
      waButton.style.cssText='width:100%;margin-top:10px;min-height:48px;font-weight:800';
      waButton.textContent='🟢 Bagikan Pemberitahuan ke WhatsApp';
-     waButton.addEventListener('click',async()=>{
+     waButton.addEventListener('click',()=>{
        const shareText=window.hmApprovalWhatsAppMessage||'';
-       // Gunakan Android share sheet agar pengguna dapat memilih WhatsApp dan tujuan chat.
-       if(navigator.share){
-         try{await navigator.share({text:shareText});return;}
-         catch(err){if(err?.name==='AbortError')return;console.warn('[HM] Native share gagal, gunakan fallback WhatsApp:',err);}
+       // APK Android menyediakan bridge native untuk membuka WhatsApp di luar WebView.
+       if(window.HelloMajestyNative&&typeof window.HelloMajestyNative.openWhatsAppMessage==='function'){
+         window.HelloMajestyNative.openWhatsAppMessage(shareText);
+         return;
        }
-       // Fallback untuk browser yang tidak mendukung Web Share API.
-       window.location.href='https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
+       // Browser biasa: gunakan share sheet; fallback ke WhatsApp web.
+       if(navigator.share){
+         navigator.share({text:shareText}).catch(err=>{
+           if(err?.name!=='AbortError')window.location.href='https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
+         });
+       }else{
+         window.location.href='https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
+       }
      });
      if(panelBody)panelBody.prepend(waButton);
-     if(waTab&&!waTab.closed)waTab.location.href=url;
    }
  }catch(e){
     alert((kind==='STOCK'?'Verifikasi Closing Stock gagal: ':'Verifikasi Walk-In gagal: ')+String(e?.message||e));

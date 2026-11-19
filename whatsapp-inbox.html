@@ -85,16 +85,26 @@ async function init(){try{
   const requestedConversation=new URLSearchParams(location.search).get('conversation');
   if(requestedConversation&&rows.some(x=>x.id===requestedConversation))await openChat(requestedConversation);
    const stockShareKey=new URLSearchParams(location.search).get('stock_share');
-   if(stockShareKey&&requestedConversation&&active?.id===requestedConversation){
+   const stockId=new URLSearchParams(location.search).get('stock_id');
+   if(requestedConversation&&active?.id===requestedConversation&&(stockShareKey||stockId)){
      try{
-       const raw=sessionStorage.getItem(stockShareKey);
-       const stockShare=raw?JSON.parse(raw):null;
-       if(stockShare&&Date.now()-Number(stockShare.created_at||0)<10*60*1000){
-         window.hmPendingStockShare={key:stockShareKey,message:String(stockShare.message||''),media_urls:Array.isArray(stockShare.media_urls)?stockShare.media_urls.slice(0,5):[]};
-         const draftBox=$('replyText');
-         if(draftBox){draftBox.value=window.hmPendingStockShare.message;draftBox.focus();}
+       let stockShare=null;
+       if(stockShareKey){const raw=sessionStorage.getItem(stockShareKey);stockShare=raw?JSON.parse(raw):null;}
+       const validShare=stockShare&&Date.now()-Number(stockShare.created_at||0)<10*60*1000;
+       const resolvedStockId=String(stockId||stockShare?.stock_id||'').trim();
+       let mediaUrls=Array.isArray(stockShare?.media_urls)?stockShare.media_urls.filter(x=>typeof x==='string'&&x.startsWith('https://')).slice(0,5):[];
+       if(resolvedStockId&&!mediaUrls.length){
+         const photoRes=await sb.from('stock_units').select('photo_1,photo_2,photo_3,photo_4,photo_5').eq('id',resolvedStockId).maybeSingle();
+         if(photoRes.error)throw photoRes.error;
+         mediaUrls=[photoRes.data?.photo_1,photoRes.data?.photo_2,photoRes.data?.photo_3,photoRes.data?.photo_4,photoRes.data?.photo_5].filter(x=>typeof x==='string'&&x.startsWith('https://')).slice(0,5);
        }
-     }catch(e){console.warn('Stock share draft could not be restored',e);}
+       if(resolvedStockId){
+         window.hmPendingStockShare={key:stockShareKey||null,stock_id:resolvedStockId,message:String(stockShare?.message||''),media_urls:mediaUrls};
+         const draftBox=$('replyText');
+         if(draftBox&&window.hmPendingStockShare.message){draftBox.value=window.hmPendingStockShare.message;draftBox.focus();}
+         if(!mediaUrls.length)alert('Foto stok belum terbaca. Pesan tidak akan dikirim sebagai teks saja. Buka ulang Kirim ke Leads Chat dari detail stok.');
+       }
+     }catch(e){console.warn('Stock share draft could not be restored',e);alert('Gagal menyiapkan foto stok: '+(e?.message||e));}
    }
   // Refresh ringan setiap 30 detik saat tab aktif agar pesan baru terbaca tanpa refresh manual.
   // Tidak memakai Supabase Realtime; tab tersembunyi tidak melakukan polling.
@@ -426,7 +436,8 @@ async function sendReply(){
   try{
     const pendingStock=window.hmPendingStockShare;
     const mediaUrls=pendingStock&&pendingStock.media_urls?.length?pendingStock.media_urls:[];
-    const {data,error}=await sb.functions.invoke('sambungan-whatsapp-send',{body:{conversation_id:active.id,message,media_urls:mediaUrls}});
+    if(pendingStock?.stock_id&&!mediaUrls.length)throw new Error('Foto stok belum siap. Pesan tidak dikirim agar tidak hanya deskripsi yang terkirim. Buka ulang Kirim ke Leads Chat dari detail stok.');
+    const {data,error}=await sb.functions.invoke('sambungan-whatsapp-send',{body:{conversation_id:active.id,message,media_urls:mediaUrls,stock_id:pendingStock?.stock_id||null}});
     if(error) {
       // A transport failure can happen after Sambungan accepted the message.
       // Never invite an immediate retry when the provider outcome is uncertain.

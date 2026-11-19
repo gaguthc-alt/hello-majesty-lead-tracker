@@ -1,9 +1,12 @@
 function hasContentCreatorAccess(){const r=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');return !!profile?.is_management||r==='CONTENT CREATOR'||!!inventoryCanContentCreator;}
 function isOwnedStockistUnit(s){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
- const norm=v=>String(v||'').trim().replace(/\s+/g,' ').toLowerCase();
- const ownOutlet=norm(profile?.outlet), stockPartner=norm(s?.partner_name);
- return role==='MITRA STOCKIST'&&String(s?.source_type||'').trim().toUpperCase()==='STOCKIST'&&!!ownOutlet&&!!stockPartner&&stockPartner===ownOutlet;
+ const norm=v=>String(v||'').trim().replace(/\s+/g,' ').toUpperCase();
+ const stockPartner=norm(s?.partner_name);
+ const grants=[role,...(Array.isArray(window.hmRoles)?window.hmRoles:[])].map(x=>String(x||'').trim().toUpperCase().replace(/_/g,' '));
+ const allowedPartners=grants.filter(x=>x.startsWith('ADMIN STOCKIST ')).map(x=>x.slice('ADMIN STOCKIST '.length).trim());
+ if(role==='MITRA STOCKIST')allowedPartners.push(norm(profile?.outlet));
+ return String(s?.source_type||'').trim().toUpperCase()==='STOCKIST'&&!!stockPartner&&allowedPartners.some(x=>norm(x)===stockPartner);
 }
 function canEditStockPhotos(s){return hasContentCreatorAccess()||!!profile?.is_management||isOwnedStockistUnit(s);}
 /* HM_INVENTORY_STABLE_20260930_ANDROID_SECOND_3 */
@@ -40,9 +43,9 @@ async function loadInventoryData(){
   if(!profile?.is_management){const hp=await sb.rpc('has_hunter_inventory_access');if(!hp.error)inventoryCanHunter=!!hp.data;}
   window.hmCanFacilitator=inventoryCanFacilitator; window.hmCanContentCreator=inventoryCanContentCreator;
   const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
-  const isPartnerFinance=role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL';
+  const isPartnerFinance=role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL'||role.startsWith('ADMIN STOCKIST ');
   const isDeveloper=hmRole==='DEVELOPER APLIKASI'||hmRole==='DEVELOPER';
-  const stockView=(profile?.is_management||isDeveloper)?'stock_management':(role==='MITRA STOCKIST'?'stockist_inventory':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog'));
+  const stockView=(profile?.is_management||isDeveloper)?'stock_management':((role==='MITRA STOCKIST'||role.startsWith('ADMIN STOCKIST '))?'stockist_inventory':(inventoryCanFacilitator?'stock_facilitator':'stock_catalog'));
   let stockQuery=sb.from(stockView).select('*').order('status').order('received_at',{ascending:false});
   // Jangan filter berdasarkan outlet profil di client: tim lintas outlet harus dapat melihat stock pool yang diizinkan. RLS pada stock_units (melalui security_invoker view) menjadi satu-satunya penentu baris yang boleh terlihat; akses Majesty Plaza tetap tertutup oleh unit_access_rules.
   // product_master may exceed the API's per-request row cap. Fetch in pages so later models (iPhone 14+) are not silently omitted.
@@ -870,7 +873,7 @@ function renderInventoryDashboardBody(){
   '<div class="box"><h3 style="margin:0 0 8px">🏪 Stock per Outlet — READY</h3>'+(byOutlet.length?byOutlet.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc(x.o)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Potensi '+rp(x.jual-x.cost):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">📱 Stock per Kategori — READY</h3>'+(byCategory.length?byCategory.map(x=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+invCategory(x.cat)+'</b><b>'+x.units+' unit</b></div><div class="small">'+(canViewCost?'Modal '+rp(x.cost)+' • Jual '+rp(x.jual)+' • Margin '+pct(x.jual-x.cost,x.jual):'Nilai modal/jual khusus Management/Facilitator')+'</div></div>').join(''):'<div class="small">Tidak ada READY.</div>')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">🔎 RINCIAN STOK</h3><div class="row"><input id="invDashSearch" placeholder="Cari produk, warna, grade, stockist, outlet..." value="'+esc(query)+'"><select id="invDashStatus"><option value="">Semua Status</option><option value="READY">READY</option><option value="RESERVED">RESERVED</option><option value="SOLD">SOLD</option><option value="RETURN">RETURN</option><option value="MISSING">MISSING</option></select></div><div class="small" style="margin-top:8px">Menampilkan '+rows.length+' unit • sumber: '+(sourceSel==='STOCKIST'?'Stockist':sourceSel==='MANAGEMENT'?'Management':'Semua')+(partnerSel?' • '+esc(partnerSel):'')+'</div>'+
-  (rows.length?rows.map(s=>{const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),management=!!profile?.is_management||['MANAGEMENT','BUSINESS LEADER','OWNER','DEVELOPER','DEVELOPER APLIKASI'].includes(role),own=isOwnedStockistUnit(s),canEdit=management||inventoryCanFacilitator||own,canPhoto=management||inventoryCanContentCreator||inventoryCanFacilitator||own;return '<div class="lead"><div class="row" style="justify-content:space-between;align-items:flex-start"><b>'+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+'</b><span class="badge">'+esc(statusLabel(s.status))+'</span></div><div class="small">Outlet: <b>'+esc(s.outlet||'-')+'</b> • Sumber: <b>'+esc(sourceLabel(s))+'</b>'+(String(s.source_type||'').toUpperCase()==='STOCKIST'?' • Stockist: <b>'+esc(s.partner_name||'Belum teridentifikasi')+'</b>':'')+(s.grade?' • Grade '+esc(s.grade):'')+(s.battery_health!=null?' • BH '+esc(s.battery_health)+'%':'')+'</div><div class="small">'+(canViewCost?'Modal '+rp(s.cost)+' • Harga jual '+rp(s.asking_price):'Harga modal khusus Management/Facilitator')+(s.hunter_name?' • Hunter: '+esc(s.hunter_name):'')+'</div><div class="row" style="margin-top:8px">'+(canEdit?'<button class="secondary" onclick="openEditStock(&quot;'+s.id+'&quot;)">✏️ Edit Stock</button>':'')+(canPhoto?'<button class="secondary" onclick="openEditStockPhotos(&quot;'+s.id+'&quot;)">📷 Edit Foto Unit</button>':'')+'</div></div>';}).join(''):'<div class="small" style="margin-top:10px">Tidak ada stok yang sesuai dengan filter.</div>')+'</div>'+
+  (rows.length?rows.map(s=>stockCard(s)).join(''):'<div class="small" style="margin-top:10px">Tidak ada stok yang sesuai dengan filter.</div>')+'</div>'+
   '<div class="box"><h3 style="margin:0 0 8px">⏳ Stock Terlama — READY</h3>'+(oldest.length?oldest.map(s=>'<div class="lead"><div class="row" style="justify-content:space-between"><b>'+esc([s.product,s.variant,s.color].filter(Boolean).join(' — '))+'</b><span class="badge">'+age(s)+' hari</span></div><div class="small">'+esc(s.outlet||'-')+' • '+sourceLabel(s)+(String(s.source_type||'').toUpperCase()==='STOCKIST'?' • '+esc(s.partner_name||'Stockist belum teridentifikasi'):'')+' • '+(s.grade?'Grade '+esc(s.grade)+' • ':'')+(s.battery_health!=null?'BH '+s.battery_health+'% • ':'')+(canViewCost?rp(s.cost):'Harga beli tersembunyi')+'</div></div>').join(''):'<div class="small">Belum ada stock READY.</div>')+'</div>';
  $('invDashOutlet').value=outletSel;$('invDashCat').value=catSel;$('invDashSource').value=sourceSel;$('invDashPartner').value=partnerSel;$('invDashStatus').value=statusSel;
  $('invDashOutlet').onchange=()=>renderInventoryDashboardBody();
@@ -1165,7 +1168,7 @@ function openStockOut(id){
  if(!s||s.status!=='READY')return alert('Hanya stok READY yang dapat dikeluarkan.');
  const actorRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
  const isFacilitator=actorRole==='FASILITATOR'||inventoryCanFacilitator;
- const ownStockist=actorRole==='MITRA STOCKIST'&&String(s.partner_name||'').trim().toLowerCase()===String(profile?.outlet||'').trim().toLowerCase();
+ const ownStockist=isOwnedStockistUnit(s);
  const canManage=!!profile?.is_management;
  if(!(canManage||isFacilitator||ownStockist))return alert('Akses Stock Keluar tidak tersedia untuk akun ini.');
  if(String(s.source_type||'').toUpperCase()!=='STOCKIST'&&!canManage)return alert('Stock Keluar hanya berlaku untuk stok milik stockist.');

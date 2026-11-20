@@ -1,6 +1,6 @@
 (function(){
 const money=v=>'Rp '+Number(v||0).toLocaleString('id-ID');
-function isManagementProfile(){const p=window.profile||{},r=String(p.role||p.team_role||p.position||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\\s+/g,' ');return p.is_management===true||r==='MANAGEMENT'||r==='BUSINESS LEADER'||r==='OWNER'||r==='DEVELOPER';}
+function isManagementProfile(){const p=window.profile||{},r=String(p.role||p.team_role||p.position||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');return p.is_management===true||String(p.is_management).toLowerCase()==='true'||r==='MANAGEMENT'||r==='BUSINESS LEADER'||r==='OWNER'||r==='DEVELOPER';}
 const esc=v=>typeof window.esc==='function'?window.esc(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function panel(title){const p=document.getElementById('hmMenuPanel'),b=document.getElementById('hmMenuPanelBody'),h=document.getElementById('hmMenuPanelTitle');if(!p||!b)throw new Error('Panel menu belum siap.');document.getElementById('modal')?.classList.add('hidden');if(h)h.textContent=title;p.classList.remove('hidden');return b;}
 function fmtDate(d){return d.toLocaleDateString('en-CA');}

@@ -118,7 +118,7 @@ window.updatePartnerCapitalSelection=function(){
   const finance=checks.reduce((s,x)=>s+Number(x.dataset.finance||0),0);
   const net=checks.reduce((s,x)=>s+Number(x.dataset.amount||0),0);
   const box=document.getElementById('partnerCapitalSelectionTotal');
-  if(box)box.innerHTML='<div style="font-weight:800;font-size:15px;margin-bottom:8px">Ringkasan pilihan</div><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Unit terpilih</span><b>'+checks.length+'</b></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Modal / Harga Setoran</span><b>'+hmRp(gross)+'</b></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Pengurang Finance (Harga Jual)</span><b>− '+hmRp(finance)+'</b></div><div style="display:flex;justify-content:space-between;gap:12px;border-top:1px solid #d0d5dd;padding-top:10px;margin-top:10px;font-size:15px"><b>Sisa settlement indikatif</b><b>'+hmRp(net)+'</b></div>';
+  if(box)box.innerHTML='<div style="font-weight:800;font-size:15px;margin-bottom:8px">Ringkasan pilihan</div><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Unit terpilih</span><b>'+checks.length+'</b></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Modal / Harga Setoran</span><b>'+hmRp(gross)+'</b></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Pengurang Finance (tercatat)</span><b>− '+hmRp(finance)+'</b></div><div style="display:flex;justify-content:space-between;gap:12px;border-top:1px solid #d0d5dd;padding-top:10px;margin-top:10px;font-size:15px"><b>Sisa settlement indikatif</b><b>'+hmRp(net)+'</b></div>';
 };
 window.sharePartnerCapitalSelectionWhatsApp=async function(){
   const checks=[...document.querySelectorAll('.partner-capital-check:checked')];
@@ -203,10 +203,26 @@ window.loadPartnerSettlementDetail=async function(outlet){
   const {data:rows,error}=await sb.rpc('partner_capital_due_detail',{p_outlet:outlet});
   if(error){box.innerHTML='<div class="small">Gagal memuat rincian modal Cell: '+esc(String(error.message||error))+'</div>';return;}
   const units=rows||[];
-  // RPC capital_due already deducts sale_price for Majesty Cell; restore gross modal before rendering.
+  // Finance pengurang hanya berasal dari transaksi yang benar-benar tercatat sebagai Finance.
+  // Harga jual tidak boleh dipakai sebagai fallback Finance.
+  const saleIds=units.map(r=>r.sales_transaction_id).filter(Boolean);
+  let financeBySaleId={};
+  if(saleIds.length){
+    const {data:financeRows,error:financeError}=await sb.from('sales_transactions')
+      .select('id,finance_status,finance_payment_method_id,finance_requested_amount')
+      .in('id',saleIds);
+    if(financeError){
+      box.innerHTML='<div class="small">Gagal memvalidasi data Finance. Rincian settlement ditahan agar tidak salah hitung: '+esc(String(financeError.message||financeError))+'</div>';
+      return;
+    }
+    (financeRows||[]).forEach(s=>{
+      const validFinance=['PENDING','PAID'].includes(String(s.finance_status||'').toUpperCase())
+        && !!s.finance_payment_method_id;
+      financeBySaleId[s.id]=validFinance?Number(s.finance_requested_amount||0):0;
+    });
+  }
   const rowsForDisplay=units.map(r=>{
-    const isMajestyCell=String(r.partner_name||'').trim().toLowerCase()==='majesty cell';
-    const finance=isMajestyCell?Number(r.sale_price||0):0;
+    const finance=financeBySaleId[r.sales_transaction_id]||0;
     const gross=Number(r.capital_due||0)+finance, net=gross-finance;
     return {...r,_finance:finance,_gross:gross,_net:net};
   });
@@ -232,7 +248,7 @@ window.loadPartnerSettlementDetail=async function(outlet){
           '<div style="font-size:11px;color:#667085;margin-top:5px;overflow-wrap:anywhere">IMEI: '+esc(String(imei))+'</div>'+
           '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px">'+
           '<div style="background:#f8fafc;border-radius:9px;padding:8px"><div style="font-size:10px;color:#667085">Modal / Harga Setoran</div><div style="font-size:13px;font-weight:700;color:#101828">'+hmRp(r._gross)+'</div></div>'+
-          '<div style="background:#fff7ed;border-radius:9px;padding:8px"><div style="font-size:10px;color:#9a3412">Pengurang Finance (Harga Jual)</div><div style="font-size:13px;font-weight:700;color:#9a3412">− '+hmRp(r._finance)+'</div></div>'+
+          '<div style="background:#fff7ed;border-radius:9px;padding:8px"><div style="font-size:10px;color:#9a3412">Pengurang Finance (tercatat)</div><div style="font-size:13px;font-weight:700;color:#9a3412">− '+hmRp(r._finance)+'</div></div>'+
           '<div style="grid-column:1/-1;background:#ecfdf3;border-radius:9px;padding:9px"><div style="font-size:10px;color:#027a48">Sisa settlement (indikatif)</div><div style="font-size:16px;font-weight:800;color:#027a48">'+hmRp(r._net)+'</div></div>'+
           '</div></div></div></label>';
       }).join('')+'</div>'+
@@ -240,7 +256,7 @@ window.loadPartnerSettlementDetail=async function(outlet){
       '<div style="font-weight:800;font-size:15px;margin-bottom:8px">Ringkasan pilihan</div>'+
       '<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Unit terpilih</span><b>0</b></div>'+
       '<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Modal / Harga Setoran</span><b>Rp0</b></div>'+
-      '<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Pengurang Finance (Harga Jual)</span><b>Rp0</b></div>'+
+      '<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:5px 0"><span>Pengurang Finance (tercatat)</span><b>Rp0</b></div>'+
       '<div style="display:flex;justify-content:space-between;gap:12px;border-top:1px solid #d0d5dd;padding-top:10px;margin-top:10px;font-size:15px"><b>Sisa settlement indikatif</b><b>Rp0</b></div></div>'+
       '<div style="background:#fffaeb;border:1px solid #fedf89;color:#93370d;border-radius:12px;padding:11px;margin-top:12px;font-size:12px;line-height:1.45">Catatan: nilai sisa di atas adalah pratinjau. Tombol pembayaran belum boleh digunakan sampai perhitungan pengurang finance dipastikan diterapkan juga pada pencatatan settlement.</div>'+
       '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" disabled style="flex:1;min-width:180px;background:#98a2b3;opacity:.8;cursor:not-allowed">🔒 Pembayaran menunggu validasi</button><button type="button" class="primary" style="flex:1;min-width:180px" onclick="window.sharePartnerCapitalSelectionWhatsApp()">🟢 Kirim Rincian ke WhatsApp</button></div>'

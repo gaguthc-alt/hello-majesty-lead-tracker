@@ -1933,7 +1933,7 @@ async function hmOpenOutgoingStockList(){
   const pr=productIds.length?await db.from('product_master').select('id,product,variant').in('id',productIds):{data:[],error:null};
   if(pr.error)throw pr.error;
   const products=new Map((pr.data||[]).map(p=>[p.id,p])),safe=v=>typeof esc==='function'?esc(String(v??'—')):String(v??'—'),money=n=>'Rp'+Number(n||0).toLocaleString('id-ID');
-  const stockIds=rows.map(r=>r.id).filter(Boolean),salesRes=stockIds.length?await db.from('sales_transactions').select('id,stock_unit_id,sale_price,discount,cost,gross_profit,sold_at,outlet').in('stock_unit_id',stockIds):{data:[],error:null};
+  const stockIds=rows.map(r=>r.id).filter(Boolean),salesRes=stockIds.length?await db.rpc('management_get_sales_for_stock_units',{p_stock_unit_ids:stockIds}):{data:[],error:null};
   if(salesRes.error)throw salesRes.error;
   const saleByStock=new Map((salesRes.data||[]).map(s=>[String(s.stock_unit_id),s]));
   rows.forEach(r=>{r.sale_transaction=saleByStock.get(String(r.id))||null;});

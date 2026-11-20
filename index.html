@@ -2517,6 +2517,12 @@ async function start(u,authClient){
   if(p.can_hunter)hmPermissionRoles.push('HUNTER');
   if(p.can_checker)hmPermissionRoles.push('CHECKER');
   if(p.can_technician)hmPermissionRoles.push('TECHNICIAN');
+  // Role tambahan stockist harus digabung dengan role utama dan permission tim.
+  try{
+    const extra=await sb.from('team_additional_roles').select('role').eq('user_id',profile.user_id).eq('active',true);
+    if(!extra.error)for(const row of (extra.data||[])){const role=String(row.role||'').trim().toUpperCase().replace(/_/g,' ');if(role&&!hmPermissionRoles.includes(role))hmPermissionRoles.push(role);}
+    else console.warn('[HM] Role tambahan gagal dimuat:',extra.error);
+  }catch(extraErr){console.warn('[HM] Role tambahan gagal dimuat:',extraErr);}
   const displayRoles=getActiveRoles();
   const displayPosition=String(profile?.role||'').trim()|| (profile?.is_management?'Management':displayRoles.join(' + '));
   $('identity').textContent=profile.name+' • '+displayPosition+(profile.outlet?' • '+profile.outlet:'');
@@ -4043,7 +4049,7 @@ function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI',developer=rawRole==='DEVELOPER APLIKASI',has=r=>roles.includes(r);
  const stockistUser=!mg&&!developer&&(has('MITRA STOCKIST')||roles.some(r=>String(r).includes('STOCKIST'))||rawRole.includes('STOCKIST'));
- const facilitator=has('FASILITATOR')||rawRole==='FASILITATOR'||!!window.hmCanFacilitator,sales=has('SALES')&&!stockistUser,cs=(has('CS')||has('CUSTOMER SERVICE')||rawRole.includes('CS')||rawRole.includes('CUSTOMER SERVICE'))&&!stockistUser,creator=has('CONTENT CREATOR')&&!stockistUser,hunter=has('HUNTER')||rawRole==='HUNTER',checker=has('CHECKER')||rawRole==='CHECKER',technician=has('TECHNICIAN')||has('TEKNISI')||rawRole==='TECHNICIAN'||rawRole==='TEKNISI';
+ const facilitator=has('FASILITATOR')||rawRole==='FASILITATOR'||!!window.hmCanFacilitator,sales=has('SALES'),cs=(has('CS')||has('CUSTOMER SERVICE')||rawRole.includes('CS')||rawRole.includes('CUSTOMER SERVICE'))&&!stockistUser,creator=has('CONTENT CREATOR'),hunter=has('HUNTER')||rawRole==='HUNTER',checker=has('CHECKER')||rawRole==='CHECKER',technician=has('TECHNICIAN')||has('TEKNISI')||rawRole==='TECHNICIAN'||rawRole==='TEKNISI';
  const isRefillTeamMember=String(profile?.outlet||'').trim().toLowerCase()==='majesty refill phone'&&!mg&&!developer;
  const title=developer?'Developer Aplikasi':(mg?'Management':(isRefillTeamMember?'Anggota Tim':(roles.length?roles.map(r=>r.replace(/\\b\\w/g,m=>m.toUpperCase())).join(' + '):'Tim Hello Majesty')));
  const sub=mg?'Pusat kendali bisnis • seluruh outlet':(profile?.outlet||'Workspace sesuai peran aktif');
@@ -5018,7 +5024,7 @@ window.hmRunStockistJournalReclass = async function(){
  let visibleGroups=menuGroups.slice().sort((a,b)=>(a[1]==='ACCURATE'?1:0)-(b[1]==='ACCURATE'?1:0)).map((g,gi)=>{
    if(['DIVISI HELLO — PROMOTION','DIVISI REFILL — FINANCE & ADMINISTRATION'].includes(g[1]))return '';
    // Atmadita/Admin Finance tidak melihat Content maupun Komisi.
-   const isAtmaditaMenuAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita' || stockistUser;
+   const isAtmaditaMenuAccount = String(profile?.name||'').trim().toLowerCase()==='atmadita';
    const hideAtmaditaGroups = isAtmaditaMenuAccount || String(profile?.role||'').toUpperCase().replace(/_/g,' ').includes('ADMIN FINANCE');
    if(hideAtmaditaGroups && (g[1]==='CONTENT & PROMOTION' || g[1]==='KOMISI'))return '';
    // Atmadita menangani Admin Finance, jadi tidak perlu menu aktivitas/performa lead.
@@ -5114,27 +5120,7 @@ window.hmRunStockistJournalReclass = async function(){
      return '<button type="button" class="role-home-submenu-item" data-hm-menu-index="'+cardIndex+'" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
    }).join('')+'</div></section>';
  }).join('');
- // Stockist workspace: render exactly two authoritative groups. This avoids stale/duplicate
- // category markup and prevents Pusat Persediaan cards from appearing under Coordination.
- if(stockistUser){
-   const renderStockistGroup=(groupTitle,allowedTitles,headStyle,panelStyle)=>{
-     const group=menuGroups.find(g=>g[1]===groupTitle);
-     if(!group)return '';
-     const items=group[2].filter(item=>allowedTitles.includes(item[1]));
-     if(!items.length)return '';
-     return '<section class="role-home-menu role-home-category hm-stockist-group" style="background:'+headStyle+'!important">'
-       +'<div class="role-home-category-title" style="background:'+headStyle+'!important"><span>'+group[0]+' '+esc(group[1])+'</span></div>'
-       +'<div class="role-home-submenu" style="background:'+panelStyle+'!important">'+items.map(item=>{
-         let card=cards.find(x=>x[1]===item[1]);
-         if(!card){card=[item[0],item[1],item[2],item[3]];cards.push(card);}
-         const cardIndex=cards.indexOf(card);
-         return '<button type="button" class="role-home-submenu-item" data-hm-menu-index="'+cardIndex+'" data-hm-menu-title="'+esc(card[1])+'"><b>'+item[0]+' '+esc(item[1])+'</b><span>'+esc(item[2])+'</span></button>';
-       }).join('')+'</div></section>';
-   };
-   visibleGroups=
-     renderStockistGroup('PUSAT PERSEDIAAN',['Ajukan Barang Masuk Unit Bisnis','Persetujuan Barang Masuk','Ringkasan Stok Unit Bisnis','Dashboard Inventory Mitra'],'linear-gradient(145deg,#087cf0,#2563eb)','#eff6ff')
-     +renderStockistGroup('KOORDINASI ANTARUNIT BISNIS',['Panduan Kerja Sama','Pembayaran Settlement','Sharing Profit Unit Bisnis'],'linear-gradient(145deg,#08b779,#10a981)','#ecfdf5');
- }
+ // Admin Stockist tetap melihat menu sesuai role lainnya; akses stockist dibatasi pada partner masing-masing.
  const roleCards='';
  const kpis='';
  const isAtmaditaStockistHome=stockistUser;

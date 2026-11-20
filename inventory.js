@@ -510,7 +510,7 @@ async function renderStandaloneHunterStock(){
   if(result.error)throw result.error;
   const rows=result.data||[];
   const displayRows=rows.filter(x=>String(x.hunter_names||'').trim()||String(x.checker_names||'').trim());
-  panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">🧑‍💼 STOCK HUNTER & CHECKER</h2><div class="small">Daftar unit Hunter dan Checker yang masih READY dan belum laku.</div></div><button class="secondary" type="button" onclick="renderStandaloneHunterStock()">↻ Refresh</button></div>'+
+  panel.innerHTML='<div class="row" style="justify-content:space-between;align-items:center;gap:8px"><div><h2 style="margin:0">🧑‍💼 STOCK HUNTER & CHECKER</h2><div class="small">Daftar unit Hunter dan Checker yang masih READY dan belum laku.</div></div><div class="row" style="gap:6px;flex-wrap:wrap"><button class="primary" type="button" onclick="openHunterCommission()">💸 Komisi Saya</button><button class="secondary" type="button" onclick="renderStandaloneHunterStock()">↻ Refresh</button></div></div>'+
    '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#e8f1ff;color:#174ea6;font-weight:700">🏹 Hunter · Komisi 10%</span><span style="display:inline-block;padding:7px 10px;border-radius:9px;background:#f3e8ff;color:#6b21a8;font-weight:700">🔎 Checker · Komisi 5%</span></div>'+
    '<div class="small" style="margin-top:10px">Semua anggota yang tercatat pada unit ditampilkan. Komisi baru dialokasikan saat unit benar-benar terjual. Data modal, laba, dan IMEI tidak ditampilkan.</div>'+
    (displayRows.length?'<div style="margin-top:12px">'+displayRows.map((x,i)=>{

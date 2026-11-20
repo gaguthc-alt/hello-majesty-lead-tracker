@@ -67,14 +67,34 @@ window.loadStockOutReport=async function(){
   const productIds=[...new Set([...sold,...returns].map(x=>x.product_id).filter(Boolean))];let products={};
   if(productIds.length){const pr=await sb.from('product_master').select('id,product,variant').in('id',productIds);if(pr.error)throw pr.error;products=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));}
   const rows=[...sold.map(x=>({...x,exit_type:'SOLD',event_date:x.sold_at,display_value:x.sold_price})),...returns].map(x=>({...x,product_name:products[x.product_id]?.product||'Produk',variant:products[x.product_id]?.variant||'',event_date:x.event_date||x.sold_at}));
+  const soldIds=rows.filter(x=>x.exit_type==='SOLD').map(x=>x.id);
+  if(soldIds.length){
+   const sr=await sb.from('sales_transactions').select('id,stock_unit_id,sale_price,discount,cost,gross_profit,sold_at,outlet').in('stock_unit_id',soldIds);
+   if(sr.error)throw sr.error;
+   const saleByStock=Object.fromEntries((sr.data||[]).map(x=>[x.stock_unit_id,x]));
+   rows.forEach(x=>{if(x.exit_type==='SOLD'&&saleByStock[x.id])x.sale_transaction=saleByStock[x.id];});
+  }
   rows.sort((a,b)=>String(b.event_date||'').localeCompare(String(a.event_date||'')));
   window.__hmStockOutRows=rows;
   const total=rows.reduce((n,x)=>n+Number(x.display_value||0),0),modal=rows.reduce((n,x)=>n+Number(x.cost||0),0);
   const cards='<div class="hmso-stats"><div class="hmso-stat"><div class="muted">Unit keluar</div><b>'+rows.length+'</b></div><div class="hmso-stat"><div class="muted">Total nilai jual / retur</div><b>'+money(total)+'</b></div><div class="hmso-stat"><div class="muted">Total modal terkait</div><b>'+money(modal)+'</b></div></div>';
-  const list=rows.map(x=>'<div class="hmso-row"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>'+esc(x.product_name)+(x.variant?' · '+esc(x.variant):'')+'</b><b>'+ (x.exit_type==='SOLD'?'Terjual':'Return')+'</b></div><div class="muted">'+esc(x.event_date?new Date(x.event_date).toLocaleString('id-ID'):'-')+' · '+esc(x.outlet||'-')+' · '+esc(x.partner_name||'-')+'</div><div class="muted">'+esc([x.color,x.grade?'Grade '+x.grade:null,x.condition,x.battery_health!=null?'BH '+x.battery_health+'%':null,x.imei_1?'IMEI '+x.imei_1:null].filter(Boolean).join(' · '))+'</div><div style="margin-top:5px">Modal <b>'+money(x.cost)+'</b> · '+(x.exit_type==='SOLD'?'Harga jual ':'Nilai retur ')+ '<b>'+money(x.display_value)+'</b></div>'+(x.reason?'<div class="muted">Alasan retur: '+esc(x.reason)+'</div>':'')+(x.return_no?'<div class="muted">No. retur: '+esc(x.return_no)+'</div>':'')+'</div>').join('');
+  const list=rows.map(x=>'<div class="hmso-row"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>'+esc(x.product_name)+(x.variant?' · '+esc(x.variant):'')+'</b><b>'+ (x.exit_type==='SOLD'?'Terjual':'Return')+'</b></div><div class="muted">'+esc(x.event_date?new Date(x.event_date).toLocaleString('id-ID'):'-')+' · '+esc(x.outlet||'-')+' · '+esc(x.partner_name||'-')+'</div><div class="muted">'+esc([x.color,x.grade?'Grade '+x.grade:null,x.condition,x.battery_health!=null?'BH '+x.battery_health+'%':null,x.imei_1?'IMEI '+x.imei_1:null].filter(Boolean).join(' · '))+'</div><div style="margin-top:5px">Modal <b>'+money(x.cost)+'</b> · '+(x.exit_type==='SOLD'?'Harga jual ':'Nilai retur ')+ '<b>'+money(x.display_value)+'</b></div>'+(x.reason?'<div class="muted">Alasan retur: '+esc(x.reason)+'</div>':'')+(x.return_no?'<div class="muted">No. retur: '+esc(x.return_no)+'</div>':'')+(x.exit_type==='SOLD'&&x.sale_transaction&&window.profile?.is_management?'<div style="margin-top:10px"><button type="button" class="secondary" onclick="window.hmEditSoldStockPrice(\''+esc(x.id)+'\')">✏️ Koreksi Harga Jual</button></div>':'')+'</div>').join('');
   host.innerHTML=cards+'<div class="box"><b>Rincian Stock Keluar</b><div class="muted" style="font-size:12px;margin:5px 0 10px">'+esc(from)+' s/d '+esc(to)+' · '+esc(status==='ALL'?'Semua status':status==='SOLD'?'Terjual':'Return')+'</div>'+(list||'<div class="muted">Tidak ada barang keluar pada filter ini.</div>')+'</div>';
  }catch(err){host.innerHTML='<div class="box"><b>Gagal memuat laporan stock keluar.</b><div class="small">'+esc(err?.message||err)+'</div></div>';}
 };
 window.resetStockOutReport=function(){const p=document.getElementById('hmsoPartner'),o=document.getElementById('hmsoOutlet'),s=document.getElementById('hmsoStatus'),a=document.getElementById('hmsoFrom'),z=document.getElementById('hmsoTo');if(p&&!p.disabled)p.value='ALL';if(o)o.value='ALL';if(s)s.value='ALL';if(a)a.value=startOfMonth();if(z)z.value=today();window.loadStockOutReport();};
+window.hmEditSoldStockPrice=async function(stockId){
+ const p=window.profile||{};
+ if(!p.is_management){alert('Hanya Management yang dapat mengoreksi harga jual.');return;}
+ const row=(window.__hmStockOutRows||[]).find(x=>String(x.id)===String(stockId));
+ if(!row||!row.sale_transaction){alert('Transaksi penjualan tidak ditemukan untuk unit ini.');return;}
+ const s=row.sale_transaction;
+ window.hmSalesReportRows=[{
+  id:s.id,display_product:(row.product_name||'Produk')+(row.variant?' · '+row.variant:''),
+  sold_at:s.sold_at,outlet:s.outlet,sale_price:s.sale_price,discount:s.discount,cost:s.cost,gross_profit:s.gross_profit
+ }];
+ if(typeof window.openSalesTransactionEdit!=='function'){alert('Form koreksi belum tersedia. Muat ulang aplikasi.');return;}
+ window.openSalesTransactionEdit(s.id);
+};
 window.exportStockOutReport=function(){const rows=window.__hmStockOutRows||[];if(!rows.length){alert('Tidak ada data untuk diekspor.');return;}const cols=['exit_type','event_date','product_name','variant','color','grade','condition','battery_health','imei_1','outlet','partner_name','cost','display_value','return_no','reason'];const csv=[cols.join(';'),...rows.map(r=>cols.map(k=>'"'+String(r[k]??'').replace(/"/g,'""')+'"').join(';'))].join('\r\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='laporan-stock-keluar-'+today()+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);};
 })();

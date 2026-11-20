@@ -4465,21 +4465,25 @@ window.hmOpenPartnerSettlementManagement=async function(){
     if(d&&String(d.partner_name||'').toLowerCase()===String(x.partner_name||'').toLowerCase()&&String(d.outlet||'').toLowerCase()===String(x.outlet||'').toLowerCase())x._salesTransactionId=d.sales_transaction_id;
    });
   }
-  // Settlement stockist dihitung dari nilai hak rekening stockist: harga jual - tunai pelanggan + tarik tunai. Status Finance tidak menjadi syarat.
+  // Pengurang settlement hanya berasal dari transaksi Finance yang benar-benar tercatat.
+  // Harga jual bukan nilai Finance; transaksi tanpa status Finance dan metode pembayaran tidak boleh dihitung.
   const liveIds=liveUnits.map(x=>x.id).filter(Boolean);
   let financeRows=[];
   if(liveIds.length){
    const fr=await window.sb.rpc('finance_sales_detail_rows',{p_ids:null,p_pending_only:false});
    if(fr.error)throw fr.error;
    const liveIdSet=new Set(liveIds.map(String));
-   financeRows=(fr.data||[]).filter(tx=>liveIdSet.has(String(tx.stock_unit_id)));
+   financeRows=(fr.data||[]).filter(tx=>
+    liveIdSet.has(String(tx.stock_unit_id)) &&
+    ['PENDING','PAID'].includes(String(tx.finance_status||'').toUpperCase()) &&
+    !!tx.finance_payment_method_id &&
+    Number(tx.finance_requested_amount||0)>0
+   );
   }
-  const methodRes=await window.sb.from('payment_methods').select('id,name,code').limit(500);
-  if(methodRes.error)throw methodRes.error;
-  const financeMethodById=new Map((methodRes.data||[]).map(m=>[String(m.id),String(m.name||m.code||'Finance')]));
   const financeByUnit=new Map();
   financeRows.forEach(tx=>{
-   const key=String(tx.stock_unit_id),prev=financeByUnit.get(key)||{cashout:0,transactions:[],salePrice:0,cashPayment:0};
+   const key=String(tx.stock_unit_id),prev=financeByUnit.get(key)||{financeAmount:0,transactions:[],salePrice:0,cashout:0,cashPayment:0};
+   prev.financeAmount+=Number(tx.finance_requested_amount||0);
    prev.salePrice=Math.max(prev.salePrice,Number(tx.sale_price||0));
    prev.cashPayment+=Number(tx.finance_cash_payment||0);
    prev.cashout+=Number(tx.finance_cashout_amount||0);
@@ -4491,7 +4495,7 @@ window.hmOpenPartnerSettlementManagement=async function(){
    x._salePrice=Number(fin?.salePrice||0);
    x._financeCashout=Number(fin?.cashout||0);
    x._financeCashPayment=Number(fin?.cashPayment||0);
-   x._financeApplied=x._salePrice-x._financeCashPayment+x._financeCashout;
+   x._financeApplied=Number(fin?.financeAmount||0);
    x._financeReceived=x._financeApplied;
    x._financeGross=x._financeApplied;
    x._financeProvider='Finance / pengurang settlement';

@@ -89,6 +89,7 @@ window.hmEditSoldStockPrice=async function(stockId){
  const row=(window.__hmStockOutRows||[]).find(x=>String(x.id)===String(stockId));
  if(!row||!row.sale_transaction){alert('Transaksi penjualan tidak ditemukan untuk unit ini.');return;}
  const s=row.sale_transaction;
+ window.__hmStockOutCorrectionActive=true;
  window.hmSalesReportRows=[{
   id:s.id,display_product:(row.product_name||'Produk')+(row.variant?' · '+row.variant:''),
   sold_at:s.sold_at,outlet:s.outlet,sale_price:s.sale_price,discount:s.discount,cost:s.cost,gross_profit:s.gross_profit

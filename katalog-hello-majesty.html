@@ -10,8 +10,8 @@
 <header><div><div class="brand">HELLO <span>MAJESTY</span> · <span id="brandUnit" style="color:inherit">HELLO MAJESTY</span></div><div class="sub" id="brandSub">Pembuat Link Katalog Resmi untuk Semua Unit Hello Majesty</div></div></header>
 <main>
 <section id="admin" class="panel hidden"><h1>Buat Link Katalog</h1><p class="muted">Link katalog dapat dibagikan ke pelanggan. Katalog Hello Majesty menjadi pintu masuk untuk unit yang diizinkan.</p>
-<div id="loginBox"><label>Email akun Hello Majesty</label><input id="email" type="email" autocomplete="username" placeholder="Email login aplikasi"><label>Password</label><input id="password" type="password" autocomplete="current-password"><button id="loginBtn" style="margin-top:14px">Login</button><p id="loginError" class="error"></p></div>
-<div id="createBox" class="hidden"><div class="status">Login berhasil. Pilih unit yang katalognya akan dibuat.</div><label for="catalogUnit">Unit katalog</label><select id="catalogUnit" style="width:100%;font:inherit;border-radius:10px;padding:12px;border:1px solid #35465f;background:#0a1322;color:white"></select><button id="createBtn" style="margin-top:14px">Buat Link Katalog</button><div id="linkResult" class="status hidden"></div><button id="logoutBtn" class="secondary" style="margin-top:10px">Keluar</button></div></section>
+<div id="loginBox"><div class="status">Memeriksa sesi Management System…</div><p id="loginError" class="error"></p><button id="openDashboard" class="secondary" type="button" style="margin-top:10px">Buka Management System untuk Login</button></div>
+<div id="createBox" class="hidden"><div class="status" id="sessionStatus">Login Management System terdeteksi. Pilih unit yang katalognya akan dibuat.</div><label for="catalogUnit">Unit katalog</label><select id="catalogUnit" style="width:100%;font:inherit;border-radius:10px;padding:12px;border:1px solid #35465f;background:#0a1322;color:white"></select><button id="createBtn" style="margin-top:14px">Buat Link Katalog</button><div id="linkResult" class="status hidden"></div><button id="backDashboard" class="secondary" type="button" style="margin-top:10px">Kembali ke Management System</button></div></section>
 <section id="public" class="hidden"><div class="catalog-hero"><div class="hero-kicker">THE HELLO MAJESTY COLLECTION</div><h1 id="publicTitle">Katalog Hello Majesty</h1><p id="publicDescription">Temukan gadget pilihan dengan pelayanan personal dari tim Hello Majesty.</p><div class="hero-pills"><span>✦ Premium Collection</span><span>✓ Ready Stock</span><span>◉ Trusted Service</span></div><div id="expiry" class="expiry"></div></div><div id="status" class="status">Memuat katalog produk…</div><div class="catalog-toolbar"><input id="catalogSearch" type="search" placeholder="⌕  Cari model, kapasitas, warna…"><select id="catalogSort" aria-label="Urutkan produk"><option value="recommended">Urutan rekomendasi</option><option value="price-low">Harga terendah</option><option value="price-high">Harga tertinggi</option><option value="newest">Seri terbaru</option></select></div><nav id="categoryTabs" class="category-tabs" aria-label="Filter kategori"></nav><div id="catalogCount" class="catalog-count"></div><div id="products" class="grid"></div></section>
 </main>
 <script>
@@ -21,7 +21,64 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 async function api(payload={},token=''){const headers={'Content-Type':'application/json','apikey':SB_KEY};if(token)headers.Authorization='Bearer '+token;const r=await fetch(API,{method:'POST',headers,body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Permintaan gagal.');return d;}
 function showAdmin(){ $('admin').classList.remove('hidden');$('public').classList.add('hidden');}
 function showPublic(){ $('public').classList.remove('hidden');$('admin').classList.add('hidden');}
-async function bootAdmin(){document.title='Pembuat Katalog Hello Majesty';$('brandUnit').textContent='HELLO MAJESTY';$('brandSub').textContent='Pembuat Link Katalog Resmi untuk Semua Unit Hello Majesty';showAdmin();client=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});$('loginBtn').onclick=async()=>{ $('loginError').textContent='';try{const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;const tok=data?.session?.access_token;if(!tok)throw new Error('Sesi login tidak ditemukan.');const access=await api({action:'access'},tok);const sel=$('catalogUnit');sel.innerHTML='';(access.allowed_units||[]).forEach(u=>{const op=document.createElement('option');op.value=u;op.textContent=u;sel.appendChild(op)});if(!access.allowed_units?.length)throw new Error('Role akun ini tidak diizinkan membuat link katalog.');sel.disabled=access.allowed_units.length===1;$('loginBox').classList.add('hidden');$('createBox').classList.remove('hidden');}catch(e){$('loginError').textContent=e.message||'Login gagal.'}};$('createBtn').onclick=async()=>{const {data}=await client.auth.getSession();const tok=data?.session?.access_token;if(!tok){$('loginError').textContent='Sesi login habis. Login kembali.';return}try{$('createBtn').disabled=true;$('createBtn').textContent='Membuat link…';const selectedUnit=$('catalogUnit').value;const d=await api({action:'create',unit:selectedUnit},tok);const share=location.origin+'/katalog-hello-majesty'+'?t='+encodeURIComponent(d.token);$('linkResult').classList.remove('hidden');$('linkResult').innerHTML='<b>Link katalog '+esc(d.unit||selectedUnit)+' berhasil dibuat</b><p class="small">Berlaku sampai '+new Date(d.expires_at).toLocaleString('id-ID')+'</p><input id="generatedLink" readonly value="'+esc(share)+'"><label for="catalogWaPhone">Nomor WhatsApp pelanggan</label><input id="catalogWaPhone" inputmode="tel" placeholder="Contoh: 081234567890"><div class="row" style="margin-top:10px"><button id="sendCatalogWa" type="button">Kirim ke WhatsApp Customer</button><button id="copyLink" type="button" class="secondary">Salin untuk Lead Chat</button></div><p class="small">Untuk Lead Chat, salin link lalu tempelkan ke percakapan pelanggan yang sedang dibuka.</p>'; $('copyLink').onclick=async()=>{try{await navigator.clipboard.writeText(share);$('copyLink').textContent='Tersalin untuk Lead Chat';}catch{$('generatedLink').select();document.execCommand('copy');$('copyLink').textContent='Tersalin untuk Lead Chat';}};$('sendCatalogWa').onclick=()=>{let phone=String($('catalogWaPhone').value||'').replace(/\\D/g,'');if(phone.startsWith('0'))phone='62'+phone.slice(1);if(phone.startsWith('8'))phone='62'+phone;if(!/^62[0-9]{8,13}$/.test(phone)){alert('Masukkan nomor WhatsApp Indonesia yang valid.');return;}const msg='Halo, berikut katalog '+(d.unit||selectedUnit)+' dari Hello Majesty. Link berlaku 24 jam: '+share;window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank','noopener');};}catch(e){$('linkResult').classList.remove('hidden');$('linkResult').textContent=e.message;}finally{$('createBtn').disabled=false;$('createBtn').textContent='Buat Link Katalog'}};$('logoutBtn').onclick=async()=>{await client.auth.signOut();$('createBox').classList.add('hidden');$('loginBox').classList.remove('hidden');$('linkResult').classList.add('hidden')};}
+let catalogSession=null,catalogRefreshPromise=null;
+async function catalogAccessToken(){
+ const read=()=>{try{return JSON.parse(localStorage.getItem('hm_auth_session')||'null')}catch(_e){return null}};
+ let session=read(),now=Math.floor(Date.now()/1000);
+ if(!session?.access_token||!session?.refresh_token)throw new Error('Sesi Management System tidak ditemukan. Login dahulu melalui dashboard, lalu buka menu Katalog kembali.');
+ if(Number(session.expires_at||0)>now+90){catalogSession=session;return session.access_token;}
+ if(catalogRefreshPromise)return catalogRefreshPromise;
+ catalogRefreshPromise=(async()=>{
+  const refresh=async()=>{
+   const latest=read();if(latest?.refresh_token&&Number(latest.expires_at||0)>Math.floor(Date.now()/1000)+90){catalogSession=latest;return latest.access_token;}
+   const source=latest?.refresh_token||session.refresh_token;
+   const response=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:source}),cache:'no-store'});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||!data.access_token||!data.refresh_token)throw new Error('Sesi Management System kedaluwarsa. Login kembali melalui dashboard.');
+   catalogSession={...latest,...data,expires_at:data.expires_at||Math.floor(Date.now()/1000)+(data.expires_in||3600)};
+   localStorage.setItem('hm_auth_session',JSON.stringify(catalogSession));
+   return catalogSession.access_token;
+  };
+  if(navigator.locks?.request)return navigator.locks.request('hello-majesty-auth-refresh',{mode:'exclusive'},refresh);
+  return refresh();
+ })();
+ try{return await catalogRefreshPromise;}finally{catalogRefreshPromise=null;}
+}
+async function bootAdmin(){
+ document.title='Pembuat Katalog Hello Majesty';
+ $('brandUnit').textContent='HELLO MAJESTY';
+ $('brandSub').textContent='Pembuat Link Katalog Resmi untuk Semua Unit Hello Majesty';
+ showAdmin();
+ $('openDashboard').onclick=()=>location.href='/';
+ $('backDashboard').onclick=()=>location.href='/';
+ $('createBtn').onclick=async()=>{
+  try{
+   $('createBtn').disabled=true;$('createBtn').textContent='Membuat link…';
+   const tok=await catalogAccessToken(),selectedUnit=$('catalogUnit').value;
+   const d=await api({action:'create',unit:selectedUnit},tok);
+   const share=location.origin+'/katalog-hello-majesty'+'?t='+encodeURIComponent(d.token);
+   $('linkResult').classList.remove('hidden');
+   $('linkResult').innerHTML='<b>Link katalog '+esc(d.unit||selectedUnit)+' berhasil dibuat</b><p class="small">Berlaku sampai '+new Date(d.expires_at).toLocaleString('id-ID')+'</p><input id="generatedLink" readonly value="'+esc(share)+'"><div class="row" style="margin-top:10px"><button id="sendCatalogWa" type="button">Kirim ke WhatsApp</button><button id="sendCatalogLeadChat" type="button" class="secondary">Kirim ke Lead Chat</button></div><p class="small">WhatsApp akan terbuka dengan pesan siap kirim; pilih chat pelanggan. Untuk Lead Chat, buka inbox dan tempelkan pesan katalog pada percakapan lead yang dipilih.</p>';
+   const message='Halo, berikut katalog '+(d.unit||selectedUnit)+' dari Hello Majesty. Link berlaku 24 jam: '+share;
+   $('sendCatalogWa').onclick=()=>window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank','noopener');
+   $('sendCatalogLeadChat').onclick=async()=>{
+    try{await navigator.clipboard.writeText(message);}catch{const temp=document.createElement('textarea');temp.value=message;document.body.appendChild(temp);temp.select();document.execCommand('copy');temp.remove();}
+    window.open('/whatsapp-inbox.html','_blank','noopener');
+   };
+  }catch(e){$('linkResult').classList.remove('hidden');$('linkResult').textContent=e.message||'Gagal membuat link.';}
+  finally{$('createBtn').disabled=false;$('createBtn').textContent='Buat Link Katalog';}
+ };
+ try{
+  const tok=await catalogAccessToken();
+  const access=await api({action:'access'},tok);
+  const sel=$('catalogUnit');sel.innerHTML='';
+  (access.allowed_units||[]).forEach(u=>{const op=document.createElement('option');op.value=u;op.textContent=u;sel.appendChild(op);});
+  if(!access.allowed_units?.length)throw new Error('Akun ini belum memiliki hak akses membuat link katalog.');
+  sel.disabled=access.allowed_units.length===1;
+  $('loginBox').classList.add('hidden');$('createBox').classList.remove('hidden');
+  $('sessionStatus').textContent='Login Management System terdeteksi. Pilih unit yang katalognya akan dibuat.';
+ }catch(e){$('loginError').textContent=e.message||'Sesi tidak dapat diperiksa.';}
+}
 function catalogPhotos(p){
 return [...(Array.isArray(p.photos)?p.photos:[]),...(Array.isArray(p.thumbnails)?p.thumbnails:[])].filter((u,i,a)=>typeof u==='string'&&u.trim()&&a.indexOf(u)===i);
 }

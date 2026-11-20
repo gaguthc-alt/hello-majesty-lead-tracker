@@ -1958,6 +1958,10 @@ async function saveSalesTransactionPrice(id){
   window.hmSalesReportRows=(window.hmSalesReportRows||[]).map(row=>String(row.id)===String(id)?{...row,sale_price:updatedPrice,gross_profit:updatedProfit}:row);
   closeModal();
   renderInventorySalesReport();
+  if(window.__hmStockOutCorrectionActive&&typeof window.loadStockOutReport==='function'){
+   window.__hmStockOutCorrectionActive=false;
+   await window.loadStockOutReport();
+  }
   alert('Harga transaksi berhasil diperbarui.\nHarga jual: Rp'+Number(data.new_sale_price??price).toLocaleString('id-ID')+'\nLaba baru: Rp'+Number(data.new_profit??profit).toLocaleString('id-ID')+'\n\nKomisi berbasis laba akan mengikuti perhitungan terbaru.'+(data.accurate_sync_status==='FAILED'?'\n\nCatatan: Sinkronisasi Accurate masih FAILED. Perbaiki mapping produk sebelum sinkronisasi ulang.':''));
  }catch(e){
   buttons.forEach(b=>b.disabled=false);

@@ -5031,8 +5031,6 @@ window.hmRunStockistJournalReclass = async function(){
    if(isAtmaditaMenuAccount && g[1]==='LEAD TRACKER')return '';
    // Atmadita tidak lagi mengelola Inventory & Stock; gunakan Pusat Persediaan Unit Bisnis untuk kebutuhan mitra.
    if(isAtmaditaMenuAccount && g[1]==='INVENTORY & STOCK')return '';
-   // Seluruh akun Mitra Stockist mengakses pengajuan hanya melalui PUSAT PERSEDIAAN.
-   if(stockistUser && g[1]==='INVENTORY & STOCK')return '';
    // CONTENT & PROMOTION adalah menu standar untuk SEMUA akun.
    // Tetap render sebagai HTML section — jangan return array mentah,
    // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.
@@ -5106,6 +5104,10 @@ window.hmRunStockistJournalReclass = async function(){
      const order=['Dashboard Inventory','Master Produk','Stok Siap Jual','Umur Stock','Barang Masuk','Persetujuan Barang Masuk','Stock Hunter & Checker','Persetujuan Walk-In'];
      if((mg||facilitator)&&!cards.some(x=>x[1]==='Umur Stock'))cards.push(['⏳','Umur Stock','Analisis usia stok berdasarkan tanggal barang masuk','openStockAgeReport()']);
      allowed=order.map(name=>g[2].find(x=>x[1]===name)).filter(Boolean).filter(item=>cards.some(x=>x[1]===item[1]));
+   }
+   if(g[1]==='INVENTORY & STOCK' && stockistUser){
+     // Mitra stockist tetap mendapat menu operasional sesuai role (mis. Stok Siap Jual), tetapi tidak boleh input Barang Masuk langsung.
+     allowed=allowed.filter(item=>item[1]!=='Barang Masuk' && item[1]!=='Daftar Barang Masuk');
    }
    if(g[1]==='INVENTORY & STOCK'){
      // Umur Stock bersifat internal: hanya Management/Divisi dan Fasilitator.

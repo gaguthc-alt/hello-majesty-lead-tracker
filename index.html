@@ -3443,6 +3443,11 @@ function hmRunMainMenuAction(action){
   case 'hmOpenLeadTracker()': return hmOpenLeadTracker();
   case 'openAI()': return openAI();
   case 'openBrochures()': return hmOpenBrochuresInline();
+  case 'openCatalogBuilder()': {
+   const url=new URL('/katalog-hello-majesty/',location.origin).toString();
+   window.open(url,'_blank','noopener');
+   return;
+  }
   case 'openAccounting()': return openAccounting();
   case 'openAccountingModule("journal")': return openAccountingModule('journal');
   case 'openAccountingModule("ledger")': return openAccountingModule('ledger');
@@ -4959,7 +4964,8 @@ window.hmRunStockistJournalReclass = async function(){
    ]],
    ['🎬','CONTENT & PROMOTION',[
      ['🎬','Pencapaian Content Creator','Lead berdasarkan sumber dan kampanye','hmOpenContentPerformance()'],
-     ['📖','Brosur','Materi produk & promosi','openBrochures()']
+     ['📖','Brosur','Materi produk & promosi','openBrochures()'],
+     ['🔗','Katalog','Buat link katalog 24 jam untuk dikirim ke WhatsApp pelanggan atau Lead Chat','openCatalogBuilder()']
    ]],
    ['💎','KOMISI',[
      ['💰','Komisi Tim','Seluruh komisi tim, bukan hanya Sales','openTeamCommission()'],

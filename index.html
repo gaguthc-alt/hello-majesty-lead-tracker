@@ -4114,7 +4114,7 @@ function renderRoleHome(){
    add('⚡','Quick Action','Akses cepat pekerjaan utama','hmOpenQuickAction()');
  }else if(stockistUser){
    add('📦','Ringkasan Stok Unit Bisnis','Stok milik unit stockist yang sedang login',"window.hmOpenStockistInfo('Ringkasan Stok Unit Bisnis')");
-   add('📥','Ajukan Barang Masuk Unit Bisnis','Catat penerimaan barang untuk unit sendiri',"window.hmOpenStockistInfo('Ajukan Barang Masuk Unit Bisnis')");
+   // Pengajuan barang masuk hanya ditampilkan di dalam grup PUSAT PERSEDIAAN.
    add('📊','Dashboard Inventory Mitra','Posisi stok dan kewajiban modal unit sendiri','window.openCellFinanceReport()');
    add('🤝','Pembayaran Settlement','Settlement khusus unit stockist ini','window.openPartnerSettlement()');
  }else if(facilitator){
@@ -5031,6 +5031,8 @@ window.hmRunStockistJournalReclass = async function(){
    if(isAtmaditaMenuAccount && g[1]==='LEAD TRACKER')return '';
    // Atmadita tidak lagi mengelola Inventory & Stock; gunakan Pusat Persediaan Unit Bisnis untuk kebutuhan mitra.
    if(isAtmaditaMenuAccount && g[1]==='INVENTORY & STOCK')return '';
+   // Seluruh akun Mitra Stockist mengakses pengajuan hanya melalui PUSAT PERSEDIAAN.
+   if(stockistUser && g[1]==='INVENTORY & STOCK')return '';
    // CONTENT & PROMOTION adalah menu standar untuk SEMUA akun.
    // Tetap render sebagai HTML section — jangan return array mentah,
    // karena .join('') akan mengubahnya menjadi teks dipisahkan koma.

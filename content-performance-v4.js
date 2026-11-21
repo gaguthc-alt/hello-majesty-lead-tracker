@@ -40,15 +40,6 @@ window.renderContentPerformance=async function(){
      groups[key]={creator:name,platform:'—',campaign:'—',leads:0};
     }
    });
-   // Aca's 7 manually reported leads belong to November 2026 only.
-   // Never carry this adjustment into today-only or previous-month reports.
-   const isNovember2026=p.start.getFullYear()===2026&&p.start.getMonth()===10&&mode==='month';
-   const manualLeadOverrides=isNovember2026?{'Aca':7}:{};
-   Object.entries(manualLeadOverrides).forEach(([name,count])=>{
-    const existing=Object.values(groups).find(x=>x.creator.toLocaleLowerCase('id')===name.toLocaleLowerCase('id'));
-    if(existing){existing.leads+=count;existing.platform='INPUT MANUAL';existing.campaign='Penyesuaian manual';existing.manual=true;}
-    else groups[[name,'INPUT MANUAL','Penyesuaian manual'].join('|')]={creator:name,platform:'INPUT MANUAL',campaign:'Penyesuaian manual',leads:count,manual:true};
-   });
    const list=Object.values(groups).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
    const creatorCards=Object.values(list.reduce((acc,x)=>{
     if(!x.creator||x.creator==='—')return acc;
@@ -58,7 +49,7 @@ window.renderContentPerformance=async function(){
     return acc;
    },{})).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
    const creatorCount=new Set(list.map(x=>String(x.creator||'').trim().toLocaleLowerCase('id')).filter(x=>x&&x!=='—')).size;
-   const total=rows.length+Object.values(manualLeadOverrides).reduce((sum,n)=>sum+Number(n||0),0);
+   const total=rows.length;
    const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
    const activeRoles=typeof getActiveRoles==='function'?getActiveRoles():[];
    const isManagement=!!profile?.is_management||activeRoles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||activeRoles.includes('DIVISI')||rawRole==='DIVISI';

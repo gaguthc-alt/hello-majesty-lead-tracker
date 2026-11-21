@@ -15,7 +15,6 @@
    if(leadQ.error)throw leadQ.error;
    const leads=leadQ.data||[];
    const ids=leads.map(x=>x.lead_id).filter(Boolean);
-   const 
    const [evQ,msgQ]=await Promise.all([
     ids.length?sb.from('lead_events').select('lead_id,event_type,event_at').in('lead_id',ids):Promise.resolve({data:[],error:null}),
     ids.length?sb.from('whatsapp_messages').select('lead_id,direction,created_at').eq('direction','INBOUND').in('lead_id',ids):Promise.resolve({data:[],error:null})

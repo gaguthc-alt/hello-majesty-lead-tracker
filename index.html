@@ -6880,6 +6880,16 @@ async function openUrl(){
    }
    return;
  }
+ // Claim deep-link is a one-time action. Remove its query parameters as soon
+ // as the authenticated shell is ready so reopening/reloading the app does
+ // not replay an old Service/Sales claim modal.
+ try{
+   const cleanUrl=new URL(location.href);
+   cleanUrl.searchParams.delete('claim');
+   cleanUrl.searchParams.delete('lead_id');
+   cleanUrl.searchParams.delete('type');
+   history.replaceState(history.state,'',cleanUrl.pathname+cleanUrl.search+cleanUrl.hash);
+ }catch(e){console.warn('[HM] Gagal membersihkan claim deep-link:',e);}
  let l=leads.find(x=>String(x.lead_id)===String(id));
  const fresh=await sb.from('leads').select('*').eq('lead_id',id).maybeSingle();
  if(fresh.error){alert('Lead dari notifikasi gagal dimuat: '+fresh.error.message);return;}

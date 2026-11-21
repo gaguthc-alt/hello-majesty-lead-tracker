@@ -53,6 +53,8 @@ window.renderContentPerformance=async function(){
     acc[key].leads+=Number(x.leads||0);
     return acc;
    },{})).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
+   historical.forEach(a=>{const name=String(a.employee_name||'').trim();if(!name)return;let card=creatorCards.find(x=>x.creator.toLocaleLowerCase('id')===name.toLocaleLowerCase('id'));if(!card){card={creator:name,leads:0};creatorCards.push(card);}card.leads+=Math.max(0,Number(a.amount)||0);});
+   creatorCards.sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
    const creatorCount=new Set(list.map(x=>String(x.creator||'').trim().toLocaleLowerCase('id')).filter(x=>x&&x!=='—')).size;
    const total=rows.length+historicalTotal;
    const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');

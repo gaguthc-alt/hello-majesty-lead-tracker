@@ -37,5 +37,4 @@
   }catch(e){const s=document.getElementById('cpfStatus');if(s)s.innerHTML='<span style="color:#b91c1c">Funnel gagal dimuat: '+escF(e?.message||e)+'</span>';}
  };
  wrapped.__funnelWrapped=true;window.renderContentPerformance=wrapped;
-};
 })();

@@ -19,7 +19,7 @@ window.renderContentPerformance=async function(){
    const q=await sb.from('leads').select('lead_id,content_creator,source_platform,source_campaign,source_confidence,created_at').gte('created_at',p.start.toISOString()).lt('created_at',p.end.toISOString());
    if(q.error)throw q.error;
    const rows=q.data||{};
-   const monthStart=new Date(p.start.getFullYear(),p.start.getMonth(),1).toISOString().slice(0,10);
+   const monthStart=p.start.getFullYear()+'-'+String(p.start.getMonth()+1).padStart(2,'0')+'-01';
    const adjQ=await sb.rpc('get_content_funnel_manual_adjustments',{p_month_start:monthStart});
    if(adjQ.error)throw adjQ.error;
    const historical=(adjQ.data||[]).filter(a=>a.outlet==='Hello Majesty'&&a.metric==='claim_cs');

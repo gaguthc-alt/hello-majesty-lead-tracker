@@ -3458,7 +3458,8 @@ function hmRunMainMenuAction(action){
   case 'openBrochures()': return hmOpenBrochuresInline();
   case 'openCatalogBuilder()': {
    const url=new URL('/katalog-hello-majesty/',location.origin).toString();
-   window.open(url,'_blank','noopener');
+   // Buka di tab yang sama agar tombol kembali mengembalikan pengguna ke dashboard.
+   location.href=url;
    return;
   }
   case 'openAccounting()': return openAccounting();

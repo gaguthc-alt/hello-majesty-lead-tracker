@@ -42,9 +42,13 @@
       '<div class="small" style="margin-top:12px;padding-top:10px;border-top:1px solid #e5e7eb">Akses nominal hanya untuk Owner Buzz Creative dan Management. Anggota tim hanya dapat melihat metrik performa masing-masing.</div></div>';
     return true;
   }
+  let lastProbe='';
   async function mount(){
     const home=document.getElementById('roleHome'),profile=window.profile;
     if(!home||!profile||home.querySelector('#hmBuzzCreativeOrgCommission'))return;
+    const probeKey=String(profile.user_id||profile.id||profile.email||profile.name||'active-profile');
+    if(lastProbe===probeKey)return;
+    lastProbe=probeKey;
     const card=document.createElement('section');
     card.id='hmBuzzCreativeOrgCommission';card.className='box';
     card.style.cssText='margin:14px 0;border:1px solid #cbd5e1;border-radius:16px;padding:14px';

@@ -10,8 +10,7 @@
   box.innerHTML='<h3 style="margin:0 0 6px">📊 CONTENT PERFORMANCE FUNNEL</h3><div class="small">Melacak perjalanan lead per Content Creator berdasarkan ID lead yang sama.</div><div class="small" id="cpfStatus" style="margin:10px 0">⏳ Menghitung funnel...</div><div id="cpfRows"></div><div class="small" style="margin-top:12px;color:#64748b">WA masuk dihitung dari pesan inbound yang sudah terhubung ke lead. Closing operasional dihitung dari event SALES_CLOSING. Omzet/laba hanya ditampilkan jika transaksi memiliki lead_id yang terhubung; transaksi yang belum tertaut tidak ditebak.</div>';
   root.appendChild(box);
   try{
-   const p=typeof cpPeriod==='function'?cpPeriod('month'):null;
-   if(!p)throw new Error('Periode laporan tidak tersedia.');
+   const now=new Date();const p={start:new Date(now.getFullYear(),now.getMonth(),1),end:new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)};
    const leadQ=await sb.from('leads').select('id,lead_id,content_creator,created_at').gte('created_at',p.start.toISOString()).lt('created_at',p.end.toISOString());
    if(leadQ.error)throw leadQ.error;
    const leads=leadQ.data||[];

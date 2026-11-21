@@ -3177,7 +3177,7 @@ async function hmOpenContentPerformance(){
     });
     await new Promise((resolve,reject)=>{
       const f=document.createElement('script');
-      f.src='content-performance-funnel.js?v=20261121-funnel-3';
+      f.src='content-performance-funnel.js?v=20261121-funnel-4';
       f.onload=resolve;
       f.onerror=()=>reject(new Error('Modul Content Performance Funnel gagal dimuat.'));
       document.head.appendChild(f);

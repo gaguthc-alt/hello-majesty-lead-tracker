@@ -19,6 +19,11 @@ window.renderContentPerformance=async function(){
    const q=await sb.from('leads').select('lead_id,content_creator,source_platform,source_campaign,source_confidence,created_at').gte('created_at',p.start.toISOString()).lt('created_at',p.end.toISOString());
    if(q.error)throw q.error;
    const rows=q.data||{};
+   const monthStart=new Date(p.start.getFullYear(),p.start.getMonth(),1).toISOString().slice(0,10);
+   const adjQ=await sb.rpc('get_content_funnel_manual_adjustments',{p_month_start:monthStart});
+   if(adjQ.error)throw adjQ.error;
+   const historical=(adjQ.data||[]).filter(a=>a.outlet==='Hello Majesty'&&a.metric==='claim_cs');
+   const historicalTotal=historical.reduce((s,a)=>s+Math.max(0,Number(a.amount)||0),0);
    const teamQ=await sb.from('team_profiles').select('name').eq('active',true).ilike('role','%CONTENT CREATOR%');
    if(teamQ.error)throw teamQ.error;
    const activeCreators=[...new Set((teamQ.data||[]).map(x=>String(x.name||'').trim()).filter(Boolean))];
@@ -49,7 +54,7 @@ window.renderContentPerformance=async function(){
     return acc;
    },{})).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
    const creatorCount=new Set(list.map(x=>String(x.creator||'').trim().toLocaleLowerCase('id')).filter(x=>x&&x!=='—')).size;
-   const total=rows.length;
+   const total=rows.length+historicalTotal;
    const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
    const activeRoles=typeof getActiveRoles==='function'?getActiveRoles():[];
    const isManagement=!!profile?.is_management||activeRoles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||activeRoles.includes('DIVISI')||rawRole==='DIVISI';
@@ -57,6 +62,7 @@ window.renderContentPerformance=async function(){
    const unattributedCount=rows.filter(r=>!String(r.content_creator||'').trim()).length;
    const creatorTotals={};
    list.forEach(x=>{if(x.creator&&x.creator!=='—')creatorTotals[x.creator]=(creatorTotals[x.creator]||0)+Number(x.leads||0);});
+   historical.forEach(a=>{const name=String(a.employee_name||'').trim();if(name)creatorTotals[name]=(creatorTotals[name]||0)+Math.max(0,Number(a.amount)||0);});
    const periodEnd=new Date(p.end.getTime()-86400000);
    const dateFmt=d=>d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
    const reportMessage=[
@@ -64,7 +70,7 @@ window.renderContentPerformance=async function(){
     '*HELLO MAJESTY — Built on Trust*',
     '',
     '*Periode:* '+p.label+' ('+dateFmt(p.start)+' – '+dateFmt(periodEnd)+')',
-    '*Total lead:* '+cpFmt(total),
+    '*Total lead:* '+cpFmt(total+historicalTotal),
     '*Content Creator aktif/tercatat:* '+cpFmt(creatorCount),
     '*Lead dari link terlacak:* '+cpFmt(trackedCount),
     '*Lead WhatsApp / belum teratribusi:* '+cpFmt(unattributedCount),

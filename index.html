@@ -3175,6 +3175,13 @@ async function hmOpenContentPerformance(){
       s.onerror=()=>reject(new Error('Modul Pencapaian Content Creator gagal dimuat.'));
       document.head.appendChild(s);
     });
+    await new Promise((resolve,reject)=>{
+      const f=document.createElement('script');
+      f.src='content-performance-funnel.js?v=20261121-funnel-1';
+      f.onload=resolve;
+      f.onerror=()=>reject(new Error('Modul Content Performance Funnel gagal dimuat.'));
+      document.head.appendChild(f);
+    });
     if(typeof window.renderContentPerformance!=='function')throw new Error('Modul Pencapaian Content Creator belum siap.');
     await window.renderContentPerformance();
     if(openSeq!==hmMenuActionSeq)return;

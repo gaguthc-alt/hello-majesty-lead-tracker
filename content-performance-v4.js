@@ -10,7 +10,7 @@ function cpPeriod(mode){
 window.renderContentPerformance=async function(){
  const node=document.getElementById('contentPerformance');
  if(!node)throw new Error('Panel Pencapaian Content Creator tidak ditemukan.');
- node.innerHTML='<h3 style="margin-top:0">🎬 PENCAPAIAN CONTENT CREATOR</h3><div class="small" style="margin-bottom:12px">Jumlah lead yang berhasil dihadirkan setiap Content Creator, dikelompokkan berdasarkan platform dan kampanye. Hanya sumber yang tercatat di sistem yang ditampilkan.</div><div class="row" style="margin-bottom:12px;flex-wrap:wrap"><button class="secondary" type="button" data-cp-mode="today">Hari Ini</button><button class="secondary" type="button" data-cp-mode="month">Bulan Ini</button><button class="secondary" type="button" data-cp-mode="last_month">Bulan Kemarin</button></div><div id="cpBody"><div class="small">⏳ Memuat...</div></div>';
+ node.innerHTML='<h3 style="margin-top:0">🎬 PENCAPAIAN CONTENT CREATOR</h3><div class="small" style="margin-bottom:12px">Jumlah seluruh lead setiap Content Creator dari semua sumber, digabung dalam satu ringkasan.</div><div class="row" style="margin-bottom:12px;flex-wrap:wrap"><button class="secondary" type="button" data-cp-mode="today">Hari Ini</button><button class="secondary" type="button" data-cp-mode="month">Bulan Ini</button><button class="secondary" type="button" data-cp-mode="last_month">Bulan Kemarin</button></div><div id="cpBody"><div class="small">⏳ Memuat...</div></div>';
  const load=async mode=>{
   const body=document.getElementById('cpBody');if(!body)return;
   body.innerHTML='<div class="small">⏳ Memuat pencapaian...</div>';
@@ -50,6 +50,13 @@ window.renderContentPerformance=async function(){
     else groups[[name,'INPUT MANUAL','Penyesuaian manual'].join('|')]={creator:name,platform:'INPUT MANUAL',campaign:'Penyesuaian manual',leads:count,manual:true};
    });
    const list=Object.values(groups).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
+   const creatorCards=Object.values(list.reduce((acc,x)=>{
+    if(!x.creator||x.creator==='—')return acc;
+    const key=x.creator.trim().toLocaleLowerCase('id');
+    if(!acc[key])acc[key]={creator:x.creator.trim(),leads:0};
+    acc[key].leads+=Number(x.leads||0);
+    return acc;
+   },{})).sort((a,b)=>b.leads-a.leads||a.creator.localeCompare(b.creator,'id'));
    const creatorCount=new Set(list.map(x=>String(x.creator||'').trim().toLocaleLowerCase('id')).filter(x=>x&&x!=='—')).size;
    const total=rows.length+Object.values(manualLeadOverrides).reduce((sum,n)=>sum+Number(n||0),0);
    const rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
@@ -81,7 +88,7 @@ window.renderContentPerformance=async function(){
     '— HELLO MAJESTY'
    ].join('\n');
    body.innerHTML='<div class="stats"><div class="stat"><div class="small">Total Lead</div><div class="num">'+cpFmt(total)+'</div></div><div class="stat"><div class="small">Content Creator</div><div class="num">'+cpFmt(creatorCount)+'</div></div><div class="stat"><div class="small">Lead dari Link Terlacak</div><div class="num">'+cpFmt(trackedCount)+'</div></div><div class="stat"><div class="small">Lead WhatsApp / Belum Teratribusi</div><div class="num">'+cpFmt(unattributedCount)+'</div></div></div><div class="small" style="margin:12px 0">Periode: <b>'+p.label+'</b> · dihitung dari lead yang dibuat pada periode tersebut.</div>'+
-   (list.length?list.map(x=>'<div class="lead" style="margin-top:10px"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><b style="font-size:16px">🎬 '+cpEsc(x.creator)+'</b><span class="badge">'+cpFmt(x.leads)+' lead</span></div><div style="margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><div><div class="small">Sumber / Platform</div><b>'+cpEsc(x.platform)+'</b></div><div><div class="small">Kampanye</div><b>'+cpEsc(x.campaign)+'</b></div></div></div>').join(''):'<div class="small">Belum ada lead pada periode ini.</div>')+
+   (creatorCards.length?creatorCards.map(x=>'<div class="lead" style="margin-top:10px"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><b style="font-size:16px">🎬 '+cpEsc(x.creator)+'</b><span class="badge">'+cpFmt(x.leads)+' lead</span></div></div>').join(''):'<div class="small">Belum ada lead pada periode ini.</div>')+
    (isManagement?'<div style="margin-top:16px"><button id="cpShareWa" type="button" style="width:100%;background:#128c7e;color:#fff;border:0;border-radius:12px;padding:13px 16px;font-weight:700">🟢 Kirim Laporan ke WhatsApp (Management)</button><div class="small" style="margin-top:6px">WhatsApp akan terbuka dengan laporan siap dikirim. Pilih grup atau kontak Management.</div></div>':'');
    const shareButton=document.getElementById('cpShareWa');
    if(shareButton)shareButton.onclick=async()=>{

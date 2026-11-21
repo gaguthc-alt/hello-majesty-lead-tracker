@@ -19,7 +19,7 @@
    const [evQ,msgQ,adjQ]=await Promise.all([
     ids.length?sb.from('lead_events').select('lead_id,event_type,event_at').in('lead_id',ids):Promise.resolve({data:[],error:null}),
     ids.length?sb.from('whatsapp_messages').select('lead_id,direction,created_at').eq('direction','INBOUND').in('lead_id',ids):Promise.resolve({data:[],error:null}),
-    sb.from('monthly_kpi_manual_adjustments').select('outlet,metric,amount,source,employee_name').eq('month_start',monthStart).eq('source','manual_pre_app')
+    sb.rpc('get_content_funnel_manual_adjustments',{p_month_start:monthStart})
    ]);
    if(evQ.error)throw evQ.error;if(msgQ.error)throw msgQ.error;if(adjQ.error)throw adjQ.error;
    const groups={};

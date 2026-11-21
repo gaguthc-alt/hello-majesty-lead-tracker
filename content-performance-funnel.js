@@ -11,7 +11,7 @@
   root.appendChild(box);
   try{
    const now=new Date();const p={start:new Date(now.getFullYear(),now.getMonth(),1),end:new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)};
-   const leadQ=await sb.from('leads').select('id,lead_id,content_creator,created_at,cs_claimed_by,claimed_at,sales_handover_at,sales_handover_by,sales_claimed_at,sales_claimed_by,status_lead,sales_result,hasil').gte('created_at',p.start.toISOString()).lt('created_at',p.end.toISOString());
+   const leadQ=await sb.from('leads').select('id,lead_id,content_creator,created_at,cs_claimed_by,claimed_at,sales_handover_at,sales_handover_by,sales_claimed_at,sales_claimed_by,status_lead,sales_result,hasil,initial_data').gte('created_at',p.start.toISOString()).lt('created_at',p.end.toISOString());
    if(leadQ.error)throw leadQ.error;
    const leads=leadQ.data||[];
    const ids=leads.map(x=>x.lead_id).filter(Boolean);
@@ -24,6 +24,7 @@
    leads.forEach(l=>{const name=String(l.content_creator||'').trim()||'Belum teratribusi';const k=name.toLocaleLowerCase('id');if(!groups[k])groups[k]={name,leadIds:new Set(),wa:new Set(),claim:new Set(),handover:new Set(),salesClaim:new Set(),closing:new Set()};groups[k].leadIds.add(l.lead_id);if(l.cs_claimed_by||l.claimed_at)groups[k].claim.add(l.lead_id);if(l.sales_handover_at||l.sales_handover_by)groups[k].handover.add(l.lead_id);if(l.sales_claimed_at||l.sales_claimed_by)groups[k].salesClaim.add(l.lead_id);});
    const owner={};Object.entries(groups).forEach(([k,g])=>g.leadIds.forEach(id=>owner[id]=k));
    (msgQ.data||[]).forEach(m=>{const g=groups[owner[m.lead_id]];if(g)g.wa.add(m.lead_id);});
+   leads.forEach(l=>{const src=String(l.initial_data?.origin||l.initial_data?.intake_source||'').toUpperCase();const g=groups[owner[l.lead_id]];if(g&&src==='MANUAL_WA_MASUK')g.wa.add(l.lead_id);});
    (evQ.data||[]).forEach(e=>{const g=groups[owner[e.lead_id]];if(!g)return;const t=String(e.event_type||'').toUpperCase();if(t==='SALES_CLOSING')g.closing.add(e.lead_id);});
    const rows=Object.values(groups).sort((a,b)=>b.leadIds.size-a.leadIds.size);
    const th=['Content Creator','WA Masuk','CS Claim','CS Handover','Sales Claim','Closing'];

@@ -15,21 +15,39 @@
    if(leadQ.error)throw leadQ.error;
    const leads=leadQ.data||[];
    const ids=leads.map(x=>x.lead_id).filter(Boolean);
-   const [evQ,msgQ]=await Promise.all([
+   const monthStart=new Date(p.start.getFullYear(),p.start.getMonth(),1).toISOString().slice(0,10);
+   const [evQ,msgQ,adjQ]=await Promise.all([
     ids.length?sb.from('lead_events').select('lead_id,event_type,event_at').in('lead_id',ids):Promise.resolve({data:[],error:null}),
-    ids.length?sb.from('whatsapp_messages').select('lead_id,direction,created_at').eq('direction','INBOUND').in('lead_id',ids):Promise.resolve({data:[],error:null})
+    ids.length?sb.from('whatsapp_messages').select('lead_id,direction,created_at').eq('direction','INBOUND').in('lead_id',ids):Promise.resolve({data:[],error:null}),
+    sb.from('monthly_kpi_manual_adjustments').select('outlet,metric,amount,source,employee_name').eq('month_start',monthStart).eq('source','manual_pre_app')
    ]);
-   if(evQ.error)throw evQ.error;if(msgQ.error)throw msgQ.error;
+   if(evQ.error)throw evQ.error;if(msgQ.error)throw msgQ.error;if(adjQ.error)throw adjQ.error;
    const groups={};
    leads.forEach(l=>{const name=String(l.content_creator||'').trim()||'Belum teratribusi';const k=name.toLocaleLowerCase('id');if(!groups[k])groups[k]={name,leadIds:new Set(),wa:new Set(),claim:new Set(),handover:new Set(),salesClaim:new Set(),closing:new Set()};groups[k].leadIds.add(l.lead_id);if(l.cs_claimed_by||l.claimed_at)groups[k].claim.add(l.lead_id);if(l.sales_handover_at||l.sales_handover_by)groups[k].handover.add(l.lead_id);if(l.sales_claimed_at||l.sales_claimed_by)groups[k].salesClaim.add(l.lead_id);});
    const owner={};Object.entries(groups).forEach(([k,g])=>g.leadIds.forEach(id=>owner[id]=k));
    (msgQ.data||[]).forEach(m=>{const g=groups[owner[m.lead_id]];if(g)g.wa.add(m.lead_id);});
    (evQ.data||[]).forEach(e=>{const g=groups[owner[e.lead_id]];if(!g)return;const t=String(e.event_type||'').toUpperCase();if(t==='SALES_CLOSING')g.closing.add(e.lead_id);});
+   // Historical WhatsApp leads are counted as WA Masuk and CS Claim without creating fake inbox messages or operational lead records.
+   let historicalLeadCount=0;
+   (adjQ.data||[]).forEach(a=>{
+    const n=Math.max(0,Number(a.amount)||0);if(!n)return;
+    const name=String(a.employee_name||'').trim();if(!name)return;
+    const k=name.toLocaleLowerCase('id');
+    if(!groups[k])groups[k]={name,leadIds:new Set(),wa:new Set(),claim:new Set(),handover:new Set(),salesClaim:new Set(),closing:new Set()};
+    const g=groups[k];
+    for(let i=1;i<=n;i++){
+     const syntheticId='HIST:'+k+':'+i;
+     g.leadIds.add(syntheticId);
+     if(a.metric==='wa_masuk')g.wa.add(syntheticId);
+     if(a.metric==='claim_cs')g.claim.add(syntheticId);
+    }
+    if(a.metric==='claim_cs')historicalLeadCount+=n;
+   });
    const rows=Object.values(groups).sort((a,b)=>b.leadIds.size-a.leadIds.size);
    const th=['Content Creator','WA Masuk','CS Claim','CS Handover','Sales Claim','Closing'];
    const table='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:690px"><thead><tr>'+th.map(x=>'<th style="padding:9px 7px;text-align:left;border-bottom:1px solid #dbe3ee">'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(g=>'<tr><td style="padding:9px 7px;border-bottom:1px solid #edf1f6;font-weight:700">'+escF(g.name)+'</td><td style="padding:9px 7px;border-bottom:1px solid #edf1f6">'+fmt(g.wa.size)+'</td><td style="padding:9px 7px;border-bottom:1px solid #edf1f6">'+fmt(g.claim.size)+'</td><td style="padding:9px 7px;border-bottom:1px solid #edf1f6">'+fmt(g.handover.size)+'</td><td style="padding:9px 7px;border-bottom:1px solid #edf1f6">'+fmt(g.salesClaim.size)+'</td><td style="padding:9px 7px;border-bottom:1px solid #edf1f6">'+fmt(g.closing.size)+'</td></tr>').join('')+'</tbody></table></div>';
    document.getElementById('cpfRows').innerHTML=table;
-   document.getElementById('cpfStatus').textContent=fmt(leads.length)+' lead dalam periode · '+fmt((msgQ.data||[]).length)+' pesan inbound terhubung.';
+   document.getElementById('cpfStatus').textContent=fmt(leads.length+historicalLeadCount)+' lead dalam periode · '+fmt((msgQ.data||[]).length)+' pesan inbound terhubung · '+fmt(historicalLeadCount)+' lead historis WhatsApp lama ikut dihitung.';
 
   }catch(e){const s=document.getElementById('cpfStatus');if(s)s.innerHTML='<span style="color:#b91c1c">Funnel gagal dimuat: '+escF(e?.message||e)+'</span>';}
  };

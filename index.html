@@ -6399,7 +6399,7 @@ async function saveTarget(outlet){
 async function openFacilitatorReports(){
  if(!profile?.id&&!profile?.user_id){alert('Profil tim belum siap. Silakan login ulang.');return;}
  $('mt').textContent='📊 Laporan Penjualan';
- $('mb').innerHTML='<div class="small" style="margin-bottom:12px">Pilih laporan penjualan untuk outlet sesuai profil tim. Laporan dibagikan langsung ke WhatsApp sebagai teks.</div><div class="row"><button class="success" onclick="shareFacilitatorReport(\\'TODAY\\',false)">📅 Penjualan Hari Ini</button><button class="success" onclick="shareFacilitatorReport(\\'MONTH\\',false)">📊 Penjualan Bulan Ini</button></div><div class="row" style="margin-top:8px"><button class="secondary" onclick="shareFacilitatorStock()">📦 Stock READY</button></div><div class="small" style="margin-top:12px">Data mengikuti outlet yang terdaftar pada profil masing-masing anggota tim.</div>';
+ $('mb').innerHTML='<div class="small" style="margin-bottom:12px">Pilih laporan penjualan untuk outlet sesuai profil tim. Laporan dibagikan langsung ke WhatsApp sebagai teks.</div><div class="row"><button class="success" onclick="shareFacilitatorReport(\'TODAY\',false)">📅 Penjualan Hari Ini</button><button class="success" onclick="shareFacilitatorReport(\'MONTH\',false)">📊 Penjualan Bulan Ini</button></div><div class="row" style="margin-top:8px"><button class="secondary" onclick="shareFacilitatorStock()">📦 Stock READY</button></div><div class="small" style="margin-top:12px">Data mengikuti outlet yang terdaftar pada profil masing-masing anggota tim.</div>';
  $('modal').classList.remove('hidden');
 }
 function waNumber(v){

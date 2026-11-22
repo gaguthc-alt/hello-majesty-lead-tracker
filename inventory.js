@@ -1124,7 +1124,7 @@ async function openSellStock(stockId){
  window.hmStockClosingTempLeadId=temp;
  window.hmWalkinStockId=String(stockId);
  const tempLead={lead_id:temp,customer:'Walk-In',whatsapp:'',outlet:profile?.outlet||s.outlet,product:[s.product,s.variant,s.color].filter(Boolean).join(' — '),status_lead:'HANDLE',sales_claimed_by:profile?.name||'',sales_result:'POTENSIAL'};
- if(typeof window.hmAddStockClosingLead!=='function')return alert('Modul Closing belum siap. Silakan refresh aplikasi.');
+ if(typeof window.hmAddStockClosingLead!=='function'){window.hmStockClosingApprovalMode=false;window.hmStockClosingTempLeadId=null;window.hmWalkinStockId=null;return alert('Modul Closing belum siap. Silakan refresh aplikasi.');}
  window.hmAddStockClosingLead(tempLead);
  try{
    await window.salesResult(temp);
@@ -1132,7 +1132,7 @@ async function openSellStock(stockId){
    if(sel){sel.value=stockId;sel.dispatchEvent(new Event('change',{bubbles:true}));}
    const title=document.getElementById('mt'); if(title)title.textContent='💰 Closing Stock Siap Jual';
  }catch(e){
-   window.hmStockClosingApprovalMode=false;window.hmStockClosingTempLeadId=null;
+   window.hmStockClosingApprovalMode=false;window.hmStockClosingTempLeadId=null;window.hmWalkinStockId=null;
    if(typeof window.hmRemoveStockClosingLead==='function')window.hmRemoveStockClosingLead(temp);throw e;
  }
 }
@@ -1179,7 +1179,7 @@ function stockCard(s){
    '<div class="small" style="margin-top:5px">IMEI: '+esc(imei)+'</div>'+
    cost+details+salePrice+
    '<div class="row" style="margin-top:10px"><button class="secondary" onclick="openProductDetail(\''+s.id+'\')">👁️ Detail</button><button class="secondary" onclick="openStockHistory(\''+s.id+'\')">🧾 Histori</button><button class="secondary" onclick="openStockAI(\''+s.id+'\')">🤖 Tanya AI</button>'+
-   (ready&&(sales||hasFreelanceInternal||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🔴 SOLD / CLOSING</button>':'')+(ready&&(sales||hasFreelanceInternal||management)?'<button class="secondary" onclick="openStockLeadChat(\''+s.id+'\')">💬 Kirim ke Lead Chat</button>':'')+((ready&&facilitator&&['STOCKIST','MAJESTY_CELL'].includes(String(s.source_type||'').trim().toUpperCase())&&String(s.partner_name||'').trim().toUpperCase()==='MAJESTY CELL'&&String(s.outlet||'').trim().toUpperCase()==='MAJESTY REFILL PHONE')?'<button class="danger" onclick="openConsignmentReturn(\''+s.id+'\')">↩️ Ajukan Retur Konsinyasi</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI')&&String(s.source_type||'').toUpperCase()!=='STOCKIST')?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
+   (ready&&(sales||hasFreelanceInternal||management)?'<button class="success" onclick="openSellStock(\''+s.id+'\')">🚶 WALK-IN CLOSING</button>':'')+(ready&&(sales||hasFreelanceInternal||management)?'<button class="secondary" onclick="openStockLeadChat(\''+s.id+'\')">💬 Kirim ke Lead Chat</button>':'')+((ready&&facilitator&&['STOCKIST','MAJESTY_CELL'].includes(String(s.source_type||'').trim().toUpperCase())&&String(s.partner_name||'').trim().toUpperCase()==='MAJESTY CELL'&&String(s.outlet||'').trim().toUpperCase()==='MAJESTY REFILL PHONE')?'<button class="danger" onclick="openConsignmentReturn(\''+s.id+'\')">↩️ Ajukan Retur Konsinyasi</button>':'')+((ready&&(facilitator||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='DIVISI')&&String(s.source_type||'').toUpperCase()!=='STOCKIST')?'<button class="danger" onclick="openSupplierReturn(\''+s.id+'\')">↩️ Retur Supplier</button>':'')+
    (management||facilitator||isOwnStockist?'<button class="secondary" onclick="openEditStock(\''+s.id+'\')">Edit</button>':'')+(ready&&String(s.source_type||'').toUpperCase()==='STOCKIST'&&(isOwnStockist||management||facilitator)?'<button class="danger" onclick="openStockOut(\''+s.id+'\')">📤 Stock Keluar</button>':'')+(ready&&(isOwnStockist||management||facilitator)?'<button class="secondary" onclick="hmRequestStockTransfer(\''+s.id+'\')">⇄ Ajukan Mutasi</button>':'')+(management||contentCreator||isOwnStockist?'<button class="secondary" onclick="openEditStockPhotos(\''+s.id+'\')">📷 Edit Foto Unit</button>':'')+
    '</div></div>';
 }

@@ -6531,6 +6531,49 @@ function stockReportText(d){
  t+='*Hello Majesty*\n*Management System*\n*Built on Trust*';
  return t;
 }
+function hmOpenReportShare(reportText){
+ const old=document.getElementById('hmReportShareOverlay');if(old)old.remove();
+ const overlay=document.createElement('div');overlay.id='hmReportShareOverlay';
+ overlay.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;padding:16px';
+ overlay.innerHTML='<div style="width:min(520px,100%);max-height:90vh;overflow:auto;background:var(--card,#fff);color:var(--text,#172033);border-radius:18px;padding:18px;box-shadow:0 20px 60px #0005"><div style="font-size:19px;font-weight:800;margin-bottom:8px">📸 Lampiran Laporan Penjualan</div><div style="font-size:13px;opacity:.8;margin-bottom:14px">Tambahkan foto atau video bukti penjualan. Lampiran dan teks laporan akan dibagikan bersama melalui menu berbagi Android.</div><input id="hmReportMediaInput" type="file" accept="image/*,video/*" multiple style="width:100%;padding:12px;border:1px dashed #94a3b8;border-radius:10px"><div id="hmReportMediaPreview" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px"></div><div id="hmReportMediaCount" style="font-size:12px;margin-top:8px;opacity:.75">Belum ada lampiran. Laporan teks tetap dapat dikirim.</div><div style="display:flex;gap:8px;margin-top:18px"><button type="button" id="hmReportShareCancel" class="secondary" style="flex:1">Batal</button><button type="button" id="hmReportShareSend" class="success" style="flex:2">📤 Kirim ke WhatsApp</button></div></div>';
+ document.body.appendChild(overlay);
+ const input=overlay.querySelector('#hmReportMediaInput'),preview=overlay.querySelector('#hmReportMediaPreview'),count=overlay.querySelector('#hmReportMediaCount'),send=overlay.querySelector('#hmReportShareSend');
+ const close=()=>overlay.remove();
+ overlay.querySelector('#hmReportShareCancel').onclick=close;
+ input.onchange=()=>{
+  const files=Array.from(input.files||[]);
+  preview.innerHTML='';
+  files.forEach(file=>{
+   const url=URL.createObjectURL(file),el=document.createElement('div');el.style.cssText='min-width:0;border-radius:8px;overflow:hidden;background:#e2e8f0;aspect-ratio:1;position:relative';
+   if(file.type.startsWith('image/')){const img=document.createElement('img');img.src=url;img.style.cssText='width:100%;height:100%;object-fit:cover';el.appendChild(img);}
+   else{const v=document.createElement('div');v.textContent='🎬 VIDEO';v.style.cssText='display:flex;align-items:center;justify-content:center;height:100%;font-weight:700;color:#334155';el.appendChild(v);}
+   preview.appendChild(el);
+  });
+  const total=files.reduce((s,f)=>s+f.size,0);
+  count.textContent=files.length+' lampiran dipilih • '+(total/1048576).toFixed(1)+' MB';
+ };
+ send.onclick=async()=>{
+  const files=Array.from(input.files||[]);
+  if(files.length>10){alert('Maksimal 10 foto/video dalam satu laporan.');return;}
+  if(files.some(f=>f.size>25*1024*1024)){alert('Ukuran setiap foto/video maksimal 25 MB.');return;}
+  send.disabled=true;send.textContent='Menyiapkan...';
+  try{
+   if(files.length){
+    if(!navigator.share||!navigator.canShare||!navigator.canShare({files})){
+     alert('Browser ini belum mendukung pengiriman lampiran langsung. Laporan teks akan dibuka di WhatsApp; silakan kirim foto/video secara terpisah.');
+     close();waShare(reportText);return;
+    }
+    await navigator.share({files,title:'Laporan Kinerja Outlet',text:reportText});
+    close();
+   }else{close();waShare(reportText);}
+  }catch(e){
+   if(e?.name==='AbortError'){send.disabled=false;send.textContent='📤 Kirim ke WhatsApp';return;}
+   console.error('[HM report media share]',e);
+   alert('Gagal membuka menu berbagi: '+(e?.message||e));
+   send.disabled=false;send.textContent='📤 Kirim ke WhatsApp';
+  }
+ };
+}
 async function shareFacilitatorReport(period,withStock){
  try{
    const d=await getFacilitatorReport(period);
@@ -6716,7 +6759,7 @@ async function shareFacilitatorReport(period,withStock){
    });
    let text=salesReportText(d,period==='TODAY'?'HARI INI':'BULAN INI',target,targetNominal,profitActual,rewardLabel,rewardAmount,closingStats,stockFlow,achievementStats,financeStats);
    if(withStock){const stock=await getFacilitatorReport(period);text+='\\n\\n'+stockReportText(stock)}
-   waShare(text);
+   hmOpenReportShare(text);
  }catch(e){alert('Laporan error: '+(e?.message||e));}
 }
 async function shareFacilitatorStock(){

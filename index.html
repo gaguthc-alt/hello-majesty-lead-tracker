@@ -3455,6 +3455,7 @@ function hmRunMainMenuAction(action){
   case 'openLeadSearch()': return openLeadSearch();
   case 'hmOpenLeadTracker()': return hmOpenLeadTracker();
   case 'openAI()': return openAI();
+  case 'hmOpenFacilitatorReportsInline()': return hmOpenFacilitatorReportsInline();
   case 'openBrochures()': return hmOpenBrochuresInline();
   case 'openCatalogBuilder()': {
    const url=new URL('/katalog-hello-majesty/',location.origin).toString();
@@ -4132,7 +4133,6 @@ function renderRoleHome(){
    add('🧾','Master Produk','Database produk dan data master',"openInventorySection('products')");
    add('📦','Product & Stock','Stock & approval','openInventorySection(\'stock\')');
    add('🎬','Pencapaian Content Creator','Pencapaian Content Creator','hmOpenContentPerformance()');
-   add('📊','Laporan Fasilitator','Penjualan & Stock READY','hmOpenFacilitatorReportsInline()');
     add('🤝','Pengelolaan Unit Bisnis','Penerimaan stok, verifikasi IMEI, barang terjual & persiapan settlement sesuai outlet','window.openPartnerSettlement()');
    add('🔎','Search Lead','Cari & kelola lead','openLeadSearch()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
@@ -4194,6 +4194,9 @@ function renderRoleHome(){
    add('🎬','Pencapaian Content Creator','Pencapaian Content Creator','hmOpenContentPerformance()');
    add('🤖','Tanya AI','Bantuan & konsultasi kerja','openAI()');
  }
+  // Laporan penjualan tersedia untuk seluruh anggota tim aktif, tidak terbatas Fasilitator.
+  add('📊','Laporan Penjualan','Bagikan laporan penjualan outlet sesuai profil tim','hmOpenFacilitatorReportsInline()');
+  
   // Ensure authorized facilitators always receive the Pengelolaan Unit Bisnis card.
   if(facilitator && !mg && !developer){
     add('🤝','Pengelolaan Unit Bisnis','Penerimaan stok, verifikasi IMEI, barang terjual & persiapan settlement sesuai outlet','window.openPartnerSettlement()');

@@ -7127,21 +7127,17 @@ async function salesResult(id){
  const accountRows=(fa.data||[]);
  const accountOptsAll=accountRows.map(x=>'<option value="'+esc(x.id)+'" data-account-type="'+esc(x.account_type)+'" data-account-outlet="'+esc(x.outlet||'')+'">'+esc(x.name)+(x.outlet?' — '+esc(x.outlet):'')+'</option>').join('');
 
+ // Pilihan pembayaran diseragamkan di seluruh form: Tunai, Transfer Bank, Pay Later.
  const paymentMethods=[
   {id:'fe4f8c57-36f8-42d5-970f-d264e592fc5f',code:'CASH',name:'Tunai'},
   {id:'39b34cd3-28bd-4e4a-a32b-d62726ec6750',code:'TRANSFER',name:'Transfer Bank'},
-  {id:'eb7f8d5c-ea8b-4f4a-aa79-3bb22337abe8',code:'QRIS',name:'QRIS'},
-  {id:'03414c7d-8a0d-4f6d-8b3d-551f79a170ec',code:'DEBIT',name:'Debit'},
-  {id:'7ef6a30b-dc44-43a0-af1c-ba9c7e94d8fb',code:'CREDIT_CARD',name:'Credit Card'},
   {id:'34d4364e-13ca-49bb-ba11-773315981a95',code:'AKULAKU',name:'Akulaku'},
   {id:'6dec1be8-f4f1-457a-b780-d9c9f7422488',code:'KREDIVO',name:'Kredivo'},
-  {id:'90fe46a9-0516-4e98-9190-0b9b227b9bcc',code:'SPAYLATER',name:'SPayLater'},
-  {id:'b33f0ca5-bc96-4b17-9e59-0429643ef4e4',code:'OTHER',name:'Lainnya'}
+  {id:'90fe46a9-0516-4e98-9190-0b9b227b9bcc',code:'SPAYLATER',name:'SPayLater'}
  ];
- // Jangan bergantung pada hasil RLS payment_methods. Semua metode wajib tampil di Form Hasil Sales.
  const payLaterMethods=paymentMethods.filter(x=>['AKULAKU','KREDIVO','SPAYLATER'].includes(x.code));
- const normalPaymentMethods=paymentMethods.filter(x=>!['AKULAKU','KREDIVO','SPAYLATER'].includes(x.code));
- const paymentOpts='<option value="PIUTANG">Belum Bayar / Piutang Customer</option>'+normalPaymentMethods.map(x=>'<option value="'+esc(x.id)+'" data-code="'+esc(x.code)+'">'+esc(x.name)+'</option>').join('')+'<option value="PAY_LATER" data-code="PAY_LATER">Pay Later</option>';
+ const normalPaymentMethods=paymentMethods.filter(x=>['CASH','TRANSFER'].includes(x.code));
+ const paymentOpts=normalPaymentMethods.map(x=>'<option value="'+esc(x.id)+'" data-code="'+esc(x.code)+'">'+esc(x.name)+'</option>').join('')+'<option value="PAY_LATER" data-code="PAY_LATER">Pay Later</option>';
  const payLaterOpts='<option value="">— Pilih Provider Pay Later —</option>'+payLaterMethods.map(x=>'<option value="'+esc(x.id)+'" data-code="'+esc(x.code)+'">'+esc(x.name)+'</option>').join('');
  const closingCapacityHtml=canFreelanceInternal ? '<div id="closingCapacityBox" style="margin-top:12px;padding:12px;border:1px solid #ddd;border-radius:10px"><b>👤 JALUR PENJUALAN</b><div class="small" style="margin:5px 0 8px">Walk-In biasa tetap mengikuti alur Walk-In yang sudah ada. Pilih Freelance Internal hanya jika transaksi dilakukan dalam kapasitas Freelance Internal.</div><label style="display:flex;align-items:center;gap:8px;font-weight:600"><input type="radio" name="closingCapacity" value="SALES_CORE" checked style="width:auto"> Walk-In</label><label style="display:flex;align-items:center;gap:8px;font-weight:600;margin-top:7px"><input type="radio" name="closingCapacity" value="FREELANCE_INTERNAL" style="width:auto"> Freelance Internal</label></div>' : '';
  const tradeInProducts=(window.hmBuybackProducts||[]).map(p=>'<option value="'+esc(p.id)+'">'+esc([p.product,p.variant,p.color].filter(Boolean).join(' — '))+'</option>').join('');

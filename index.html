@@ -7105,12 +7105,20 @@ async function salesResult(id){
 
  // Walk-In dari kartu stock memilih seluruh unit READY yang memang diizinkan RLS/unit_access_rules.
  // Lead biasa tetap dibatasi pada outlet lead.
- let stockQuery=sb.from('stock_catalog').select('id,product,variant,color,asking_price,status,outlet').eq('status','READY');
+ // Ambil langsung dari stock_units + product_master. Relasi stock_catalog
+ // tidak tersedia di schema Supabase aktif; query lama menghentikan form sebelum submit.
+ let stockQuery=sb.from('stock_units')
+   .select('id,color,asking_price,status,outlet,product_master!inner(product,variant)')
+   .eq('status','READY');
  if(!window.hmStockClosingApprovalMode) stockQuery=stockQuery.eq('outlet',l.outlet||profile.outlet);
- const st=await stockQuery.order('product').order('variant').order('color');
+ const st=await stockQuery.order('product_id').order('color');
  await hmLoadBuybackProducts();
  if(st.error)return alert('Stock gagal dimuat: '+st.error.message);
- const rows=st.data||[];
+ const rows=(st.data||[]).map(s=>({
+   ...s,
+   product:s.product_master?.product||'',
+   variant:s.product_master?.variant||''
+ }));
  const salesRpc=await sb.rpc('get_outlet_sales_members',{p_outlet:l.outlet||profile.outlet});
  const salesTeam=(salesRpc.error?[]:(salesRpc.data||[])).filter(x=>x.user_id!==profile?.user_id);
  const freelanceRole=window.hmStockClosingApprovalMode ? await sb.rpc('has_additional_role',{p_user_id:profile?.user_id,p_role:'FREELANCE_INTERNAL'}) : {data:false};

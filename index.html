@@ -22,7 +22,7 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
   },true);
 })();
-</script><meta name="hm-build" content="20261122-walkin-routing-guard-v4">><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+</script><meta name="hm-build" content="20261122-walkin-routing-guard-v5">><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#111827"><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/pwa-icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/pwa-icon.svg"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hello Majesty"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* Legacy web-chat notification watcher disabled: WhatsApp Inbox is the active channel. */
 </script><script>
@@ -7097,8 +7097,8 @@ async function claimFromLink(id){
 async function salesResult(id){
  const leadId=String(id||'').trim();
  // Walk-In is identified by its dedicated temporary lead ID, never by a shared global flag alone.
- const isStockWalkinClosing=leadId.startsWith('STOCK-CLOSING-')||!!window.hmStockClosingApprovalMode;
- if(isStockWalkinClosing)window.hmStockClosingApprovalMode=true;
+ const isStockWalkinClosing=leadId.startsWith('STOCK-CLOSING-');
+ window.hmStockClosingApprovalMode=isStockWalkinClosing;
  const l=leads.find(x=>String(x.lead_id)===leadId);
  if(!l)return alert('Lead tidak ditemukan. Silakan refresh Lead Tracker.');
  const isTradeIn=String(l.need_type||'').trim().toUpperCase()==='TUKAR TAMBAH';

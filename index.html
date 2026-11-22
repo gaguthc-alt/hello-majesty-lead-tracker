@@ -6433,9 +6433,9 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  let t='💚 *'+outlet.toUpperCase()+'* 💚\\n';
  t+='Report Daily Penjualan\\n';
  t+='*'+monthShort+' - '+new Date().getFullYear()+'*\\n\\n';
- t+='Total Unit/Target :  *'+closingCount+' unit/'+(closingTarget||'-')+' Unit*\\n';
- t+='Omzet : *'+rup(d.sales_value)+'*\\n';
- t+='Profit : *'+rup(profitActual)+'*\\n';
+ t+='Total Unit/Target :  *'+Number(d.monthBeforeUnits||0)+' unit* + *'+Number(d.todayUnits||0)+' unit* / '+(closingTarget||'-')+' Unit\\n';
+ t+='Omzet : *'+rup(d.monthBeforeOmzet||0)+'* + *'+rup(d.todayOmzet||0)+'*\\n';
+ t+='Profit : *'+rup(d.monthBeforeProfit||0)+'* + *'+rup(d.todayProfit||0)+'*\\n';
  t+='Target Bulanan : *'+(closingTarget||'-')+' Unit / '+rup(nominalTarget)+'*\\n';
  t+='REWARD : *'+(rewardLabel||'-')+(Number(rewardAmount)>0?' '+rup(rewardAmount):'')+'*\\n';
  t+='🏖🏝🏞🏢\\n\\n';
@@ -6465,7 +6465,7 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  t+='*FINANCE* :\\n';
  finRows.forEach(([name,code])=>{
    const x=fin[code]||{count:0,amount:0};
-   t+='• *'+name+' :* '+Number(x.count||0)+' - '+rup(x.amount)+'\\n';
+   t+='• *'+name+' :* ('+Number(x.beforeCount||0)+') - '+rup(x.beforeAmount||0)+' + '+Number(x.todayCount||0)+' - '+rup(x.todayAmount||0)+'\\n';
  });
  t+='\\n';
  t+='━━━━━━━━━━━━━━━━━━\\n';
@@ -6585,6 +6585,28 @@ async function shareFacilitatorReport(period,withStock){
    if(statsRes.error)throw statsRes.error;
    const rowsStats=statsRes.data||[];
    const isTodayRow=r=>new Date(r.sold_at).getTime()>=dayStartUTC;
+   // Ringkasan utama laporan: akumulasi sampai kemarin + transaksi hari ini (WITA).
+   const beforeRows=rowsStats.filter(r=>!isTodayRow(r));
+   const todayRows=rowsStats.filter(isTodayRow);
+   const saleValue=r=>Number(r.sale_price||0)-Number(r.discount||0);
+   d.monthBeforeUnits=beforeRows.length;
+   d.todayUnits=todayRows.length;
+   d.monthBeforeOmzet=beforeRows.reduce((s,r)=>s+saleValue(r),0);
+   d.todayOmzet=todayRows.reduce((s,r)=>s+saleValue(r),0);
+   d.monthBeforeProfit=beforeRows.reduce((s,r)=>s+Number(r.gross_profit||0),0);
+   d.todayProfit=todayRows.reduce((s,r)=>s+Number(r.gross_profit||0),0);
+   // Setiap metode pembayaran menampilkan jumlah transaksi dan nominal dalam dua periode.
+   Object.keys(financeMap).forEach(id=>{
+     const code=financeMap[id];
+     financeStats[code]={beforeCount:0,beforeAmount:0,todayCount:0,todayAmount:0};
+   });
+   rowsStats.forEach(r=>{
+     const code=financeMap[String(r.finance_payment_method_id||'')];
+     if(!code)return;
+     const slot=isTodayRow(r)?'today':'before';
+     financeStats[code][slot+'Count']++;
+     financeStats[code][slot+'Amount']+=saleValue(r);
+   });
    rowsStats.forEach(r=>{
      const src=String(r.customer_source||'').toUpperCase();
      const cap=String(r.closing_capacity||'').toUpperCase();

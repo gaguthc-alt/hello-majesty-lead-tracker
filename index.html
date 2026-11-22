@@ -7157,47 +7157,35 @@ async function salesResult(id){
    const code=sel.selectedOptions?.[0]?.dataset?.code||'';
    const isPiutang=sel.value==='PIUTANG', isPayLater=sel.value==='PAY_LATER';
    plBox?.classList.toggle('hidden',!isPayLater);
-   // Pay Later/Finance memakai Bank Mandiri sebagai rekening default internal.
-   // Field rekening disembunyikan sepenuhnya; user tidak perlu memilihnya.
-   const mandiriOption=[...acc.options].find(o=>o.value&&/bank\\s*mandiri/i.test(String(o.textContent||'')));
    if(isPayLater){
-     if(mandiriOption)acc.value=mandiriOption.value;
-     box.classList.add('hidden');
-     box.style.display='none';
+     const mandiriOption=accountRows.find(o=>/bank\\s*mandiri/i.test(String(o.name||'')));
+     acc.innerHTML='<option value="">— Rekening Pay Later otomatis —</option>';
+     if(mandiriOption)acc.value=mandiriOption.id;
+     box.classList.add('hidden');box.style.display='none';
      if(hint)hint.textContent='Rekening pencairan otomatis: Bank Mandiri.';
      return;
    }
    box.style.display='';
    box.classList.toggle('hidden',isPiutang);
-   if(isPiutang){acc.value='';return;}
+   if(isPiutang){acc.innerHTML='<option value="">— Tidak memerlukan kas / bank —</option>';acc.value='';return;}
    const wanted=code==='CASH'?'CASH':'BANK';
-   // Untuk pembayaran TUNAI, Kas mengikuti outlet/PIC yang sedang login.
-   // Tim Refill -> Kas MNG Majesty Refill; Tim Plaza -> Kas MNG Majesty Plaza.
-   // Normalisasi nama outlet karena profil tim dapat memakai nama singkat
-   // (mis. "Plaza") sementara financial_accounts memakai nama lengkap
-   // (mis. "Majesty Plaza iPhone").
    const normalizeOutlet=v=>String(v||'').toLowerCase()
-     .replace(/maj(e|a)sty/g,'')
-     .replace(/mng/g,'')
-     .replace(/iphone|phone/g,'')
-     .replace(/[^a-z0-9]/g,'')
-     .trim();
-   const userOutletKey=normalizeOutlet(currentOutlet);
-   [...acc.options].forEach(o=>{
-     if(!o.value){o.hidden=false;return;}
-     const typeOk=String(o.dataset.accountType||'').trim().toUpperCase()===wanted;
-     const accountOutlet=String(o.dataset.accountOutlet||'').trim();
-     const accountOutletKey=normalizeOutlet(accountOutlet);
-     const outletOk=wanted!=='CASH'||!userOutletKey||accountOutletKey===userOutletKey||
-       (userOutletKey.includes('plaza')&&accountOutletKey.includes('plaza'))||
-       (userOutletKey.includes('refill')&&accountOutletKey.includes('refill'));
-     o.hidden=!(typeOk&&outletOk);
+     .replace(/maj(e|a)sty/g,'').replace(/mng/g,'')
+     .replace(/iphone|phone/g,'').replace(/[^a-z0-9]/g,'').trim();
+   const selectedStock=rows.find(x=>String(x.id)==String($('ss')?.value||''));
+   const targetOutlet=String(selectedStock?.outlet||currentOutlet).trim();
+   const targetKey=normalizeOutlet(targetOutlet);
+   const allowed=accountRows.filter(o=>{
+     if(String(o.account_type||'').trim().toUpperCase()!==wanted)return false;
+     if(wanted==='BANK')return true;
+     return normalizeOutlet(o.outlet)===targetKey;
    });
-   acc.value='';
-   const visible=[...acc.options].some(o=>o.value&&!o.hidden);
-   hint.textContent=visible
-     ? (wanted==='CASH'?'Kas otomatis mengikuti outlet tim yang login.':'Pilih rekening bank penerima untuk pembayaran non-tunai.')
-     : (wanted==='CASH'?'Kas untuk outlet tim ini belum tersedia.':'Pilih rekening bank penerima untuk pembayaran non-tunai.');
+   acc.innerHTML='<option value="">— Pilih '+(wanted==='CASH'?'Kas Outlet':'Bank Penerima')+' —</option>'+
+     allowed.map(o=>'<option value="'+esc(o.id)+'">'+esc(o.name)+(o.outlet?' — '+esc(o.outlet):'')+'</option>').join('');
+   if(wanted==='CASH'&&allowed.length===1)acc.value=allowed[0].id;
+   if(hint)hint.textContent=allowed.length
+     ?(wanted==='CASH'?'Kas otomatis disesuaikan dengan outlet stok yang akan dijual.':'Pilih rekening bank penerima.')
+     :(wanted==='CASH'?'Kas untuk outlet stok ini belum tersedia.':'Belum ada rekening bank aktif.');
  };
  $('ss').onchange=()=>{updatePriceHint();updatePaymentAccount();};
  const updateTradeInNet=()=>{const v=Number($('tiValue')?.value||0),p=Number($('sap')?.value||0),el=$('tiNetPayment');if(el)el.textContent=(p||v)?'💰 Uang yang dibayar customer setelah tukar tambah: Rp'+Math.max(p-v,0).toLocaleString('id-ID'):'';};

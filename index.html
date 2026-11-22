@@ -6557,8 +6557,8 @@ async function shareFacilitatorReport(period,withStock){
    const profitToday=await sb.rpc('facilitator_sales_profit_total',{p_start:new Date(dayStartUTC).toISOString(),p_end:new Date(tomorrowStartUTC).toISOString(),p_outlet:d.outlet||null});
    if(profitToday.error)throw profitToday.error;
    profitActual=Number(profitMonthBefore.data||0)+Number(profitToday.data||0);
-   // FINANCE: nominal dan jumlah transaksi ditarik langsung dari sales_transactions.
-   // Periode mengikuti laporan dan outlet yang dipilih. Nominal = harga jual - diskon.
+   // Pemetaan metode pembayaran; ringkasan dibaca dari sales_payments
+   // agar Tunai/Transfer tidak hilang saat kolom metode pada transaksi utama kosong.
    const financeStats={};
    const financeMap={
      'fe4f8c57-36f8-42d5-970f-d264e592fc5f':'CASH',
@@ -6569,17 +6569,8 @@ async function shareFacilitatorReport(period,withStock){
      '34d4364e-13ca-49bb-ba11-773315981a95':'AKULAKU',
      '6dec1be8-f4f1-457a-b780-d9c9f7422488':'KREDIVO',
      '90fe46a9-0516-4e98-9190-0b9b227b9bcc':'SPAYLATER',
-     'b33f0ca5-bc96-4b17-9e59-0429643ef4e8':'OTHER'
+     'b33f0ca5-bc96-4b17-9e59-0429643ef4e4':'OTHER'
    };
-   const financeRes=profitRes;
-   if(financeRes.error)throw financeRes.error;
-   (financeRes.data||[]).forEach(row=>{
-     const code=financeMap[String(row.finance_payment_method_id||'')];
-     if(!code)return;
-     if(!financeStats[code])financeStats[code]={count:0,amount:0};
-     financeStats[code].count++;
-     financeStats[code].amount+=Number(row.sale_price||0)-Number(row.discount||0);
-   });
    const closingStats={leadBeforeToday:0,leadToday:0,walkinBeforeToday:0,walkinToday:0,freelanceBeforeToday:0,freelanceToday:0};
    // Angka (bulan ini sebelum hari ini) + (hari ini) selalu dihitung dari
    // 1 haribulan 00:00 WITA sampai besok 00:00 WITA, terlepas report yang dipilih.
@@ -6599,17 +6590,33 @@ async function shareFacilitatorReport(period,withStock){
    d.todayOmzet=todayRows.reduce((s,r)=>s+saleValue(r),0);
    d.monthBeforeProfit=Number(profitMonthBefore.data||0);
    d.todayProfit=Number(profitToday.data||0);
-   // Setiap metode pembayaran menampilkan jumlah transaksi dan nominal dalam dua periode.
-   Object.keys(financeMap).forEach(id=>{
-     const code=financeMap[id];
+   // Setiap metode pembayaran dihitung dari catatan pembayaran aktual.
+   Object.values(financeMap).forEach(code=>{
      financeStats[code]={beforeCount:0,beforeAmount:0,todayCount:0,todayAmount:0};
    });
-   rowsStats.forEach(r=>{
-     const code=financeMap[String(r.finance_payment_method_id||'')];
+   const financeBeforeRes=await sb.rpc('facilitator_sales_finance_summary',{
+     p_start:new Date(monthStartUTC).toISOString(),
+     p_end:new Date(dayStartUTC).toISOString(),
+     p_outlet:d.outlet||null
+   });
+   if(financeBeforeRes.error)throw financeBeforeRes.error;
+   const financeTodayRes=await sb.rpc('facilitator_sales_finance_summary',{
+     p_start:new Date(dayStartUTC).toISOString(),
+     p_end:new Date(tomorrowStartUTC).toISOString(),
+     p_outlet:d.outlet||null
+   });
+   if(financeTodayRes.error)throw financeTodayRes.error;
+   (financeBeforeRes.data||[]).forEach(r=>{
+     const code=financeMap[String(r.payment_method_id||'')];
      if(!code)return;
-     const slot=isTodayRow(r)?'today':'before';
-     financeStats[code][slot+'Count']++;
-     financeStats[code][slot+'Amount']+=saleValue(r);
+     financeStats[code].beforeCount=Number(r.transaction_count||0);
+     financeStats[code].beforeAmount=Number(r.payment_amount||0);
+   });
+   (financeTodayRes.data||[]).forEach(r=>{
+     const code=financeMap[String(r.payment_method_id||'')];
+     if(!code)return;
+     financeStats[code].todayCount=Number(r.transaction_count||0);
+     financeStats[code].todayAmount=Number(r.payment_amount||0);
    });
    rowsStats.forEach(r=>{
      const src=String(r.customer_source||'').toUpperCase();

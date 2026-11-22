@@ -1114,7 +1114,9 @@ async function openSellStock(stockId){
  const roleRaw=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '); const isSales=roleRaw==='SALES'||roleRaw.includes('SALES')||(Array.isArray(window.hmRoles)&&window.hmRoles.some(r=>String(r).trim().toUpperCase().replace(/_/g,' ')==='SALES')); const isManagement=!!profile?.is_management||roleRaw.includes('MANAGEMENT'); if(!isSales&&!isManagement)return alert('Closing Stock Siap Jual hanya dapat diajukan oleh Sales atau Management.');
  if(typeof window.salesResult!=='function')return alert('Form Closing belum siap. Silakan refresh aplikasi.');
  const temp='STOCK-CLOSING-'+String(stockId).replace(/-/g,'').slice(0,12)+'-'+Date.now();
- window.hmStockClosingApprovalMode=true; window.hmStockClosingTempLeadId=temp;
+ window.hmStockClosingApprovalMode=true;
+ window.hmStockClosingTempLeadId=temp;
+ window.hmWalkinStockId=String(stockId);
  const tempLead={lead_id:temp,customer:'Walk-In',whatsapp:'',outlet:profile?.outlet||s.outlet,product:[s.product,s.variant,s.color].filter(Boolean).join(' — '),status_lead:'HANDLE',sales_claimed_by:profile?.name||'',sales_result:'POTENSIAL'};
  if(typeof window.hmAddStockClosingLead!=='function')return alert('Modul Closing belum siap. Silakan refresh aplikasi.');
  window.hmAddStockClosingLead(tempLead);

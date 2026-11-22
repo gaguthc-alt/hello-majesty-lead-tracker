@@ -6552,7 +6552,11 @@ async function shareFacilitatorReport(period,withStock){
    let profitActual=0;
    const profitRes=await sb.rpc('facilitator_sales_report_rows',{p_start:startISO,p_end:endISO,p_outlet:d.outlet||null});
    if(profitRes.error)throw profitRes.error;
-   profitActual=(profitRes.data||[]).reduce((sum,row)=>sum+Number(row.gross_profit||0),0);
+   const profitMonthBefore=await sb.rpc('facilitator_sales_profit_total',{p_start:new Date(monthStartUTC).toISOString(),p_end:new Date(dayStartUTC).toISOString(),p_outlet:d.outlet||null});
+   if(profitMonthBefore.error)throw profitMonthBefore.error;
+   const profitToday=await sb.rpc('facilitator_sales_profit_total',{p_start:new Date(dayStartUTC).toISOString(),p_end:new Date(tomorrowStartUTC).toISOString(),p_outlet:d.outlet||null});
+   if(profitToday.error)throw profitToday.error;
+   profitActual=Number(profitMonthBefore.data||0)+Number(profitToday.data||0);
    // FINANCE: nominal dan jumlah transaksi ditarik langsung dari sales_transactions.
    // Periode mengikuti laporan dan outlet yang dipilih. Nominal = harga jual - diskon.
    const financeStats={};
@@ -6593,8 +6597,8 @@ async function shareFacilitatorReport(period,withStock){
    d.todayUnits=todayRows.length;
    d.monthBeforeOmzet=beforeRows.reduce((s,r)=>s+saleValue(r),0);
    d.todayOmzet=todayRows.reduce((s,r)=>s+saleValue(r),0);
-   d.monthBeforeProfit=beforeRows.reduce((s,r)=>s+Number(r.gross_profit||0),0);
-   d.todayProfit=todayRows.reduce((s,r)=>s+Number(r.gross_profit||0),0);
+   d.monthBeforeProfit=Number(profitMonthBefore.data||0);
+   d.todayProfit=Number(profitToday.data||0);
    // Setiap metode pembayaran menampilkan jumlah transaksi dan nominal dalam dua periode.
    Object.keys(financeMap).forEach(id=>{
      const code=financeMap[id];
@@ -6612,7 +6616,9 @@ async function shareFacilitatorReport(period,withStock){
      const cap=String(r.closing_capacity||'').toUpperCase();
      const today=isTodayRow(r);
      if(src==='DIGITAL'&&cap!=='FREELANCE_INTERNAL') today?closingStats.leadToday++:closingStats.leadBeforeToday++;
-     if(src==='WALK-IN') today?closingStats.walkinToday++:closingStats.walkinBeforeToday++;
+     // Walk-In hanya menghitung transaksi tim Sales Core; Freelance Internal
+     // adalah kategori tersendiri agar satu transaksi tidak terhitung dua kali.
+     if(src==='WALK-IN'&&cap!=='FREELANCE_INTERNAL') today?closingStats.walkinToday++:closingStats.walkinBeforeToday++;
      if(cap==='FREELANCE_INTERNAL') today?closingStats.freelanceToday++:closingStats.freelanceBeforeToday++;
    });
    const stockFlow={inNew:[],outNew:[],inSecond:[],outSecond:[]};

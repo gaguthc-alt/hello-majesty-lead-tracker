@@ -581,16 +581,20 @@ async function renderInventory(){
     host.innerHTML='<h2 style="margin:0">📦 PRODUCT & STOCK</h2><p class="small" style="margin-top:10px">Product & Stock gagal memuat data.</p><div class="box"><b>Error:</b> '+esc(e?.message||e)+'</div><button class="secondary" onclick="refreshInventory(this)">↻ Coba Lagi</button>';
     return;
   }
-  const ready=inventoryStock.filter(x=>x.status==='READY').length;
+  const readyRows=inventoryStock.filter(x=>x.status==='READY');
+  const ready=readyRows.length;
+  const readyCapital=readyRows.reduce((sum,x)=>sum+inventoryNumber(x.cost),0);
   const sold=inventoryStock.filter(x=>x.status==='SOLD'&&x.sold_at).length;
   const reserved=inventoryStock.filter(x=>x.status==='RESERVED').length;
   const returned=inventoryStock.filter(x=>x.status==='RETURN').length;
   const canManage=!!profile?.is_management || inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR' || (Array.isArray(window.hmRoles) && window.hmRoles.some(r=>String(r).toUpperCase()==='FASILITATOR'));
-  const isCellFinance=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='ADMIN FINANCE MAJESTY CELL'||String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ')==='MITRA STOCKIST';
+  const currentRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
+  const isCellFinance=currentRole==='ADMIN FINANCE MAJESTY CELL'||currentRole==='MITRA STOCKIST';
+  const canSeeReadyCapital=!!profile?.is_management||currentRole==='ADMIN FINANCE';
   if(isCellFinance) inventoryView='stock';
   host.innerHTML='<div class="row" style="justify-content:flex-end;align-items:center;gap:8px;margin:0 0 12px"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button></div><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Stok READY yang tersedia per outlet</div></div>'+
   '<div class="stats" style="margin-top:10px">'+
-  invStat('🟢 Ready',ready)+invStat('🔴 Terjual',sold)+invStat('↩️ Retur',returned)+'</div>'+
+  invStat('🟢 Ready',ready)+(canSeeReadyCapital?invStat('💰 Modal READY','Rp'+readyCapital.toLocaleString('id-ID')):'')+invStat('🔴 Terjual',sold)+invStat('↩️ Retur',returned)+'</div>'+
   '<div class="row" style="margin-top:12px"><button class="'+(inventoryView==='stock'?'':'secondary')+'" id="invStockTab" type="button" data-inventory-view="stock">Stock</button>'+(inventoryCanHunter?'<button class="secondary" onclick="openHunterStock()">🧑‍💼 Stock Hunter</button><button class="secondary" onclick="openCheckerStock()">🧾 Stock Checker</button>':'')+'</div>'+
   '<div id="inventoryViewDebug" class="small" style="margin-top:8px;font-weight:700"></div><div id="inventoryBody" style="margin-top:10px"></div>';
   host.onclick=(e)=>{const tab=e.target.closest('[data-inventory-view]');if(tab){e.preventDefault();setInventoryView(tab.dataset.inventoryView)}};

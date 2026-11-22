@@ -7411,7 +7411,7 @@ async function submitStockClosingApproval(id){
  const draftKey='hm_walkin_closing_draft_v1';
  const draft={saved_at:new Date().toISOString(),stockId,salePrice,teamMemberIds,customerPhone,closingCapacity,paymentMode,paymentAccount,paymentMethod,fee,financeRequestedAmount,cashPayment,cashoutAmount,providerCode,notes};
  try{localStorage.setItem(draftKey,JSON.stringify(draft));}catch(storageError){console.warn('[HM Walk-In] Draft lokal tidak dapat disimpan:',storageError);}
- const submitButton=document.querySelector('button[onclick*="saveS("],button[onclick*="submitStockClosingApproval("]');
+ const submitButton=document.getElementById('saveSBtn')||document.querySelector('button[onclick*="saveS("],button[onclick*="submitStockClosingApproval("]');
  if(submitButton){submitButton.disabled=true;submitButton.dataset.hmSaving='1';submitButton.textContent='Menyimpan Closing…';}
  let x;
  try{
@@ -7474,7 +7474,9 @@ window.hmSendClosingWhatsApp=async function(tab,leadId,stockId,salePrice,payment
  }
 };
 async function saveS(id){
- if(window.hmStockClosingApprovalMode)return submitStockClosingApproval(id);
+ // Deteksi jalur Closing Stock/Walk-In dari ID sementara juga, agar tidak jatuh ke RPC closing Lead yang mensyaratkan Management.
+ const isStockWalkinClosing=!!window.hmStockClosingApprovalMode||String(id||'').startsWith('STOCK-CLOSING-');
+ if(isStockWalkinClosing){window.hmStockClosingApprovalMode=true;return submitStockClosingApproval(id);}
  const leadId=String(id||'').trim();
  const leadRow=leads.find(l=>String(l.lead_id)===leadId);
  const isTradeIn=String(leadRow?.need_type||'').trim().toUpperCase()==='TUKAR TAMBAH';

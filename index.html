@@ -7458,9 +7458,20 @@ window.hmSendClosingWhatsApp=async function(tab,leadId,stockId,salePrice,payment
  }
 };
 async function saveS(id){
- // Deteksi jalur Closing Stock/Walk-In dari ID sementara juga, agar tidak jatuh ke RPC closing Lead yang mensyaratkan Management.
+ // Walk-In harus selalu memakai jalur pengajuan stok, bukan RPC closing lead.
  const isStockWalkinClosing=!!window.hmStockClosingApprovalMode||String(id||'').startsWith('STOCK-CLOSING-');
- if(isStockWalkinClosing){window.hmStockClosingApprovalMode=true;return submitStockClosingApproval(id);}
+ if(isStockWalkinClosing){
+   window.hmStockClosingApprovalMode=true;
+   const btn=document.getElementById('saveSBtn');
+   try{
+     await submitStockClosingApproval(id);
+   }catch(error){
+     console.error('[HM Walk-In] Unhandled submit error:',error);
+     if(btn){btn.disabled=false;btn.textContent='Simpan Closing';delete btn.dataset.hmSaving;}
+     alert('Proses Walk-In terhenti sebelum selesai. Form tetap dibuka agar data tidak hilang.\n\nDetail: '+String(error?.message||error||'Kesalahan tidak diketahui'));
+   }
+   return;
+ }
  const leadId=String(id||'').trim();
  const leadRow=leads.find(l=>String(l.lead_id)===leadId);
  const isTradeIn=String(leadRow?.need_type||'').trim().toUpperCase()==='TUKAR TAMBAH';

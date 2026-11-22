@@ -1845,8 +1845,12 @@ async function saveEditStock(id){
    sb.from('sales_transactions').select('id,sales_user_id,sold_at,created_at,sale_price,cost,gross_profit,customer_name,customer_phone,outlet,stock_owner_outlet,sales_unit_outlet,payment_received_by_outlet,is_cancelled,cancelled_at,cancellation_reason').eq('stock_unit_id',id).order('sold_at',{ascending:false}),
    sb.from('stock_transfer_items').select('transfer_id,created_at').eq('stock_unit_id',id)
   ]);
-  for(const q of [unitQ,movQ,recvQ,saleQ,walkQ,txQ,itemQ])if(q.error)throw q.error;
-  const unit=unitQ.data||{},moves=movQ.data||[],receives=recvQ.data||[],saleApprovals=saleQ.data||[],walkins=walkQ.data||[],txs=txQ.data||[];
+  for(const q of [unitQ,movQ,recvQ,saleQ,walkQ,itemQ])if(q.error)throw q.error;
+  // Sales transaction detail is restricted by RLS for some team roles.
+  // Do not let that optional section block the stock history timeline.
+  const salesHistoryUnavailable=!!txQ.error;
+  if(txQ.error)console.warn('[HM] Sales transaction history is not readable for this role:',txQ.error.message);
+  const unit=unitQ.data||{},moves=movQ.data||[],receives=recvQ.data||[],saleApprovals=saleQ.data||[],walkins=walkQ.data||[],txs=txQ.error?[]:(txQ.data||[]);
   const transferIds=[...new Set((itemQ.data||[]).map(x=>x.transfer_id).filter(Boolean))];
   let transfers=[];
   if(transferIds.length){const tq=await sb.from('stock_transfers').select('id,transfer_no,from_outlet,to_outlet,status,requested_at,sent_at,received_at,requested_by,approved_by,approved_at,notes').in('id',transferIds);if(tq.error)throw tq.error;transfers=tq.data||[];}
@@ -1864,7 +1868,7 @@ async function saveEditStock(id){
   txs.forEach(x=>{events.push({at:x.sold_at||x.created_at,head:x.is_cancelled?'Transaksi penjualan dibatalkan':'Penjualan tercatat',desc:'Harga jual: Rp'+Number(x.sale_price||0).toLocaleString('id-ID')+' · Laba kotor: Rp'+Number(x.gross_profit||0).toLocaleString('id-ID'),actor:'Sales: '+who(x.sales_user_id),note:[x.customer_name,x.customer_phone,'Outlet sales: '+(x.sales_unit_outlet||x.outlet||'-'),'Pemilik stok: '+(x.stock_owner_outlet||'-'),'Penerima pembayaran: '+(x.payment_received_by_outlet||'-'),x.cancellation_reason].filter(Boolean).join(' · ')});});
   events.sort((a,b)=>new Date(b.at)-new Date(a.at));
   const card=e=>'<div class="lead" style="border-left:4px solid #16a36a;margin:10px 0"><b>'+esc(e.head)+'</b><div class="small">'+fmtDate(e.at)+'</div><div style="margin-top:5px">'+esc(e.desc||'')+'</div><div class="small" style="margin-top:4px">'+esc(e.actor||'')+'</div>'+(e.note?'<div class="small" style="margin-top:4px;color:#667085">'+esc(e.note)+'</div>':'')+'</div>';
-  host.innerHTML='<div class="box"><b>'+esc(unit.imei_1||'IMEI tidak tercatat')+'</b><div class="small">'+esc(unit.outlet||'-')+' · Status sekarang: '+esc(unit.status||'-')+'</div><div class="small">Modal Rp'+Number(unit.cost||0).toLocaleString('id-ID')+' · Harga jual tertera Rp'+Number(unit.asking_price||0).toLocaleString('id-ID')+'</div></div><h3>Timeline Perjalanan Unit</h3><p class="small">Urut terbaru ke terlama. Setiap kejadian memakai timestamp dari tabel sumbernya. Data yang tidak tersedia tidak dibuat-buat.</p>'+(events.map(card).join('')||'<p class="small">Belum ada histori yang tercatat untuk unit ini.</p>');
+  host.innerHTML='<div class="box"><b>'+esc(unit.imei_1||'IMEI tidak tercatat')+'</b><div class="small">'+esc(unit.outlet||'-')+' · Status sekarang: '+esc(unit.status||'-')+'</div><div class="small">Modal Rp'+Number(unit.cost||0).toLocaleString('id-ID')+' · Harga jual tertera Rp'+Number(unit.asking_price||0).toLocaleString('id-ID')+'</div></div><h3>Timeline Perjalanan Unit</h3><p class="small">Urut terbaru ke terlama. Setiap kejadian memakai timestamp dari tabel sumbernya. Data yang tidak tersedia tidak dibuat-buat.</p>'+(salesHistoryUnavailable?'<p class="small" style="color:#8a5a00">Rincian transaksi penjualan tidak ditampilkan untuk hak akses akun ini. Bagian histori stok lainnya tetap tersedia.</p>':'')+(events.map(card).join('')||'<p class="small">Belum ada histori yang tercatat untuk unit ini.</p>');
  }catch(e){console.error('[HM] Stock history load failed',e);host.innerHTML='<p style="color:#b42318">Gagal memuat histori: '+esc(e?.message||e)+'</p>';}
 }
 function hmNormalizePhone(v){return String(v||'').replace(/[^0-9]/g,'').replace(/^0+/,'');}

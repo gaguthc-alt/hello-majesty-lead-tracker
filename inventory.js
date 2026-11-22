@@ -1831,7 +1831,42 @@ async function saveEditStock(id){
  }finally{
   window.hmSavingEditStock=false;
  }
-}async function openStockHistory(id){const x=await sb.from('stock_movements').select('*').eq('stock_unit_id',id).order('created_at',{ascending:false});if(x.error)return alert(x.error.message);$('mt').textContent='🧾 Histori Stock';$('mb').innerHTML=(x.data||[]).map(m=>'<div class="lead"><b>'+esc(m.movement_type)+'</b><div class="small">'+new Date(m.created_at).toLocaleString('id-ID')+' • '+esc(m.from_status||'-')+' → '+esc(m.to_status||'-')+'</div><div>'+esc(m.note||'')+'</div></div>').join('')||'<p class="small">Belum ada histori.</p>';$('modal').classList.remove('hidden')}
+}async function openStockHistory(id){
+ const host=$('mb'),title=$('mt');if(!host||!title)return;
+ title.textContent='🧾 Histori Stock';
+ host.innerHTML='<p class="small">Memuat seluruh perjalanan unit...</p>';$('modal').classList.remove('hidden');
+ try{
+  const [unitQ,movQ,recvQ,saleQ,walkQ,txQ,itemQ]=await Promise.all([
+   sb.from('stock_units').select('id,imei_1,outlet,status,cost,asking_price,created_at,product_id').eq('id',id).maybeSingle(),
+   sb.from('stock_movements').select('id,movement_type,from_status,to_status,actor_user_id,note,created_at,source_type_snapshot').eq('stock_unit_id',id).order('created_at',{ascending:false}),
+   sb.from('inventory_receive_approvals').select('id,requested_by,requested_at,status,reviewed_by,reviewed_at,review_note,created_at').eq('stock_unit_id',id).order('requested_at',{ascending:false}),
+   sb.from('stock_sale_approvals').select('id,requested_by,sale_price,status,requested_at,reviewed_by,reviewed_at,review_note,sale_id,customer_phone,outlet').eq('stock_unit_id',id).order('requested_at',{ascending:false}),
+   sb.from('walkin_sale_approvals').select('id,requested_by,requested_at,sale_price,status,reviewed_by,reviewed_at,review_note,sale_id,sales_user_ids').eq('stock_unit_id',id).order('requested_at',{ascending:false}),
+   sb.from('sales_transactions').select('id,sales_user_id,sold_at,created_at,sale_price,cost,gross_profit,customer_name,customer_phone,outlet,stock_owner_outlet,sales_unit_outlet,payment_received_by_outlet,is_cancelled,cancelled_at,cancellation_reason').eq('stock_unit_id',id).order('sold_at',{ascending:false}),
+   sb.from('stock_transfer_items').select('transfer_id,created_at').eq('stock_unit_id',id)
+  ]);
+  for(const q of [unitQ,movQ,recvQ,saleQ,walkQ,txQ,itemQ])if(q.error)throw q.error;
+  const unit=unitQ.data||{},moves=movQ.data||[],receives=recvQ.data||[],saleApprovals=saleQ.data||[],walkins=walkQ.data||[],txs=txQ.data||[];
+  const transferIds=[...new Set((itemQ.data||[]).map(x=>x.transfer_id).filter(Boolean))];
+  let transfers=[];
+  if(transferIds.length){const tq=await sb.from('stock_transfers').select('id,transfer_no,from_outlet,to_outlet,status,requested_at,sent_at,received_at,requested_by,approved_by,approved_at,notes').in('id',transferIds);if(tq.error)throw tq.error;transfers=tq.data||[];}
+  const ids=[...new Set([...moves.map(x=>x.actor_user_id),...receives.flatMap(x=>[x.requested_by,x.reviewed_by]),...saleApprovals.flatMap(x=>[x.requested_by,x.reviewed_by]),...walkins.flatMap(x=>[x.requested_by,x.reviewed_by]),...txs.map(x=>x.sales_user_id),...transfers.flatMap(x=>[x.requested_by,x.approved_by])].filter(Boolean))];
+  let people={};
+  if(ids.length){const pq=await sb.from('team_profiles').select('user_id,name').in('user_id',ids);if(!pq.error)people=Object.fromEntries((pq.data||[]).map(p=>[p.user_id,p.name]));}
+  const fmtDate=v=>v?new Date(v).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'}):'Belum tercatat';
+  const who=v=>v?(people[v]||'User '+String(v).slice(0,8)):'Belum tercatat';
+  const events=[];
+  if(unit.created_at)events.push({at:unit.created_at,head:'Data unit dibuat',desc:'Outlet: '+(unit.outlet||'-')+' · Status saat ini: '+(unit.status||'-')+' · Modal: Rp'+Number(unit.cost||0).toLocaleString('id-ID'),actor:'Sumber: stock_units',note:'Waktu pembuatan record, bukan otomatis waktu barang diterima secara fisik.'});
+  receives.forEach(x=>{events.push({at:x.requested_at,head:'Pengajuan penerimaan stok',desc:'Status: '+(x.status||'-'),actor:'Diajukan: '+who(x.requested_by)});if(x.reviewed_at)events.push({at:x.reviewed_at,head:'Review penerimaan stok',desc:'Hasil: '+(x.status||'-')+(x.review_note?' · '+x.review_note:''),actor:'Diperiksa: '+who(x.reviewed_by)});});
+  transfers.forEach(x=>{events.push({at:x.requested_at,head:'Mutasi diajukan '+(x.transfer_no||''),desc:(x.from_outlet||'-')+' → '+(x.to_outlet||'-')+' · '+(x.status||''),actor:'Diajukan: '+who(x.requested_by),note:x.notes||''});if(x.approved_at)events.push({at:x.approved_at,head:'Mutasi disetujui',desc:(x.from_outlet||'-')+' → '+(x.to_outlet||'-'),actor:'Disetujui: '+who(x.approved_by)});if(x.sent_at)events.push({at:x.sent_at,head:'Stok dikirim',desc:x.from_outlet||'-',actor:'Waktu pengiriman tercatat'});if(x.received_at)events.push({at:x.received_at,head:'Stok diterima',desc:x.to_outlet||'-',actor:'Waktu penerimaan tercatat'});});
+  moves.forEach(x=>events.push({at:x.created_at,head:'Perubahan stok: '+(x.movement_type||'-'),desc:(x.from_status||'-')+' → '+(x.to_status||'-'),actor:'Petugas: '+who(x.actor_user_id),note:(x.note||'')+(x.source_type_snapshot?' · Sumber: '+x.source_type_snapshot:'')}));
+  [...saleApprovals,...walkins].forEach(x=>{events.push({at:x.requested_at,head:'Pengajuan closing',desc:'Harga jual: Rp'+Number(x.sale_price||0).toLocaleString('id-ID')+' · Status: '+(x.status||'-'),actor:'Diajukan: '+who(x.requested_by),note:x.customer_phone?'Pelanggan: '+x.customer_phone:''});if(x.reviewed_at)events.push({at:x.reviewed_at,head:'Review closing',desc:'Status: '+(x.status||'-')+(x.review_note?' · '+x.review_note:''),actor:'Diperiksa: '+who(x.reviewed_by)});});
+  txs.forEach(x=>{events.push({at:x.sold_at||x.created_at,head:x.is_cancelled?'Transaksi penjualan dibatalkan':'Penjualan tercatat',desc:'Harga jual: Rp'+Number(x.sale_price||0).toLocaleString('id-ID')+' · Laba kotor: Rp'+Number(x.gross_profit||0).toLocaleString('id-ID'),actor:'Sales: '+who(x.sales_user_id),note:[x.customer_name,x.customer_phone,'Outlet sales: '+(x.sales_unit_outlet||x.outlet||'-'),'Pemilik stok: '+(x.stock_owner_outlet||'-'),'Penerima pembayaran: '+(x.payment_received_by_outlet||'-'),x.cancellation_reason].filter(Boolean).join(' · ')});});
+  events.sort((a,b)=>new Date(b.at)-new Date(a.at));
+  const card=e=>'<div class="lead" style="border-left:4px solid #16a36a;margin:10px 0"><b>'+esc(e.head)+'</b><div class="small">'+fmtDate(e.at)+'</div><div style="margin-top:5px">'+esc(e.desc||'')+'</div><div class="small" style="margin-top:4px">'+esc(e.actor||'')+'</div>'+(e.note?'<div class="small" style="margin-top:4px;color:#667085">'+esc(e.note)+'</div>':'')+'</div>';
+  host.innerHTML='<div class="box"><b>'+esc(unit.imei_1||'IMEI tidak tercatat')+'</b><div class="small">'+esc(unit.outlet||'-')+' · Status sekarang: '+esc(unit.status||'-')+'</div><div class="small">Modal Rp'+Number(unit.cost||0).toLocaleString('id-ID')+' · Harga jual tertera Rp'+Number(unit.asking_price||0).toLocaleString('id-ID')+'</div></div><h3>Timeline Perjalanan Unit</h3><p class="small">Urut terbaru ke terlama. Setiap kejadian memakai timestamp dari tabel sumbernya. Data yang tidak tersedia tidak dibuat-buat.</p>'+(events.map(card).join('')||'<p class="small">Belum ada histori yang tercatat untuk unit ini.</p>');
+ }catch(e){console.error('[HM] Stock history load failed',e);host.innerHTML='<p style="color:#b42318">Gagal memuat histori: '+esc(e?.message||e)+'</p>';}
+}
 function hmNormalizePhone(v){return String(v||'').replace(/[^0-9]/g,'').replace(/^0+/,'');}
 async function openSalesReport(){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');

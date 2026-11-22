@@ -6483,6 +6483,16 @@ function stockReportText(d){
  let t='📦 *LAPORAN STOCK READY*\n';
  t+='*Hello Majesty — '+(d.outlet||'-')+'*\n\n';
  t+='🟢 *Total READY: '+Number(d.ready_count||0)+' Unit*\n';
+ if(d.ready_modal_total!==null&&d.ready_modal_total!==undefined){
+   t+='💰 *Total Modal READY: '+rupiahReport(d.ready_modal_total)+'*\n';
+   const modalRows=Array.isArray(d.ready_modal_by_outlet)?d.ready_modal_by_outlet:[];
+   if(modalRows.length){
+     t+='\n*RINCIAN MODAL PER OUTLET*\n';
+     modalRows.forEach(x=>{
+       t+='• '+String(x.outlet||'Tanpa outlet')+' — '+Number(x.ready_count||0)+' unit — '+rupiahReport(x.modal_total)+'\n';
+     });
+   }
+ }
  t+='📅 '+new Date().toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+' WITA\n\n';
  let no=1;
  const groups=[['IPHONE_NEW','*🍎 iPhone New*'],['IPHONE_SECOND','*🍎 iPhone Second*'],['ANDROID_NEW','*🤖 Android New*'],['ANDROID_SECOND','*🤖 Android Second*'],['STOCK_NEW_MAJESTY_CELL','*🏢 Stock New Pusat*'],['STOCK_SECOND_MAJESTY_CELL','*🏢 Stock Second Pusat*']];

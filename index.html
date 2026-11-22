@@ -7327,17 +7327,31 @@ async function submitStockClosingApproval(id){
    (providerText.includes('AKULAKU')?'AKULAKU':providerText.includes('KREDIVO')?'KREDIVO':providerText.includes('SPAY')?'SPAYLATER':rawProviderCode);
  const isFinance=paymentMode==='PAY_LATER' && ['SPAYLATER','KREDIVO','AKULAKU'].includes(providerCode);
  const notes=document.getElementById('financeNotes')?.value?.trim()||null;
- // Nominal Finance dan biaya Finance bersifat opsional/informatif.
- // Validasi closing hanya memakai Harga Jual, Tarik Tunai Customer, dan Cash.
- const x=await sb.rpc('submit_stock_sale_approval',{p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,p_payment_account_id:paymentAccount,p_payment_method_id:paymentMethod,p_pay_now:payNow,p_finance_estimated_fee:fee,p_finance_notes:notes,p_finance_requested_amount:financeRequestedAmount,p_finance_cash_payment:cashPayment,p_finance_cashout_amount:cashoutAmount,p_customer_phone:(document.getElementById('walkinCustomerPhone')?.value||'').trim(),p_closing_capacity:closingCapacity});
- if(x.error)return alert('Pengajuan Closing gagal: '+x.error.message);
+ const draftKey='hm_walkin_closing_draft_v1';
+ const draft={saved_at:new Date().toISOString(),stockId,salePrice,teamMemberIds,customerPhone,closingCapacity,paymentMode,paymentAccount,paymentMethod,fee,financeRequestedAmount,cashPayment,cashoutAmount,providerCode,notes};
+ try{localStorage.setItem(draftKey,JSON.stringify(draft));}catch(storageError){console.warn('[HM Walk-In] Draft lokal tidak dapat disimpan:',storageError);}
+ const submitButton=document.querySelector('button[onclick*="saveS("],button[onclick*="submitStockClosingApproval("]');
+ if(submitButton){submitButton.disabled=true;submitButton.dataset.hmSaving='1';submitButton.textContent='Menyimpan Closing…';}
+ let x;
+ try{
+   x=await sb.rpc('submit_stock_sale_approval',{p_stock_id:stockId,p_sale_price:salePrice,p_team_member_ids:teamMemberIds,p_payment_account_id:paymentAccount,p_payment_method_id:paymentMethod,p_pay_now:payNow,p_finance_estimated_fee:fee,p_finance_notes:notes,p_finance_requested_amount:financeRequestedAmount,p_finance_cash_payment:cashPayment,p_finance_cashout_amount:cashoutAmount,p_customer_phone:customerPhone,p_closing_capacity:closingCapacity});
+   if(x.error)throw x.error;
+ }catch(error){
+   console.error('[HM Walk-In] Closing submit failed; draft retained:',error);
+   if(submitButton){submitButton.disabled=false;submitButton.textContent='Simpan Closing';delete submitButton.dataset.hmSaving;}
+   const detail=String(error?.message||error||'Kesalahan tidak diketahui');
+   alert('Closing belum dapat dikonfirmasi tersimpan. Data formulir tetap dipertahankan dan draft disimpan di perangkat ini. Jangan kirim transaksi baru dulu.\n\nDetail: '+detail);
+   return;
+ }
+ try{localStorage.removeItem(draftKey);}catch(_e){}
  const temp=window.hmStockClosingTempLeadId;
  if(temp){leads=leads.filter(l=>String(l.lead_id)!==String(temp));window.hmStockClosingTempLeadId=null;}
  window.hmStockClosingApprovalMode=false;
  const shareNow=confirm('Closing berhasil diajukan.\n\nJalur: '+(closingCapacity==='FREELANCE_INTERNAL'?'FREELANCE INTERNAL (komisi 30% dibagi rata)':'WALK-IN (komisi 10%)')+'\nStatus: MENUNGGU PERSETUJUAN.\n\nBagikan ke WhatsApp untuk meminta persetujuan Management?');
- if(shareNow)shareWalkinApprovalWA(stockId,salePrice);
  closeModal();
- if(typeof renderInventory==='function')await renderInventory();
+ if(shareNow)shareWalkinApprovalWA(stockId,salePrice);
+ try{if(typeof renderInventory==='function')await renderInventory();}
+ catch(refreshError){console.error('[HM Walk-In] Closing saved but inventory refresh failed:',refreshError);alert('Closing berhasil diajukan dan tersimpan. Tampilan stok belum berhasil diperbarui; silakan muat ulang aplikasi.');}
 }
 
 // Notifikasi WhatsApp Closing Lead: tab disiapkan pada gesture klik, tetapi baru diarahkan setelah transaksi terkonfirmasi tersimpan.

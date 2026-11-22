@@ -1109,12 +1109,12 @@ function stockPhotoGallery(s,editable=false){
  ).join('')+'</div></div>';
 }
 function openProductDetail(id){const s=inventoryStock.find(x=>x.id===id);if(!s)return;const c=s.category;let d='';if(c==='IPHONE_SECOND')d='<b>Grade:</b> '+esc(s.grade||'-')+'<br><b>Kondisi:</b> '+esc(s.condition||'-')+'<br><b>Battery Health:</b> '+(s.battery_health!=null?s.battery_health+'%':'-')+'<br><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'<br><b>Minus:</b> '+esc(s.minus||'-')+'<br>';else if(c==='ANDROID_SECOND')d='<b>Warna:</b> '+esc(s.color||'-')+'<br><b>Kondisi:</b> '+esc(s.condition||'-')+'<br><b>Kelengkapan:</b> '+esc(s.completeness||'-')+'<br><b>Minus:</b> '+esc(s.minus||'-')+'<br>';else if(c==='ANDROID_NEW')d='<b>Warna:</b> '+esc(s.color||'-')+'<br>';d+='<b>IMEI:</b> '+esc(canViewFullImei()?(s.imei_1||'-'):maskImei(s.imei_1))+'<br><b>Harga Jual:</b> Rp'+inventoryNumber(s.asking_price).toLocaleString('id-ID');const html=`<div class="box"><h2 style="margin:0">${esc((()=>{let raw=String(s.product||'').trim(),suffix=/(?:\s+)(NEW|SECOND)$/i.exec(raw)?.[1]?.toUpperCase()||'';raw=raw.replace(/\s+(NEW|SECOND)$/i,'').trim();return [raw,s.variant,s.color,suffix].filter(Boolean).join(' — ')})())}</h2><div class="small">${invCategory(s.category)} • ${esc(s.status)}</div></div><div class="lead">${d}${stockPhotoGallery(s,false)}</div><div class="row"><button class="success" onclick="shareProduct(inventoryStock.find(x=>x.id===\'${id}\'))">📤 Kirim Info Customer</button>${canSubmitStockClosing()&&s.status==='READY'?'<button class="success" onclick="closeModal();openSellStock(\''+id+'\')">💰 Closing</button>':''}</div>`;$('mt').textContent='📱 Detail Produk';$('mb').innerHTML=html;$('modal').classList.remove('hidden')}
-async function canSubmitStockClosing(){
+function canSubmitStockClosing(){
  const role=String(profile?.role||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
  const roles=(Array.isArray(window.hmRoles)?window.hmRoles:[]).map(r=>String(r||'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' '));
  return !!profile?.is_management||role==='SALES'||role==='FREELANCE INTERNAL'||roles.includes('SALES')||roles.includes('FREELANCE INTERNAL');
 }
-async function openSellStock(stockId)
+async function openSellStock(stockId){
  const s=(inventoryStock||[]).find(x=>x.id===stockId);
  if(!s||s.status!=='READY')return alert('Stock tidak tersedia untuk Closing.');
  if(!canSubmitStockClosing())return alert('Closing Stock Siap Jual hanya dapat diajukan oleh Sales, Freelance Internal, atau Management.');

@@ -99,7 +99,7 @@ public class MainActivity extends Activity {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme() == null ? "" : uri.getScheme();
                 if ("https".equals(scheme) && uri.getHost() != null &&
-                    (uri.getHost().equals("app.hello-majesty.com") || uri.getHost().equals("hello-majesty-lead-tracker.pages.dev") ||
+                    (uri.getHost().equals("app.hello-majesty.com") ||
                      uri.getHost().equals("ksowzhhmzrumyciehuyv.supabase.co"))) return false;
                 if ("http".equals(scheme) || "https".equals(scheme) ||
                     "whatsapp".equals(scheme) || "mailto".equals(scheme) ||
@@ -127,7 +127,18 @@ public class MainActivity extends Activity {
     private String resolveNotificationUrl(Intent intent) {
         String target = intent == null ? null : intent.getStringExtra("hm_notification_url");
         if (target == null && intent != null) target = intent.getStringExtra("url");
-        if (target != null && (target.startsWith("https://app.hello-majesty.com/") || target.startsWith("https://hello-majesty-lead-tracker.pages.dev/"))) return target;
+        if (target != null) {
+            try {
+                Uri uri = Uri.parse(target);
+                if ("https".equals(uri.getScheme()) && uri.getHost() != null) {
+                    if (uri.getHost().equals("app.hello-majesty.com")) return target;
+                    if (uri.getHost().equals("hello-majesty-lead-tracker.pages.dev")) {
+                        return "https://app.hello-majesty.com" + (uri.getEncodedPath() == null ? "/" : uri.getEncodedPath())
+                            + (uri.getEncodedQuery() == null ? "" : "?" + uri.getEncodedQuery());
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
         return APP_URL;
     }
 

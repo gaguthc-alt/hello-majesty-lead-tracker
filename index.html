@@ -6464,8 +6464,12 @@ function salesReportText(d,label,target,targetNominal,profitActual,rewardLabel,r
  ];
  t+='*FINANCE* :\\n';
  finRows.forEach(([name,code])=>{
-   const x=fin[code]||{count:0,amount:0};
-   t+='• *'+name+' :* ('+Number(x.beforeCount||0)+') - '+rup(x.beforeAmount||0)+' + '+Number(x.todayCount||0)+' - '+rup(x.todayAmount||0)+'\\n';
+   const x=fin[code]||{beforeCount:0,beforeAmount:0,todayCount:0,todayAmount:0};
+   const beforeCount=Number(x.beforeCount||0),todayCount=Number(x.todayCount||0);
+   if(beforeCount===0&&todayCount===0)return;
+   let line='• *'+name+' :* ('+beforeCount+') - '+rup(x.beforeAmount||0);
+   if(todayCount>0)line+=' + '+todayCount+' - '+rup(x.todayAmount||0);
+   t+=line+'\\n';
  });
  t+='\\n';
  t+='━━━━━━━━━━━━━━━━━━\\n';

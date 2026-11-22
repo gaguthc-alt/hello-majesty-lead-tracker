@@ -590,7 +590,7 @@ async function renderInventory(){
   const canManage=!!profile?.is_management || inventoryCanFacilitator || String(profile?.role||'').toUpperCase()==='FASILITATOR' || (Array.isArray(window.hmRoles) && window.hmRoles.some(r=>String(r).toUpperCase()==='FASILITATOR'));
   const currentRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
   const isCellFinance=currentRole==='ADMIN FINANCE MAJESTY CELL'||currentRole==='MITRA STOCKIST';
-  const canSeeReadyCapital=!!profile?.is_management||currentRole==='ADMIN FINANCE';
+  const canSeeReadyCapital=canManage||currentRole==='ADMIN FINANCE';
   if(isCellFinance) inventoryView='stock';
   host.innerHTML='<div class="row" style="justify-content:flex-end;align-items:center;gap:8px;margin:0 0 12px"><button class="secondary" onclick="refreshInventory(this)">↻ Refresh</button></div><div><h2 style="margin:0">📦 PRODUCT & STOCK</h2><div class="small">Stok READY yang tersedia per outlet</div></div>'+
   '<div class="stats" style="margin-top:10px">'+

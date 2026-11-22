@@ -7199,6 +7199,44 @@ async function salesResult(id){
  followUpDateInput?.addEventListener('click',()=>{try{if(typeof followUpDateInput.showPicker==='function')followUpDateInput.showPicker();}catch(e){/* Native picker may already be open. */}});
  $('saveSBtn').onclick=()=>saveS(leadId);
  modal.classList.remove('hidden');
+ // Pulihkan draft Walk-In yang sebelumnya gagal dikirim. Draft hanya berlaku 24 jam
+ // dan hanya diterapkan pada formulir Walk-In, tidak pada closing lead.
+ if(window.hmStockClosingApprovalMode){
+   const draftKey='hm_walkin_closing_draft_v1';
+   try{
+     const raw=localStorage.getItem(draftKey);
+     if(raw){
+       const d=JSON.parse(raw);
+       const age=Date.now()-new Date(d.saved_at||0).getTime();
+       if(!Number.isFinite(age)||age<0||age>24*60*60*1000){
+         localStorage.removeItem(draftKey);
+       }else{
+         const setValue=(id,value)=>{const el=document.getElementById(id);if(el&&value!=null)el.value=String(value);};
+         setValue('ss',d.stockId);
+         setValue('sap',d.salePrice);
+         setValue('walkinCustomerPhone',d.customerPhone);
+         setValue('salePayment',d.paymentMode);
+         setValue('saleAccount',d.paymentAccount);
+         setValue('payLaterProvider',d.paymentMethod);
+         if(d.closingCapacity){
+           const radio=document.querySelector('input[name="closingCapacity"][value="'+String(d.closingCapacity).replace(/[^A-Z_]/g,'')+'"]');
+           if(radio)radio.checked=true;
+         }
+         ['financeEstimatedFee','financeRequestedAmount','financeCashPayment','financeCashoutAmount','financeNotes'].forEach((id)=>setValue(id,d[id]));
+         document.querySelectorAll('.closingSalesMember').forEach(x=>x.checked=(d.teamMemberIds||[]).includes(x.value));
+         if((d.teamMemberIds||[]).length){$('closingSalesPicker')?.classList.remove('hidden');$('closingSalesYes')?.classList.remove('secondary');$('closingSalesNo')?.classList.add('secondary');}
+         updatePriceHint();
+         updatePaymentAccount();
+         updateFinanceBox();
+         const notice=document.createElement('div');
+         notice.className='box';
+         notice.style.cssText='margin:10px 0;border:1px solid #d97706;background:#fffbeb;color:#78350f';
+         notice.textContent='Draft Walk-In sebelumnya dipulihkan dari perangkat ini. Periksa kembali data pelanggan, unit, harga, dan pembayaran sebelum menekan Simpan.';
+         mb.insertBefore(notice,mb.firstChild);
+       }
+     }
+   }catch(restoreError){console.warn('[HM Walk-In] Draft recovery failed:',restoreError);}
+ }
 }
 window.hmBuybackProducts=[];
 async function hmFilterBuybackProducts(){

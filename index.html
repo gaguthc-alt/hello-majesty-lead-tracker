@@ -2024,7 +2024,7 @@ async function renderManagementStockSummary(){
 function renderCommissionActions(){
  const host=$('commissionActions');
  if(!host)return;
- host.innerHTML=profile?.is_management?'<button class="secondary" onclick="openTeamCommission()">📊 Komisi Tim</button>':'';
+ host.innerHTML=profile?.is_management?'<button class="secondary" onclick="window.openFinanceSection(\'payroll\')">📊 Komisi Tim</button>':'';
 }
 
 async function openTeamCommission(selectedMonthStart){
@@ -2233,7 +2233,7 @@ async function openTeamCommissionDetails(encodedName){
      });
    }catch(e){console.warn('[HM] Gagal memuat anggota tim closing:',e);}
  }
- const back='<button class="btn" onclick="openTeamCommission()">← Kembali ke Komisi Tim</button>';
+ const back='<button class="btn" onclick="window.openFinanceSection(\'payroll\')">← Kembali ke Komisi Tim</button>';
  const performanceTypes=new Set(['CS Handover','Content Creator','Fasilitator']);
  const formulaByType={
    'CS Handover':'(WA Masuk Saya ÷ Target WA Outlet) × (Handover Saya ÷ Target Handover Outlet) × 10% × Laba Aktual Outlet',

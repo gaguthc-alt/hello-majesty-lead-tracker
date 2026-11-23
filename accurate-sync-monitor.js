@@ -150,9 +150,18 @@
         };
       });
     }
-    const failed=queue.filter(x=>normStatus(x.status)==='FAILED').length+records.filter(x=>normStatus(x.status)==='FAILED').length;
-    const pending=queue.filter(x=>['PENDING','PROCESSING'].includes(normStatus(x.status))).length+records.filter(x=>['PENDING','PROCESSING'].includes(normStatus(x.status))).length;
-    const synced=queue.filter(x=>normStatus(x.status)==='SYNCED').length+records.filter(x=>normStatus(x.status)==='SYNCED').length;
+    // accurate_sync_queue is the canonical counter for sale transactions.
+    // accurate_sync_records also stores their audit rows, so adding both sets
+    // double-counts every sale. Count only standalone records not mirrored by a sale queue.
+    const queuedSaleIds=new Set(queue.map(x=>String(x.sale_id||'')));
+    const standaloneRecords=records.filter(x=>{
+      const type=String(x.entity_type||'').toLowerCase();
+      const isSaleMirror=['sales_invoice','journal_voucher'].includes(type) && queuedSaleIds.has(String(x.local_id||''));
+      return !isSaleMirror;
+    });
+    const failed=queue.filter(x=>normStatus(x.status)==='FAILED').length+standaloneRecords.filter(x=>normStatus(x.status)==='FAILED').length;
+    const pending=queue.filter(x=>['PENDING','PROCESSING'].includes(normStatus(x.status))).length+standaloneRecords.filter(x=>['PENDING','PROCESSING'].includes(normStatus(x.status))).length;
+    const synced=queue.filter(x=>normStatus(x.status)==='SYNCED').length+standaloneRecords.filter(x=>normStatus(x.status)==='SYNCED').length;
     const overall=conflicts.length?'CONFLICT':failed?'FAILED':pending?'PENDING':'SYNCED';
     openModal('🔗 Accurate Sync Monitor',
       '<div class="box" style="background:linear-gradient(145deg,#07111f,#12302a);color:#fff;border:0">'+

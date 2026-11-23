@@ -860,29 +860,18 @@ window.openFinanceSection=async function(section){
         '<div class="box" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px"><div><h3 style="margin:0">🏆 Komisi Tim</h3><div class="small" style="margin-top:4px">Rekap komisi berdasarkan '+hmPayrollMonthLabel(startDate)+'</div></div><div style="font-size:20px;font-weight:800">'+money(commission)+'</div></div>'+commissionDetail+'<div class="small" style="margin-top:10px">Sumber: laporan Komisi Tim.</div></div>'+
         '<div class="box" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px"><div><h3 style="margin:0">🎁 Reward</h3><div class="small" style="margin-top:4px">Reward berdasarkan target outlet '+hmPayrollMonthLabel(startDate)+'</div></div><div style="font-size:20px;font-weight:800">'+money(reward)+'</div></div>'+rewardDetail+'<div class="small" style="margin-top:10px">Total reward terkonfigurasi: '+money(rewardConfigured)+' • Yang berhak: '+money(reward)+'</div></div>'+
         '<div class="box" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h3 style="margin:0">💰 Pembayaran</h3><div class="small" style="margin-top:4px">Pembayaran payroll, komisi dan reward dilakukan melalui Kas & Bank.</div></div><button class="primary" type="button" onclick="window.openFinanceSection(\'cashbank\')">💵 Buka Kas & Bank</button></div><div class="fin-grid" style="margin-top:12px"><div class="fin-card"><div class="small">👥 Payroll</div><div class="fin-big">'+money(payroll)+'</div><div class="small">Kewajiban periode ini</div></div><div class="fin-card"><div class="small">🏆 Komisi</div><div class="fin-big">'+money(commission)+'</div><div class="small">Belum dibayar</div></div><div class="fin-card"><div class="small">🎁 Reward</div><div class="fin-big">'+money(reward)+'</div><div class="small">Yang berhak</div></div></div><div class="small" style="margin-top:10px;padding:10px 12px;border-radius:10px;background:#f8fafc">Alur pembayaran: <b>tentukan penerima → pilih Kas/Bank → catat uang keluar → simpan bukti transaksi</b>. Pembayaran yang sudah dicatat akan menjadi bagian dari riwayat Kas & Bank.</div></div>';
-      // Satu-satunya kontrol periode adalah filter utama di #hmPayrollPeriodFilter.
-      // Bersihkan kontrol periode duplikat dari render/modal lama yang mungkin berada
-      // di luar body panel aktif, tanpa menyentuh tombol periode modul lain.
+      // Payroll hanya boleh menampilkan satu set filter periode di seluruh dokumen.
+      // Hapus tombol dari panel/modal lama yang mungkin masih tertinggal di DOM.
       try{
         const canonical=document.getElementById('hmPayrollPeriodFilter');
         const normalizePeriodLabel=btn=>String(btn.textContent||'')
           .replace(/[📅↻🔄↩️]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
-        const isPayrollContext=el=>{
-          let node=el;
-          for(let depth=0;node&&depth<8;depth++,node=node.parentElement){
-            const id=String(node.id||'').toLowerCase();
-            const title=String(node.querySelector?.('#hmMenuPanelTitle')?.textContent||'').toLowerCase();
-            if(id==='hmmenuPanel'.toLowerCase()||title.includes('komisi tim'))return true;
-          }
-          return false;
-        };
         document.querySelectorAll('button').forEach(btn=>{
           const label=normalizePeriodLabel(btn);
           if(label!=='bulan ini'&&label!=='bulan kemarin')return;
-          if(canonical?.contains(btn))return;
-          if(isPayrollContext(btn))btn.remove();
+          if(canonical&&canonical.contains(btn))return;
+          btn.remove();
         });
-        // Pastikan filter utama tidak pernah memiliki label ganda.
         if(canonical){
           for(const label of ['bulan ini','bulan kemarin']){
             const matches=[...canonical.querySelectorAll('button')].filter(btn=>normalizePeriodLabel(btn)===label);

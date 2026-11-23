@@ -909,11 +909,28 @@ async function hmRequestStockTransfer(stockId){
  }
  if(!s||String(s.status||'').trim().toUpperCase()!=='READY')return alert('Hanya stok READY yang dapat diajukan mutasi.');
 
- const targets=['Majesty Plaza iPhone','Majesty Refill Phone','Majesty Cell','Majesty Gadget','Majesty Store'].filter(x=>x!==s.outlet);
- const choice=prompt('Ketik nama outlet tujuan: '+targets.join(', '));
- if(!choice)return;
- const target=targets.find(x=>x.toLowerCase()===choice.trim().toLowerCase());
- if(!target)return alert('Outlet tujuan tidak sesuai daftar.');
+ const targets=['Central Stock','Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space','Majesty Cell','Majesty Gadget','Majesty Store'].filter(x=>x.toLowerCase()!==String(s.outlet||'').trim().toLowerCase());
+ if(!targets.length)return alert('Tidak ada lokasi tujuan yang tersedia untuk stok ini.');
+ // Pilihan tujuan menggunakan dropdown agar nama lokasi tidak perlu diketik manual.
+ document.getElementById('hmStockTransferChoice')?.remove();
+ const overlay=document.createElement('div');
+ overlay.id='hmStockTransferChoice';
+ overlay.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.62);display:flex;align-items:center;justify-content:center;padding:16px;';
+ overlay.innerHTML='<div role="dialog" aria-modal="true" aria-labelledby="hmTransferChoiceTitle" style="width:min(440px,100%);background:#fff;color:#1e293b;border-radius:16px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)">'+
+  '<h3 id="hmTransferChoiceTitle" style="margin:0 0 8px;font-size:18px">📦 Pilih Lokasi Tujuan</h3>'+
+  '<div style="font-size:13px;color:#64748b;margin-bottom:14px">Lokasi asal: <b>'+esc(String(s.outlet||'-'))+'</b></div>'+
+  '<label for="hmTransferDestination" style="display:block;font-weight:600;margin-bottom:6px">Pindahkan stok ke</label>'+
+  '<select id="hmTransferDestination" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#0f172a;font-size:15px"><option value="">-- Pilih lokasi tujuan --</option>'+targets.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+'</select>'+
+  '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><button type="button" id="hmTransferCancel" class="secondary">Batal</button><button type="button" id="hmTransferContinue" class="primary">Lanjutkan</button></div></div>';
+ document.body.appendChild(overlay);
+ const target=await new Promise(resolve=>{
+  const select=overlay.querySelector('#hmTransferDestination');
+  overlay.querySelector('#hmTransferCancel').onclick=()=>{overlay.remove();resolve(null);};
+  overlay.querySelector('#hmTransferContinue').onclick=()=>{const value=select.value;overlay.remove();resolve(value||null);};
+  overlay.addEventListener('click',e=>{if(e.target===overlay){overlay.remove();resolve(null);}});
+  select.focus();
+ });
+ if(!target)return alert('Lokasi tujuan belum dipilih. Pengajuan mutasi dibatalkan.');
  const result=await sb.rpc('hm_request_stock_transfer',{p_stock_unit_id:stockId,p_to_outlet:target});
  if(result.error)return alert('Pengajuan mutasi gagal: '+result.error.message);
  alert('Pengajuan mutasi berhasil. Stok dikunci sampai unit penerima menyetujui.');

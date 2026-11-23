@@ -858,6 +858,18 @@ window.openFinanceSection=async function(section){
         '<div class="fin-card"><div class="small">🎁 Reward</div><div class="fin-big">'+money(reward)+'</div><div class="small">Reward yang tercatat</div></div></div>'+
         '<div class="box" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px"><div><h3 style="margin:0">🏆 Komisi Tim</h3><div class="small" style="margin-top:4px">Rekap komisi berdasarkan '+hmPayrollMonthLabel(startDate)+'</div></div><div style="font-size:20px;font-weight:800">'+money(commission)+'</div></div>'+commissionDetail+'<div class="small" style="margin-top:10px">Sumber: laporan Komisi Tim.</div></div>'+
         '<div class="box" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px"><div><h3 style="margin:0">🎁 Reward</h3><div class="small" style="margin-top:4px">Reward berdasarkan target outlet '+hmPayrollMonthLabel(startDate)+'</div></div><div style="font-size:20px;font-weight:800">'+money(reward)+'</div></div>'+rewardDetail+'<div class="small" style="margin-top:10px">Total reward terkonfigurasi: '+money(rewardConfigured)+' • Yang berhak: '+money(reward)+'</div></div>'+
+      // Pastikan hanya ada satu pengendali periode pada panel Payroll/Komisi.
+      // Versi UI lama dapat menyisipkan tombol periode kedua di dalam kartu Komisi.
+      try{
+        const seenPayrollPeriods=new Set();
+        panel.querySelectorAll('button').forEach(btn=>{
+          const label=String(btn.textContent||'').replace(/[📅↻🔄]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+          if(label==='bulan ini'||label==='bulan kemarin'){
+            if(seenPayrollPeriods.has(label))btn.remove();
+            else seenPayrollPeriods.add(label);
+          }
+        });
+      }catch(cleanupError){console.warn('[HM] Payroll period cleanup:',cleanupError);}
         '<div class="box" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h3 style="margin:0">💰 Pembayaran</h3><div class="small" style="margin-top:4px">Pembayaran payroll, komisi dan reward dilakukan melalui Kas & Bank.</div></div><button class="primary" type="button" onclick="window.openFinanceSection(\'cashbank\')">💵 Buka Kas & Bank</button></div><div class="fin-grid" style="margin-top:12px"><div class="fin-card"><div class="small">👥 Payroll</div><div class="fin-big">'+money(payroll)+'</div><div class="small">Kewajiban periode ini</div></div><div class="fin-card"><div class="small">🏆 Komisi</div><div class="fin-big">'+money(commission)+'</div><div class="small">Belum dibayar</div></div><div class="fin-card"><div class="small">🎁 Reward</div><div class="fin-big">'+money(reward)+'</div><div class="small">Yang berhak</div></div></div><div class="small" style="margin-top:10px;padding:10px 12px;border-radius:10px;background:#f8fafc">Alur pembayaran: <b>tentukan penerima → pilih Kas/Bank → catat uang keluar → simpan bukti transaksi</b>. Pembayaran yang sudah dicatat akan menjadi bagian dari riwayat Kas & Bank.</div></div>';
       try{
         const tr=await window.sb.from('team_profiles').select('name,outlet,role,active').eq('active',true).order('name');

@@ -98,6 +98,13 @@ public class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme() == null ? "" : uri.getScheme();
+                if ("https".equals(scheme) && "hello-majesty-lead-tracker.pages.dev".equalsIgnoreCase(uri.getHost())) {
+                    String target = "https://app.hello-majesty.com" +
+                        (uri.getEncodedPath() == null ? "/" : uri.getEncodedPath()) +
+                        (uri.getEncodedQuery() == null ? "" : "?" + uri.getEncodedQuery());
+                    view.loadUrl(target);
+                    return true;
+                }
                 if ("https".equals(scheme) && uri.getHost() != null &&
                     (uri.getHost().equals("app.hello-majesty.com") ||
                      uri.getHost().equals("ksowzhhmzrumyciehuyv.supabase.co"))) return false;
@@ -120,8 +127,18 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
-        if (savedInstanceState == null) webView.loadUrl(resolveNotificationUrl(getIntent()));
-        else webView.restoreState(savedInstanceState);
+        if (savedInstanceState == null) {
+            webView.loadUrl(resolveNotificationUrl(getIntent()));
+        } else {
+            android.webkit.WebBackForwardList restored = webView.restoreState(savedInstanceState);
+            String restoredUrl = webView.getUrl();
+            Uri restoredUri = restoredUrl == null ? null : Uri.parse(restoredUrl);
+            // Never revive a WebView state saved on the legacy Pages.dev host.
+            if (restored == null || restoredUri == null ||
+                !"app.hello-majesty.com".equalsIgnoreCase(restoredUri.getHost())) {
+                webView.loadUrl(resolveNotificationUrl(getIntent()));
+            }
+        }
     }
 
     private String resolveNotificationUrl(Intent intent) {
@@ -357,8 +374,8 @@ public class MainActivity extends Activity {
                 payload.put("endpoint_hash", hash.toString());
                 payload.put("fcm_token", fcmToken);
                 payload.put("device_label", "Hello Majesty Android");
-                payload.put("app_version", "1.3.3");
-                payload.put("app_version_code", 17);
+                payload.put("app_version", "1.3.6");
+                payload.put("app_version_code", 21);
                 payload.put("platform", "android");
                 payload.put("enabled", true);
                 String now = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).format(new Date());

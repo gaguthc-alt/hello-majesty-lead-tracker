@@ -7347,6 +7347,12 @@ async function shareWalkinApprovalWA(stockId,salePrice){
  const approvalLink='https://app.hello-majesty.com/?open=walkin&approval='+encodeURIComponent(approvalId||'');
  const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh tim Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👥 *Seluruh Tim Sales/Closing:* '+sales,...(requesterName?['🧾 Pengaju/PIC Utama: '+requesterName]:[]),'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
  if(!approvalId){alert('ID persetujuan Walk-In belum ditemukan. Pengajuan mungkin belum tersimpan pada daftar persetujuan. Silakan cek menu Persetujuan Walk-In.');return;}
+ // APK Android: gunakan native share intent agar WhatsApp dibuka di luar WebView.
+ if(window.HelloMajestyNative&&typeof window.HelloMajestyNative.openWhatsAppMessage==='function'){
+   window.HelloMajestyNative.openWhatsAppMessage(msg);
+   return;
+ }
+ // Browser biasa: buka WhatsApp Web dengan pesan yang sudah disiapkan.
  window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
 }
 window.hmOpenWalkinFromLink=async function(){

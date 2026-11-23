@@ -36,7 +36,7 @@
     if(!isFinanceAdmin()) return;
     const [q,r,c]=await Promise.all([
       sb.from('accurate_sync_queue').select('*').order('updated_at',{ascending:false}).limit(100),
-      sb.from('accurate_sync_records').select('*').order('updated_at',{ascending:false}).limit(30),
+      sb.from('accurate_sync_records').select('*').order('updated_at',{ascending:false}).limit(500),
       sb.from('accurate_sync_conflicts').select('*').eq('status','OPEN').order('detected_at',{ascending:false}).limit(30)
     ]);
     if(q.error) throw q.error; if(r.error) throw r.error; if(c.error) throw c.error;

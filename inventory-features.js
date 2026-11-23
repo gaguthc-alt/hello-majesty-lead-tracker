@@ -4,6 +4,15 @@
   const money=v=>'Rp'+Number(v||0).toLocaleString('id-ID');
   const role=()=>String(window.profile?.role||'').trim().toUpperCase().replace(/_/g,' ');
   function can(){return !!window.profile?.is_management||['DEVELOPER','DEVELOPER APLIKASI','FASILITATOR','ADMIN FINANCE','ADMIN FINANCE MAJESTY CELL','MITRA STOCKIST'].includes(role());}
+  async function canMoveStock(){
+    if(!!window.profile?.is_management)return true;
+    if(role()!=='FASILITATOR')return false;
+    const uid=window.profile?.user_id;
+    if(!uid)return false;
+    const r=await sb.from('team_additional_roles').select('role').eq('user_id',uid).eq('active',true).in('role',['MUTASI_STOCK','MUTASI STOCK']).limit(1);
+    if(r.error)throw r.error;
+    return (r.data||[]).length>0;
+  }
   function canSeeFullImei(){return !!window.profile?.is_management||['MANAGEMENT','FASILITATOR'].includes(role());}
   function displayImei(imei){const value=String(imei||'');if(!value)return '-';return canSeeFullImei()?value:'••••'+value.slice(-4);}
   function panel(title,html){
@@ -33,11 +42,11 @@
   };
 
   async function openMutasi(){
-    const currentRole=role(),isPartner=['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'].includes(currentRole),isFacilitator=currentRole==='FASILITATOR';
-    if(!can()&&!isPartner)return alert('Anda tidak memiliki akses Mutasi Stok.');
+    const currentRole=role(),isFacilitator=currentRole==='FASILITATOR';
+    if(!(await canMoveStock()))return alert('Mutasi stok hanya dapat diajukan oleh Management atau Fasilitator yang diberi izin Mutasi Stock.');
     const r=await sb.from('stock_units').select('outlet').not('outlet','is',null);
     if(r.error)throw r.error;
-    const allLocations=[...new Set(['Central Stock','Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space','Majesty Cell','Majesty Gadget','Majesty Store',...(r.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean)])];const myOutlet=String(profile?.outlet||'').trim();const locations=(isPartner?[myOutlet,...allLocations.filter(x=>x!==myOutlet&&x!=='Central Stock')]:isFacilitator?[myOutlet,...allLocations.filter(x=>x!==myOutlet)]:allLocations).filter(Boolean).sort((x,y)=>x.localeCompare(y,'id'));
+    const allLocations=[...new Set(['Central Stock','Majesty Plaza iPhone','Majesty Refill Phone','Majesty Space','Majesty Cell','Majesty Gadget','Majesty Store',...(r.data||[]).map(x=>String(x.outlet||'').trim()).filter(Boolean)])];const locations=allLocations.filter(Boolean).sort((x,y)=>x.localeCompare(y,'id'));
     const options=locations.map(x=>'<option value="'+escx(x)+'">'+escx(x)+'</option>').join('');
     const html='<div class="small" style="margin-bottom:10px">Pilih lokasi asal dan tujuan. Hanya unit READY yang dapat dipindahkan. Mutasi lokasi tidak mengubah pemilik atau sumber kepemilikan stok.</div>'+
       '<div class="box"><label>Lokasi Asal</label><select id="hmMutasiFrom" onchange="hmReloadMutasi()"><option value="">— pilih lokasi asal —</option>'+options+'</select><label>Lokasi Tujuan</label><select id="hmMutasiDefault" onchange="hmReloadMutasi()"><option value="">— pilih lokasi tujuan —</option>'+options+'</select><div id="hmMutasiSourceHint" class="small" style="margin-top:7px"></div></div>'+
@@ -46,7 +55,8 @@
   }
 
   window.hmReloadMutasi=async function(){
-    const currentRole=role(),isPartner=['MITRA STOCKIST','ADMIN FINANCE MAJESTY CELL'].includes(currentRole),isFacilitator=currentRole==='FASILITATOR';
+    const currentRole=role(),isFacilitator=currentRole==='FASILITATOR';
+    if(!(await canMoveStock())){list.innerHTML='<div class="box">Akses mutasi stok tidak diizinkan.</div>';return;}
     const from=document.getElementById('hmMutasiFrom')?.value||'';
     const to=document.getElementById('hmMutasiDefault')?.value||'';
     const list=document.getElementById('hmMutasiList'),hint=document.getElementById('hmMutasiSourceHint');
@@ -54,13 +64,13 @@
     if(!from||!to){if(hint)hint.textContent='';list.innerHTML='<div class="box">Pilih lokasi asal dan tujuan terlebih dahulu.</div>';return;}
     if(from===to){if(hint)hint.textContent='';list.innerHTML='<div class="box">Lokasi asal dan tujuan harus berbeda.</div>';return;}
     if(hint)hint.textContent='Stok READY dari '+from+' akan dipindahkan ke '+to+'.';
-    let stockQuery=sb.from('stock_units').select('id,product_id,outlet,color,imei_1,asking_price,battery_health,status,source_type,partner_name').eq('status','READY').eq('outlet',from);if(isPartner)stockQuery=stockQuery.eq('source_type','STOCKIST').eq('partner_name',profile?.outlet||'');else if(isFacilitator)stockQuery=stockQuery.neq('source_type','STOCKIST');const r=await stockQuery.order('created_at',{ascending:false});
+    const stockQuery=sb.from('stock_units').select('id,product_id,outlet,color,imei_1,asking_price,battery_health,status,source_type,partner_name').eq('status','READY').eq('outlet',from);const r=await stockQuery.order('created_at',{ascending:false});
     if(r.error){list.innerHTML='<div class="box"><b>Gagal memuat stok.</b><div class="small">'+escx(r.error.message)+'</div></div>';return;}
     const pm=await products((r.data||[]).map(x=>x.product_id));
     list.innerHTML=(r.data||[]).length?(r.data||[]).map((s,i)=>{const p=pm[s.product_id]||{};return '<div class="lead"><b>'+String(i+1).padStart(2,'0')+'. '+escx(p.product||'Produk')+(p.variant?' — '+escx(p.variant):'')+'</b><div class="small">'+escx(from)+' → '+escx(to)+' • '+escx(s.color||'-')+(s.battery_health!=null?' • BH '+escx(s.battery_health)+'%':'')+' • '+escx(s.imei_1?'IMEI ••••'+String(s.imei_1).slice(-4):'IMEI -')+'</div><div class="small">Kepemilikan: '+escx(String(s.source_type||'MANAGEMENT')==='STOCKIST'?'Stockist — '+(s.partner_name||'Mitra belum diketahui'):'Internal')+'</div><div style="margin-top:5px">Harga jual: <b>'+money(s.asking_price)+'</b></div><button class="success" style="margin-top:8px" onclick="hmDoMutasi(\''+s.id+'\')">🔄 Mutasikan ke '+escx(to)+'</button></div>';}).join(''):'<div class="box"><b>Tidak ada Stock READY di '+escx(from)+' untuk dimutasi.</b></div>';
   };
   window.hmDoMutasi=async function(id){
-    const currentRole=role();
+    if(!(await canMoveStock()))return alert('Akses mutasi stok tidak diizinkan.');
     const from=document.getElementById('hmMutasiFrom')?.value||'';
     const to=document.getElementById('hmMutasiDefault')?.value||'';
     if(!from||!to||from===to)return;

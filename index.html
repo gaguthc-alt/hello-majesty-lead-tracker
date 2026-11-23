@@ -22,7 +22,7 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',render,{once:true});else render();
   },true);
 })();
-</script><meta name="hm-build" content="20261123-walkin-direct-submit-v1">>><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+</script><meta name="hm-build" content="20261123-walkin-wa-approval-fix-1">>>><meta name="hm-ui-build" content="mobile-responsive-v1-20261022"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#111827"><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/pwa-icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/pwa-icon.svg"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hello Majesty"><title>Hello Majesty — Management System</title><link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="preconnect" href="https://ksowzhhmzrumyciehuyv.supabase.co"><script defer data-hm-supabase src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;this.src='https://unpkg.com/@supabase/supabase-js@2'"></script><script>
 /* Legacy web-chat notification watcher disabled: WhatsApp Inbox is the active channel. */
 </script><script>
@@ -4675,7 +4675,13 @@ window.hmOpenPartnerSettlementManagement=async function(){
   b.querySelectorAll('[data-request-confirm]').forEach(btn=>btn.addEventListener('click',async()=>{
    if(!confirm('Kirim permintaan konfirmasi kewajiban ini kepada mitra?'))return;
    const {error}=await window.sb.rpc('request_partner_settlement_confirmation',{p_settlement_id:btn.dataset.requestConfirm});
-   if(error){alert('Gagal meminta konfirmasi: '+error.message);return;} const row=btn.closest('tr'); const cells=row?row.querySelectorAll('td'):[]; const partner=cells[0]?.textContent?.trim()||'Mitra Stockist'; const outlet=cells[1]?.textContent?.trim()||'Majesty Plaza'; const date=cells[2]?.textContent?.trim()||''; const amount=cells[3]?.textContent?.trim()||''; const msg=['*PERMINTAAN KONFIRMASI SETTLEMENT*','*HELLO MAJESTY*','','Yth. '+partner+', mohon konfirmasi settlement berikut:','','• Outlet: '+outlet,'• Tanggal: '+date,'• Jumlah unit: '+(cells[5]?.querySelector('[style*="font-weight:700"]')?.textContent?.trim()||'lihat rincian di aplikasi'),'• *Nominal settlement: '+amount+'*','• Status: MENUNGGU KONFIRMASI','','Mohon periksa rincian produk dan perhitungan settlement melalui aplikasi Hello Majesty, kemudian lakukan konfirmasi di aplikasi. Pesan ini merupakan permintaan konfirmasi, bukan bukti transfer atau pemberitahuan bahwa pembayaran sudah dilakukan.','','Hello Majesty — Built on Trust'].join('\n'); window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
+   if(error){alert('Gagal meminta konfirmasi: '+error.message);return;} const row=btn.closest('tr'); const cells=row?row.querySelectorAll('td'):[]; const partner=cells[0]?.textContent?.trim()||'Mitra Stockist'; const outlet=cells[1]?.textContent?.trim()||'Majesty Plaza'; const date=cells[2]?.textContent?.trim()||''; const amount=cells[3]?.textContent?.trim()||''; const msg=['*PERMINTAAN KONFIRMASI SETTLEMENT*','*HELLO MAJESTY*','','Yth. '+partner+', mohon konfirmasi settlement berikut:','','• Outlet: '+outlet,'• Tanggal: '+date,'• Jumlah unit: '+(cells[5]?.querySelector('[style*="font-weight:700"]')?.textContent?.trim()||'lihat rincian di aplikasi'),'• *Nominal settlement: '+amount+'*','• Status: MENUNGGU KONFIRMASI','','Mohon periksa rincian produk dan perhitungan settlement melalui aplikasi Hello Majesty, kemudian lakukan konfirmasi di aplikasi. Pesan ini merupakan permintaan konfirmasi, bukan bukti transfer atau pemberitahuan bahwa pembayaran sudah dilakukan.','','Hello Majesty — Built on Trust'].join('\n'); // APK Android: gunakan native share intent agar WhatsApp dibuka di luar WebView.
+ if(window.HelloMajestyNative&&typeof window.HelloMajestyNative.openWhatsAppMessage==='function'){
+   window.HelloMajestyNative.openWhatsAppMessage(msg);
+   return;
+ }
+ // Browser: buka WhatsApp Web dengan pesan yang sudah disiapkan.
+ window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
   }));
   b.querySelectorAll('[data-send-confirm-wa]').forEach(btn=>btn.addEventListener('click',()=>{
    const row=btn.closest('tr');const cells=row?row.querySelectorAll('td'):[];
@@ -7318,13 +7324,12 @@ async function shareWalkinApprovalWA(stockId,salePrice){
  const outlet=profile?.outlet||'-';
  let salesNames=[], requesterName='', approvalId='';
  try{
-   const [a,w] = await Promise.all([
-     sb.from('stock_sale_approvals').select('id,team_member_ids,requested_by,sale_price').eq('stock_unit_id',stockId).eq('status','PENDING').order('requested_at',{ascending:false}).limit(1).maybeSingle(),
-     sb.from('walkin_sale_approvals').select('id').eq('stock_unit_id',stockId).eq('status','PENDING').order('requested_at',{ascending:false}).limit(1).maybeSingle()
-   ]);
+   const a = await sb.from('stock_sale_approvals')
+     .select('id,team_member_ids,requested_by,sale_price,outlet')
+     .eq('stock_unit_id',stockId).eq('status','PENDING')
+     .order('requested_at',{ascending:false}).limit(1).maybeSingle();
    if(a?.error)throw a.error;
-   if(w?.error)throw w.error;
-   approvalId=w?.data?.id||'';
+   approvalId=a?.data?.id||'';
    const ids=Array.isArray(a?.data?.team_member_ids)?a.data.team_member_ids.filter(Boolean):[];
    const requestedBy=a?.data?.requested_by;
    const lookupIds=[...new Set([...ids,...(requestedBy?[requestedBy]:[])])];
@@ -7364,7 +7369,7 @@ window.hmOpenWalkinFromLink=async function(){
    if(approvalId){
      const db=(typeof sb!=='undefined'&&sb)?sb:window.sb;
      if(!db)throw new Error('Koneksi database belum siap untuk mencari transaksi.');
-     const lookup=await db.from('walkin_sale_approvals').select('stock_unit_id,status').eq('id',approvalId).maybeSingle();
+     const lookup=await db.from('stock_sale_approvals').select('stock_unit_id,status').eq('id',approvalId).maybeSingle();
      if(lookup.error)throw lookup.error;
      if(!lookup.data)throw new Error('ID persetujuan tidak ditemukan. Minta Management membuat ulang tautan.');
      stockUnitId=String(lookup.data.stock_unit_id||'');

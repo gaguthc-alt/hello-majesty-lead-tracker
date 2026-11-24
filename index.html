@@ -7316,7 +7316,7 @@ async function shareWalkinApprovalWA(stockId,salePrice,submittedApprovalId=''){
  const sel=document.getElementById('ss');
  const product=sel?.selectedOptions?.[0]?.textContent?.replace(/\s*•\s*List.*$/,'').trim()||'Stock Walk-In';
  const outlet=profile?.outlet||'-';
- let salesNames=[], requesterName='', approvalId='';
+ let salesNames=[], requesterName='', approvalId='', approvalRow=null;
  try{
    // Utamakan ID yang dikembalikan RPC agar pesan selalu menunjuk transaksi
    // yang baru saja diajukan, bukan pengajuan pending lain pada unit yang sama.
@@ -7325,19 +7325,18 @@ async function shareWalkinApprovalWA(stockId,salePrice,submittedApprovalId=''){
        .select('id,team_member_ids,requested_by,sale_price,outlet')
        .eq('id',submittedApprovalId).maybeSingle();
      if(a?.error)throw a.error;
-     approvalId=a?.data?.id||'';
-     if(a?.data)window.hmWalkinApprovalShareRow=a.data;
+     approvalRow=a?.data||null;
    }else{
      const a = await sb.from('stock_sale_approvals')
        .select('id,team_member_ids,requested_by,sale_price,outlet')
        .eq('stock_unit_id',stockId).eq('status','PENDING')
        .order('requested_at',{ascending:false}).limit(1).maybeSingle();
      if(a?.error)throw a.error;
-     approvalId=a?.data?.id||'';
-     if(a?.data)window.hmWalkinApprovalShareRow=a.data;
+     approvalRow=a?.data||null;
    }
-   const ids=Array.isArray(a?.data?.team_member_ids)?a.data.team_member_ids.filter(Boolean):[];
-   const requestedBy=a?.data?.requested_by;
+   approvalId=approvalRow?.id||'';
+   const ids=Array.isArray(approvalRow?.team_member_ids)?approvalRow.team_member_ids.filter(Boolean):[];
+   const requestedBy=approvalRow?.requested_by;
    const lookupIds=[...new Set([...ids,...(requestedBy?[requestedBy]:[])])];
    if(lookupIds.length && typeof sb.rpc==='function'){
      const n=await sb.rpc('get_team_profile_names',{p_user_ids:lookupIds});

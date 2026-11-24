@@ -7311,19 +7311,31 @@ function salesResultMessage(l){
  return ['❌ *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: GAGAL*','📱 Produk: '+product,'📝 Alasan: '+(l.objection||'-'),'','Lead dinyatakan gagal setelah proses konsultasi dan follow-up oleh '+pic+'.','','Hello Majesty','Management System','Built on Trust'].join(nl);
 }
 function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
-async function shareWalkinApprovalWA(stockId,salePrice){
+async function shareWalkinApprovalWA(stockId,salePrice,submittedApprovalId=''){
  const nl=String.fromCharCode(10);
  const sel=document.getElementById('ss');
  const product=sel?.selectedOptions?.[0]?.textContent?.replace(/\s*•\s*List.*$/,'').trim()||'Stock Walk-In';
  const outlet=profile?.outlet||'-';
  let salesNames=[], requesterName='', approvalId='';
  try{
-   const a = await sb.from('stock_sale_approvals')
-     .select('id,team_member_ids,requested_by,sale_price,outlet')
-     .eq('stock_unit_id',stockId).eq('status','PENDING')
-     .order('requested_at',{ascending:false}).limit(1).maybeSingle();
-   if(a?.error)throw a.error;
-   approvalId=a?.data?.id||'';
+   // Utamakan ID yang dikembalikan RPC agar pesan selalu menunjuk transaksi
+   // yang baru saja diajukan, bukan pengajuan pending lain pada unit yang sama.
+   if(submittedApprovalId){
+     const a=await sb.from('stock_sale_approvals')
+       .select('id,team_member_ids,requested_by,sale_price,outlet')
+       .eq('id',submittedApprovalId).maybeSingle();
+     if(a?.error)throw a.error;
+     approvalId=a?.data?.id||'';
+     if(a?.data)window.hmWalkinApprovalShareRow=a.data;
+   }else{
+     const a = await sb.from('stock_sale_approvals')
+       .select('id,team_member_ids,requested_by,sale_price,outlet')
+       .eq('stock_unit_id',stockId).eq('status','PENDING')
+       .order('requested_at',{ascending:false}).limit(1).maybeSingle();
+     if(a?.error)throw a.error;
+     approvalId=a?.data?.id||'';
+     if(a?.data)window.hmWalkinApprovalShareRow=a.data;
+   }
    const ids=Array.isArray(a?.data?.team_member_ids)?a.data.team_member_ids.filter(Boolean):[];
    const requestedBy=a?.data?.requested_by;
    const lookupIds=[...new Set([...ids,...(requestedBy?[requestedBy]:[])])];
@@ -7346,7 +7358,12 @@ async function shareWalkinApprovalWA(stockId,salePrice){
    window.HelloMajestyNative.openWhatsAppMessage(msg);
    return;
  }
- // Browser biasa: buka WhatsApp Web dengan pesan yang sudah disiapkan.
+ // Browser/PWA: tampilkan share sheet agar pengguna dapat memilih WhatsApp,
+ // kontak, atau grup sendiri. Tidak memakai Sambungan/API pengiriman otomatis.
+ if(navigator.share){
+   try{await navigator.share({text:msg});return;}
+   catch(shareError){if(shareError?.name==='AbortError')return;console.warn('[HM WA] Share sheet gagal:',shareError);}
+ }
  window.location.href='https://wa.me/?text='+encodeURIComponent(msg);
 }
 window.hmOpenWalkinFromLink=async function(){
@@ -7428,9 +7445,10 @@ async function submitStockClosingApproval(id){
  const temp=window.hmStockClosingTempLeadId;
  if(temp){leads=leads.filter(l=>String(l.lead_id)!==String(temp));window.hmStockClosingTempLeadId=null;}
  window.hmStockClosingApprovalMode=false;
- const shareNow=confirm('Closing berhasil diajukan.\n\nJalur: '+(closingCapacity==='FREELANCE_INTERNAL'?'FREELANCE INTERNAL (komisi 30% dibagi rata)':'WALK-IN (komisi 10%)')+'\nStatus: MENUNGGU PERSETUJUAN.\n\nBagikan ke WhatsApp untuk meminta persetujuan Management?');
  closeModal();
- if(shareNow)shareWalkinApprovalWA(stockId,salePrice);
+ // Setelah pengajuan tersimpan, langsung buka WhatsApp agar Sales dapat memilih
+ // kontak atau grup Management dan mengirim permintaan persetujuan.
+ await shareWalkinApprovalWA(stockId,salePrice,x.data?.approval_id||'');
  try{if(typeof renderInventory==='function')await renderInventory();}
  catch(refreshError){console.error('[HM Walk-In] Closing saved but inventory refresh failed:',refreshError);alert('Closing berhasil diajukan dan tersimpan. Tampilan stok belum berhasil diperbarui; silakan muat ulang aplikasi.');}
 }

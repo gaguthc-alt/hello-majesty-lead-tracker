@@ -219,10 +219,17 @@ async function reviewUnifiedWalkin(id,kind,action){
      console.warn('[HM] RPC returned error but requested approval status is already saved:',r.error);
    }
    const table=kind==='STOCK'?'stock_sale_approvals':'walkin_sale_approvals';
-   const approval=await sb.from(table).select('stock_unit_id,sale_id,sale_price,requested_by').eq('id',id).maybeSingle();
+   const approvalSelect=kind==='STOCK'?'stock_unit_id,sale_id,sale_price,requested_by,team_member_ids,payment_method_id,pay_now':'stock_unit_id,sale_id,sale_price,requested_by,sales_user_ids';
+   const approval=await sb.from(table).select(approvalSelect).eq('id',id).maybeSingle();
    const stockId=approval.data?.stock_unit_id;
-   let st={},productLabel='Produk',requesterName='Sales';
-   if(approval.data?.requested_by){const person=await sb.rpc('get_team_profile_names',{p_user_ids:[approval.data.requested_by]});if(!person.error&&person.data?.[0]?.name)requesterName=person.data[0].name;}
+   let st={},productLabel='Produk',requesterName='Sales',salesCompanion='Tidak ada',paymentLabel='Belum ada pembayaran tercatat';
+   const memberIds=Array.isArray(approval.data?.team_member_ids)?approval.data.team_member_ids:Array.isArray(approval.data?.sales_user_ids)?approval.data.sales_user_ids:[];
+   const profileIds=[...new Set([approval.data?.requested_by,...memberIds].filter(Boolean))];
+   let people=[];
+   if(profileIds.length){const person=await sb.rpc('get_team_profile_names',{p_user_ids:profileIds});if(!person.error&&Array.isArray(person.data))people=person.data;}
+   requesterName=people.find(x=>String(x.user_id)===String(approval.data?.requested_by))?.name||requesterName;
+   const companionNames=[...new Set(memberIds.filter(x=>String(x)!==String(approval.data?.requested_by)).map(x=>people.find(p=>String(p.user_id)===String(x))?.name).filter(Boolean))];
+   if(companionNames.length)salesCompanion=companionNames.join(', ');
    if(stockId){
      const stockRes=await sb.from('stock_units').select('product_id,product,variant,color,imei_1,outlet,cost,source_type,partner_name').eq('id',stockId).maybeSingle();
      st=stockRes.data||{};
@@ -245,16 +252,38 @@ async function reviewUnifiedWalkin(id,kind,action){
        }
      }
    }
+   const saleId=approval.data?.sale_id||null;
+   if(saleId){
+     const pays=await sb.from('sales_payments').select('amount,payment_method_id,payment_methods(name,code)').eq('sale_id',saleId).is('reversed_at',null).order('payment_date',{ascending:true});
+     if(!pays.error&&Array.isArray(pays.data)&&pays.data.length){
+       const grouped={};
+       pays.data.forEach(p=>{const method=p.payment_methods?.name||p.payment_methods?.code||'Metode tidak diketahui';grouped[method]=(grouped[method]||0)+Number(p.amount||0);});
+       paymentLabel=Object.entries(grouped).map(([name,amount])=>name+' — Rp'+amount.toLocaleString('id-ID')).join(' + ');
+     }
+   }
+   if(paymentLabel==='Belum ada pembayaran tercatat'&&kind==='STOCK'&&approval.data?.payment_method_id){
+     const pm=await sb.from('payment_methods').select('name,code').eq('id',approval.data.payment_method_id).maybeSingle();
+     if(!pm.error&&pm.data)paymentLabel=pm.data.name||pm.data.code||paymentLabel;
+   }
    const msg=[
-     action==='APPROVE'?'✅ *PENJUALAN DISETUJUI*':'❌ *PENGAJUAN PENJUALAN DITOLAK*',
+     action==='APPROVE'?'✅ *PERSETUJUAN TRANSAKSI BERHASIL*':'❌ *PENGAJUAN TRANSAKSI DITOLAK*',
      '',
-     'Jenis: '+(kind==='STOCK'?'Closing Stock Siap Jual':'Walk-In'),
-     'Produk: '+productLabel,
-     'Outlet: '+(st.outlet||'-'),
-     'Sales: '+(requesterName),
-     'Harga: Rp'+Number(approval.data?.sale_price||0).toLocaleString('id-ID'),
-     'Status: *'+(action==='APPROVE'?'SOLD':'DITOLAK')+'*',
+     action==='APPROVE'?'Permohonan closing telah diperiksa dan *DISETUJUI*.':'Permohonan closing *DITOLAK* setelah dilakukan pemeriksaan.',
+     '',
+     '📦 *DETAIL TRANSAKSI*',
+     '• Jenis: '+(kind==='STOCK'?'Closing Stock Siap Jual':'Closing Walk-In'),
+     '• Produk: '+productLabel,
+     '• Outlet: '+(st.outlet||'-'),
+     '• Sales Utama: '+requesterName,
+     '• Sales Pendamping: '+salesCompanion,
+     '• Harga Closing: *Rp'+Number(approval.data?.sale_price||0).toLocaleString('id-ID')+'*',
+     '• Metode Pembayaran: '+paymentLabel,
+     '',
+     '📌 *STATUS TRANSAKSI*',
+     action==='APPROVE'?'*SOLD — DISETUJUI*':'*DITOLAK*',
      ...(action==='REJECT'?['Catatan: '+note]:[]),
+     '',
+     action==='APPROVE'?'Transaksi telah mendapatkan persetujuan dan dinyatakan selesai.':'Silakan hubungi Management apabila diperlukan tindak lanjut.',
      '',
      '— *HELLO MAJESTY*',
      '_Built on Trust._'

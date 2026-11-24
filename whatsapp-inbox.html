@@ -21,6 +21,19 @@ body{min-height:100vh;background:linear-gradient(180deg,#eaf2f2 0,#f4f7f8 260px,
 .detail{display:flex;flex-direction:column;min-height:calc(100vh - 150px);overflow:hidden}.head{padding:17px 19px;background:#fff;border-bottom:1px solid #edf1f2}.head b{font-size:16px;color:#1b2937}.head .muted{margin-top:5px}.actions button,.review-actions button{border-radius:10px;padding:10px 14px;font-weight:700}.msgs{padding:18px;flex:1;overflow:auto;min-height:320px;max-height:calc(100vh - 360px);background-color:#f4f8f7;background-image:radial-gradient(#d8e5e1 .7px,transparent .7px);background-size:16px 16px;overscroll-behavior:contain}.bubble{max-width:min(78%,620px);padding:11px 14px;margin:9px 0;border:1px solid #e7edeb;border-radius:14px 14px 14px 4px;background:#fff;box-shadow:0 3px 9px #16352a0a;font-size:14px;line-height:1.5}.bubble.cs{margin-left:auto;border-color:#c8e9d8;border-radius:14px 14px 4px 14px;background:#dcf8e8}.foot{padding:13px 16px;background:#fff;border-top:1px solid #e9eff0}.footnote,.muted{line-height:1.45}.compose{gap:9px;margin-top:8px}.compose textarea{min-height:48px;border:1px solid #d8e2e5;border-radius:12px;padding:12px 13px;font-size:14px;line-height:1.4;background:#fbfcfc}.compose button{min-width:92px;border:0;border-radius:12px;background:#087f70;color:white;font-weight:700}.compose button:disabled{background:#a9c7c1}.empty{min-height:180px;padding:24px;font-size:14px;line-height:1.5}.lead-review{padding:15px 18px;background:#fbfdfd}.lead-review h3{font-size:14px;color:#1b2937}.lead-review .review-actions button{background:#eff7f5;color:#087f70;border:1px solid #d8ebe5}
 @media(max-width:760px){body{background:#f1f5f6}.top{position:relative;padding:14px 16px;align-items:flex-start;flex-direction:column;gap:12px}.top b{font-size:17px}.top-actions{width:100%;justify-content:flex-start;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.top button{width:100%;min-height:42px;padding:9px 10px;font-size:13px;white-space:normal}.wrap{display:flex;flex-direction:column;margin:13px auto;padding:0 12px;gap:13px}.panel{width:100%;border-radius:16px}.toolbar{padding:11px}.items{max-height:38vh;min-height:110px}.item{padding:14px 15px}.detail{min-height:54vh}.head{padding:14px 15px}.msgs{min-height:28vh;max-height:48vh;padding:13px}.bubble{max-width:88%;font-size:14px}.empty{min-height:150px;padding:20px}.lead-review{padding:13px 14px}.foot{padding:11px 12px}.compose{align-items:stretch}.compose textarea{min-height:46px}.compose button{min-width:76px;padding:9px 11px}}
 @media(max-width:380px){.top-actions{grid-template-columns:1fr}.top button{min-height:40px}.wrap{padding:0 9px}.msgs{padding:10px}.bubble{max-width:92%}}
+/* Management uses an assignment-monitoring view, not the customer chat workspace. */
+body.management-inbox-view .wrap{display:block;max-width:1180px}
+body.management-inbox-view .wrap>.detail{display:none!important}
+body.management-inbox-view .wrap>section:first-child{width:100%;min-height:0}
+body.management-inbox-view .items{max-height:none;overflow:visible}
+body.management-inbox-view .item{cursor:default}
+body.management-inbox-view .item:hover{background:#fff}
+body.management-inbox-view .item.sel{background:#fff;box-shadow:none}
+body.management-inbox-view .hm-pic-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+body.management-inbox-view .hm-pic-cell{padding:8px 10px;border:1px solid #e7eeee;border-radius:10px;background:#f8fbfa;font-size:12px}
+body.management-inbox-view .hm-pic-cell b{display:block;color:#718096;font-size:10px;letter-spacing:.3px;margin-bottom:3px}
+@media(max-width:600px){body.management-inbox-view .hm-pic-summary{grid-template-columns:1fr 1fr}}
+
 .actions .danger{border:1px solid #fecaca;background:#fff1f2;color:#b42318;border-radius:10px;padding:9px 12px;font-weight:700}.actions .danger:disabled{opacity:.6;cursor:wait}
 .item-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.item-title-row strong{display:block;min-width:0;flex:1;margin:0}.item-title-meta{display:flex;align-items:center;gap:7px;flex:0 0 auto}.item-time{font-size:11px;color:#84919b;white-space:nowrap}.unread-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#0b8f78;color:#fff;font-size:11px;font-weight:800}.item.has-unread .item-title-row strong{font-weight:800;color:#142b2a}
 </style></head><body>
@@ -52,6 +65,7 @@ async function loadInboxProfile(){
   }catch(_e){}
   const management=profile.is_management===true||role.includes('MANAGEMENT')||role==='DIVISI'||role.includes('DEVELOPER');
   isInboxManagement=management;
+  document.body.classList.toggle('management-inbox-view',management);
   canInboxCS=canCS;canInboxSales=canSales;
   maskPhoneNumbers=!management;
   const contactsLink=$('contactsLink');if(contactsLink)contactsLink.style.display=management?'inline-block':'none';
@@ -187,6 +201,24 @@ async function markConversationRead(conversationId){
   }catch(error){console.warn('Status baca belum tersimpan:',error);}
 }
 function renderList(){
+ const q=$('search').value.toLowerCase();
+ const filtered=rows.filter(c=>(c.customer_name||'').toLowerCase().includes(q)||(c.customer_phone||'').toLowerCase().includes(q));
+ $('list').innerHTML=filtered.map(c=>{
+  const csName=c.claimed_by?esc(c.claimed_name||'CS'):'Belum ada';
+  const salesName=c.sales_claimed_by?esc(c.sales_claimed_name||'Sales'):'Belum ada';
+  const csTag=c.claimed_by?'CS PIC: '+csName:'';
+  const salesTag=c.sales_claimed_by?'Sales PIC: '+salesName:'';
+  const ownerTag=c.sales_claimed_by===me.id?' · TANGGUNG JAWAB ANDA':c.claimed_by===me.id&&!c.sales_claimed_by?' · TANGGUNG JAWAB ANDA':'';
+  const unread=Number(c.unread_count||0);
+  const timestamp=inboxTime(c.updated_at||c.last_inbound_at||c.created_at);
+  const reminderButton=isInboxManagement?'<button type="button" class="btn hm-ask-pic" data-id="'+esc(c.id)+'" style="margin-top:10px;padding:7px 11px;font-size:11px;border-radius:9px">💬 TANYA PIC / FOLLOW-UP</button>':'';
+  const managementSummary=isInboxManagement?'<div class="hm-pic-summary"><div class="hm-pic-cell"><b>CS PIC</b>'+(c.claimed_by?csName:'— Belum diklaim')+'</div><div class="hm-pic-cell"><b>SALES PIC</b>'+(c.sales_claimed_by?salesName:'— Belum di-claim')+'</div></div>':'';
+  const regularAssignment=(c._queue?'<span class="tag">CHAT TERSEDIA</span>':(csTag?'<span class="tag lock">'+csTag+'</span> ':'')+(salesTag?'<span class="tag">'+salesTag+'</span> ':'')+(!csTag&&!salesTag?'<span class="tag lock">BELUM ADA PIC</span>':''))+'<span class="muted">'+esc(c.status||'NEW')+esc(ownerTag)+'</span>';
+  return '<div class="item '+(active?.id===c.id?'sel ':'')+(unread?'has-unread':'')+'" data-id="'+esc(c.id)+'"><div class="item-title-row"><strong>'+esc(c.customer_name||c.customer_phone||'Kontak WhatsApp')+'</strong><span class="item-title-meta">'+(timestamp?'<span class="item-time">'+esc(timestamp)+'</span>':'')+(unread&&!isInboxManagement?'<span class="unread-badge">'+(unread>99?'99+':unread)+'</span>':'')+'</span></div>'+(isInboxManagement?'':'<div style="margin-top:6px"><span class="tag">Sumber: '+esc(sourceLabel(c))+'</span></div>')+(isInboxManagement?managementSummary:'<div style="margin-top:7px">'+regularAssignment+'</div>')+reminderButton+'</div>';
+ }).join('')||'<div class="empty">Tidak ada percakapan.</div>';
+ if(!isInboxManagement)document.querySelectorAll('.item').forEach(el=>el.onclick=()=>openChat(el.dataset.id));
+ document.querySelectorAll('.hm-ask-pic').forEach(button=>button.onclick=e=>{e.stopPropagation();openManagementReminder(button.dataset.id);});
+}
  const q=$('search').value.toLowerCase();
  const filtered=rows.filter(c=>(c.customer_name||'').toLowerCase().includes(q));
  $('list').innerHTML=filtered.map(c=>{

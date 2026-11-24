@@ -240,6 +240,11 @@ function renderList(){
 async function openChat(id){
  const selected=rows.find(c=>c.id===id);if(!selected)return;
  active=selected;renderList();renderHead();
+ // On mobile, the read-only chat viewer is below the conversation list.
+ // Bring it into view as soon as a management user selects a conversation.
+ if(window.matchMedia&&window.matchMedia('(max-width:760px)').matches){
+  requestAnimationFrame(()=>{const detail=document.querySelector('.detail');if(detail)detail.scrollIntoView({behavior:'smooth',block:'start'});});
+ }
  if(active._queue){$('msgs').innerHTML='<div class="empty">Chat baru tersedia. Claim untuk membuka isi percakapan.</div>';return;}
  const cached=chatMessageCache.get(id);
  if(cached)renderChatMessages(cached);

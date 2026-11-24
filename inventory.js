@@ -106,13 +106,15 @@ window.openWalkinApprovals=async function(targetStockUnitId=''){
  if(walkinBody)walkinBody.innerHTML='<div class="box" style="text-align:center">⏳ Memuat Persetujuan Walk-In...</div>';
  const role=inventoryReviewerRole();
  const isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
- const can=!!profile?.is_management||isDeveloper||role==='FASILITATOR';
- if(!can)return alert('Persetujuan Walk-In hanya dapat dilakukan Management, Developer, atau Fasilitator.');
+ const isFacilitator=role==='FASILITATOR';
+ const facilitatorAssigned=isFacilitator&&String(profile?.outlet||'').trim()==='Majesty Refill Phone';
+ const can=!!profile?.is_management||isDeveloper||facilitatorAssigned;
+ if(!can)return alert('Persetujuan Walk-In hanya untuk Management/Developer atau Fasilitator yang ditugaskan di Majesty Refill Phone.');
  const reviewerOutlet=(!profile?.is_management&&!isDeveloper)?String(profile?.outlet||'').trim():null;
 
  const [w,sale]=await Promise.all([
-   sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status').eq('status','PENDING').order('requested_at',{ascending:false}),
-   sb.from('stock_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status,customer_phone,closing_capacity').eq('status','PENDING').order('requested_at',{ascending:false})
+   sb.from('walkin_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status,sales_user_ids').eq('status','PENDING').order('requested_at',{ascending:false}),
+   sb.from('stock_sale_approvals').select('id,stock_unit_id,requested_by,requested_at,sale_price,status,customer_phone,closing_capacity,team_member_ids').eq('status','PENDING').order('requested_at',{ascending:false})
  ]);
  if(w.error)return showWalkinApprovalError(w.error);
  if(sale.error)return showWalkinApprovalError(sale.error);
@@ -135,7 +137,7 @@ window.openWalkinApprovals=async function(targetStockUnitId=''){
  const pids=[...new Set(stocks.map(x=>x.product_id).filter(Boolean))];
  const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};
  const products=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));
- const requesterIds=[...new Set(rows.map(x=>x.requested_by).filter(Boolean))];
+ const requesterIds=[...new Set(rows.flatMap(x=>[x.requested_by,...(Array.isArray(x.team_member_ids)?x.team_member_ids:[]),...(Array.isArray(x.sales_user_ids)?x.sales_user_ids:[]) ]).filter(Boolean))];
  let requesterProfiles=[];
  if(requesterIds.length){
    const u=await sb.rpc('get_team_profile_names',{p_user_ids:requesterIds});
@@ -164,15 +166,18 @@ window.openWalkinApprovals=async function(targetStockUnitId=''){
 
  const html=rows.map((a,i)=>{
    const st=stocks.find(x=>x.id===a.stock_unit_id)||{}, p=products[st.product_id]||{}, rq=users[a.requested_by]||{};
-   const canReview=(!!profile?.is_management||role==='DEVELOPER'||role==='DEVELOPER APLIKASI'||role==='FASILITATOR')&&String(rq.user_id||'')!==String(profile?.user_id||'');
+   const isFacilitator=role==='FASILITATOR';
+   const canReview=(!!profile?.is_management||role==='DEVELOPER'||role==='DEVELOPER APLIKASI'||(isFacilitator&&String(profile?.outlet||'').trim()==='Majesty Refill Phone'&&String(st.outlet||'').trim()==='Majesty Refill Phone'))&&String(rq.user_id||'')!==String(profile?.user_id||'');
    const isStock=a.approval_kind==='STOCK';
+   const memberIds=Array.isArray(a.team_member_ids)?a.team_member_ids:Array.isArray(a.sales_user_ids)?a.sales_user_ids:[];
+   const memberNames=[...new Set(memberIds.filter(id=>String(id)!==String(a.requested_by)).map(id=>users[id]?.name).filter(Boolean))];
    const capacity=String(a.closing_capacity||'SALES_CORE').toUpperCase();
     const sourceLabel=isStock?(capacity==='FREELANCE_INTERNAL'?'🟣 TRX FREELANCE':'🔵 TRX SALES / WALK-IN'):'🚶 WALK-IN';
    const priceLabel=isStock?'Harga Closing':'Harga Walk-In';
    const action=isStock
      ? `<button class="success" onclick="reviewUnifiedWalkin('${a.id}','STOCK','APPROVE')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewUnifiedWalkin('${a.id}','STOCK','REJECT')">✕ Tolak</button>`
      : `<button class="success" onclick="reviewUnifiedWalkin('${a.id}','WALKIN','APPROVE')">✓ Setujui & SOLD</button><button class="danger" onclick="reviewUnifiedWalkin('${a.id}','WALKIN','REJECT')">✕ Tolak</button>`;
-   return '<div class="lead" data-walkin-stock-id="'+esc(a.stock_unit_id||'')+'" style="'+(targetStockUnitId&&String(a.stock_unit_id)===String(targetStockUnitId)?'border:2px solid #16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.14);':'')+'"><div class="small" style="font-weight:800;margin-bottom:4px">'+(targetStockUnitId&&String(a.stock_unit_id)===String(targetStockUnitId)?'🎯 TRANSAKSI DARI LINK WHATSAPP · ':'')+sourceLabel+'</div><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(st.outlet||'-')+'</b><br>🕒 Diajukan: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Sales: <b>'+esc(rq.name||'User')+'</b></div><div>'+priceLabel+': <b>Rp'+Number(a.sale_price||0).toLocaleString('id-ID')+'</b> • Modal: Rp'+Number(st.cost||0).toLocaleString('id-ID')+'</div><div class="small">Status: MENUNGGU VERIFIKASI</div>'+(canReview?'<div class="row" style="margin-top:8px">'+action+'</div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi pihak yang berwenang.</div>')+'</div>';
+   return '<div class="lead" data-walkin-stock-id="'+esc(a.stock_unit_id||'')+'" style="'+(targetStockUnitId&&String(a.stock_unit_id)===String(targetStockUnitId)?'border:2px solid #16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.14);':'')+'"><div class="small" style="font-weight:800;margin-bottom:4px">'+(targetStockUnitId&&String(a.stock_unit_id)===String(targetStockUnitId)?'🎯 TRANSAKSI DARI LINK WHATSAPP · ':'')+sourceLabel+'</div><b>'+String(i+1).padStart(2,'0')+'. '+esc(p.product||'Produk')+(p.variant?' — '+esc(p.variant):'')+'</b><div class="small">📍 Outlet: <b>'+esc(st.outlet||'-')+'</b><br>🕒 Diajukan: <b>'+new Date(a.requested_at).toLocaleString('id-ID')+'</b><br>👤 Sales Utama: <b>'+esc(rq.name||'User')+'</b><br>🤝 Sales Pendamping: <b>'+esc(memberNames.join(', ')||'Tidak ada')+'</b></div><div>'+priceLabel+': <b>Rp'+Number(a.sale_price||0).toLocaleString('id-ID')+'</b> • Modal: Rp'+Number(st.cost||0).toLocaleString('id-ID')+'</div><div class="small">Status: MENUNGGU VERIFIKASI</div>'+(canReview?'<div class="row" style="margin-top:8px">'+action+'</div>':'<div class="small" style="margin-top:8px">⏳ Menunggu verifikasi pihak yang berwenang.</div>')+'</div>';
  }).join('');
 
  if(mt)mt.textContent=heading;

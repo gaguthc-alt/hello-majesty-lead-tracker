@@ -7311,7 +7311,7 @@ function salesResultMessage(l){
  return ['❌ *UPDATE HASIL SALES*','', 'Lead ID: '+l.lead_id,'👤 PIC Sales: '+pic,'','📌 *Hasil: GAGAL*','📱 Produk: '+product,'📝 Alasan: '+(l.objection||'-'),'','Lead dinyatakan gagal setelah proses konsultasi dan follow-up oleh '+pic+'.','','Hello Majesty','Management System','Built on Trust'].join(nl);
 }
 function shareSalesResult(id){const l=leads.find(x=>x.lead_id===id);if(!l)return alert('Lead tidak ditemukan. Silakan refresh terlebih dahulu.');waShare(salesResultMessage(l));}
-async function shareWalkinApprovalWA(stockId,salePrice,submittedApprovalId=''){
+async function shareWalkinApprovalWA(stockId,salePrice,submittedApprovalId='',paymentLabel='Belum ditentukan'){
  const nl=String.fromCharCode(10);
  const sel=document.getElementById('ss');
  const product=sel?.selectedOptions?.[0]?.textContent?.replace(/\s*•\s*List.*$/,'').trim()||'Stock Walk-In';
@@ -7353,7 +7353,7 @@ async function shareWalkinApprovalWA(stockId,salePrice,submittedApprovalId=''){
  if(!requesterName)requesterName=profile?.name||'Sales';
  if(!salesNames.length)salesNames=[requesterName];
  const approvalLink='https://app.hello-majesty.com/?open=walkin&approval='+encodeURIComponent(approvalId||'');
- const msg=['🔔 *PERMOHONAN PERSETUJUAN CLOSING WALK-IN*','','Halo Tim Management,','','Mohon bantu periksa transaksi berikut dan berikan persetujuan melalui aplikasi Hello Majesty.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 *Sales Utama:* '+requesterName,'🤝 *Sales Pendamping:* '+(additionalSalesNames.join(', ')||'Tidak ada'),'','👉 *BUKA DETAIL PERSETUJUAN*',approvalLink,'','Status: *MENUNGGU PERSETUJUAN*','','Terima kasih atas bantuannya.','','*HELLO MAJESTY*','_Built on Trust_'].join(nl);
+ const msg=['🔔 *PERMOHONAN PERSETUJUAN CLOSING WALK-IN*','','Halo Tim Management,','','Mohon bantu periksa transaksi berikut dan berikan persetujuan melalui aplikasi Hello Majesty.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 *Sales Utama:* '+requesterName,'🤝 *Sales Pendamping:* '+(additionalSalesNames.join(', ')||'Tidak ada'),'💳 *Metode Pembayaran:* '+paymentLabel,'','👉 *BUKA DETAIL PERSETUJUAN*',approvalLink,'','Status: *MENUNGGU PERSETUJUAN*','','Terima kasih atas bantuannya.','','*HELLO MAJESTY*','_Built on Trust_'].join(nl);
  if(!approvalId){alert('ID persetujuan Walk-In belum ditemukan. Pengajuan mungkin belum tersimpan pada daftar persetujuan. Silakan cek menu Persetujuan Walk-In.');return;}
  // APK Android: gunakan native share intent agar WhatsApp dibuka di luar WebView.
  if(window.HelloMajestyNative&&typeof window.HelloMajestyNative.openWhatsAppMessage==='function'){
@@ -7450,7 +7450,11 @@ async function submitStockClosingApproval(id){
  closeModal();
  // Setelah pengajuan tersimpan, langsung buka WhatsApp agar Sales dapat memilih
  // kontak atau grup Management dan mengirim permintaan persetujuan.
- await shareWalkinApprovalWA(stockId,salePrice,x.data?.approval_id||'');
+ const paymentLabel=paymentMode==='PIUTANG'?'Piutang Customer':(paymentMode==='PAY_LATER'?($('payLaterProvider')?.selectedOptions?.[0]?.textContent?.trim()||'Finance'):($('salePayment')?.selectedOptions?.[0]?.textContent?.trim()||paymentMode));
+ const paymentParts=[paymentLabel];
+ if(isFinance&&cashPayment>0)paymentParts.push('Tunai Rp'+cashPayment.toLocaleString('id-ID'));
+ if(isFinance&&financeRequestedAmount>0)paymentParts.push('Piutang Finance Rp'+financeRequestedAmount.toLocaleString('id-ID'));
+ await shareWalkinApprovalWA(stockId,salePrice,x.data?.approval_id||'',[...new Set(paymentParts)].join(' + '));
  try{if(typeof renderInventory==='function')await renderInventory();}
  catch(refreshError){console.error('[HM Walk-In] Closing saved but inventory refresh failed:',refreshError);alert('Closing berhasil diajukan dan tersimpan. Tampilan stok belum berhasil diperbarui; silakan muat ulang aplikasi.');}
 }

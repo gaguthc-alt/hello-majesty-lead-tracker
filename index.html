@@ -7316,7 +7316,7 @@ async function shareWalkinApprovalWA(stockId,salePrice,submittedApprovalId=''){
  const sel=document.getElementById('ss');
  const product=sel?.selectedOptions?.[0]?.textContent?.replace(/\s*•\s*List.*$/,'').trim()||'Stock Walk-In';
  const outlet=profile?.outlet||'-';
- let salesNames=[], requesterName='', approvalId='', approvalRow=null;
+ let salesNames=[], requesterName='', additionalSalesNames=[], approvalId='', approvalRow=null;
  try{
    // Utamakan ID yang dikembalikan RPC agar pesan selalu menunjuk transaksi
    // yang baru saja diajukan, bukan pengajuan pending lain pada unit yang sama.
@@ -7342,15 +7342,18 @@ async function shareWalkinApprovalWA(stockId,salePrice,submittedApprovalId=''){
      const n=await sb.rpc('get_team_profile_names',{p_user_ids:lookupIds});
      if(!n.error && Array.isArray(n.data)){
        const map=new Map(n.data.map(x=>[String(x.user_id),x.name]));
-       salesNames=[...new Set([...ids,...(requestedBy?[requestedBy]:[])].map(id=>map.get(String(id))).filter(Boolean))];
        requesterName=requestedBy?String(map.get(String(requestedBy))||''):'';
+       // requested_by adalah Sales utama/pengaju. team_member_ids adalah
+       // anggota Sales tambahan; keluarkan pengaju dari daftar tambahan.
+       additionalSalesNames=[...new Set(ids.filter(id=>String(id)!==String(requestedBy)).map(id=>map.get(String(id))).filter(Boolean))];
+       salesNames=[...new Set([requesterName,...additionalSalesNames].filter(Boolean))];
      }
    }
  }catch(e){console.warn('[HM] gagal membaca data persetujuan Walk-In:',e);}
- if(!salesNames.length)salesNames=[profile?.name||'Sales'];
- const sales=salesNames.join(', ');
+ if(!requesterName)requesterName=profile?.name||'Sales';
+ if(!salesNames.length)salesNames=[requesterName];
  const approvalLink='https://app.hello-majesty.com/?open=walkin&approval='+encodeURIComponent(approvalId||'');
- const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada transaksi Walk-In yang sudah dilakukan oleh tim Sales dan menunggu persetujuan.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👥 *Seluruh Tim Sales/Closing:* '+sales,...(requesterName?['🧾 Pengaju/PIC Utama: '+requesterName]:[]),'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan disetujui melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
+ const msg=['🔔 *MOHON PERSETUJUAN WALK-IN*','','Ada pengajuan closing Walk-In dari Sales utama *'+requesterName+'* yang menunggu persetujuan Management.','','📱 Produk: '+product,'💰 Harga Closing: Rp'+Number(salePrice||0).toLocaleString('id-ID'),'🏪 Outlet: '+outlet,'👤 *Sales Utama:* '+requesterName,...(additionalSalesNames.length?['👥 *Sales Tambahan:* '+additionalSalesNames.join(', ')]:['👥 *Sales Tambahan:* Tidak ada']),'','👉 *BUKA PERSETUJUAN WALK-IN*',approvalLink,'','Mohon dicek dan berikan keputusan melalui aplikasi *Hello Majesty*.','','Status: *MENUNGGU PERSETUJUAN*','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
  if(!approvalId){alert('ID persetujuan Walk-In belum ditemukan. Pengajuan mungkin belum tersimpan pada daftar persetujuan. Silakan cek menu Persetujuan Walk-In.');return;}
  // APK Android: gunakan native share intent agar WhatsApp dibuka di luar WebView.
  if(window.HelloMajestyNative&&typeof window.HelloMajestyNative.openWhatsAppMessage==='function'){

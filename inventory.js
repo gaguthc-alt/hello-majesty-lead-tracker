@@ -136,8 +136,19 @@ window.openWalkinApprovals=async function(targetStockUnitId=''){
  const pr=pids.length?await sb.from('product_master').select('id,product,variant').in('id',pids):{data:[]};
  const products=Object.fromEntries((pr.data||[]).map(x=>[x.id,x]));
  const requesterIds=[...new Set(rows.map(x=>x.requested_by).filter(Boolean))];
- const u=requesterIds.length?await sb.rpc('get_team_profile_names',{p_user_ids:requesterIds}):{data:[]};
- const users=Object.fromEntries((u.data||[]).map(x=>[x.user_id,x]));
+ let requesterProfiles=[];
+ if(requesterIds.length){
+   const u=await sb.rpc('get_team_profile_names',{p_user_ids:requesterIds});
+   if(!u.error&&Array.isArray(u.data))requesterProfiles=u.data;
+   // Fallback: the approval must still show the real requester if the name RPC
+   // is unavailable or returns an incomplete result. Read only the requested IDs.
+   const missingIds=requesterIds.filter(id=>!requesterProfiles.some(x=>String(x.user_id)===String(id)&&String(x.name||'').trim()));
+   if(missingIds.length){
+     const direct=await sb.from('team_profiles').select('user_id,name,role').in('user_id',missingIds);
+     if(!direct.error&&Array.isArray(direct.data))requesterProfiles=requesterProfiles.concat(direct.data);
+   }
+ }
+ const users=Object.fromEntries(requesterProfiles.map(x=>[x.user_id,x]));
 
  const title=document.getElementById('hmMenuPanelTitle'), panel=document.getElementById('hmMenuPanel'), body=document.getElementById('hmMenuPanelBody');
  const mt=document.getElementById('mt'),mb=document.getElementById('mb'),modal=document.getElementById('modal');

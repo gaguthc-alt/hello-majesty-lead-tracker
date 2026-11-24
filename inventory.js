@@ -86,7 +86,7 @@ async function loadInventoryData(){
 function canViewInventoryDashboard(){const role=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' ');if(role==='MITRA STOCKIST'||role==='ADMIN FINANCE MAJESTY CELL')return false;const developer=role==='DEVELOPER APLIKASI'||role==='DEVELOPER';const facilitator=role==='FASILITATOR'||role==='DIVISI'||inventoryCanFacilitator;return !!profile?.is_management||role==='ADMIN FINANCE'||developer||facilitator;}
 
 async function loadWalkinApprovalCount(){
- const role=inventoryReviewerRole(), isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI', isAssignedFacilitator=role==='FASILITATOR'&&String(profile?.outlet||'').trim()==='Majesty Refill Phone', can=!!profile?.is_management||isDeveloper||isAssignedFacilitator;
+ const role=inventoryReviewerRole(), isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI', isAssignedFacilitator=role==='FASILITATOR'&&!!String(profile?.outlet||'').trim(), can=!!profile?.is_management||isDeveloper||isAssignedFacilitator;
  const btn=document.getElementById('walkinApprovalBtn');
  if(!can||!btn)return;
  const [w,s]=await Promise.all([
@@ -107,9 +107,9 @@ window.openWalkinApprovals=async function(targetStockUnitId=''){
  const role=inventoryReviewerRole();
  const isDeveloper=role==='DEVELOPER'||role==='DEVELOPER APLIKASI';
  const isFacilitator=role==='FASILITATOR';
- const facilitatorAssigned=isFacilitator&&String(profile?.outlet||'').trim()==='Majesty Refill Phone';
+ const facilitatorAssigned=isFacilitator&&!!String(profile?.outlet||'').trim();
  const can=!!profile?.is_management||isDeveloper||facilitatorAssigned;
- if(!can)return alert('Persetujuan Walk-In hanya untuk Management/Developer atau Fasilitator yang ditugaskan di Majesty Refill Phone.');
+ if(!can)return alert('Persetujuan Walk-In hanya untuk Management/Developer atau Fasilitator yang memiliki penugasan outlet.');
  const reviewerOutlet=(!profile?.is_management&&!isDeveloper)?String(profile?.outlet||'').trim():null;
 
  const [w,sale]=await Promise.all([

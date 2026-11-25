@@ -1960,16 +1960,13 @@ async function openSalesReport(){
    const [stockRes,peopleRes,teamRes]=await Promise.all([
      stockIds.length?sb.from('stock_units').select('id,product_id,color,imei_1,grade,battery_health').in('id',stockIds):Promise.resolve({data:[]}),
      transactionIds.length?sb.rpc('get_sales_report_people',{p_transaction_ids:transactionIds}):Promise.resolve({data:[]}),
-     transactionIds.length?sb.from('sales_transaction_team_members').select('sale_id,user_id').in('sale_id',transactionIds):Promise.resolve({data:[]})
+     transactionIds.length?sb.rpc('get_sales_report_team_members',{p_transaction_ids:transactionIds}):Promise.resolve({data:[]})
    ]);
    if(!stockRes.error)stocks=stockRes.data||[];
    if(!peopleRes.error)peopleMap=Object.fromEntries((peopleRes.data||[]).map(p=>[p.transaction_id,p]));
    if(!teamRes.error&&(teamRes.data||[]).length){
-     const memberIds=[...new Set(teamRes.data.map(m=>m.user_id).filter(Boolean))];
-     const memberNames=memberIds.length?await sb.rpc('get_team_profile_names',{p_user_ids:memberIds}):{data:[]};
-     const nameMap=Object.fromEntries((memberNames.data||[]).map(p=>[p.user_id,p.name]));
      (teamRes.data||[]).forEach(m=>{
-       const name=nameMap[m.user_id];
+       const name=String(m.name||'').trim();
        if(name){
          if(!teamMembersMap[m.sale_id])teamMembersMap[m.sale_id]=[];
          teamMembersMap[m.sale_id].push(name);

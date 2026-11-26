@@ -459,6 +459,8 @@ async function loadActiveLeadPhone(){
 async function saveActiveLeadPhone(){
   const input=el('hmLeadPhone'),status=el('hmLeadDataStatus'),hint=el('hmLeadPhoneHint');
   const userData=await getMainUser();
+  const managementCheck=await sb.rpc('is_management');
+  const isManagement=managementCheck.data===true&&!managementCheck.error;
   if(!activeConversation?.lead_id&&activeConversation?.id){
     try{
       const {data,error}=await sb.rpc('hm_claim_chat_conversation',{p_conversation_id:activeConversation.id});
@@ -467,7 +469,7 @@ async function saveActiveLeadPhone(){
   }
   if(!activeConversation?.lead_id)return alert('Lead belum terhubung. Tutup chat lalu buka kembali, kemudian simpan nomor HP.');
 
-  if(activeConversation.claimed_by&&activeConversation.claimed_by!==userData.id)return alert('Hanya PIC yang claim chat ini yang dapat mengubah data lead.');
+  if(!isManagement&&activeConversation.claimed_by&&activeConversation.claimed_by!==userData.id)return alert('Hanya PIC yang claim chat ini yang dapat mengubah data lead.');
   const phone=String(input.value||'').trim();
   if(!phone)return alert('Nomor HP wajib diisi.');
   const normalized=phone.replace(/[\s().-]/g,'');

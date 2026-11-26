@@ -325,6 +325,28 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
  body:not(.mobile-chat-open) .wrap>section:first-child{display:block!important;width:100%!important;max-width:none!important}
  body:not(.mobile-chat-open) .wrap>.detail{display:none!important}
 }
+
+/* Mobile inbox list: fill the available viewport instead of leaving a large blank area */
+@media(max-width:760px){
+ body:not(.mobile-chat-open) .wrap{
+  min-height:calc(100dvh - 235px);
+  align-content:stretch;
+ }
+ body:not(.mobile-chat-open) .wrap>section:first-child{
+  display:flex;
+  flex-direction:column;
+  min-height:calc(100dvh - 235px);
+ }
+ body:not(.mobile-chat-open) .wrap>section:first-child>.toolbar{flex:0 0 auto}
+ body:not(.mobile-chat-open) .wrap>section:first-child>.items{
+  flex:1 1 auto;
+  min-height:240px;
+  max-height:none;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+ }
+}
+
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>

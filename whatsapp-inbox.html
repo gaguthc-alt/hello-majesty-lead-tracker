@@ -381,6 +381,14 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
  }
 }
 
+
+/* Mobile inbox list: keep the list tall and vertically scrollable */
+@media(max-width:760px){
+ .wrap{display:flex;flex-direction:column;min-height:calc(100dvh - 175px);align-items:stretch}
+ .wrap>.panel:first-child{display:flex;flex-direction:column;min-height:calc(100dvh - 205px);height:auto}
+ .wrap>.panel:first-child .toolbar{flex:0 0 auto}
+ .wrap>.panel:first-child .items{flex:1 1 auto;min-height:300px;max-height:calc(100dvh - 390px)!important;height:auto;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-y}
+}
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
@@ -1057,24 +1065,3 @@ if (HM_CHAT_TEMP_PAUSED) {
   init();
 }
 </script></body></html>
-
-/* Mobile inbox list: use the available screen height and keep the conversation list scrollable */
-@media(max-width:760px){
- body:not(.mobile-chat-open) .wrap{
-  display:flex!important;flex-direction:column!important;
-  min-height:calc(100dvh - 175px);
-  align-items:stretch;
- }
- body:not(.mobile-chat-open) .wrap>section:first-child{
-  display:flex!important;flex:1 1 auto;flex-direction:column;
-  min-height:calc(100dvh - 205px);height:auto;
- }
- body:not(.mobile-chat-open) .wrap>section:first-child .toolbar{flex:0 0 auto}
- body:not(.mobile-chat-open) .wrap>section:first-child .items{
-  flex:1 1 auto;min-height:300px;max-height:none!important;height:auto;
-  overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  overscroll-behavior-y:contain;touch-action:pan-y;
- }
- body:not(.mobile-chat-open) .wrap>section:nth-child(2){display:none}
-}
-

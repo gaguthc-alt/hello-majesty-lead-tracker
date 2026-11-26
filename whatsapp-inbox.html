@@ -534,6 +534,7 @@ async function load(quiet=false,force=false){
     );
     if(error)throw error;
     rows=(data||[]);
+    await loadLinkedLeadExpiryStatuses();
     await loadLatestMessagePreviews();
     // Render chat milik PIC terlebih dahulu. Antrean chat tersedia tidak boleh
     // menghambat chat yang sudah berhasil di-claim.
@@ -566,6 +567,27 @@ async function load(quiet=false,force=false){
 }
 function sourceLabel(c){const channel=String(c?.whatsapp_account_name||'').trim();if(channel)return channel;if(c?.whatsapp_account_id)return 'Sumber belum dipetakan';if(c?.source_platform==='WHATSAPP'&&c?.source_confidence==='WHATSAPP_NUMBER')return 'Sumber belum dipetakan';const raw=String(c?.source||c?.source_owner||c?.source_code||'').trim();if(!raw)return 'Sumber belum ditandai';const key=raw.toUpperCase().replace(/[ -]+/g,'_');const labels={HELLO_MAJESTY_CHAT:'Hello Majesty',MAJESTY_REFILL_PHONE:'Majesty Refill Phone',MAJESTY_PLAZA_IPHONE:'Majesty Plaza iPhone',MAJESTY_CELL:'Majesty Cell',SAMBUNGAN_WHATSAPP:'WhatsApp'};return labels[key]||raw.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,ch=>ch.toUpperCase());}
 function inboxTime(value){if(!value)return '';const d=new Date(value);if(Number.isNaN(d.getTime()))return '';const today=new Date();const sameDay=d.toDateString()===today.toDateString();return sameDay?d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'});}
+async function loadLinkedLeadExpiryStatuses(){
+  const leadIds=[...new Set(rows.map(c=>c.lead_id).filter(Boolean))];
+  rows.forEach(c=>{c.lead_expired=false;});
+  if(!leadIds.length)return;
+  try{
+    const {data,error}=await withInboxTimeout(
+      sb.from('leads').select('id,status_lead,qualification_result,sales_result,hasil').in('id',leadIds),
+      'Memeriksa masa aktif lead',8000
+    );
+    if(error)throw error;
+    const expiredIds=new Set((data||[]).filter(l=>
+      ['GAGAL','LOST'].includes(String(l.qualification_result||'').toUpperCase())||
+      ['GAGAL','LOST'].includes(String(l.sales_result||'').toUpperCase())||
+      ['GAGAL','LOST'].includes(String(l.hasil||'').toUpperCase())||
+      ['GAGAL','LOST'].includes(String(l.status_lead||'').toUpperCase())
+    ).map(l=>l.id));
+    rows.forEach(c=>{c.lead_expired=expiredIds.has(c.lead_id);});
+  }catch(error){
+    console.warn('Status kedaluwarsa lead belum termuat; daftar tidak difilter:',error);
+  }
+}
 async function loadLatestMessagePreviews(){
   const ids=rows.map(c=>c.id).filter(Boolean);
   rows.forEach(c=>{c.last_message_preview='';c.last_message_sender='';c.last_message_at=null;c.needs_reply=false;});
@@ -595,7 +617,8 @@ async function markConversationRead(conversationId){
 }
 function renderList(){
  const q=$('search').value.toLowerCase();
- const filtered=rows.filter(c=>(c.customer_name||'').toLowerCase().includes(q)||(c.customer_phone||'').toLowerCase().includes(q));
+ const visibleRows=rows.filter(c=>isInboxManagement||!c.lead_expired);
+ const filtered=visibleRows.filter(c=>(c.customer_name||'').toLowerCase().includes(q)||(c.customer_phone||'').toLowerCase().includes(q));
  $('list').innerHTML=filtered.map(c=>{
   const csName=c.claimed_by?esc(c.claimed_name||'CS'):'Belum ada';
   const salesName=c.sales_claimed_by?esc(c.sales_claimed_name||'Sales'):'Belum ada';
@@ -965,6 +988,12 @@ async function loadMessages(quiet=false){
 function renderComposer(){
   const el=$('compose');if(!el)return;
   if(!active){el.innerHTML='';return;}
+  if(active.lead_expired){
+    el.innerHTML='';
+    const note=$('footnote');
+    if(note)note.textContent='Lead sudah GAGAL/kedaluwarsa · riwayat chat hanya dapat dipantau Management.';
+    return;
+  }
   if(isInboxManagement){
     el.innerHTML='';
     const note=$('footnote');

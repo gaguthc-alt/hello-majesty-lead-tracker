@@ -143,6 +143,17 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
 }
 .lead-created{background:#e8f6f1!important;color:#087f70!important;border:1px solid #b9e4d5!important;opacity:1!important;cursor:default!important}
 
+
+/* Keep the entire message viewport styled as chat, including unused space after short histories */
+@media(max-width:760px){
+ body.management-inbox-view.mobile-chat-open .detail .msgs{
+  background-color:#f4f8f7!important;
+  background-image:radial-gradient(#d8e5e1 .7px,transparent .7px)!important;
+  background-size:16px 16px!important;
+  flex:1 1 0!important;height:0!important;min-height:0!important;
+ }
+}
+
 /* Management mobile monitor: preserve normal vertical scrolling */
 @media(max-width:760px){
  body.management-inbox-view.mobile-chat-open .detail .msgs{

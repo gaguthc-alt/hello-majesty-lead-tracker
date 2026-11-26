@@ -389,6 +389,33 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
  .wrap>.panel:first-child .toolbar{flex:0 0 auto}
  .wrap>.panel:first-child .items{flex:1 1 auto;min-height:300px;max-height:calc(100dvh - 390px)!important;height:auto;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-y}
 }
+
+/* Final mobile inbox list sizing: use the remaining screen and scroll only the list */
+@media(max-width:760px){
+ body:not(.mobile-chat-open){overflow:hidden}
+ body:not(.mobile-chat-open) .wrap{
+  display:flex!important;flex-direction:column!important;
+  height:calc(100dvh - 170px)!important;
+  min-height:360px!important;max-height:none!important;
+  margin:12px auto 0!important;padding:0 12px!important;
+  gap:0!important;overflow:hidden!important;
+ }
+ body:not(.mobile-chat-open) .wrap>section:first-child{
+  display:flex!important;flex:1 1 auto!important;
+  flex-direction:column!important;width:100%!important;
+  height:100%!important;min-height:0!important;max-height:none!important;
+  overflow:hidden!important;
+ }
+ body:not(.mobile-chat-open) .wrap>section:first-child>.toolbar{flex:0 0 auto!important}
+ body:not(.mobile-chat-open) .wrap>section:first-child>.items{
+  display:block!important;flex:1 1 0!important;
+  height:0!important;min-height:0!important;max-height:none!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-y:contain!important;touch-action:pan-y!important;
+ }
+}
+
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>

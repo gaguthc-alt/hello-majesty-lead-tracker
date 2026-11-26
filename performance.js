@@ -207,11 +207,11 @@
         html+='<div class="lead perf-person-card" style="margin-top:10px">'+
           '<div class="row" style="justify-content:space-between;align-items:center"><b style="font-size:17px">'+escP(r.employee_name)+'</b></div>'+
           '<div class="perf-grid" style="margin-top:10px">'+
-          '<div><span>📲 Claim CS</span><b>'+fmt(Number(r.claim_cs||0))+'</b></div>'+
-          '<div><span>🤝 Handover CS → Sales</span><b>'+fmt(Number(r.handover||0))+'</b></div>'+
+          '<div><span>👥 Leads</span><b>'+fmt(Number(r.claim_cs||0))+'</b></div>'+
+          '<div><span>🤝 Handover</span><b>'+fmt(Number(r.handover||0))+'</b></div>'+
           '<div><span>📥 Claim Sales</span><b>'+fmt(Number(r.claim_sales||0))+'</b></div>'+
           '<div><span>🎯 CS Closing</span><b>'+fmt(Number(r.cs_closing||0))+'</b></div>'+
-          '<div><span>🏆 Sales Closing</span><b>'+fmt(Number(r.sales_closing||0))+'</b></div>'+
+          '<div><span>🏆 Closing</span><b>'+fmt(Number(r.sales_closing||0))+'</b></div>'+
           '<div><span>🏹 Hunter Closing</span><b>'+fmt(Number(r.hunter_closing||0))+'</b></div>'+
           '</div></div>';
       });
@@ -269,11 +269,11 @@
     const outletNames=[...new Set([...today,...month].map(r=>r.outlet).filter(x=>x&&x!=='-'))];
     const metrics=t=>{
       const lines=[];
-      if(t.claim)lines.push('📲 Claim CS: '+fmt(t.claim));
+      if(t.claim)lines.push('👥 Leads: '+fmt(t.claim));
       if(t.handover)lines.push('🤝 Handover: '+fmt(t.handover));
       if(t.claimSales)lines.push('📥 Claim Sales: '+fmt(t.claimSales));
       if(t.cs)lines.push('🎯 CS Closing: '+fmt(t.cs));
-      if(t.sales)lines.push('🏆 Sales Closing: '+fmt(t.sales));
+      if(t.sales)lines.push('🏆 Closing: '+fmt(t.sales));
       if(t.hunter)lines.push('🏹 Hunter: '+fmt(t.hunter));
       return (lines.length?lines.join(NL):'Belum ada aktivitas')+NL;
     };
@@ -282,11 +282,11 @@
       if(!activeRows.length)return 'Belum ada aktivitas'+NL;
       return activeRows.map(r=>{
         const lines=['👤 *'+r.name+'*'];
-        if(r.claim)lines.push('📲 Claim CS: '+fmt(r.claim));
+        if(r.claim)lines.push('👥 Leads: '+fmt(r.claim));
         if(r.handover)lines.push('🤝 Handover: '+fmt(r.handover));
         if(r.claimSales)lines.push('📥 Claim Sales: '+fmt(r.claimSales));
         if(r.cs)lines.push('🎯 CS Closing: '+fmt(r.cs));
-        if(r.sales)lines.push('🏆 Sales Closing: '+fmt(r.sales));
+        if(r.sales)lines.push('🏆 Closing: '+fmt(r.sales));
         if(r.hunter)lines.push('🏹 Hunter: '+fmt(r.hunter));
         return lines.join(NL);
       }).join(NL+NL)+NL;

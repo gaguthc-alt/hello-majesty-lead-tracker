@@ -44,7 +44,7 @@
     list.innerHTML=names.map((name,i)=>{
       const x=rows.find(a=>a.outlet===name)||{outlet:name,wa_target:0,qualified_target:0,closing_target:0,nominal_target:0,bonus_label:'Liburan',bonus_amount:0,active:true};
       return '<div class="lead" style="margin-top:10px"><b>🏪 '+esc(name)+'</b><div class="small">Target bulanan • '+esc(m)+'</div><div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px">'+
-      '<div><label>Target WA masuk</label><input type="number" min="0" id="hmTwa'+i+'" value="'+Number(x.wa_target||0)+'"></div>'+
+      '<div><label>Target Leads</label><input type="number" min="0" id="hmTwa'+i+'" value="'+Number(x.wa_target||0)+'"></div>'+
       '<div><label>Target handover</label><input type="number" min="0" id="hmThand'+i+'" value="'+Number(x.qualified_target||0)+'"></div>'+
       '<div><label>Target closing (unit)</label><input type="number" min="0" id="hmTclose'+i+'" value="'+Number(x.closing_target||0)+'"></div>'+
       '<div><label>Target laba (Rp)</label><input type="number" min="0" step="1000" id="hmTprofit'+i+'" value="'+Number(x.nominal_target||0)+'"></div>'+

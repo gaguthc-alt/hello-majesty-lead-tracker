@@ -443,12 +443,17 @@ async function loadActiveLeadPhone(){
     return;
   }
   try{
-    const {data,error}=await sb.from('leads').select('whatsapp').eq('id',leadId).single();
+    const access=await sb.rpc('is_management');
+    if(access.error||access.data!==true){
+      const panel=el('hmLeadDataPanel');if(panel)panel.classList.add('hm-hidden');
+      return;
+    }
+    const {data,error}=await sb.rpc('hm_get_lead_whatsapp',{p_lead_id:leadId});
     if(error)throw error;
-    input.value=data?.whatsapp||activeConversation?.customer_phone||'';
+    input.value=data||'';
   }catch(e){
     console.warn('[HM Chat lead phone load]',e);
-    hint.textContent='Nomor belum tersedia. Silakan isi nomor HP lalu simpan.';
+    const panel=el('hmLeadDataPanel');if(panel)panel.classList.add('hm-hidden');
   }
 }
 async function saveActiveLeadPhone(){
@@ -469,7 +474,7 @@ async function saveActiveLeadPhone(){
   if(!/^\+?[0-9]{8,15}$/.test(normalized))return alert('Format nomor HP belum benar. Contoh: 081234567890 atau +6281234567890.');
   try{
     await ensureClient();
-    const {error}=await sb.from('leads').update({whatsapp:phone}).eq('id',activeConversation.lead_id);
+    const {error}=await sb.rpc('hm_set_lead_whatsapp',{p_lead_id:activeConversation.lead_id,p_whatsapp:phone});
     if(error)throw error;
     activeConversation.customer_phone=phone;
     status.textContent='✓ Tersimpan';

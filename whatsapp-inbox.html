@@ -547,12 +547,12 @@ function renderComposer(){
     if(help){
       help.className='muted compose-help';
       help.textContent=isInboxManagement
-        ?'Mode Management · pesan tercatat atas nama MANAGEMENT · status pengiriman divalidasi Sambungan.'
-        :'Pesan dikirim melalui Sambungan. Jika jendela layanan WhatsApp berakhir, Sambungan akan menolak pesan bebas.';
+        ?'Mode Management · pesan tercatat atas nama MANAGEMENT · status pengiriman dipantau oleh sistem.'
+        :'Pesan dikirim melalui sistem Hello Majesty. Pastikan jendela layanan WhatsApp pelanggan masih aktif.';
     }
     return;
   }
-  el.innerHTML='<div class="compose"><textarea id="replyText" data-mode="reply" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn">Kirim</button></div><div class="muted compose-help">'+(isInboxManagement?'Mode Management · pesan tercatat atas nama MANAGEMENT · status pengiriman divalidasi Sambungan.':'Pesan dikirim melalui Sambungan. Jika jendela layanan WhatsApp berakhir, Sambungan akan menolak pesan bebas.')+'</div>';
+  el.innerHTML='<div class="compose"><textarea id="replyText" data-mode="reply" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn">Kirim</button></div><div class="muted compose-help">'+(isInboxManagement?'Mode Management · pesan tercatat atas nama MANAGEMENT · status pengiriman dipantau oleh sistem.':'Pesan dikirim melalui sistem Hello Majesty. Pastikan jendela layanan WhatsApp pelanggan masih aktif.')+'</div>';
   const input=$('replyText');const button=$('sendReply');
   input.value=draft;
   input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendReply();}});
@@ -575,7 +575,7 @@ async function sendReply(){
     if(pendingStock?.stock_id&&!mediaUrls.length)throw new Error('Foto stok belum siap. Pesan tidak dikirim agar tidak hanya deskripsi yang terkirim. Buka ulang Kirim ke Leads Chat dari detail stok.');
     const {data,error}=await sb.functions.invoke('sambungan-whatsapp-send',{body:{conversation_id:active.id,message,media_urls:mediaUrls,stock_id:pendingStock?.stock_id||null}});
     if(error) {
-      // A transport failure can happen after Sambungan accepted the message.
+      // A transport failure can happen after the messaging provider accepted the message.
       // Never invite an immediate retry when the provider outcome is uncertain.
       let serverCode='';
       try{
@@ -648,7 +648,7 @@ $('reload').addEventListener('click',refreshInboxManually);
 $('reload').title='Muat ulang percakapan';$('search').oninput=renderList;$('backToDashboard').onclick=()=>{const dashboardUrl=new URL('index.html',window.location.href).href;if(window.opener&&!window.opener.closed){try{window.opener.focus();}catch(e){}window.close();setTimeout(()=>{if(!window.closed)window.location.replace(dashboardUrl);},300);return;}window.location.replace(dashboardUrl);};const HM_CHAT_TEMP_PAUSED = false;
 if (HM_CHAT_TEMP_PAUSED) {
   document.title = 'Leads Chat — Jeda Sementara';
-  document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#f3f6f7;font-family:Inter,system-ui,Arial,sans-serif;color:#172536"><section style="max-width:520px;width:100%;padding:32px;border:1px solid #dfe8eb;border-radius:20px;background:#fff;text-align:center;box-shadow:0 8px 26px #1c34420b"><div style="font-size:34px;margin-bottom:12px">💬</div><h2 style="margin:0 0 10px">Leads Chat sedang dijeda</h2><p style="line-height:1.6;color:#64748b;margin:0 0 22px">Workspace percakapan Hello Majesty dinonaktifkan sementara selama pemulihan layanan database. Riwayat chat tidak dihapus. Untuk sementara, tangani pesan melalui Sambungan jika tersedia.</p><a href="index.html" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#087f70;color:#fff;text-decoration:none;font-weight:700">Kembali ke Dashboard</a></section></main>';
+  document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#f3f6f7;font-family:Inter,system-ui,Arial,sans-serif;color:#172536"><section style="max-width:520px;width:100%;padding:32px;border:1px solid #dfe8eb;border-radius:20px;background:#fff;text-align:center;box-shadow:0 8px 26px #1c34420b"><div style="font-size:34px;margin-bottom:12px">💬</div><h2 style="margin:0 0 10px">Leads Chat sedang dijeda</h2><p style="line-height:1.6;color:#64748b;margin:0 0 22px">Workspace percakapan Hello Majesty dinonaktifkan sementara selama pemulihan layanan database. Riwayat chat tidak dihapus. Silakan coba kembali melalui Customer Service Workspace.</p><a href="index.html" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#087f70;color:#fff;text-decoration:none;font-weight:700">Kembali ke Dashboard</a></section></main>';
 } else {
   init();
 }

@@ -524,17 +524,6 @@ async function withInboxTimeout(promise,label,ms=12000){
   try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timeout. Periksa koneksi lalu tekan tombol muat ulang.')),ms);})]);}
   finally{clearTimeout(timer);}
 }
-async function attachSavedLeadNames(conversations){
-  const ids=[...new Set((conversations||[]).map(c=>c.lead_id).filter(Boolean))];
-  if(!ids.length)return conversations||[];
-  const {data,error}=await sb.from('leads').select('id,customer').in('id',ids);
-  if(error){console.warn('Nama lead tersimpan belum dapat dimuat:',error);return conversations||[];}
-  const names=new Map((data||[]).map(l=>[String(l.id),String(l.customer||'').trim()]));
-  return (conversations||[]).map(c=>({...c,_saved_lead_name:names.get(String(c.lead_id))||''}));
-}
-function inboxCustomerName(c){
-  return String(c?._saved_lead_name||c?.customer_name||c?.customer_phone||'Nomor tidak tersedia').trim();
-}
 async function load(quiet=false,force=false){
   // Refresh manual menunggu request aktif selesai, lalu selalu menjalankan query baru.
   if(inboxLoadPromise){
@@ -561,7 +550,7 @@ async function load(quiet=false,force=false){
         );
         if(queueError)throw queueError;
         const ownedIds=new Set(rows.map(x=>x.id));
-        rows.push(...(await attachSavedLeadNames((queue||[]).filter(x=>!ownedIds.has(x.id)))).map(x=>({...x,_queue:true})));
+        rows.push(...(queue||[]).filter(x=>!ownedIds.has(x.id)).map(x=>({...x,_queue:true})));
         await hydrateLeadCustomerNames(rows);
         renderList();
       }catch(queueErr){

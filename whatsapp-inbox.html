@@ -342,7 +342,7 @@ function renderLeadReview(){
   if(el.dataset.formConversationId===active.id && el.querySelector('#lrName'))return;
   el.innerHTML=
     '<div class="statusline"><h3>Data Lead Awal</h3><span class="decision warn">BELUM DIDAFTARKAN</span></div>'+
-    '<div class="review-note">Form ini mengikuti mekanisme WA Masuk / Lead Baru. Setelah disimpan, lead masuk ke Lead Tracker dengan status awal CS LOCK. Kualifikasi, penilaian Qualified/Potensial, follow-up, dan handover dilakukan melalui alur Lead Tracker yang sama.</div>'+
+    '<div class="review-note">Claim hanya mengambil alih percakapan dan belum dihitung sebagai Leads. Simpan customer sebagai Lead hanya jika sudah dinilai potensial atau layak ditindaklanjuti. Setelah disimpan, lead masuk ke Lead Tracker dengan status awal CS LOCK; kualifikasi, follow-up, dan handover dilanjutkan melalui alur Lead Tracker.</div>'+
     '<div class="lead-review-grid">'+
       '<label><span class="field-label">Nama Customer *</span><input id="lrName" maxlength="120" value="'+esc(active.customer_name||'')+'" placeholder="Nama customer"></label>'+
 

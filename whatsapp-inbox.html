@@ -226,6 +226,67 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
   flex:0 0 auto;white-space:nowrap;
  }
 }
+
+/* Mobile chat header: compact identity, readable ownership and compact lead status */
+@media(max-width:760px){
+ body.mobile-chat-open .detail .head{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  gap:8px!important;padding:10px 12px!important;
+ }
+ body.mobile-chat-open .detail .head .chat-identity{
+  display:grid!important;grid-template-columns:76px minmax(0,1fr)!important;
+  align-items:start!important;gap:8px!important;
+ }
+ body.mobile-chat-open .detail .head .chat-back{
+  display:inline-flex!important;width:76px!important;min-width:76px!important;
+  height:36px!important;min-height:36px!important;padding:0 5px!important;
+  border:1px solid #dce5e5!important;border-radius:9px!important;
+  background:#fff!important;font-size:12px!important;line-height:1!important;
+  white-space:nowrap!important;
+ }
+ body.mobile-chat-open .detail .head .chat-title{
+  display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+  gap:5px!important;min-width:0!important;
+ }
+ body.mobile-chat-open .detail .head .chat-title b{
+  display:block!important;max-width:100%!important;font-size:16px!important;
+  line-height:1.25!important;overflow-wrap:anywhere!important;
+ }
+ body.mobile-chat-open .detail .head .chat-title .tag{
+  display:inline-flex!important;max-width:100%!important;width:max-content!important;
+  padding:4px 8px!important;font-size:10px!important;line-height:1.2!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;
+ }
+ body.mobile-chat-open .detail .head .chat-meta{
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-content:flex-start!important;gap:5px 10px!important;flex-wrap:wrap!important;
+  padding:0!important;font-size:10px!important;line-height:1.25!important;
+ }
+ body.mobile-chat-open .detail .head .chat-meta span{
+  display:inline-block!important;min-width:0!important;white-space:normal!important;
+ }
+ body.mobile-chat-open .detail .head .actions{
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-content:flex-start!important;gap:7px!important;flex-wrap:wrap!important;
+  width:100%!important;margin:0!important;
+ }
+ body.mobile-chat-open .detail .head .actions button{
+  flex:0 1 auto!important;width:auto!important;min-width:0!important;
+  min-height:34px!important;padding:7px 10px!important;
+  font-size:11px!important;line-height:1.2!important;white-space:nowrap!important;
+ }
+ body.mobile-chat-open .detail .head .actions .lead-created{
+  display:inline-flex!important;flex:0 0 auto!important;width:auto!important;
+  min-width:0!important;max-width:none!important;min-height:0!important;
+  padding:5px 9px!important;border-radius:18px!important;
+  font-size:10px!important;line-height:1.2!important;white-space:nowrap!important;
+ }
+ body.mobile-chat-open .detail .head .actions .tag{
+  display:inline-flex!important;align-items:center!important;
+  flex:0 0 auto!important;width:auto!important;min-height:0!important;
+  padding:5px 9px!important;font-size:10px!important;line-height:1.2!important;
+ }
+}
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan melalui sistem resmi Hello Majesty · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
@@ -459,7 +520,7 @@ function renderHead(){
  const free=!active.claimed_by&&!active.sales_claimed_by;
  const claimAllowed=active.cs_claim_enabled!==false;
  const ownershipIndicator=isInboxManagement?'':(free?(claimAllowed?(canInboxCS?'<button id="claim" class="btn" type="button">Claim Chat</button>':'<span class="tag lock">BELUM ADA PIC</span>'):'<span class="tag lock">CLAIM DITAHAN SEMENTARA</span>'):mine||salesMine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dipegang PIC lain</span>');
- const leadButton=canInboxCS&&mine?(active.lead_id?'<button class="btn lead-created" type="button" disabled>✓ Lead sudah dibuat</button>':active.lead_decision==='NOT_LEAD'?'<span class="tag lock">BUKAN LEAD</span>':'<button id="openLeadForm" class="btn" type="button">＋ Buat Lead</button>'):'';
+ const leadButton=canInboxCS&&mine?(active.lead_id?'<span class="tag lead-created">✓ Lead sudah dibuat</span>':active.lead_decision==='NOT_LEAD'?'<span class="tag lock">BUKAN LEAD</span>':'<button id="openLeadForm" class="btn" type="button">＋ Buat Lead</button>'):'';
  $('head').innerHTML='<div class="chat-identity"><button type="button" class="chat-back" id="backToInboxList" aria-label="Kembali ke daftar chat">← Kembali</button><div class="chat-title"><b>'+esc(active.customer_name||active.customer_phone||'Nomor tidak tersedia')+'</b><span class="tag">Sumber: '+esc(sourceLabel(active))+'</span></div></div><div class="chat-meta"><span>'+esc(active.status||'NEW')+'</span><span>CS: '+esc(active.claimed_by?(active.claimed_name||'CS'):'Belum ditetapkan')+'</span><span>Sales: '+esc(active.sales_claimed_by?(active.sales_claimed_name||'Sales'):'Belum di-claim')+'</span></div><div class="actions">'+(isInboxManagement?'<button id="askPicDetail" class="btn" type="button">💬 TANYA PIC</button>':'')+ownershipIndicator+leadButton+(isInboxManagement?'<button id="deleteConversation" class="danger" type="button">🗑 Hapus Percakapan</button>':'')+'</div>';
  if($('backToInboxList'))$('backToInboxList').onclick=returnToInboxList;
  if($('openLeadForm'))$('openLeadForm').onclick=()=>{leadReviewOpenFor=active.id;renderLeadReview();$('leadReview')?.scrollIntoView({behavior:'smooth',block:'start'});};

@@ -141,6 +141,7 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
 @media(max-width:760px) and (display-mode:browser){
  body.mobile-chat-open .detail .foot{padding-bottom:10px}
 }
+.lead-created{background:#e8f6f1!important;color:#087f70!important;border:1px solid #b9e4d5!important;opacity:1!important;cursor:default!important}
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan melalui sistem resmi Hello Majesty · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
@@ -374,8 +375,10 @@ function renderHead(){
  const free=!active.claimed_by&&!active.sales_claimed_by;
  const claimAllowed=active.cs_claim_enabled!==false;
  const ownershipIndicator=isInboxManagement?'':(free?(claimAllowed?(canInboxCS?'<button id="claim" class="btn" type="button">Claim Chat</button>':'<span class="tag lock">BELUM ADA PIC</span>'):'<span class="tag lock">CLAIM DITAHAN SEMENTARA</span>'):mine||salesMine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dipegang PIC lain</span>');
- $('head').innerHTML='<div class="chat-identity"><button type="button" class="chat-back" id="backToInboxList" aria-label="Kembali ke daftar chat">← Kembali</button><div class="chat-title"><b>'+esc(active.customer_name||active.customer_phone||'Nomor tidak tersedia')+'</b><span class="tag">Sumber: '+esc(sourceLabel(active))+'</span></div></div><div class="chat-meta"><span>'+esc(active.status||'NEW')+'</span><span>CS: '+esc(active.claimed_by?(active.claimed_name||'CS'):'Belum ditetapkan')+'</span><span>Sales: '+esc(active.sales_claimed_by?(active.sales_claimed_name||'Sales'):'Belum di-claim')+'</span></div><div class="actions">'+(isInboxManagement?'<button id="askPicDetail" class="btn" type="button">💬 TANYA PIC</button>':'')+ownershipIndicator+(isInboxManagement?'<button id="deleteConversation" class="danger" type="button">🗑 Hapus Percakapan</button>':'')+'</div>';
+ const leadButton=canInboxCS&&mine?(active.lead_id?'<button class="btn lead-created" type="button" disabled>✓ Lead sudah dibuat</button>':active.lead_decision==='NOT_LEAD'?'<span class="tag lock">BUKAN LEAD</span>':'<button id="openLeadForm" class="btn" type="button">＋ Buat Lead</button>'):'';
+ $('head').innerHTML='<div class="chat-identity"><button type="button" class="chat-back" id="backToInboxList" aria-label="Kembali ke daftar chat">← Kembali</button><div class="chat-title"><b>'+esc(active.customer_name||active.customer_phone||'Nomor tidak tersedia')+'</b><span class="tag">Sumber: '+esc(sourceLabel(active))+'</span></div></div><div class="chat-meta"><span>'+esc(active.status||'NEW')+'</span><span>CS: '+esc(active.claimed_by?(active.claimed_name||'CS'):'Belum ditetapkan')+'</span><span>Sales: '+esc(active.sales_claimed_by?(active.sales_claimed_name||'Sales'):'Belum di-claim')+'</span></div><div class="actions">'+(isInboxManagement?'<button id="askPicDetail" class="btn" type="button">💬 TANYA PIC</button>':'')+ownershipIndicator+leadButton+(isInboxManagement?'<button id="deleteConversation" class="danger" type="button">🗑 Hapus Percakapan</button>':'')+'</div>';
  if($('backToInboxList'))$('backToInboxList').onclick=returnToInboxList;
+ if($('openLeadForm'))$('openLeadForm').onclick=()=>{leadReviewOpenFor=active.id;renderLeadReview();$('leadReview')?.scrollIntoView({behavior:'smooth',block:'start'});};
  if($('claim'))$('claim').onclick=claim;
  if($('askPicDetail'))$('askPicDetail').onclick=()=>openManagementReminder(active.id);
  if($('deleteConversation'))$('deleteConversation').onclick=deleteConversation;
@@ -432,6 +435,7 @@ async function deleteConversation(){
 }
 
 let leadDraftConversationId=null;
+let leadReviewOpenFor=null;
 function renderLeadReview(){
   const el=$('leadReview');if(!el)return;
   let draft={};
@@ -440,6 +444,7 @@ function renderLeadReview(){
   }else if(active){leadDraftConversationId=active.id;}
 
   if(!active){el.style.display='none';return;}
+  if(!active.lead_id&&active.lead_decision!=='NOT_LEAD'&&active.claimed_by===me.id&&leadReviewOpenFor!==active.id){el.style.display='none';return;}
   el.style.display='block';
   if(active.claimed_by!==me.id){el.innerHTML='<div class="muted">Keputusan lead hanya dapat dilakukan oleh PIC chat.</div>';return;}
   if(active.lead_decision==='NOT_LEAD'){
@@ -464,10 +469,11 @@ function renderLeadReview(){
       '<label><span class="field-label">Kebutuhan *</span><select id="lrNeedType" onchange="renderInboxNeedFields()"><option value="">— Pilih Kebutuhan —</option><option value="PEMBELIAN">PEMBELIAN</option><option value="SERVICE">SERVICE</option><option value="TUKAR TAMBAH">TUKAR TAMBAH</option><option value="KREDIT/CICILAN">KREDIT/CICILAN</option></select></label>'+
     '</div><div id="lrNeedFields"></div>'+
     '<label style="display:block;margin-top:10px"><span class="field-label">Catatan Awal</span><textarea id="lrNotes" maxlength="1000" placeholder="Ringkasan percakapan / kebutuhan customer"></textarea></label>'+
-    '<div class="review-actions"><button id="makeLead" class="btn">Simpan Lead</button><button id="notLead">Tandai Bukan Lead</button></div>'+
+    '<div class="review-actions"><button id="makeLead" class="btn">Simpan Lead</button><button id="notLead">Tandai Bukan Lead</button><button id="closeLeadForm" type="button">Tutup</button></div>'+
     '<div id="notLeadReasonWrap" style="display:none;margin-top:8px"><span class="field-label">Alasan Bukan Lead *</span><input id="notLeadReason" maxlength="300" placeholder="Contoh: hanya bertanya jam operasional"><button id="saveNotLead" style="margin-top:8px">Simpan Keputusan</button></div>';
   el.dataset.formConversationId=active.id;
   $('makeLead').onclick=createLeadFromChat;
+  $('closeLeadForm').onclick=()=>{leadReviewOpenFor=null;renderLeadReview();};
   $('notLead').onclick=()=>{$('notLeadReasonWrap').style.display='block';$('notLeadReason')?.focus();};
   $('saveNotLead').onclick=markChatNotLead;
   if(draft.lrNeedType){

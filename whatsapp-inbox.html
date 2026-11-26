@@ -476,10 +476,51 @@ function chatSenderLabel(message){
  if(type==='SYSTEM')return 'Sistem';
  return type||'Pesan';
 }
+function safeChatMediaUrl(value){
+ const url=String(value||'').trim();
+ return /^https:\/\//i.test(url)?url:'';
+}
 function renderChatMessages(data){
  const atBottom=$('msgs').scrollHeight-$('msgs').scrollTop-$('msgs').clientHeight<100;
- $('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(['CS','SALES','MANAGEMENT'].includes(m.sender_type)?'cs':'')+'">'+(m.message?'<div>'+esc(m.message)+'</div>':'')+(m.media_url?'<a href="'+esc(m.media_url)+'" target="_blank" rel="noopener"><img src="'+esc(m.media_url)+'" alt="Foto produk" loading="lazy" style="display:block;max-width:min(260px,100%);max-height:320px;object-fit:contain;border-radius:10px;margin-top:6px"></a>':'')+'<div class="muted">'+esc(chatSenderLabel(m))+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';
+ const messages=data||[];
+ const byProviderId=new Map(messages.filter(x=>x.provider_message_id).map(x=>[String(x.provider_message_id),x]));
+ $('msgs').innerHTML=messages.map(m=>{
+  const meta=m.metadata&&typeof m.metadata==='object'?m.metadata:{};
+  const isReaction=String(m.message_type||'').toLowerCase()==='reaction';
+  const mediaUrl=!isReaction?safeChatMediaUrl(m.media_url):'';
+  const statusMedia=safeChatMediaUrl(meta.status_media_url);
+  const replyId=String(meta.reply_context_id||meta.context_message_id||'');
+  const quoted=replyId?byProviderId.get(replyId):null;
+  const quotedMedia=quoted&&!isReaction?safeChatMediaUrl(quoted.media_url):'';
+  const isStatusReply=meta.is_status_reply===true;
+  let contextHtml='';
+  if(isStatusReply||replyId){
+   const label=isStatusReply?'Membalas Status WhatsApp':'Membalas pesan WhatsApp';
+   const previewText=isStatusReply?String(meta.status_caption||''):(quoted?.message||'');
+   const previewMedia=isStatusReply?(statusMedia||quotedMedia):quotedMedia;
+   contextHtml='<div class="hm-reply-context" style="border-left:3px solid #0b8b78;background:#edf6f3;border-radius:8px;padding:7px 9px;margin-bottom:7px;font-size:12px;color:#52616b"><b style="display:block;color:#087f70;margin-bottom:3px">'+label+'</b>'+(previewText?'<div>'+esc(previewText.slice(0,220))+'</div>':'')+(previewMedia?'<img src="'+esc(previewMedia)+'" alt="" loading="lazy" style="display:block;max-width:min(220px,100%);max-height:180px;object-fit:contain;border-radius:7px;margin-top:6px" onerror="this.closest(\'.hm-reply-context\').remove()">':'')+(!previewText&&!previewMedia?'<span>Konteks asli belum tersedia dari penyedia pesan.</span>':'')+'</div>';
+  }
+  const canCorrect=String(m.direction||'').toUpperCase()==='OUTBOUND'&&['CS','SALES','MANAGEMENT'].includes(String(m.sender_type||'').toUpperCase())&&String(m.message_type||'text').toLowerCase()==='text'&&!!m.message;
+  const correctionButton=canCorrect?'<button type="button" class="hm-correct-message" data-correction="'+esc(m.id)+'" style="margin-top:6px;border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:7px;padding:4px 8px;font-size:11px">Koreksi pesan</button>':'';
+  return '<div class="bubble '+(['CS','SALES','MANAGEMENT'].includes(m.sender_type)?'cs':'')+'">'+contextHtml+(m.message?'<div>'+esc(m.message)+'</div>':'')+(mediaUrl?'<a class="hm-message-media" href="'+esc(mediaUrl)+'" target="_blank" rel="noopener"><img src="'+esc(mediaUrl)+'" alt="" loading="lazy" style="display:block;max-width:min(260px,100%);max-height:320px;object-fit:contain;border-radius:10px;margin-top:6px" onerror="this.closest(\'.hm-message-media\').remove()"></a>':'')+'<div class="muted">'+esc(chatSenderLabel(m))+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div>'+correctionButton+'</div>';
+ }).join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';
+ $('msgs').querySelectorAll('[data-correction]').forEach(button=>button.addEventListener('click',()=>hmStartCorrection(button.dataset.correction)));
  if(atBottom)$('msgs').scrollTop=$('msgs').scrollHeight;
+}
+function hmStartCorrection(messageId){
+ const messages=chatMessageCache.get(active?.id)||[];
+ const original=messages.find(m=>String(m.id)===String(messageId));
+ if(!original||!original.message)return;
+ const corrected=prompt('Tulis versi pesan yang benar. Pesan lama tidak dapat diubah di WhatsApp; sistem akan mengirim pesan koreksi baru.',original.message);
+ if(corrected===null)return;
+ const text=corrected.trim();
+ if(!text){alert('Isi koreksi tidak boleh kosong.');return;}
+ const input=$('replyText');
+ if(!input){alert('Kolom balasan tidak tersedia. Pastikan Anda adalah PIC chat.');return;}
+ input.value='Koreksi pesan sebelumnya: '+text;
+ input.focus();
+ input.scrollIntoView({behavior:'smooth',block:'center'});
+ alert('Pesan koreksi sudah disiapkan. Tekan Kirim untuk mengirimkannya ke customer.');
 }
 async function loadMessages(quiet=false){
  if(!active)return;

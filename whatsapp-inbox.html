@@ -318,7 +318,7 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
  }
 }
 </style></head><body>
-<header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan melalui sistem resmi Hello Majesty · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
+<header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
 const SUPABASE_URL='https://ksowzhhmzrumyciehuyv.supabase.co',SUPABASE_KEY='sb_publishable_WfnEfH3-TOZS6wTKV9Ac_w_F58DiOTW';
 let sb,me,profile=null,maskPhoneNumbers=true,isInboxManagement=false,canInboxCS=false,canInboxSales=false,rows=[],active=null,realtimeChannel=null,realtimeConnected=false,realtimeRefreshTimer=null;
@@ -860,7 +860,7 @@ function renderComposer(){
   if(isInboxManagement){
     el.innerHTML='';
     const note=$('footnote');
-    if(note)note.textContent='Mode pemantauan Management · percakapan dapat dibaca, tetapi Management tidak dapat mengirim atau membalas pesan.';
+    if(note)note.textContent='Mode pantau · Management tidak dapat membalas.';
     return;
   }
   const mineCS=active.claimed_by===me.id;
@@ -868,7 +868,7 @@ function renderComposer(){
   const management=isInboxManagement===true;
   const csMonitoring=mineCS&&!!active.sales_claimed_by;
   if(!management&&!mineCS&&!mineSales){el.innerHTML='';return;}
-  if(!management&&csMonitoring){el.innerHTML='<div class="muted">Mode pemantauan CS: Anda dapat membaca seluruh percakapan sampai selesai, tetapi balasan setelah handover hanya dikirim oleh Sales PIC.</div>';return;}
+  if(!management&&csMonitoring){el.innerHTML='';const note=$('footnote');if(note)note.textContent='Mode pantau · balasan dilanjutkan oleh Sales PIC.';return;}
   // Status jendela WhatsApp tidak dihitung di aplikasi. Sambungan menjadi pemeriksa
   // final saat pengiriman dan akan menolak pesan bebas jika jendela telah berakhir.
   const previous=$('replyText');
@@ -881,16 +881,9 @@ function renderComposer(){
   if(existing&&existing.dataset.mode===desiredMode){
     const button=$('sendReply');
     if(button)button.disabled=false;
-    const help=el.querySelector('.compose-help');
-    if(help){
-      help.className='muted compose-help';
-      help.textContent=isInboxManagement
-        ?'Mode Management · pesan tercatat atas nama MANAGEMENT · status pengiriman dipantau oleh sistem.'
-        :'Pesan dikirim melalui sistem Hello Majesty. Pastikan jendela layanan WhatsApp pelanggan masih aktif.';
-    }
     return;
   }
-  el.innerHTML='<div class="compose"><textarea id="replyText" data-mode="reply" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn">Kirim</button></div><div class="muted compose-help">'+(isInboxManagement?'Mode Management · pesan tercatat atas nama MANAGEMENT · status pengiriman dipantau oleh sistem.':'Pesan dikirim melalui sistem Hello Majesty. Pastikan jendela layanan WhatsApp pelanggan masih aktif.')+'</div>';
+  el.innerHTML='<div class="compose"><textarea id="replyText" data-mode="reply" maxlength="1000" placeholder="Ketik balasan untuk pelanggan…"></textarea><button id="sendReply" class="btn">Kirim</button></div>';
   const input=$('replyText');const button=$('sendReply');
   input.value=draft;
   input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendReply();}});

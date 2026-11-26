@@ -317,6 +317,12 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
   background:#fff!important;border-top:1px solid #e7edef;z-index:3;
  }
 }
+
+/* Mobile inbox returns to the conversation list when no chat is selected */
+@media(max-width:760px){
+ body.management-inbox-view:not(.mobile-chat-open) .wrap>.detail{display:none!important}
+ body.management-inbox-view:not(.mobile-chat-open) .wrap>section:first-child{display:block!important;width:100%;max-width:none}
+}
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
@@ -539,9 +545,18 @@ async function openChat(id){
  renderList();
 }
 function returnToInboxList(){
+ // Restore the original mobile inbox list state; do not leave the split list/detail view.
  document.body.classList.remove('mobile-chat-open');
- window.scrollTo({top:0,behavior:'instant'});
+ active=null;
+ leadReviewOpenFor=null;
+ leadDraftConversationId=null;
+ $('msgs').innerHTML='<div class="empty">Pilih chat untuk melihat pesan.</div>';
+ $('compose').innerHTML='';
+ $('leadReview').innerHTML='';
+ $('leadReview').style.display='none';
+ renderHead();
  renderList();
+ window.scrollTo({top:0,behavior:'instant'});
 }
 function renderHead(){
  if(!active){$('head').innerHTML='<div class="empty">Pilih percakapan untuk melihat detail.</div>';return;}

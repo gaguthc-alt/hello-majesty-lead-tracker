@@ -1988,14 +1988,6 @@ async function openSalesReport(){
    }catch(e){console.warn('[HM] Product enrichment skipped:',e);}
  }
 
- const phones=[...new Set(rows.map(r=>hmNormalizePhone(r.customer_phone)).filter(Boolean))];
- if(phones.length){
-   try{
-     const leadRes=await sb.from('leads').select('whatsapp,cs,cs_claimed_by,customer,updated_at').order('updated_at',{ascending:false}).limit(2000);
-     if(!leadRes.error)leadRes.data?.forEach(l=>{const p=hmNormalizePhone(l.whatsapp);if(p&&!leadMap[p])leadMap[p]=l;});
-   }catch(e){console.warn('[HM] Lead enrichment skipped:',e);}
- }
-
  const stockMap=Object.fromEntries(stocks.map(s=>[s.id,s]));
  window.hmSalesReportRows=rows.map(r=>{
    const st=stockMap[r.stock_unit_id]||{},pm=productMap[st.product_id]||{},lead=leadMap[hmNormalizePhone(r.customer_phone)]||null;

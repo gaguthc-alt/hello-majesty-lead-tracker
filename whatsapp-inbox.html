@@ -176,6 +176,42 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
   padding-bottom:calc(52px + env(safe-area-inset-bottom));
  }
 }
+
+/* Final Management mobile layout: grid guarantees messages fill the space above the notice */
+@media(max-width:760px){
+ body.management-inbox-view.mobile-chat-open .wrap>.detail{
+  display:grid!important;
+  grid-template-rows:auto auto minmax(0,1fr) auto!important;
+  align-content:stretch!important;
+  position:fixed!important;inset:0!important;
+  height:100dvh!important;min-height:0!important;overflow:hidden!important;
+ }
+ body.management-inbox-view.mobile-chat-open .detail>.head{
+  grid-row:1;min-height:0;flex:none!important;
+ }
+ body.management-inbox-view.mobile-chat-open .detail>.lead-review{
+  grid-row:2;min-height:0;max-height:30vh;overflow:auto;
+ }
+ body.management-inbox-view.mobile-chat-open .detail>.msgs{
+  grid-row:3;display:block!important;
+  width:100%;height:auto!important;min-height:0!important;max-height:none!important;
+  min-width:0;overflow-x:hidden!important;overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-y;
+  padding:10px 12px!important;margin:0;
+  background-color:#f4f8f7!important;
+  background-image:radial-gradient(#d8e5e1 .7px,transparent .7px)!important;
+  background-size:16px 16px!important;
+ }
+ body.management-inbox-view.mobile-chat-open .detail>.foot{
+  grid-row:4;position:static!important;inset:auto!important;
+  display:block!important;min-height:0;height:auto!important;margin:0!important;
+  padding:7px 12px calc(7px + env(safe-area-inset-bottom))!important;
+  background:#fff;border-top:1px solid #e7edef;z-index:3;
+ }
+ body.management-inbox-view.mobile-chat-open .detail>.foot #footnote{
+  margin:0;font-size:10px;line-height:1.3;
+ }
+}
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan melalui sistem resmi Hello Majesty · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>

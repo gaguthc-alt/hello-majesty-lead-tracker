@@ -165,7 +165,7 @@ async function load(quiet=false,force=false){
   }
   inboxLoadPromise=(async()=>{try{
     const {data,error}=await withInboxTimeout(
-      sb.from('chat_conversations').select('id,customer_name,source,whatsapp_account_id,whatsapp_account_name,whatsapp_account_owner,content_creator,status,claimed_by,claimed_name,claimed_at,lead_id,created_at,updated_at,original_source,last_touch_source,source_code,source_owner,source_confidence,source_platform,source_campaign,first_inbound_at,last_inbound_at,claim_warning_at,claim_expires_at,first_response_at,customer_user_id,lead_decision,lead_decision_at,lead_decision_by,lead_decision_note,lead_qualification_score,lead_qualification,sales_claimed_by,sales_claimed_name,sales_claimed_at,sales_response_state,sales_sla_warning_at,sales_sla_overdue_at,sales_sla_released_at').order('updated_at',{ascending:false}).limit(200),
+      sb.from('chat_conversations').select('id,customer_name,source,whatsapp_account_id,whatsapp_account_name,whatsapp_account_owner,content_creator,status,claimed_by,claimed_name,claimed_at,lead_id,created_at,updated_at,original_source,last_touch_source,source_code,source_owner,source_confidence,source_platform,source_campaign,first_inbound_at,last_inbound_at,claim_warning_at,claim_expires_at,first_response_at,customer_user_id,lead_decision,lead_decision_at,lead_decision_by,lead_decision_note,lead_qualification_score,lead_qualification,sales_claimed_by,sales_claimed_name,sales_claimed_at,sales_response_state,sales_sla_warning_at,sales_sla_overdue_at,sales_sla_released_at,cs_claim_enabled').order('updated_at',{ascending:false}).limit(200),
       'Memuat daftar percakapan',12000
     );
     if(error)throw error;
@@ -259,7 +259,8 @@ function renderHead(){
  const mine=active.claimed_by===me.id;
  const salesMine=active.sales_claimed_by===me.id;
  const free=!active.claimed_by&&!active.sales_claimed_by;
- const ownershipIndicator=isInboxManagement?'':(free?(canInboxCS?'<button id="claim" class="btn" type="button">Claim Chat</button>':'<span class="tag lock">BELUM ADA PIC</span>'):mine||salesMine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dipegang PIC lain</span>');
+ const claimAllowed=active.cs_claim_enabled!==false;
+ const ownershipIndicator=isInboxManagement?'':(free?(claimAllowed?(canInboxCS?'<button id="claim" class="btn" type="button">Claim Chat</button>':'<span class="tag lock">BELUM ADA PIC</span>'):'<span class="tag lock">CLAIM DITAHAN SEMENTARA</span>'):mine||salesMine?'<span class="tag">PIC ANDA</span>':'<span class="tag lock">Dipegang PIC lain</span>');
  $('head').innerHTML='<div><b>'+esc(active.customer_name||'Customer')+'</b><div style="margin-top:6px"><span class="tag">Sumber: '+esc(sourceLabel(active))+'</span></div><div class="muted"> · '+esc(active.status||'NEW')+'</div><div class="muted">'+(active.claimed_by?'CS PIC: '+esc(active.claimed_name||'CS'):'CS belum ditetapkan')+'</div><div class="muted">'+(active.sales_claimed_by?'Sales PIC: '+esc(active.sales_claimed_name||'Sales'):'Sales belum di-claim')+'</div></div><div class="actions">'+(isInboxManagement?'<button id="askPicDetail" class="btn" type="button">💬 TANYA PIC</button>':'')+ownershipIndicator+(isInboxManagement?'<button id="deleteConversation" class="danger" type="button">🗑 Hapus Percakapan</button>':'')+'</div>';
  if($('claim'))$('claim').onclick=claim;
  if($('askPicDetail'))$('askPicDetail').onclick=()=>openManagementReminder(active.id);

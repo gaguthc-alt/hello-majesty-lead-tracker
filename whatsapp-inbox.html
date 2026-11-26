@@ -318,10 +318,12 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
  }
 }
 
-/* Mobile inbox returns to the conversation list when no chat is selected */
+/* On phones, the default Inbox state is the full-width conversation list.
+   Show the detail panel only after a conversation is opened. */
 @media(max-width:760px){
- body.management-inbox-view:not(.mobile-chat-open) .wrap>.detail{display:none!important}
- body.management-inbox-view:not(.mobile-chat-open) .wrap>section:first-child{display:block!important;width:100%;max-width:none}
+ body:not(.mobile-chat-open) .wrap{display:block!important;margin:12px auto!important;padding:0 12px!important}
+ body:not(.mobile-chat-open) .wrap>section:first-child{display:block!important;width:100%!important;max-width:none!important}
+ body:not(.mobile-chat-open) .wrap>.detail{display:none!important}
 }
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>

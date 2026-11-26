@@ -212,6 +212,20 @@ body.management-inbox-view .hm-ask-pic{align-self:center;white-space:nowrap;marg
   margin:0;font-size:10px;line-height:1.3;
  }
 }
+
+/* Compact the created-lead confirmation in the mobile chat header */
+@media(max-width:760px){
+ body.mobile-chat-open .detail .head .actions .lead-created{
+  flex:0 0 auto!important;width:auto!important;min-width:0!important;
+  max-width:170px!important;min-height:34px!important;
+  padding:6px 11px!important;font-size:11px!important;
+  line-height:1.2!important;white-space:nowrap!important;
+  border-radius:18px!important;
+ }
+ body.mobile-chat-open .detail .head .actions .tag:not(.lock){
+  flex:0 0 auto;white-space:nowrap;
+ }
+}
 </style></head><body>
 <header class="top"><div><b>Hello Majesty · Inbox</b><br><small>Lead Management Workspace</small></div><div class="top-actions"><button id="contactsLink" style="display:none" onclick="location.href='customer-contacts.html'">👥 Database Kontak</button><button type="button" id="backToDashboard">↩ Kembali ke Dashboard</button></div></header><main class="wrap"><section class="panel"><div class="toolbar"><input id="search" class="field" placeholder="Cari nomor / pesan"><button id="reload">↻</button></div><div id="list" class="items"><div class="empty">Memuat percakapan…</div></div></section><section class="panel detail"><div id="head" class="head"><b>Pilih percakapan</b></div><div id="leadReview" class="lead-review" style="display:none"></div><div id="msgs" class="msgs"><div class="empty">Pilih chat di sebelah kiri untuk melihat pesan.</div></div><div class="foot"><div id="footnote" class="muted">Balasan melalui sistem resmi Hello Majesty · hanya PIC chat yang dapat mengirim.</div><div id="compose"></div></div></section></main>
 <script>
@@ -521,9 +535,11 @@ function renderLeadReview(){
     el.innerHTML='<div class="statusline"><b>Keputusan CS:</b><span class="decision warn">BUKAN LEAD</span></div><div class="review-note">'+esc(active.lead_decision_note||'')+'</div><div class="review-note">Kontak dan riwayat chat tetap tersimpan. Jika kebutuhan pembelian muncul kemudian, CS dapat menilai ulang percakapan ini.</div>';return;
   }
   if(active.lead_id){
-    const label=active.lead_decision==='EXISTING_LEAD'?'LEAD SUDAH ADA':'LEAD TERBUAT';
-    el.innerHTML='<div class="statusline"><b>Terhubung ke Lead:</b><span class="decision">'+label+'</span><b>'+esc(active.lead_id)+'</b></div><div id="leadLinkStatus" class="review-note">Memeriksa status lead…</div>';
-    loadLinkedLeadStatus();return;
+    // Once a conversation has been saved as a lead, keep the conversation view
+    // focused on messages. The header already confirms "Lead sudah dibuat".
+    el.style.display='none';
+    el.innerHTML='';
+    return;
   }
   // Polling/realtime may call renderHead() every few seconds. Keep the existing
   // form DOM alive while this same conversation is still awaiting lead review.

@@ -467,9 +467,18 @@ async function handoverChatLead(){
 async function claim(){const b=$('claim');if(b)b.disabled=true;try{const {data,error}=await sb.rpc('hm_claim_chat_conversation',{p_conversation_id:active.id});if(error)throw error;active=data;await load();renderHead();alert('Chat berhasil di-claim. Anda menjadi PIC percakapan ini.');}catch(e){alert(e.message||'Claim gagal. Chat mungkin sudah diambil CS lain.');await load();}}
 const chatMessageCache=new Map();
 const messageLoadPromises=new Map();
+function chatSenderLabel(message){
+ const type=String(message?.sender_type||'').toUpperCase();
+ if(type==='CUSTOMER')return String(active?.customer_name||displayPhone(active?.customer_phone)||'Pelanggan');
+ if(type==='CS')return 'Customer Service';
+ if(type==='SALES')return 'Sales';
+ if(type==='MANAGEMENT')return 'Management';
+ if(type==='SYSTEM')return 'Sistem';
+ return type||'Pesan';
+}
 function renderChatMessages(data){
  const atBottom=$('msgs').scrollHeight-$('msgs').scrollTop-$('msgs').clientHeight<100;
- $('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(['CS','SALES','MANAGEMENT'].includes(m.sender_type)?'cs':'')+'">'+(m.message?'<div>'+esc(m.message)+'</div>':'')+(m.media_url?'<a href="'+esc(m.media_url)+'" target="_blank" rel="noopener"><img src="'+esc(m.media_url)+'" alt="Foto produk" loading="lazy" style="display:block;max-width:min(260px,100%);max-height:320px;object-fit:contain;border-radius:10px;margin-top:6px"></a>':'')+'<div class="muted">'+esc(m.sender_type||'')+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';
+ $('msgs').innerHTML=(data||[]).map(m=>'<div class="bubble '+(['CS','SALES','MANAGEMENT'].includes(m.sender_type)?'cs':'')+'">'+(m.message?'<div>'+esc(m.message)+'</div>':'')+(m.media_url?'<a href="'+esc(m.media_url)+'" target="_blank" rel="noopener"><img src="'+esc(m.media_url)+'" alt="Foto produk" loading="lazy" style="display:block;max-width:min(260px,100%);max-height:320px;object-fit:contain;border-radius:10px;margin-top:6px"></a>':'')+'<div class="muted">'+esc(chatSenderLabel(m))+' · '+new Date(m.created_at).toLocaleString('id-ID')+(m.delivery_status?' · '+esc(m.delivery_status):'')+'</div></div>').join('')||'<div class="empty">Belum ada pesan pada percakapan ini.</div>';
  if(atBottom)$('msgs').scrollTop=$('msgs').scrollHeight;
 }
 async function loadMessages(quiet=false){

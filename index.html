@@ -6082,7 +6082,7 @@ async function refreshLeads(btn){
 }
 function openLeadSearch(){
  $('mt').textContent='🔎 Search Lead';
- $('mb').innerHTML='<label>Cari berdasarkan Lead ID, nama, WhatsApp, kebutuhan, outlet, atau status</label><div class="row"><input id="leadSearchInput" placeholder="Contoh: LM-7C6C1F45 / nama / 0812..." onkeydown="if(event.key===\'Enter\')doLeadSearch()"><button class="success" type="button" onclick="doLeadSearch()">🔎 Cari</button></div><div id="leadSearchResults" style="margin-top:12px"></div>';
+ $('mb').innerHTML='<label>Cari berdasarkan Lead ID, nama, kebutuhan, outlet, atau status</label><div class="row"><input id="leadSearchInput" placeholder="Contoh: LM-7C6C1F45 / nama customer" onkeydown="if(event.key===\'Enter\')doLeadSearch()"><button class="success" type="button" onclick="doLeadSearch()">🔎 Cari</button></div><div id="leadSearchResults" style="margin-top:12px"></div>';
  $('modal').classList.remove('hidden');
  setTimeout(()=>$('leadSearchInput')?.focus(),50);
 }
@@ -6830,7 +6830,7 @@ function card(l){
  '<div class="small">Tanggal Lead Masuk: '+esc((()=>{const d=l.created_at?new Date(l.created_at):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'-';})())+'</div>'+
  '<div class="small">Tanggal Follow Up: '+esc((()=>{const raw=String(l.sales_claimed_by||'').trim()? (l.sales_follow_up_date||l.follow_up_date||l.cs_follow_up_date):(l.cs_follow_up_date||l.follow_up_date||l.sales_follow_up_date);if(!raw)return 'Belum ditentukan';const d=new Date(raw);return !isNaN(d.getTime())?d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):raw;})())+'</div>'+
  '<div class="small">'+esc(l.outlet)+' • '+esc(l.product||'-')+' • '+esc(l.lead_id)+(l.content_creator?' • Content: '+esc(l.content_creator):'')+'</div>'+
- '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+(isService?' • Teknisi: '+esc(l.service_pic||'-'):' • Sales: '+esc(l.sales_claimed_by||'-'))+'</div>'+(isService&&!isCentralInboxLead&&l.service_pic===profile?.name&&l.whatsapp?'<div style="margin-top:8px;padding:10px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0"><b>📱 Kontak Customer</b><div>'+esc(l.whatsapp)+'</div><a href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank" rel="noopener">💬 Hubungi Customer via WhatsApp</a></div>':'')+
+ '<div class="small">CS: '+esc(l.cs_claimed_by||'-')+(isService?' • Teknisi: '+esc(l.service_pic||'-'):' • Sales: '+esc(l.sales_claimed_by||'-'))+'</div>'+(mg&&isService&&!isCentralInboxLead&&l.whatsapp?'<div style="margin-top:8px;padding:10px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0"><b>📱 Kontak Customer</b><div>'+esc(l.whatsapp)+'</div><a href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank" rel="noopener">💬 Hubungi Customer via WhatsApp</a></div>':'')+
  (limited?'<p class="small">Lead sedang ditangani oleh owner lain. Detail tidak tersedia.</p>':
  '<div style="margin-top:8px">'+
  '<div><b>Lokasi Customer:</b> '+esc(l.initial_data?.customer_location||l.customer_location||'-')+'</div>'+
@@ -6849,7 +6849,7 @@ function card(l){
  (canAskPIC?'<button class="secondary" type="button" onclick="sharePICQuestion(\''+esc(l.lead_id)+'\')">📲 Tanyakan PIC via WA Group</button>':'')+
  (hasChat?'<button class="secondary" type="button" onclick="window.hmOpenLeadChat(\''+esc(l.id||'')+'\')">💬 Chat</button>':'')+
   (canContactCustomer&&isCentralInboxLead&&inboxConversationId?'<button class="success" type="button" onclick="window.hmOpenLeadWhatsAppInbox(\''+encodeURIComponent(inboxConversationId)+'\')">💬 Buka Lead Chatting</button>':'')+
-  (canContactCustomer&&plazaWhatsApp&&l.whatsapp?'<a style="display:inline-block;padding:10px;border-radius:8px;background:#e5e7eb;color:#111;text-decoration:none" href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank" rel="noopener">📱 Hubungi via WhatsApp Pribadi</a>':'')+
+  (mg&&plazaWhatsApp&&l.whatsapp?'<a style="display:inline-block;padding:10px;border-radius:8px;background:#e5e7eb;color:#111;text-decoration:none" href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank" rel="noopener">📱 Hubungi via WhatsApp Pribadi</a>':'')+
  (own?'<button class="secondary" onclick="editLead(\''+esc(l.lead_id)+'\')">Buka / Update</button>':'')+
  (canAI?'<button class="secondary" type="button" data-lead-ai="'+esc(l.lead_id)+'" onclick="window.openAI(this.dataset.leadAi)">🤖 Tanya AI</button>':'')+
  (mg?'<button class="secondary" onclick="resetLead(\''+esc(l.lead_id)+'\')">↻ Reset</button><button class="danger" onclick="deleteLead(\''+esc(l.lead_id)+'\')">🗑 Delete</button>':'')+
@@ -7849,7 +7849,7 @@ function editLead(id){
  const centralInboxLead=String(l.outlet||'').trim().toLowerCase()==='hello majesty'&&(String(sourceData.origin||'').toUpperCase()==='WHATSAPP_INBOX'||String(sourceData.intake_source||'').toUpperCase()==='WHATSAPP_INBOX'||!!sourceData.conversation_id);
  const plazaManualLead=String(l.outlet||'').trim().toLowerCase()==='majesty plaza iphone'&&!centralInboxLead;
  const isLeadPIC=l.cs_claimed_by===profile?.name||l.sales_claimed_by===profile?.name;
- const wa=!!profile?.is_management||(!centralInboxLead&&plazaManualLead&&isLeadPIC)||( !centralInboxLead&&!plazaManualLead&&isServiceLead&&l.service_pic===profile?.name),t=l.need_type||'INFORMASI',d=sourceData;
+ const wa=!!profile?.is_management,t=l.need_type||'INFORMASI',d=sourceData;
  $('mt').textContent='Lead '+l.lead_id;
  $('mb').innerHTML='<div class="small">'+esc(l.customer)+' • '+(wa?'<a href="https://wa.me/'+waNumber(l.whatsapp)+'" target="_blank">📱 '+esc(l.whatsapp)+'</a>':'WhatsApp tersembunyi sampai menjadi tanggung jawab Anda.')+'</div>'+(l.qualification_result==='GAGAL'?'<div style="margin:10px 0;padding:10px;background:#fef2f2;border-radius:8px"><b>Keterangan Gagal</b><br>'+esc(l.objection||'Belum diisi')+'</div>':'')+'<label>Produk Ringkas</label><input id="ep" value="'+esc(l.product||'')+'"><label>Kebutuhan / Ringkasan</label><textarea id="en">'+esc(l.need||'')+'</textarea><label>Budget Ringkas</label><input id="eb" value="'+esc(l.budget||'')+'"><label>Preference Ringkas</label><textarea id="epr">'+esc(l.preference||'')+'</textarea>'+editNeedFields(t,d)+'<label>Catatan</label><textarea id="ec">'+esc(l.catatan||'')+'</textarea><button id="updateBtn" class="success">Simpan Update</button>';
  $('updateBtn').onclick=()=>updateLead(id);$('modal').classList.remove('hidden');renderEditNeedFields();

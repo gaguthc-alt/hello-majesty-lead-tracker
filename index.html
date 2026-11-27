@@ -2509,6 +2509,7 @@ async function start(u,authClient){
    console.warn('[HM] Permission tambahan gagal dimuat; dashboard tetap dilanjutkan.',permErr);
   }
   window.hmCanSales=!!p.can_sales;
+  window.hmCanTechnician=!!p.can_technician;
   hmPermissionRoles=[];
   if(p.can_facilitator)hmPermissionRoles.push('FASILITATOR');
   if(p.can_cs)hmPermissionRoles.push('CS');
@@ -4054,25 +4055,34 @@ function hmOpenDeveloperRolePreview(){
  document.addEventListener('keydown',function onKey(e){if(e.key==='Escape'&&document.getElementById('hmDeveloperRolePreview')){wrap.remove();document.removeEventListener('keydown',onKey)}});
  document.body.appendChild(wrap);
 }
-function hmOpenTechnicianService(){
+async function hmOpenTechnicianService(){
  const host=$('mb'),title=$('mt');
  if(!host||!title)return;
  const roles=(typeof getActiveRoles==='function'?getActiveRoles():[]).map(v=>String(v||'').trim().toUpperCase().replace(/_/g,' '));
- const technician=roles.includes('TECHNICIAN')||roles.includes('TEKNISI')||String(profile?.role||'').trim().toUpperCase()==='TECHNICIAN'||String(profile?.role||'').trim().toUpperCase()==='TEKNISI';
+ const technician=!!window.hmCanTechnician||roles.includes('TECHNICIAN')||roles.includes('TEKNISI')||String(profile?.role||'').trim().toUpperCase()==='TECHNICIAN'||String(profile?.role||'').trim().toUpperCase()==='TEKNISI';
  if(!technician&&!profile?.is_management)return alert('Menu ini khusus Teknisi yang memiliki izin aktif.');
  const outlet=String(profile?.outlet||'').trim();
  const name=String(profile?.name||'').trim();
- const rows=(leads||[]).filter(l=>String(l.need_type||'').trim().toUpperCase()==='SERVICE'&&String(l.outlet||'').trim()===outlet&&(
-   String(l.service_pic||'').trim()===name||
-   (!String(l.service_pic||'').trim()&&String(l.service_status||'').trim().toUpperCase()==='MENUNGGU PIC')
- )).sort((a,b)=>new Date(b.updated_at||b.created_at||0)-new Date(a.updated_at||a.created_at||0));
- const assigned=rows.filter(l=>String(l.service_pic||'').trim()===name);
- const waiting=rows.filter(l=>!String(l.service_pic||'').trim());
  title.textContent='🔧 Service Saya';
- host.innerHTML='<div class="box"><h3>🔧 Antrian Service — '+esc(outlet)+'</h3><p class="small">Hanya pekerjaan SERVICE di outlet Anda. Antrian menunggu hanya dapat di-claim oleh akun dengan izin Teknisi aktif.</p><div class="stats"><div class="stat"><div class="small">Menunggu Claim</div><b>'+waiting.length+'</b></div><div class="stat"><div class="small">Ditangani Anda</div><b>'+assigned.length+'</b></div></div></div>'+
- (waiting.length?'<h3>Menunggu Claim</h3>'+waiting.map(l=>'<div style="margin-bottom:10px">'+card(l)+'<button class="success" type="button" style="margin-top:6px" onclick="claimFromLink(\''+esc(l.lead_id)+'\')">🔧 Claim Service</button></div>').join(''):'<div class="box small">Tidak ada service yang menunggu claim.</div>')+
- (assigned.length?'<h3>Service yang Ditangani</h3>'+assigned.map(l=>card(l)).join(''):'<div class="box small">Belum ada pekerjaan service yang ditugaskan kepada Anda.</div>');
+ host.innerHTML='<div class="box small">⏳ Memuat antrian service khusus outlet Anda...</div>';
  $('modal').classList.remove('hidden');
+ try{
+  // Fetch langsung agar inbox Teknisi tidak bergantung pada cache Lead Tracker.
+  const {data,error}=await sb.from('leads').select('*').eq('need_type','SERVICE').eq('outlet',outlet)
+   .or('service_pic.eq.'+name+',and(service_pic.is.null,service_status.eq.MENUNGGU PIC)')
+   .order('updated_at',{ascending:false});
+  if(error)throw error;
+  const rows=data||[];
+  for(const row of rows){const i=(leads||[]).findIndex(x=>String(x.lead_id)===String(row.lead_id));if(i>=0)leads[i]=row;else leads.push(row);}
+  const assigned=rows.filter(l=>String(l.service_pic||'').trim().toLowerCase()===name.toLowerCase());
+  const waiting=rows.filter(l=>!String(l.service_pic||'').trim());
+  host.innerHTML='<div class="box"><h3>🔧 Antrian Service — '+esc(outlet)+'</h3><p class="small">Hanya pekerjaan SERVICE di outlet Anda. Handover SERVICE diarahkan khusus kepada Imas.</p><div class="stats"><div class="stat"><div class="small">Menunggu Claim</div><b>'+waiting.length+'</b></div><div class="stat"><div class="small">Ditangani Anda</div><b>'+assigned.length+'</b></div></div></div>'+
+   (waiting.length?'<h3>Menunggu Claim</h3>'+waiting.map(l=>'<div style="margin-bottom:10px">'+card(l)+'<button class="success" type="button" style="margin-top:6px" onclick="claimFromLink(\\''+esc(l.lead_id)+'\\')">🔧 Claim Service</button></div>').join(''):'<div class="box small">Tidak ada service yang menunggu claim.</div>')+
+   (assigned.length?'<h3>Service yang Ditangani</h3>'+assigned.map(l=>card(l)).join(''):'<div class="box small">Belum ada pekerjaan service yang ditugaskan kepada Anda.</div>');
+ }catch(e){
+  console.error('[HM] Load Service Saya:',e);
+  host.innerHTML='<div class="box"><b>Gagal memuat antrian service.</b><p class="small">'+esc(e?.message||e)+'</p><button class="secondary" onclick="hmOpenTechnicianService()">Coba lagi</button></div>';
+ }
 }
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;

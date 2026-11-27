@@ -4054,6 +4054,26 @@ function hmOpenDeveloperRolePreview(){
  document.addEventListener('keydown',function onKey(e){if(e.key==='Escape'&&document.getElementById('hmDeveloperRolePreview')){wrap.remove();document.removeEventListener('keydown',onKey)}});
  document.body.appendChild(wrap);
 }
+function hmOpenTechnicianService(){
+ const host=$('mb'),title=$('mt');
+ if(!host||!title)return;
+ const roles=(typeof getActiveRoles==='function'?getActiveRoles():[]).map(v=>String(v||'').trim().toUpperCase().replace(/_/g,' '));
+ const technician=roles.includes('TECHNICIAN')||roles.includes('TEKNISI')||String(profile?.role||'').trim().toUpperCase()==='TECHNICIAN'||String(profile?.role||'').trim().toUpperCase()==='TEKNISI';
+ if(!technician&&!profile?.is_management)return alert('Menu ini khusus Teknisi yang memiliki izin aktif.');
+ const outlet=String(profile?.outlet||'').trim();
+ const name=String(profile?.name||'').trim();
+ const rows=(leads||[]).filter(l=>String(l.need_type||'').trim().toUpperCase()==='SERVICE'&&String(l.outlet||'').trim()===outlet&&(
+   String(l.service_pic||'').trim()===name||
+   (!String(l.service_pic||'').trim()&&String(l.service_status||'').trim().toUpperCase()==='MENUNGGU PIC')
+ )).sort((a,b)=>new Date(b.updated_at||b.created_at||0)-new Date(a.updated_at||a.created_at||0));
+ const assigned=rows.filter(l=>String(l.service_pic||'').trim()===name);
+ const waiting=rows.filter(l=>!String(l.service_pic||'').trim());
+ title.textContent='🔧 Service Saya';
+ host.innerHTML='<div class="box"><h3>🔧 Antrian Service — '+esc(outlet)+'</h3><p class="small">Hanya pekerjaan SERVICE di outlet Anda. Antrian menunggu hanya dapat di-claim oleh akun dengan izin Teknisi aktif.</p><div class="stats"><div class="stat"><div class="small">Menunggu Claim</div><b>'+waiting.length+'</b></div><div class="stat"><div class="small">Ditangani Anda</div><b>'+assigned.length+'</b></div></div></div>'+
+ (waiting.length?'<h3>Menunggu Claim</h3>'+waiting.map(l=>'<div style="margin-bottom:10px">'+card(l)+'<button class="success" type="button" style="margin-top:6px" onclick="claimFromLink(\''+esc(l.lead_id)+'\')">🔧 Claim Service</button></div>').join(''):'<div class="box small">Tidak ada service yang menunggu claim.</div>')+
+ (assigned.length?'<h3>Service yang Ditangani</h3>'+assigned.map(l=>card(l)).join(''):'<div class="box small">Belum ada pekerjaan service yang ditugaskan kepada Anda.</div>');
+ $('modal').classList.remove('hidden');
+}
 function renderRoleHome(){
  const host=$('roleHome');if(!host)return;
  const roles=getActiveRoles(),rawRole=String(profile?.role||'').trim().toUpperCase().replace(/_/g,' '),mg=!!profile?.is_management||roles.includes('MANAGEMENT')||rawRole.includes('MANAGEMENT')||roles.includes('DIVISI')||rawRole==='DIVISI',developer=rawRole==='DEVELOPER APLIKASI',has=r=>roles.includes(r);
@@ -4239,7 +4259,7 @@ function renderRoleHome(){
    add('🧑‍💼','Stock Hunter & Checker','Pantau unit READY dengan penugasan Hunter dan Checker','openHunterStock()');
  }
  if(!mg && !stockistUser && technician){
-   add('🛠️','Antrian Teknisi','Akses pekerjaan operasional dan stok sesuai penugasan','openInventorySection(\'stock\')');
+   add('🔧','Service Saya','Antrian service dan pekerjaan yang ditangani Teknisi','hmOpenTechnicianService()');
  }
  if(!mg && !stockistUser && sales && !cs){
    // Sales tetap memperoleh akses ke daftar lead hasil handover tanpa membuka fungsi CS.
@@ -6925,7 +6945,7 @@ async function handoverSales(id){
 function serviceHandoverMessage(l){
  const link='https://app.hello-majesty.com/?claim='+encodeURIComponent(l.lead_id)+'&type=SERVICE';
  const d=l.initial_data||{}; const nl=String.fromCharCode(10);
- return ['🔧 *HANDOVER SERVICE — SIAP DI-CLAIM TEKNISI*','','*Lead ID:* '+l.lead_id,'*Customer:* '+(l.customer||'-'),'*Outlet:* '+(l.outlet||'-'),'*CS:* '+(l.cs_claimed_by||'-'),'','📱 Perangkat: '+(d.device||l.product||'-'),'🔧 Keluhan: '+(d.complaint||l.need||'-'),'','👉 *CLAIM SERVICE DI SINI*',link,'','Silakan Teknisi yang tersedia melakukan Claim Service melalui link.','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
+ return ['🔧 *HANDOVER SERVICE — KHUSUS TEKNISI*','','👤 *PIC Teknisi: Imas*','Imas, mohon claim dan tangani service customer berikut.','','*Lead ID:* '+l.lead_id,'*Customer:* '+(l.customer||'-'),'*Outlet:* '+(l.outlet||'-'),'*CS:* '+(l.cs_claimed_by||'-'),'','📱 Perangkat: '+(d.device||l.product||'-'),'🔧 Keluhan: '+(d.complaint||l.need||'-'),'','👉 *BUKA CLAIM SERVICE*',link,'','Link ini hanya dapat diproses oleh akun dengan izin Teknisi aktif.','','*Hello Majesty*','*Management System*','*Built on Trust*'].join(nl);
 }
 async function handoverService(id){
  const x=await sb.rpc('handover_service_lead',{p_lead_id:id});

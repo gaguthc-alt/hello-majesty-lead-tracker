@@ -4077,7 +4077,7 @@ async function hmOpenTechnicianService(){
   const assigned=rows.filter(l=>String(l.service_pic||'').trim().toLowerCase()===name.toLowerCase());
   const waiting=rows.filter(l=>!String(l.service_pic||'').trim());
   host.innerHTML='<div class="box"><h3>🔧 Antrian Service — '+esc(outlet)+'</h3><p class="small">Hanya pekerjaan SERVICE di outlet Anda. Handover SERVICE diarahkan khusus kepada Imas.</p><div class="stats"><div class="stat"><div class="small">Menunggu Claim</div><b>'+waiting.length+'</b></div><div class="stat"><div class="small">Ditangani Anda</div><b>'+assigned.length+'</b></div></div></div>'+
-   (waiting.length?'<h3>Menunggu Claim</h3>'+waiting.map(l=>'<div style="margin-bottom:10px">'+card(l)+'<button class="success" type="button" style="margin-top:6px" onclick="claimFromLink(\\''+esc(l.lead_id)+'\\')">🔧 Claim Service</button></div>').join(''):'<div class="box small">Tidak ada service yang menunggu claim.</div>')+
+   (waiting.length?'<h3>Menunggu Claim</h3>'+waiting.map(l=>'<div style="margin-bottom:10px">'+card(l)+'<button class="success" type="button" style="margin-top:6px" onclick="claimFromLink(&quot;'+esc(l.lead_id)+'&quot;)">🔧 Claim Service</button></div>').join(''):'<div class="box small">Tidak ada service yang menunggu claim.</div>')+
    (assigned.length?'<h3>Service yang Ditangani</h3>'+assigned.map(l=>card(l)).join(''):'<div class="box small">Belum ada pekerjaan service yang ditugaskan kepada Anda.</div>');
  }catch(e){
   console.error('[HM] Load Service Saya:',e);

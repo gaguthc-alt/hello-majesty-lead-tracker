@@ -1032,15 +1032,21 @@ async function sendReply(){
     if(error) {
       // A transport failure can happen after the messaging provider accepted the message.
       // Never invite an immediate retry when the provider outcome is uncertain.
-      let serverCode='';
+      let serverCode='',serverError='',serverGuidance='';
       try{
         const response=error.context;
         if(response && typeof response.clone==='function'){
           const body=await response.clone().json();
           serverCode=String(body?.code||'');
+          serverError=String(body?.error||'');
+          serverGuidance=String(body?.guidance||'');
         }
       }catch(_e){}
       const responseStatus=Number(error.context?.status||0);
+      if(serverCode==='WHATSAPP_24H_WINDOW_EXPIRED'){
+        alert((serverError||'Batas waktu layanan WhatsApp 24 jam telah berakhir.')+'\n\n'+(serverGuidance||'Gunakan template WhatsApp yang telah disetujui untuk menghubungi pelanggan kembali.'));
+        return;
+      }
       if(!error.context || responseStatus>=500 || serverCode==='SEND_STATUS_UNKNOWN'){
         replyBlockedAfterUnknown=true;
         button.textContent='Periksa Status Pesan';
@@ -1048,7 +1054,7 @@ async function sendReply(){
         alert('Status pengiriman belum dapat dipastikan. Jangan kirim ulang dulu agar tidak terjadi pesan ganda. Periksa percakapan WhatsApp pelanggan, lalu muat ulang Inbox.');
         return;
       }
-      throw new Error(data?.error||error.message||'Pesan ditolak. Periksa isi pesan sebelum mencoba kembali.');
+      throw new Error([serverError||data?.error||error.message||'Pesan ditolak.',serverGuidance].filter(Boolean).join('\n\n'));
     }
     if(!data?.success)throw new Error(data?.error||'Pesan gagal dikirim.');
     input.value='';
